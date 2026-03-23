@@ -5528,6 +5528,223 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
   isolation: isolate;
 }
 
+/* ═══════════════════════════════════════
+   MINI GAMES PANEL & OVERLAY
+═══════════════════════════════════════ */
+.games-panel {
+  display: none; position: fixed; inset: 0; z-index: 8500;
+  background: rgba(0,0,0,0.65); backdrop-filter: blur(8px);
+  align-items: flex-end; justify-content: center;
+}
+.games-panel.open { display: flex; }
+.games-card {
+  background: var(--panel); border-radius: 20px 20px 0 0;
+  width: 100%; max-width: 520px;
+  max-height: 90vh; display: flex; flex-direction: column;
+  animation: sheetUp 0.3s cubic-bezier(0.16,1,0.3,1);
+  overflow: hidden;
+}
+.games-head {
+  padding: 18px 18px 14px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+}
+.games-head-title { font-size: 16px; font-weight: 700; }
+.games-close-btn {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 50%; width: 30px; height: 30px; cursor: pointer;
+  font-size: 14px; display: flex; align-items: center; justify-content: center;
+  color: var(--text2);
+}
+.games-body { overflow-y: auto; padding: 16px 18px 24px; flex: 1; }
+
+/* Game cards grid */
+.games-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+  margin-bottom: 20px;
+}
+@media (max-width: 400px) { .games-grid { grid-template-columns: repeat(2, 1fr); } }
+.game-tile {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 14px; padding: 16px 10px 12px;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  cursor: pointer; transition: border-color 0.2s, background 0.2s;
+  text-align: center;
+}
+.game-tile:hover { border-color: rgba(61,232,160,0.4); background: var(--card2); }
+.game-tile-icon { font-size: 28px; }
+.game-tile-name { font-size: 12px; font-weight: 600; }
+.game-tile-desc { font-size: 10px; color: var(--text3); font-family: var(--mono); }
+
+/* Pending invites section */
+.games-invites-label {
+  font-size: 11px; color: var(--accent); font-family: var(--mono);
+  letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px;
+}
+.game-invite-row {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 12px 14px;
+  display: flex; align-items: center; gap: 12px; margin-bottom: 8px;
+}
+.game-invite-av {
+  width: 34px; height: 34px; border-radius: 50%; background: var(--card2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700; font-family: var(--mono); flex-shrink: 0;
+}
+.game-invite-info { flex: 1; min-width: 0; }
+.game-invite-name { font-size: 13px; font-weight: 600; }
+.game-invite-game { font-size: 11px; color: var(--text2); font-family: var(--mono); }
+.game-invite-btns { display: flex; gap: 6px; flex-shrink: 0; }
+.game-invite-accept {
+  background: var(--accent); color: #000; border: none;
+  border-radius: 8px; padding: 6px 12px; font-size: 12px;
+  font-weight: 700; cursor: pointer;
+}
+.game-invite-decline {
+  background: var(--card2); color: var(--text2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 6px 10px; font-size: 12px; cursor: pointer;
+}
+
+/* ── GAME OVERLAY (fullscreen gameplay) ── */
+.game-overlay {
+  display: none; position: fixed; inset: 0; z-index: 9100;
+  background: var(--bg); flex-direction: column;
+}
+.game-overlay.open { display: flex; }
+.game-overlay-head {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 16px; border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.game-overlay-title { font-size: 15px; font-weight: 700; flex: 1; }
+.game-overlay-status {
+  font-size: 11px; color: var(--text2); font-family: var(--mono);
+}
+.game-overlay-close {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 8px; padding: 6px 12px; cursor: pointer;
+  font-size: 12px; color: var(--text2);
+}
+.game-overlay-body {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  padding: 20px; overflow-y: auto;
+}
+
+/* ── TIC TAC TOE ── */
+.ttt-wrap { display: flex; flex-direction: column; align-items: center; gap: 20px; width: 100%; max-width: 340px; }
+.ttt-status {
+  font-size: 15px; font-weight: 600; text-align: center;
+  min-height: 22px; color: var(--accent);
+}
+.ttt-board {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 8px; width: 100%;
+}
+.ttt-cell {
+  aspect-ratio: 1; background: var(--card); border: 1px solid var(--border2);
+  border-radius: 12px; display: flex; align-items: center; justify-content: center;
+  font-size: 42px; cursor: pointer; transition: background 0.15s;
+  user-select: none;
+}
+.ttt-cell:hover:not(.taken) { background: var(--card2); }
+.ttt-cell.taken { cursor: default; }
+.ttt-cell.win-cell { background: var(--accent-dim); border-color: var(--accent); }
+
+/* ── ROCK PAPER SCISSORS ── */
+.rps-wrap { display: flex; flex-direction: column; align-items: center; gap: 24px; width: 100%; max-width: 340px; }
+.rps-status { font-size: 15px; font-weight: 600; color: var(--accent); text-align: center; min-height: 22px; }
+.rps-choices { display: flex; gap: 14px; justify-content: center; }
+.rps-btn {
+  width: 80px; height: 80px; border-radius: 50%;
+  background: var(--card); border: 2px solid var(--border2);
+  font-size: 36px; cursor: pointer; display: flex; align-items: center;
+  justify-content: center; transition: all 0.2s;
+}
+.rps-btn:hover { border-color: var(--accent); background: var(--card2); transform: scale(1.08); }
+.rps-btn.selected { border-color: var(--accent); background: var(--accent-dim); }
+.rps-result-wrap { display: flex; align-items: center; gap: 20px; font-size: 42px; }
+.rps-vs { font-size: 13px; color: var(--text3); font-family: var(--mono); }
+.rps-score { font-size: 13px; color: var(--text2); font-family: var(--mono); text-align: center; }
+.rps-play-again {
+  background: var(--accent); color: #000; border: none; border-radius: 10px;
+  padding: 10px 28px; font-size: 14px; font-weight: 700; cursor: pointer;
+}
+
+/* ── WORD GUESS ── */
+.wg-wrap { display: flex; flex-direction: column; align-items: center; gap: 16px; width: 100%; max-width: 360px; }
+.wg-status { font-size: 14px; color: var(--accent); font-family: var(--mono); text-align: center; min-height: 20px; }
+.wg-grid { display: flex; flex-direction: column; gap: 5px; }
+.wg-row { display: flex; gap: 5px; }
+.wg-tile {
+  width: 48px; height: 48px; border: 2px solid var(--border2);
+  border-radius: 8px; display: flex; align-items: center; justify-content: center;
+  font-size: 20px; font-weight: 700; font-family: var(--mono);
+  text-transform: uppercase; transition: background 0.3s;
+}
+.wg-tile.correct { background: #3de8a0; border-color: #3de8a0; color: #000; }
+.wg-tile.present { background: #ffd460; border-color: #ffd460; color: #000; }
+.wg-tile.absent  { background: var(--card2); border-color: var(--border); color: var(--text3); }
+.wg-tile.current-input { border-color: var(--accent); }
+.wg-keyboard { display: flex; flex-direction: column; gap: 5px; align-items: center; }
+.wg-kb-row { display: flex; gap: 4px; }
+.wg-key {
+  min-width: 30px; height: 40px; padding: 0 6px;
+  background: var(--card); border: 1px solid var(--border2);
+  border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 700;
+  font-family: var(--mono); color: var(--text);
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.2s;
+}
+.wg-key:hover { background: var(--card2); }
+.wg-key.correct { background: #3de8a0; color: #000; border-color: #3de8a0; }
+.wg-key.present { background: #ffd460; color: #000; border-color: #ffd460; }
+.wg-key.absent  { background: var(--bg); color: var(--text3); }
+.wg-key.wide { min-width: 50px; font-size: 11px; }
+
+/* ── 4-IN-A-ROW (Connect Four) ── */
+.c4-wrap { display: flex; flex-direction: column; align-items: center; gap: 16px; width: 100%; }
+.c4-status { font-size: 14px; font-weight: 600; color: var(--accent); text-align: center; min-height: 20px; }
+.c4-board {
+  display: grid; grid-template-columns: repeat(7, 1fr);
+  gap: 5px; background: var(--card2); padding: 8px; border-radius: 12px;
+  max-width: 340px; width: 100%;
+}
+.c4-cell {
+  aspect-ratio: 1; border-radius: 50%; background: var(--bg);
+  cursor: pointer; transition: background 0.15s;
+}
+.c4-cell.p1 { background: #ff5c5c; }
+.c4-cell.p2 { background: #4fa3ff; }
+.c4-cell.win-cell { box-shadow: 0 0 10px currentColor; opacity: 1; animation: c4pulse 0.5s ease infinite alternate; }
+@keyframes c4pulse { from { transform: scale(1); } to { transform: scale(1.08); } }
+.c4-col-btn-row { display: flex; gap: 5px; max-width: 340px; width: 100%; }
+.c4-col-btn {
+  flex: 1; height: 28px; background: var(--card); border: 1px solid var(--border);
+  border-radius: 6px; cursor: pointer; font-size: 14px; color: var(--text2);
+  transition: background 0.15s;
+}
+.c4-col-btn:hover { background: var(--accent-dim); color: var(--accent); }
+
+/* Invite to play button on user chips */
+.lobby-online-chip .chip-game-btn {
+  display: none; font-size: 11px; background: var(--accent-dim);
+  border: 1px solid rgba(61,232,160,0.3); color: var(--accent);
+  border-radius: 6px; padding: 2px 6px; cursor: pointer; margin-left: 4px;
+}
+.lobby-online-chip:hover .chip-game-btn { display: inline-block; }
+
+/* Waiting spinner */
+.game-waiting {
+  display: flex; flex-direction: column; align-items: center; gap: 16px;
+  color: var(--text2); font-family: var(--mono); font-size: 13px;
+}
+.game-waiting-spinner {
+  width: 40px; height: 40px; border: 3px solid var(--border);
+  border-top-color: var(--accent); border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
 </style>
 </head>
 <body>
@@ -5675,6 +5892,10 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
       <button class="msg-nav-btn" onclick="openMessenger()" title="Messenger" id="messenger-nav-btn">
         &#x1F4AC;
         <div class="msg-nav-badge" id="msg-nav-badge">0</div>
+      </button>
+      <button class="soc-friends-btn" id="soc-games-btn" onclick="openGamesPanel()" title="Mini Games" style="font-size:18px;">
+        &#x1F3AE;
+        <div class="soc-friends-badge" id="soc-games-badge" style="display:none;">!</div>
       </button>
       <button class="soc-friends-btn" onclick="openFriendsPanel()" title="Friends &amp; Requests">
         &#x1F465;
@@ -18248,6 +18469,968 @@ console.log('%c Auth Gate v2 loaded \u2713', 'color:#3de8a0;font-weight:bold;fon
     'color:#3de8a0;font-weight:bold;font-size:12px;background:#0b0f14;padding:4px 8px;border-radius:4px;');
 
 })();
+</script>
+
+<!-- ═══════════════════════════════════════════
+     MINI GAMES PANEL
+═══════════════════════════════════════════ -->
+<div class="games-panel" id="games-panel" onclick="if(event.target===this)closeGamesPanel()">
+  <div class="games-card">
+    <div class="games-head">
+      <span class="games-head-title">🎮 Mini Games</span>
+      <button class="games-close-btn" onclick="closeGamesPanel()">✕</button>
+    </div>
+    <div class="games-body">
+      <div style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-bottom:14px;">
+        Challenge online users to play — click 🎮 next to any online user, or pick a game below to invite a friend.
+      </div>
+
+      <!-- Pending game invites -->
+      <div id="games-invites-section" style="display:none;margin-bottom:18px;">
+        <div class="games-invites-label">⚡ Game Invites</div>
+        <div id="games-invites-list"></div>
+      </div>
+
+      <!-- Active games -->
+      <div id="games-active-section" style="display:none;margin-bottom:18px;">
+        <div class="games-invites-label">🟢 Active Games</div>
+        <div id="games-active-list"></div>
+      </div>
+
+      <!-- Game selection grid -->
+      <div class="games-invites-label">🎲 Pick a Game</div>
+      <div class="games-grid">
+        <div class="game-tile" onclick="openGamePicker('ttt')">
+          <div class="game-tile-icon">⭕</div>
+          <div class="game-tile-name">Tic-Tac-Toe</div>
+          <div class="game-tile-desc">2 players</div>
+        </div>
+        <div class="game-tile" onclick="openGamePicker('rps')">
+          <div class="game-tile-icon">✊</div>
+          <div class="game-tile-name">Rock Paper Scissors</div>
+          <div class="game-tile-desc">Best of 5</div>
+        </div>
+        <div class="game-tile" onclick="openGamePicker('c4')">
+          <div class="game-tile-icon">🔴</div>
+          <div class="game-tile-name">Connect Four</div>
+          <div class="game-tile-desc">2 players</div>
+        </div>
+        <div class="game-tile" onclick="openGamePicker('wg')">
+          <div class="game-tile-icon">📝</div>
+          <div class="game-tile-name">Word Guess</div>
+          <div class="game-tile-desc">Wordle vs friend</div>
+        </div>
+      </div>
+
+      <!-- Online users to invite -->
+      <div class="games-invites-label">👥 Invite Online User</div>
+      <div id="games-online-list" style="display:flex;flex-direction:column;gap:8px;">
+        <div style="color:var(--text3);font-size:12px;font-family:var(--mono);">No other users online right now.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     GAME OVERLAY (fullscreen gameplay)
+═══════════════════════════════════════════ -->
+<div class="game-overlay" id="game-overlay">
+  <div class="game-overlay-head">
+    <button class="game-overlay-close" onclick="closeGameOverlay()">← Leave</button>
+    <span class="game-overlay-title" id="game-overlay-title">Game</span>
+    <span class="game-overlay-status" id="game-overlay-status"></span>
+  </div>
+  <div class="game-overlay-body" id="game-overlay-body">
+    <!-- Game UI injected here by JS -->
+  </div>
+</div>
+
+<!-- Game invite picker modal (choose opponent) -->
+<div id="game-picker-modal" style="display:none;position:fixed;inset:0;z-index:9050;background:rgba(0,0,0,0.7);backdrop-filter:blur(6px);align-items:center;justify-content:center;">
+  <div style="background:var(--panel);border-radius:16px;width:90%;max-width:360px;padding:20px;">
+    <div style="font-size:15px;font-weight:700;margin-bottom:4px;" id="game-picker-title">Invite to Game</div>
+    <div style="font-size:12px;color:var(--text3);font-family:var(--mono);margin-bottom:16px;">Choose an online user to challenge:</div>
+    <div id="game-picker-users" style="display:flex;flex-direction:column;gap:8px;max-height:260px;overflow-y:auto;"></div>
+    <button onclick="document.getElementById('game-picker-modal').style.display='none'" style="margin-top:14px;width:100%;padding:10px;background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--text2);cursor:pointer;font-size:13px;">Cancel</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  SECRETLINE MINI GAMES ENGINE v1.0
+//  Realtime multiplayer via Firebase social/games/{gameId}
+// ═══════════════════════════════════════════════════════════
+(function() {
+'use strict';
+
+/* ── Constants ── */
+const GAMES_PATH = 'social/games';
+const WORDS_5 = ['about','above','abuse','actor','acute','admit','adopt','adult','after','again',
+  'agent','agree','ahead','alarm','album','alert','alike','alive','alley','allow','alone','along',
+  'alter','angel','anger','angle','angry','anime','annex','antic','anvil','apart','apple','apply',
+  'arena','argue','arise','array','aside','asset','atlas','attic','audio','audit','avoid','awake',
+  'award','aware','awful','basic','basis','batch','beach','began','begin','being','below','bench',
+  'bible','birth','black','blade','blame','bland','blank','blast','blaze','bleed','bless','blind',
+  'block','blood','bloom','blown','blues','blunt','board','bonus','boost','booth','bound','brave',
+  'bread','break','breed','brick','bride','brief','bring','broad','broke','brook','brown','build',
+  'built','bunch','burst','buyer','camel','candy','carry','catch','cause','chain','chair','chaos',
+  'charm','chase','cheap','check','cheek','chess','chest','chief','child','china','civic','civil',
+  'claim','class','clean','clear','clerk','click','cliff','climb','clock','close','cloud','coach',
+  'coast','comet','comic','comma','coral','could','count','court','cover','crack','craft','crash',
+  'crazy','cream','creek','crime','crisp','cross','crowd','crown','crush','cubic','curve','cycle',
+  'daily','dance','dates','deals','decay','delta','dense','depot','depot','depth','derby','dirty',
+  'disco','dodge','doing','donor','doubt','dough','draft','drain','drama','drank','drawn','dream',
+  'dress','drift','drive','drove','drown','drugs','drunk','dryer','dwell','eagle','early','earth',
+  'elite','email','empty','ended','enemy','enjoy','enter','entry','equal','error','essay','event',
+  'every','exact','exist','extra','fable','faced','fact','faith','false','fancy','fault','feast',
+  'fence','fever','fiber','field','fifth','fifty','fight','final','first','fixed','flame','flash',
+  'float','flood','floor','flora','flour','fluid','focus','force','forge','found','frame','frank',
+  'fraud','fresh','front','froze','fruit','fully','funny','giant','given','gland','glass','globe',
+  'gloss','glove','going','grace','grade','grain','grand','grant','grasp','grass','grave','great',
+  'green','grief','grind','groan','gross','group','grove','grown','guard','guess','guest','guide',
+  'guild','guile','guilt','guise','gusto','habit','happy','harsh','hasn\'t','haven','heard','heart',
+  'heavy','hence','herbs','heron','honor','horse','hotel','house','human','humor','hurry','ideal',
+  'image','imply','inbox','index','indie','inner','input','inter','intro','irony','issue','joint',
+  'joker','judge','juice','jumpy','juror','karma','knack','knife','knock','known','label','lance',
+  'large','laser','later','laugh','layer','learn','lease','least','leave','legal','lemon','level',
+  'light','limit','links','liver','local','lodge','logic','login','loose','lucky','lunar','magic',
+  'major','maker','manor','march','marks','match','mayor','medal','media','mercy','merge','metal',
+  'might','mimic','minor','minus','model','money','month','moral','motto','mount','mouse','mouth',
+  'moved','movie','music','naive','named','nerve','never','night','noble','noise','north','noted',
+  'novel','nurse','nymph','oasis','ocean','offer','often','olive','onset','opera','order','other',
+  'outer','outdo','oxide','ozone','paint','panel','paper','party','pasta','patch','pause','peace',
+  'pearl','pedal','phone','photo','piano','pilot','pinch','pixel','pizza','place','plain','plane',
+  'plant','plate','plaza','plead','pluck','plumb','plume','point','polar','pound','power','press',
+  'price','pride','prime','print','prior','prize','probe','prove','proxy','pulse','punch','purse',
+  'queen','query','quest','queue','quick','quiet','quota','quote','radar','radio','raise','rally',
+  'range','rapid','ratio','reach','react','ready','realm','rebut','refer','reign','relax','rely',
+  'remix','renew','repay','reset','rider','right','rigid','risky','rival','river','robot','rocky',
+  'rouge','rough','round','route','royal','rugby','ruler','rumor','rural','sadly','saint','salon',
+  'sauce','scale','scene','scope','score','scout','screw','seize','sense','serve','setup','seven',
+  'shade','shaft','shake','shall','shame','shape','share','sharp','shelf','shell','shift','shine',
+  'shirt','shock','shoot','shore','short','shout','sight','since','sixth','sixty','skill','slate',
+  'sleep','slice','slide','small','smart','smell','smile','smoke','snake','solar','solid','solve',
+  'sorry','south','space','spare','spark','speak','spear','speed','spend','spent','spice','spike',
+  'spine','spite','split','spoke','sport','spray','squad','stack','staff','stage','stain','stale',
+  'stand','stark','start','state','stays','steam','steel','steep','steer','stick','still','stock',
+  'stone','stood','store','storm','story','strap','stray','strip','stuck','study','style','sugar',
+  'suite','sunny','super','surge','swamp','swear','sweat','sweep','sweet','swift','swing','table',
+  'taste','teach','tears','teeth','thing','think','those','three','threw','throw','thumb','tiger',
+  'timer','tired','title','token','total','touch','tough','tower','toxic','trace','track','trade',
+  'trail','train','trait','tramp','treat','trend','trial','trick','tried','troop','trout','truck',
+  'truly','trump','trunk','trust','truth','tumor','tutor','tweet','twice','twist','tying','under',
+  'unify','union','unity','until','upper','upset','urban','usage','usual','utter','vague','valid',
+  'value','valve','video','vigil','viral','virus','visit','vista','vivid','vocal','voice','voter',
+  'waste','watch','water','weary','weave','wedge','weird','wheat','where','which','while','white',
+  'whole','whose','wield','witch','woman','women','woods','world','worry','worse','worst','worth',
+  'would','wound','wrath','write','wrote','yacht','yield','young','youth','zebra','zesty'];
+
+/* ── State ── */
+let _gameMyId     = null;
+let _gameMyName   = null;
+let _gameMyColor  = null;
+let _currentGameId = null;
+let _currentGameType = null;
+let _currentGameUnsub = null;
+let _gamePendingType = null;
+let _presenceCache = {};
+let _gamesInviteUnsub = null;
+let _gamesActiveUnsub = null;
+
+function _gInit() {
+  _gameMyId    = window._socUserId || '';
+  _gameMyName  = window._socName   || 'Player';
+  _gameMyColor = window._socColor  || '#3de8a0';
+}
+
+/* ── Firebase helpers ── */
+function _gFB() { return window.__fbx || {}; }
+function _gDB() { return window.__db; }
+function _gRef(path) { return _gFB().ref(_gDB(), path); }
+function _gSet(path, val) { return _gFB().set(_gRef(path), val); }
+function _gPush(path, val) { return _gFB().push(_gRef(path), val); }
+function _gGet(path) { return _gFB().get(_gRef(path)); }
+function _gRemove(path) { return _gFB().remove(_gRef(path)); }
+function _gOnce(path, cb) {
+  _gGet(path).then(snap => cb(snap.val())).catch(() => cb(null));
+}
+function _gListen(path, cb) {
+  return _gFB().onValue(_gRef(path), snap => cb(snap.val()));
+}
+
+/* ── Panel open/close ── */
+window.openGamesPanel = function() {
+  _gInit();
+  document.getElementById('games-panel').classList.add('open');
+  _renderOnlineUsersInPanel();
+  _listenInvites();
+  _listenActiveGames();
+};
+window.closeGamesPanel = function() {
+  document.getElementById('games-panel').classList.remove('open');
+};
+
+/* ── Render online users ── */
+function _renderOnlineUsersInPanel() {
+  const presence = window._lobbyPresenceData || {};
+  const myId = _gameMyId || window._socUserId;
+  const list = document.getElementById('games-online-list');
+  if (!list) return;
+  const others = Object.entries(presence).filter(([uid]) => uid !== myId);
+  if (!others.length) {
+    list.innerHTML = '<div style="color:var(--text3);font-size:12px;font-family:var(--mono);">No other users online right now.</div>';
+    return;
+  }
+  list.innerHTML = others.map(([uid, u]) => `
+    <div style="display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;">
+      <div style="width:32px;height:32px;border-radius:50%;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;font-family:var(--mono);flex-shrink:0;${u.photo?'padding:0;overflow:hidden;':''}">
+        ${u.photo ? `<img src="${u.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` : (u.name||'?').slice(0,2).toUpperCase()}
+      </div>
+      <div style="flex:1;font-size:13px;font-weight:600;">${u.name||'User'}</div>
+      <button onclick="openGamePickerForUser('${uid}','${(u.name||'User').replace(/'/g,"\\'")}','${u.photo||''}','${u.color||'#3de8a0'}')"
+        style="background:var(--accent);color:#000;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;">
+        🎮 Challenge
+      </button>
+    </div>
+  `).join('');
+}
+
+/* ── Game picker (which game to play) ── */
+window.openGamePicker = function(gameType) {
+  _gamePendingType = gameType;
+  const presence = window._lobbyPresenceData || {};
+  const myId = _gameMyId || window._socUserId;
+  const others = Object.entries(presence).filter(([uid]) => uid !== myId);
+  if (!others.length) {
+    if(window.showToast) showToast('⚠️ No other users online right now');
+    return;
+  }
+  const modal = document.getElementById('game-picker-modal');
+  const names = {ttt:'Tic-Tac-Toe', rps:'Rock Paper Scissors', c4:'Connect Four', wg:'Word Guess'};
+  document.getElementById('game-picker-title').textContent = '🎮 ' + (names[gameType]||'Game');
+  document.getElementById('game-picker-users').innerHTML = others.map(([uid, u]) => `
+    <div onclick="_inviteUser('${uid}','${(u.name||'User').replace(/'/g,"\\'")}','${u.photo||''}','${u.color||'#3de8a0'}','${gameType}')"
+      style="display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer;">
+      <div style="width:30px;height:30px;border-radius:50%;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;font-family:var(--mono);overflow:hidden;flex-shrink:0;">
+        ${u.photo ? `<img src="${u.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` : (u.name||'?').slice(0,2).toUpperCase()}
+      </div>
+      <div style="font-size:13px;font-weight:600;">${u.name||'User'}</div>
+    </div>
+  `).join('');
+  modal.style.display = 'flex';
+};
+
+window.openGamePickerForUser = function(uid, name, photo, color) {
+  const modal = document.getElementById('game-picker-modal');
+  document.getElementById('game-picker-title').textContent = '🎮 Challenge ' + name;
+  document.getElementById('game-picker-users').innerHTML = `
+    <div style="font-size:12px;color:var(--text2);font-family:var(--mono);margin-bottom:10px;">Choose a game:</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <div onclick="_inviteUser('${uid}','${name.replace(/'/g,"\\'")}','${photo}','${color}','ttt')" class="game-tile" style="padding:12px 8px;">
+        <div class="game-tile-icon">⭕</div><div class="game-tile-name">Tic-Tac-Toe</div>
+      </div>
+      <div onclick="_inviteUser('${uid}','${name.replace(/'/g,"\\'")}','${photo}','${color}','rps')" class="game-tile" style="padding:12px 8px;">
+        <div class="game-tile-icon">✊</div><div class="game-tile-name">Rock Paper Scissors</div>
+      </div>
+      <div onclick="_inviteUser('${uid}','${name.replace(/'/g,"\\'")}','${photo}','${color}','c4')" class="game-tile" style="padding:12px 8px;">
+        <div class="game-tile-icon">🔴</div><div class="game-tile-name">Connect Four</div>
+      </div>
+      <div onclick="_inviteUser('${uid}','${name.replace(/'/g,"\\'")}','${photo}','${color}','wg')" class="game-tile" style="padding:12px 8px;">
+        <div class="game-tile-icon">📝</div><div class="game-tile-name">Word Guess</div>
+      </div>
+    </div>
+  `;
+  modal.style.display = 'flex';
+};
+
+/* ── Send invite ── */
+window._inviteUser = function(toUid, toName, toPhoto, toColor, gameType) {
+  _gInit();
+  document.getElementById('game-picker-modal').style.display = 'none';
+  closeGamesPanel();
+  const db = _gDB(); if (!db) { showToast('❌ Not connected'); return; }
+  const gameId = _gameMyId + '_' + toUid + '_' + gameType + '_' + Date.now();
+  const gameData = {
+    type: gameType,
+    host: _gameMyId, hostName: _gameMyName, hostColor: _gameMyColor,
+    guest: toUid, guestName: toName, guestColor: toColor,
+    status: 'invite', // invite → active → done
+    ts: Date.now(),
+    state: _initGameState(gameType, _gameMyId, toUid)
+  };
+  _gSet(GAMES_PATH + '/' + gameId, gameData).then(() => {
+    _currentGameId = gameId;
+    showToast('🎮 Game invite sent to ' + toName + '!');
+    // Show waiting overlay
+    _openOverlay(gameType, gameData);
+    // Badge
+    var badge = document.getElementById('soc-games-badge');
+    if (badge) { badge.style.display='flex'; badge.textContent='1'; }
+  }).catch(e => showToast('❌ Could not send invite: ' + e.message));
+};
+
+/* ── Listen for incoming invites ── */
+function _listenInvites() {
+  _gInit();
+  const db = _gDB(); if (!db) return;
+  const myId = _gameMyId;
+  if (_gamesInviteUnsub) { try { _gamesInviteUnsub(); } catch(e){} }
+  _gamesInviteUnsub = _gListen(GAMES_PATH, function(all) {
+    if (!all) { _renderInvites([]); _renderActiveGames([]); return; }
+    const invites = [], active = [];
+    Object.entries(all).forEach(([id, g]) => {
+      if (!g) return;
+      if (g.status === 'invite' && g.guest === myId) invites.push({id, ...g});
+      if (g.status === 'active' && (g.host === myId || g.guest === myId)) active.push({id, ...g});
+      // Update badge
+      if (g.status === 'active' && _currentGameId === id && _currentGameType) {
+        _updateGameState(g);
+      }
+    });
+    _renderInvites(invites);
+    _renderActiveGames(active);
+    // Badge
+    var badge = document.getElementById('soc-games-badge');
+    if (badge) {
+      var total = invites.length + active.length;
+      if (total > 0) { badge.style.display='flex'; badge.textContent=total; }
+      else { badge.style.display='none'; }
+    }
+    // Show notification for new invite
+    if (invites.length > 0 && window.showToast) {
+      // Only toast if games panel not open
+      var panel = document.getElementById('games-panel');
+      if (!panel || !panel.classList.contains('open')) {
+        var inv = invites[0];
+        showToast('🎮 ' + (inv.hostName||'Someone') + ' challenged you to ' + _gameName(inv.type) + '!');
+      }
+    }
+  });
+}
+
+function _listenActiveGames() { /* handled inside _listenInvites */ }
+
+function _renderInvites(invites) {
+  var sec = document.getElementById('games-invites-section');
+  var list = document.getElementById('games-invites-list');
+  if (!sec || !list) return;
+  if (!invites.length) { sec.style.display = 'none'; return; }
+  sec.style.display = 'block';
+  list.innerHTML = invites.map(inv => `
+    <div class="game-invite-row">
+      <div class="game-invite-av">${(inv.hostName||'?').slice(0,2).toUpperCase()}</div>
+      <div class="game-invite-info">
+        <div class="game-invite-name">${inv.hostName||'Someone'}</div>
+        <div class="game-invite-game">wants to play ${_gameName(inv.type)}</div>
+      </div>
+      <div class="game-invite-btns">
+        <button class="game-invite-accept" onclick="acceptGameInvite('${inv.id}')">Accept</button>
+        <button class="game-invite-decline" onclick="declineGameInvite('${inv.id}')">✕</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function _renderActiveGames(games) {
+  var sec = document.getElementById('games-active-section');
+  var list = document.getElementById('games-active-list');
+  if (!sec || !list) return;
+  if (!games.length) { sec.style.display = 'none'; return; }
+  sec.style.display = 'block';
+  list.innerHTML = games.map(g => {
+    var opponent = g.host === _gameMyId ? g.guestName : g.hostName;
+    return `
+      <div onclick="rejoinGame('${g.id}')" style="display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid rgba(61,232,160,0.3);border-radius:10px;padding:10px 12px;cursor:pointer;">
+        <span style="font-size:20px;">${_gameIcon(g.type)}</span>
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:600;">${_gameName(g.type)} vs ${opponent}</div>
+          <div style="font-size:11px;color:var(--accent);font-family:var(--mono);">● Active — Tap to rejoin</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+window.acceptGameInvite = function(gameId) {
+  _gInit();
+  _gGet(GAMES_PATH + '/' + gameId).then(snap => {
+    var g = snap.val(); if (!g) return;
+    _gSet(GAMES_PATH + '/' + gameId + '/status', 'active').then(() => {
+      _currentGameId = gameId;
+      closeGamesPanel();
+      _openOverlay(g.type, {...g, status:'active'});
+      _listenGame(gameId, g.type);
+    });
+  });
+};
+window.declineGameInvite = function(gameId) {
+  _gRemove(GAMES_PATH + '/' + gameId);
+  if(window.showToast) showToast('Game declined');
+};
+window.rejoinGame = function(gameId) {
+  _gGet(GAMES_PATH + '/' + gameId).then(snap => {
+    var g = snap.val(); if (!g) return;
+    _currentGameId = gameId;
+    closeGamesPanel();
+    _openOverlay(g.type, g);
+    _listenGame(gameId, g.type);
+  });
+};
+
+/* ── Overlay open/close ── */
+function _openOverlay(gameType, gameData) {
+  _currentGameType = gameType;
+  _currentGameId = _currentGameId || (gameData && gameData.id);
+  var ov = document.getElementById('game-overlay');
+  var title = document.getElementById('game-overlay-title');
+  if (title) title.textContent = _gameIcon(gameType) + ' ' + _gameName(gameType);
+  if (ov) ov.classList.add('open');
+  _renderGame(gameType, gameData);
+  if (gameData && gameData.status === 'active') {
+    _listenGame(_currentGameId, gameType);
+  } else if (gameData && gameData.status === 'invite' && gameData.host === _gameMyId) {
+    // Waiting for opponent to accept
+    _listenGame(_currentGameId, gameType);
+  }
+}
+
+window.closeGameOverlay = function() {
+  var ov = document.getElementById('game-overlay');
+  if (ov) ov.classList.remove('open');
+  if (_currentGameUnsub) { try { _currentGameUnsub(); } catch(e){} _currentGameUnsub = null; }
+  _currentGameId = null;
+  _currentGameType = null;
+};
+
+/* ── Listen to live game updates ── */
+function _listenGame(gameId, gameType) {
+  if (_currentGameUnsub) { try { _currentGameUnsub(); } catch(e){} }
+  _currentGameUnsub = _gListen(GAMES_PATH + '/' + gameId, function(g) {
+    if (!g) { closeGameOverlay(); return; }
+    _renderGame(gameType, g);
+  });
+}
+
+function _updateGameState(g) {
+  _renderGame(g.type, g);
+}
+
+/* ── Init game states ── */
+function _initGameState(type, hostId, guestId) {
+  if (type === 'ttt') return { board: Array(9).fill(null), turn: hostId, winner: null };
+  if (type === 'rps') return { round: 1, hostChoice: null, guestChoice: null, hostScore: 0, guestScore: 0, result: null };
+  if (type === 'c4') return { board: Array(42).fill(null), turn: hostId, winner: null };
+  if (type === 'wg') {
+    var word = WORDS_5[Math.floor(Math.random() * WORDS_5.length)];
+    return { word: word, hostGuesses: [], guestGuesses: [], hostDone: false, guestDone: false, winner: null };
+  }
+  return {};
+}
+
+/* ── Render current game ── */
+function _renderGame(gameType, gameData) {
+  var body = document.getElementById('game-overlay-body');
+  var status = document.getElementById('game-overlay-status');
+  if (!body) return;
+  var g = gameData || {};
+  var s = g.state || {};
+  var amHost  = _gameMyId === g.host;
+  var myRole  = amHost ? 'host' : 'guest';
+  var myName  = amHost ? g.hostName : g.guestName;
+  var oppName = amHost ? g.guestName : g.hostName;
+
+  if (status) {
+    status.textContent = 'vs ' + (oppName || '?');
+  }
+
+  if (g.status === 'invite') {
+    if (amHost) {
+      body.innerHTML = `<div class="game-waiting">
+        <div class="game-waiting-spinner"></div>
+        <div>Waiting for ${oppName||'opponent'} to accept...</div>
+        <button onclick="_cancelGame('${_currentGameId}')" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 18px;color:var(--red);cursor:pointer;font-size:13px;margin-top:8px;">Cancel Invite</button>
+      </div>`;
+    } else {
+      body.innerHTML = `<div class="game-waiting">
+        <div style="font-size:32px;">${_gameIcon(gameType)}</div>
+        <div>${g.hostName} wants to play ${_gameName(gameType)}!</div>
+        <button onclick="acceptGameInvite('${_currentGameId}')" style="background:var(--accent);color:#000;border:none;border-radius:10px;padding:12px 28px;font-size:14px;font-weight:700;cursor:pointer;">Accept &amp; Play!</button>
+      </div>`;
+    }
+    return;
+  }
+
+  // Active game render
+  if (gameType === 'ttt') _renderTTT(body, g, amHost);
+  else if (gameType === 'rps') _renderRPS(body, g, amHost);
+  else if (gameType === 'c4') _renderC4(body, g, amHost);
+  else if (gameType === 'wg') _renderWG(body, g, amHost);
+}
+
+window._cancelGame = function(gameId) {
+  _gRemove(GAMES_PATH + '/' + gameId);
+  closeGameOverlay();
+};
+
+/* ════════════════════════════
+   TIC TAC TOE
+════════════════════════════ */
+function _renderTTT(body, g, amHost) {
+  var s = g.state || {};
+  var board = s.board || Array(9).fill(null);
+  var myMark = amHost ? '❌' : '⭕';
+  var oppMark = amHost ? '⭕' : '❌';
+  var myId = _gameMyId;
+  var isMyTurn = s.turn === myId && !s.winner && g.status === 'active';
+  var winCells = _tttWinCells(board);
+
+  var statusText = s.winner === 'draw' ? "It's a draw! 🤝"
+    : s.winner === myId ? '🎉 You win!'
+    : s.winner && s.winner !== myId ? oppName(g, amHost) + ' wins!'
+    : isMyTurn ? 'Your turn (' + myMark + ')' : oppName(g, amHost) + "'s turn...";
+
+  body.innerHTML = `<div class="ttt-wrap">
+    <div class="ttt-status">${statusText}</div>
+    <div class="ttt-board" id="ttt-board">
+      ${board.map((cell, i) => {
+        var mark = cell === g.host ? '❌' : cell === g.guest ? '⭕' : '';
+        var cls = 'ttt-cell' + (cell ? ' taken' : '') + (winCells.includes(i) ? ' win-cell' : '');
+        var click = (!cell && isMyTurn) ? `onclick="_tttMove(${i})"` : '';
+        return `<div class="${cls}" ${click}>${mark}</div>`;
+      }).join('')}
+    </div>
+    ${s.winner ? `<button onclick="_gameRematch('${_currentGameId}','ttt')" style="background:var(--accent);color:#000;border:none;border-radius:10px;padding:10px 28px;font-size:14px;font-weight:700;cursor:pointer;">🔄 Rematch</button>` : ''}
+    <div style="font-size:11px;color:var(--text3);font-family:var(--mono);">❌ = ${g.hostName} &nbsp; ⭕ = ${g.guestName}</div>
+  </div>`;
+}
+
+window._tttMove = function(idx) {
+  if (!_currentGameId) return;
+  _gOnce(GAMES_PATH + '/' + _currentGameId, function(g) {
+    if (!g || g.status !== 'active') return;
+    var s = g.state;
+    if (s.turn !== _gameMyId || s.board[idx] || s.winner) return;
+    var board = [...s.board]; board[idx] = _gameMyId;
+    var winner = _checkTTT(board, g.host, g.guest);
+    _gSet(GAMES_PATH + '/' + _currentGameId + '/state', {
+      ...s, board,
+      turn: s.turn === g.host ? g.guest : g.host,
+      winner: winner
+    });
+  });
+};
+
+function _tttWinCells(board) {
+  var lines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+  for (var l of lines) {
+    if (board[l[0]] && board[l[0]] === board[l[1]] && board[l[0]] === board[l[2]]) return l;
+  }
+  return [];
+}
+
+function _checkTTT(board, host, guest) {
+  var lines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+  for (var l of lines) {
+    if (board[l[0]] && board[l[0]] === board[l[1]] && board[l[0]] === board[l[2]]) return board[l[0]];
+  }
+  if (board.every(c => c)) return 'draw';
+  return null;
+}
+
+/* ════════════════════════════
+   ROCK PAPER SCISSORS
+════════════════════════════ */
+function _renderRPS(body, g, amHost) {
+  var s = g.state || {};
+  var myRole = amHost ? 'host' : 'guest';
+  var myChoice = amHost ? s.hostChoice : s.guestChoice;
+  var oppChoice = amHost ? s.guestChoice : s.hostChoice;
+  var myScore  = amHost ? (s.hostScore||0) : (s.guestScore||0);
+  var oppScore = amHost ? (s.guestScore||0) : (s.hostScore||0);
+  var bothChose = s.hostChoice && s.guestChoice;
+  var emojis = { rock: '✊', paper: '🖐️', scissors: '✌️' };
+  var result = bothChose ? _rpsResult(s.hostChoice, s.guestChoice, amHost) : null;
+  var winner = (s.hostScore||0) >= 3 ? g.hostName : (s.guestScore||0) >= 3 ? g.guestName : null;
+
+  body.innerHTML = `<div class="rps-wrap">
+    <div class="rps-score">${g.hostName}: ${s.hostScore||0} &nbsp;|&nbsp; ${g.guestName}: ${s.guestScore||0} &nbsp;—&nbsp; Best of 5</div>
+    ${winner ? `<div class="rps-status" style="font-size:18px;">${winner === (amHost?g.hostName:g.guestName) ? '🎉 You win the match!' : winner + ' wins the match!'}</div>` : ''}
+    ${!winner && bothChose ? `
+      <div class="rps-result-wrap">
+        <div>${emojis[s.hostChoice]||'?'}</div>
+        <div class="rps-vs">vs</div>
+        <div>${emojis[s.guestChoice]||'?'}</div>
+      </div>
+      <div class="rps-status">${result}</div>
+      <button class="rps-play-again" onclick="_rpsNextRound('${_currentGameId}')">Next Round →</button>
+    ` : ''}
+    ${!winner && !bothChose ? `
+      <div class="rps-status">${myChoice ? 'Waiting for opponent...' : 'Round ' + (s.round||1) + ' — Choose!'}</div>
+      <div class="rps-choices">
+        ${['rock','paper','scissors'].map(c => `
+          <button class="rps-btn ${myChoice===c?'selected':''}" onclick="_rpsPick('${c}')" ${myChoice?'disabled':''}>
+            ${emojis[c]}
+          </button>
+        `).join('')}
+      </div>
+    ` : ''}
+    ${winner ? `<button onclick="_gameRematch('${_currentGameId}','rps')" style="background:var(--accent);color:#000;border:none;border-radius:10px;padding:10px 28px;font-size:14px;font-weight:700;cursor:pointer;">🔄 Play Again</button>` : ''}
+  </div>`;
+}
+
+window._rpsPick = function(choice) {
+  if (!_currentGameId) return;
+  _gOnce(GAMES_PATH + '/' + _currentGameId, function(g) {
+    if (!g) return;
+    var amHost = g.host === _gameMyId;
+    var s = g.state;
+    if ((amHost && s.hostChoice) || (!amHost && s.guestChoice)) return;
+    var update = amHost ? { hostChoice: choice } : { guestChoice: choice };
+    var newState = {...s, ...update};
+    // Check if both picked
+    if (newState.hostChoice && newState.guestChoice) {
+      var winner = _rpsWinner(newState.hostChoice, newState.guestChoice);
+      if (winner === 'host') newState.hostScore = (s.hostScore||0) + 1;
+      else if (winner === 'guest') newState.guestScore = (s.guestScore||0) + 1;
+    }
+    _gSet(GAMES_PATH + '/' + _currentGameId + '/state', newState);
+  });
+};
+
+window._rpsNextRound = function(gameId) {
+  _gOnce(GAMES_PATH + '/' + gameId, function(g) {
+    if (!g) return;
+    var s = g.state;
+    if ((s.hostScore||0) >= 3 || (s.guestScore||0) >= 3) return; // match over
+    _gSet(GAMES_PATH + '/' + gameId + '/state', {
+      ...s, round: (s.round||1)+1, hostChoice: null, guestChoice: null
+    });
+  });
+};
+
+function _rpsWinner(h, gr) {
+  if (h === gr) return 'draw';
+  if ((h==='rock'&&gr==='scissors')||(h==='scissors'&&gr==='paper')||(h==='paper'&&gr==='rock')) return 'host';
+  return 'guest';
+}
+function _rpsResult(h, gr, amHost) {
+  var w = _rpsWinner(h, gr);
+  if (w === 'draw') return "It's a draw! 🤝";
+  if ((w==='host'&&amHost)||(w==='guest'&&!amHost)) return '🎉 You win this round!';
+  return '😅 Opponent wins this round';
+}
+
+/* ════════════════════════════
+   CONNECT FOUR
+════════════════════════════ */
+function _renderC4(body, g, amHost) {
+  var s = g.state || {};
+  var board = s.board || Array(42).fill(null);
+  var myColor  = amHost ? 'p1' : 'p2';
+  var oppColor = amHost ? 'p2' : 'p1';
+  var isMyTurn = s.turn === _gameMyId && !s.winner && g.status === 'active';
+  var winCells  = s.winCells || [];
+  var myColorEmoji  = amHost ? '🔴' : '🔵';
+  var oppColorEmoji = amHost ? '🔵' : '🔴';
+
+  var statusText = s.winner === 'draw' ? "It's a draw! 🤝"
+    : s.winner === _gameMyId ? '🎉 You win!'
+    : s.winner && s.winner !== _gameMyId ? oppName(g, amHost) + ' wins!'
+    : isMyTurn ? 'Your turn (' + myColorEmoji + ')' : oppName(g, amHost) + "'s turn...";
+
+  body.innerHTML = `<div class="c4-wrap">
+    <div class="c4-status">${statusText}</div>
+    <div class="c4-col-btn-row">
+      ${Array(7).fill(0).map((_,c) => `<button class="c4-col-btn" onclick="_c4Drop(${c})" ${!isMyTurn?'disabled':''}>▼</button>`).join('')}
+    </div>
+    <div class="c4-board">
+      ${board.map((cell, i) => {
+        var cls = 'c4-cell' + (cell===g.host?' p1':cell===g.guest?' p2':'') + (winCells.includes(i)?' win-cell':'');
+        return `<div class="${cls}"></div>`;
+      }).join('')}
+    </div>
+    <div style="font-size:11px;color:var(--text3);font-family:var(--mono);">🔴 = ${g.hostName} &nbsp; 🔵 = ${g.guestName}</div>
+    ${s.winner ? `<button onclick="_gameRematch('${_currentGameId}','c4')" style="background:var(--accent);color:#000;border:none;border-radius:10px;padding:10px 28px;font-size:14px;font-weight:700;cursor:pointer;">🔄 Rematch</button>` : ''}
+  </div>`;
+}
+
+window._c4Drop = function(col) {
+  if (!_currentGameId) return;
+  _gOnce(GAMES_PATH + '/' + _currentGameId, function(g) {
+    if (!g || g.status !== 'active') return;
+    var s = g.state; if (s.turn !== _gameMyId || s.winner) return;
+    var board = [...s.board];
+    // Find lowest empty row in col
+    var row = -1;
+    for (var r = 5; r >= 0; r--) { if (!board[r*7+col]) { row = r; break; } }
+    if (row < 0) return; // column full
+    board[row*7+col] = _gameMyId;
+    var winner = _checkC4(board, g.host, g.guest);
+    var winCells = winner && winner !== 'draw' ? _c4WinCells(board, g.host, g.guest) : [];
+    _gSet(GAMES_PATH + '/' + _currentGameId + '/state', {
+      ...s, board,
+      turn: s.turn === g.host ? g.guest : g.host,
+      winner: winner, winCells: winCells
+    });
+  });
+};
+
+function _checkC4(board, host, guest) {
+  var dirs = [[1,0],[0,1],[1,1],[1,-1]];
+  for (var r = 0; r < 6; r++) for (var c = 0; c < 7; c++) {
+    var cell = board[r*7+c]; if (!cell) continue;
+    for (var [dr,dc] of dirs) {
+      var count = 1;
+      for (var k = 1; k < 4; k++) {
+        var nr = r+dr*k, nc = c+dc*k;
+        if (nr<0||nr>=6||nc<0||nc>=7||board[nr*7+nc]!==cell) break;
+        count++;
+      }
+      if (count >= 4) return cell;
+    }
+  }
+  if (board.every(c => c)) return 'draw';
+  return null;
+}
+
+function _c4WinCells(board, host, guest) {
+  var dirs = [[1,0],[0,1],[1,1],[1,-1]];
+  for (var r = 0; r < 6; r++) for (var c2 = 0; c2 < 7; c2++) {
+    var cell = board[r*7+c2]; if (!cell) continue;
+    for (var [dr,dc] of dirs) {
+      var cells = [r*7+c2];
+      for (var k = 1; k < 4; k++) {
+        var nr = r+dr*k, nc = c2+dc*k;
+        if (nr<0||nr>=6||nc<0||nc>=7||board[nr*7+nc]!==cell) break;
+        cells.push(nr*7+nc);
+      }
+      if (cells.length >= 4) return cells;
+    }
+  }
+  return [];
+}
+
+/* ════════════════════════════
+   WORD GUESS (Wordle vs Friend)
+════════════════════════════ */
+var _wgCurrentGuess = '';
+var _wgKeyboardMap = {};
+
+function _renderWG(body, g, amHost) {
+  var s = g.state || {};
+  var myGuesses  = amHost ? (s.hostGuesses||[]) : (s.guestGuesses||[]);
+  var oppGuesses = amHost ? (s.guestGuesses||[]) : (s.hostGuesses||[]);
+  var word       = s.word || '?????';
+  var myDone     = amHost ? s.hostDone : s.guestDone;
+  var maxRows    = 6;
+  var isMyTurn   = !myDone && g.status === 'active';
+
+  // Build status text
+  var statusText = '';
+  if (s.winner === _gameMyId) statusText = '🎉 You guessed it first!';
+  else if (s.winner && s.winner !== _gameMyId) statusText = oppName(g,amHost) + ' got it first! Word: ' + word.toUpperCase();
+  else if (s.winner === 'draw') statusText = 'Tie! Word was: ' + word.toUpperCase();
+  else if (myDone && !s.winner) statusText = 'Waiting for ' + oppName(g,amHost) + '...';
+  else statusText = 'Guess the 5-letter word! (' + myGuesses.length + '/6)';
+
+  // Render grid rows
+  var rows = '';
+  for (var r = 0; r < maxRows; r++) {
+    var guess = myGuesses[r];
+    var isCurrent = r === myGuesses.length && isMyTurn;
+    rows += '<div class="wg-row">';
+    for (var c = 0; c < 5; c++) {
+      var letter = guess ? guess[c] : (isCurrent ? (_wgCurrentGuess[c]||'') : '');
+      var cls = 'wg-tile';
+      if (guess) {
+        var result = _wgEval(guess, word);
+        if (result[c] === 'correct') cls += ' correct';
+        else if (result[c] === 'present') cls += ' present';
+        else cls += ' absent';
+      } else if (isCurrent && letter) {
+        cls += ' current-input';
+      }
+      rows += `<div class="${cls}">${letter}</div>`;
+    }
+    rows += '</div>';
+  }
+
+  // Keyboard
+  var kbRows = [
+    ['Q','W','E','R','T','Y','U','I','O','P'],
+    ['A','S','D','F','G','H','J','K','L'],
+    ['ENTER','Z','X','C','V','B','N','M','⌫']
+  ];
+  // Build key color map
+  _wgKeyboardMap = {};
+  myGuesses.forEach(guess => {
+    var res = _wgEval(guess, word);
+    for (var i = 0; i < 5; i++) {
+      var k = guess[i].toUpperCase();
+      var prev = _wgKeyboardMap[k];
+      if (res[i]==='correct') _wgKeyboardMap[k] = 'correct';
+      else if (res[i]==='present' && prev!=='correct') _wgKeyboardMap[k] = 'present';
+      else if (!prev) _wgKeyboardMap[k] = 'absent';
+    }
+  });
+
+  var keyboard = kbRows.map(row =>
+    '<div class="wg-kb-row">' +
+    row.map(k => {
+      var kClass = 'wg-key' + (k.length>1?' wide':'') + (_wgKeyboardMap[k]?' '+_wgKeyboardMap[k]:'');
+      return `<button class="${kClass}" onclick="_wgKey('${k}')" ${!isMyTurn?'disabled':''}>${k}</button>`;
+    }).join('') + '</div>'
+  ).join('');
+
+  body.innerHTML = `<div class="wg-wrap">
+    <div class="wg-status">${statusText}</div>
+    <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;justify-content:center;">
+      <div>
+        <div style="font-size:11px;color:var(--accent);font-family:var(--mono);text-align:center;margin-bottom:6px;">YOUR BOARD</div>
+        <div class="wg-grid" id="wg-grid">${rows}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text3);font-family:var(--mono);text-align:center;margin-bottom:6px;">${oppName(g,amHost).toUpperCase()}</div>
+        <div style="font-size:12px;color:var(--text2);font-family:var(--mono);text-align:center;">${oppGuesses.length}/6 guesses</div>
+      </div>
+    </div>
+    ${isMyTurn ? `<div class="wg-keyboard" id="wg-keyboard">${keyboard}</div>` : ''}
+    ${s.winner ? `<button onclick="_gameRematch('${_currentGameId}','wg')" style="background:var(--accent);color:#000;border:none;border-radius:10px;padding:10px 28px;font-size:14px;font-weight:700;cursor:pointer;">🔄 New Word</button>` : ''}
+  </div>`;
+}
+
+window._wgKey = function(key) {
+  if (key === '⌫') { _wgCurrentGuess = _wgCurrentGuess.slice(0,-1); }
+  else if (key === 'ENTER') { _wgSubmit(); return; }
+  else if (_wgCurrentGuess.length < 5) { _wgCurrentGuess += key.toLowerCase(); }
+  // Re-render just the current row
+  var grid = document.getElementById('wg-grid');
+  if (!grid) return;
+  var rows2 = grid.querySelectorAll('.wg-row');
+  // Find current row index from game state
+  _gOnce(GAMES_PATH + '/' + _currentGameId, function(g) {
+    if (!g) return;
+    var amHost2 = g.host === _gameMyId;
+    var myGuesses = amHost2 ? (g.state.hostGuesses||[]) : (g.state.guestGuesses||[]);
+    var currentRow = rows2[myGuesses.length];
+    if (!currentRow) return;
+    var tiles = currentRow.querySelectorAll('.wg-tile');
+    for (var i = 0; i < 5; i++) {
+      tiles[i].textContent = _wgCurrentGuess[i] || '';
+      tiles[i].className = 'wg-tile' + (_wgCurrentGuess[i]?' current-input':'');
+    }
+  });
+};
+
+window._wgSubmit = function() {
+  if (_wgCurrentGuess.length !== 5) { showToast('⚠️ 5 letters required'); return; }
+  if (!_currentGameId) return;
+  _gOnce(GAMES_PATH + '/' + _currentGameId, function(g) {
+    if (!g) return;
+    var amHost = g.host === _gameMyId;
+    var s = g.state;
+    var myGuesses = amHost ? [...(s.hostGuesses||[])] : [...(s.guestGuesses||[])];
+    if (myGuesses.length >= 6) return;
+    myGuesses.push(_wgCurrentGuess);
+    _wgCurrentGuess = '';
+    var correct = _wgCurrentGuess === s.word || myGuesses[myGuesses.length-1] === s.word;
+    var done = correct || myGuesses.length >= 6;
+    var stateUpdate = amHost
+      ? { hostGuesses: myGuesses, hostDone: done }
+      : { guestGuesses: myGuesses, guestDone: done };
+    var newState = {...s, ...stateUpdate};
+    // Check winner
+    if (done) {
+      var oppDone = amHost ? s.guestDone : s.hostDone;
+      if (correct) {
+        if (!oppDone) { newState.winner = _gameMyId; }
+        else { newState.winner = 'draw'; } // both got it
+      } else if (myGuesses.length >= 6 && oppDone) {
+        newState.winner = 'draw';
+      }
+    }
+    _gSet(GAMES_PATH + '/' + _currentGameId + '/state', newState);
+  });
+};
+
+function _wgEval(guess, word) {
+  var res = Array(5).fill('absent');
+  var wordArr = word.split('');
+  var guessArr = guess.split('');
+  // First pass: correct
+  for (var i = 0; i < 5; i++) {
+    if (guessArr[i] === wordArr[i]) { res[i] = 'correct'; wordArr[i] = null; guessArr[i] = null; }
+  }
+  // Second pass: present
+  for (var i = 0; i < 5; i++) {
+    if (guessArr[i] === null) continue;
+    var idx = wordArr.indexOf(guessArr[i]);
+    if (idx !== -1) { res[i] = 'present'; wordArr[idx] = null; }
+  }
+  return res;
+}
+
+/* ── Keyboard input for Word Guess ── */
+document.addEventListener('keydown', function(e) {
+  if (!_currentGameType || _currentGameType !== 'wg') return;
+  var ov = document.getElementById('game-overlay');
+  if (!ov || !ov.classList.contains('open')) return;
+  if (e.key === 'Backspace') { _wgKey('⌫'); }
+  else if (e.key === 'Enter') { _wgKey('ENTER'); }
+  else if (/^[a-zA-Z]$/.test(e.key)) { _wgKey(e.key.toUpperCase()); }
+});
+
+/* ════════════════════════════
+   REMATCH
+════════════════════════════ */
+window._gameRematch = function(gameId, type) {
+  _gOnce(GAMES_PATH + '/' + gameId, function(g) {
+    if (!g) return;
+    _gSet(GAMES_PATH + '/' + gameId + '/state', _initGameState(type, g.host, g.guest));
+    _gSet(GAMES_PATH + '/' + gameId + '/status', 'active');
+  });
+};
+
+/* ── Helpers ── */
+function oppName(g, amHost) { return amHost ? (g.guestName||'Opponent') : (g.hostName||'Opponent'); }
+function _gameName(t) { return {ttt:'Tic-Tac-Toe',rps:'Rock Paper Scissors',c4:'Connect Four',wg:'Word Guess'}[t]||t; }
+function _gameIcon(t) { return {ttt:'⭕',rps:'✊',c4:'🔴',wg:'📝'}[t]||'🎮'; }
+
+/* ── Hook into lobby presence to refresh online list in panel ── */
+var _origLobbyPresence = null;
+var _presencePatchApplied = false;
+function _patchPresence() {
+  if (_presencePatchApplied) return;
+  _presencePatchApplied = true;
+  // Patch socRenderUsers or presence listener to update games panel
+  var _origRU = window.socRenderUsers;
+  window.socRenderUsers = function(data) {
+    window._lobbyPresenceData = data;
+    if (_origRU) _origRU(data);
+    // If games panel open, refresh
+    var panel = document.getElementById('games-panel');
+    if (panel && panel.classList.contains('open')) _renderOnlineUsersInPanel();
+  };
+}
+
+window.addEventListener('load', function() {
+  setTimeout(function() {
+    _patchPresence();
+    // Start listening for invites when user is in lobby
+    var _origOSA = window.openSocialArea;
+    window.openSocialArea = function() {
+      if (_origOSA) _origOSA();
+      setTimeout(function() {
+        _gInit();
+        if (_gameMyId) _listenInvites();
+      }, 800);
+    };
+  }, 1500);
+});
+
+console.log('%c 🎮 SecretLine Mini Games loaded ✓', 'color:#3de8a0;font-weight:bold;font-size:12px;background:#0b0f14;padding:4px 8px;border-radius:4px;');
+
+})();
+
 </script>
 
 </body>
