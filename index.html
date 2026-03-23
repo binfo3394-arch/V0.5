@@ -18805,7 +18805,7 @@ console.log('%c Auth Gate v2 loaded \u2713', 'color:#3de8a0;font-weight:bold;fon
 //  Realtime multiplayer via Firebase social/games/{gameId}
 // ═══════════════════════════════════════════════════════════
 (function() {
-'use strict';
+/* no strict mode — needed for window property bridges */
 
 /* ── Constants ── */
 const GAMES_PATH = 'social/games';
@@ -18873,12 +18873,12 @@ const WORDS_5 = ['about','above','abuse','actor','acute','admit','adopt','adult'
 let _gameMyId     = null;
 let _gameMyName   = null;
 let _gameMyColor  = null;
-let _currentGameId = null;
-let _currentGameType = null;
-let _currentGameUnsub = null;
-// Expose to outer scope so games v2 can access
-Object.defineProperty(window, '_currentGameType', { get: function(){ return _currentGameType; }, set: function(v){ _currentGameType = v; } });
-Object.defineProperty(window, '_currentGameId',   { get: function(){ return _currentGameId;   }, set: function(v){ _currentGameId   = v; } });
+var _currentGameId = null;
+var _currentGameType = null;
+var _currentGameUnsub = null;
+// Expose directly to window so games v2 IIFE can access
+window._currentGameId   = _currentGameId;
+window._currentGameType = _currentGameType;
 let _gamePendingType = null;
 let _presenceCache = {};
 let _gamesInviteUnsub = null;
@@ -19673,7 +19673,7 @@ function _wgEval(guess, word) {
 
 /* ── Keyboard input for Word Guess ── */
 document.addEventListener('keydown', function(e) {
-  if (!_currentGameType || _currentGameType !== 'wg') return;
+  if (!window._currentGameType || window._currentGameType !== 'wg') return;
   var ov = document.getElementById('game-overlay');
   if (!ov || !ov.classList.contains('open')) return;
   if (e.key === 'Backspace') { _wgKey('⌫'); }
@@ -19792,7 +19792,6 @@ console.log('%c 🎮 SecretLine Mini Games loaded ✓', 'color:#3de8a0;font-weig
 //  SECRETLINE GAMES v2 — Online Users Panel + Single Player + New Games
 // ═══════════════════════════════════════════════════════════
 (function() {
-'use strict';
 
 /* ─── Online Users Panel ──────────────────────────────── */
 window.openOnlinePanel = function() {
@@ -19926,8 +19925,8 @@ window.launchGame = function(gameType) {
 /* ─── Single Player Launcher ──────────────────────────── */
 window.openSinglePlayer = function(gameType) {
   closeGamesPanel();
-  _currentGameType = gameType;
-  _currentGameId = 'sp_' + gameType;
+  window._currentGameType = gameType;
+  window._currentGameId = 'sp_' + gameType;
   var ov = document.getElementById('game-overlay');
   var title = document.getElementById('game-overlay-title');
   var icons = {ttt:'⭕',rps:'✊',c4:'🔴',wg:'📝',snake:'🐍',memory:'🃏',g2048:'🔢',ludo:'🎲',carrom:'🎯',checkers:'♟️',minesweeper:'💣',flappy:'🐦'};
@@ -20210,7 +20209,7 @@ function _launchSnake(body) {
   };
 
   document.addEventListener('keydown',function skKey(e){
-    if(_currentGameType!=='snake')return document.removeEventListener('keydown',skKey);
+    if(window._currentGameType!=='snake')return document.removeEventListener('keydown',skKey);
     var map={ArrowUp:'U',ArrowDown:'D',ArrowLeft:'L',ArrowRight:'R'};
     if(map[e.key]){window.snakeDpad(map[e.key]);e.preventDefault();}
   });
@@ -20333,7 +20332,7 @@ function _launch2048(body) {
   }
 
   document.addEventListener('keydown',function g2kKey(e){
-    if(_currentGameType!=='g2048')return document.removeEventListener('keydown',g2kKey);
+    if(window._currentGameType!=='g2048')return document.removeEventListener('keydown',g2kKey);
     var map={ArrowLeft:'L',ArrowRight:'R',ArrowUp:'U',ArrowDown:'D'};
     if(map[e.key]){move(map[e.key]);e.preventDefault();}
   });
@@ -20349,6 +20348,8 @@ window.closeGameOverlay = function() {
   if (_snakeInterval)  { clearInterval(_snakeInterval);  _snakeInterval  = null; }
   if (_flappyRAF)      { cancelAnimationFrame(_flappyRAF); _flappyRAF = null; }
   if (_ludoAITimer)    { clearTimeout(_ludoAITimer);     _ludoAITimer    = null; }
+  window._currentGameType = null;
+  window._currentGameId   = null;
   if (_origCloseGameOverlay) _origCloseGameOverlay();
 };
 
@@ -21233,7 +21234,7 @@ function _launchFlappy(body) {
   canvas.addEventListener('click', jump);
   canvas.addEventListener('touchstart', function(e){ jump(); e.preventDefault(); }, {passive:false});
   document.addEventListener('keydown', function flapKey(e) {
-    if (_currentGameType !== 'flappy') return document.removeEventListener('keydown', flapKey);
+    if (window._currentGameType !== 'flappy') return document.removeEventListener('keydown', flapKey);
     if (e.code==='Space'||e.key===' ') { jump(); e.preventDefault(); }
   });
 
