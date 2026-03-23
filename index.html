@@ -14728,7 +14728,7 @@ window.dmOnInput = function(ta) {
   ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
 
   const btn = document.getElementById('dm-send-btn');
-  if (btn) btn.disabled = !ta.value.trim();
+  if (btn) btn.disabled = !ta.value.trim() && !(window._dmPendingFiles && window._dmPendingFiles.length > 0);
 
   // Typing indicator
   if (!window.__db || !window.__fbx || !dmRoomId) return;
@@ -16960,6 +16960,10 @@ function dmUpdatePreviewStrip() {
   if (!strip) return;
   strip.innerHTML = '';
   strip.style.display = _dmPendingFiles.length ? 'flex' : 'none';
+  // Enable/disable send button based on files + text
+  const btn = document.getElementById('dm-send-btn');
+  const ta  = document.getElementById('dm-textarea');
+  if (btn) btn.disabled = !_dmPendingFiles.length && !(ta && ta.value.trim());
   _dmPendingFiles.forEach((f, i) => {
     const item = document.createElement('div');
     item.className = 'dm-prev-item';
@@ -18695,25 +18699,25 @@ console.log('%c Auth Gate v2 loaded \u2713', 'color:#3de8a0;font-weight:bold;fon
       <!-- Game selection grid -->
       <div class="games-invites-label">🎲 Pick a Game</div>
       <div class="games-grid">
-        <div class="game-tile" onclick="openGamePicker('ttt')">
+        <div class="game-tile" onclick="launchGame('ttt')">
           <div class="game-tile-icon">⭕</div>
           <div class="game-tile-name">Tic-Tac-Toe</div>
-          <div class="game-tile-desc">2 players</div>
+          <div class="game-tile-desc">vs AI or friend</div>
         </div>
-        <div class="game-tile" onclick="openGamePicker('rps')">
+        <div class="game-tile" onclick="launchGame('rps')">
           <div class="game-tile-icon">✊</div>
           <div class="game-tile-name">Rock Paper Scissors</div>
-          <div class="game-tile-desc">Best of 5</div>
+          <div class="game-tile-desc">vs AI or friend</div>
         </div>
-        <div class="game-tile" onclick="openGamePicker('c4')">
+        <div class="game-tile" onclick="launchGame('c4')">
           <div class="game-tile-icon">🔴</div>
           <div class="game-tile-name">Connect Four</div>
-          <div class="game-tile-desc">2 players</div>
+          <div class="game-tile-desc">vs AI or friend</div>
         </div>
-        <div class="game-tile" onclick="openGamePicker('wg')">
+        <div class="game-tile" onclick="launchGame('wg')">
           <div class="game-tile-icon">📝</div>
           <div class="game-tile-name">Word Guess</div>
-          <div class="game-tile-desc">Wordle vs friend</div>
+          <div class="game-tile-desc">vs AI or friend</div>
         </div>
       </div>
 
@@ -18827,6 +18831,9 @@ let _gameMyColor  = null;
 let _currentGameId = null;
 let _currentGameType = null;
 let _currentGameUnsub = null;
+// Expose to outer scope so games v2 can access
+Object.defineProperty(window, '_currentGameType', { get: function(){ return _currentGameType; }, set: function(v){ _currentGameType = v; } });
+Object.defineProperty(window, '_currentGameId',   { get: function(){ return _currentGameId;   }, set: function(v){ _currentGameId   = v; } });
 let _gamePendingType = null;
 let _presenceCache = {};
 let _gamesInviteUnsub = null;
@@ -19829,46 +19836,46 @@ function _updateOnlineBadge(count) {
   };
 })();
 
-/* ─── Games Panel: Single Player Mode toggle ──────────── */
-// Patch openGamesPanel to add mode selector
+/* ─── Games Panel: Mode selector (clean version) ─────── */
+var _currentGameMode = 'single'; // Default: single player
+
+// Inject mode selector into games panel on open
 var _gOrigOpenGamesPanel = window.openGamesPanel;
 window.openGamesPanel = function() {
   if (_gOrigOpenGamesPanel) _gOrigOpenGamesPanel();
-  // Inject mode selector if not already there
   setTimeout(function() {
     var body = document.querySelector('.games-body');
     if (!body || document.getElementById('games-mode-selector')) return;
     var modeDiv = document.createElement('div');
     modeDiv.className = 'game-mode-selector';
     modeDiv.id = 'games-mode-selector';
-    modeDiv.innerHTML = `
-      <button class="game-mode-btn active" id="mode-multi" onclick="setGameMode('multi')">👥 Multiplayer</button>
-      <button class="game-mode-btn" id="mode-single" onclick="setGameMode('single')">🤖 Single Player</button>
-    `;
+    modeDiv.innerHTML =
+      '<button class="game-mode-btn" id="mode-single" onclick="setGameMode('single')">🤖 vs AI</button>' +
+      '<button class="game-mode-btn" id="mode-multi" onclick="setGameMode('multi')">👥 vs Friend</button>';
     body.insertBefore(modeDiv, body.firstChild);
-  }, 50);
+    // Apply current mode highlight
+    setGameMode(_currentGameMode, true);
+  }, 60);
 };
 
-var _currentGameMode = 'multi';
-window.setGameMode = function(mode) {
+window.setGameMode = function(mode, silent) {
   _currentGameMode = mode;
-  document.getElementById('mode-multi').classList.toggle('active', mode==='multi');
-  document.getElementById('mode-single').classList.toggle('active', mode==='single');
-  // Update tile click handlers
-  var tiles = document.querySelectorAll('.game-tile');
-  tiles.forEach(function(tile) {
-    var orig = tile.getAttribute('onclick');
-    if (orig && orig.includes('openGamePicker(')) {
-      tile.setAttribute('data-orig-onclick', orig);
-    }
-    if (mode === 'single') {
-      tile.setAttribute('onclick', tile.getAttribute('onclick').replace('openGamePicker(', 'openSinglePlayer('));
-    } else {
-      if (tile.getAttribute('data-orig-onclick')) {
-        tile.setAttribute('onclick', tile.getAttribute('data-orig-onclick'));
-      }
-    }
-  });
+  var sm = document.getElementById('mode-single');
+  var mm = document.getElementById('mode-multi');
+  if (sm) sm.classList.toggle('active', mode === 'single');
+  if (mm) mm.classList.toggle('active', mode === 'multi');
+  if (!silent && window.showToast) {
+    showToast(mode === 'single' ? '🤖 Single Player mode' : '👥 Multiplayer mode');
+  }
+};
+
+// Unified launcher — checks mode and routes correctly
+window.launchGame = function(gameType) {
+  if (_currentGameMode === 'multi') {
+    openGamePicker(gameType);
+  } else {
+    openSinglePlayer(gameType);
+  }
 };
 
 /* ─── Single Player Launcher ──────────────────────────── */
@@ -19887,7 +19894,7 @@ window.openSinglePlayer = function(gameType) {
   _launchSinglePlayer(gameType);
 };
 
-function _launchSinglePlayer(type) {
+window._launchSinglePlayer = function(type) {
   var body = document.getElementById('game-overlay-body');
   if (!body) return;
   if (type === 'ttt')    _spTTT(body);
@@ -20302,7 +20309,7 @@ window.openGamesPanel = function() {
       tile.className = 'game-tile';
       tile.id = 'game-tile-' + g.id;
       tile.setAttribute('onclick', "openSinglePlayer('" + g.id + "')");
-      tile.innerHTML = `<div class="game-tile-icon">${g.icon}</div><div class="game-tile-name">${g.name}</div><div class="game-tile-desc">${g.desc}</div>`;
+      tile.innerHTML = '<div class="game-tile-icon">' + g.icon + '</div><div class="game-tile-name">' + g.name + '</div><div class="game-tile-desc">' + g.desc + '</div>';
       grid.appendChild(tile);
     });
     // Add SP-only label for new games
