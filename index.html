@@ -5490,6 +5490,42 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
   .soc-nav-title { font-size: 12px !important; }
 }
 
+/* ══════════════════════════════
+   ALWAYS-ON SCREENSHOT PREVENTION
+══════════════════════════════ */
+@media print {
+  body * { visibility: hidden !important; }
+  body::before {
+    content: '\1F510 SecretLine — Content protected.';
+    visibility: visible !important;
+    position: fixed; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; color: #000; background: #fff;
+  }
+}
+
+#sl-secure-overlay {
+  display: none;
+  position: fixed; inset: 0; z-index: 2147483647;
+  background: #000;
+  align-items: center; justify-content: center;
+  flex-direction: column; gap: 12px;
+}
+#sl-secure-overlay.show { display: flex; }
+#sl-secure-overlay .so-icon { font-size: 40px; }
+#sl-secure-overlay .so-text {
+  color: rgba(255,255,255,0.4);
+  font-size: 12px;
+  font-family: 'Space Mono', monospace;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+#chat-screen, #social-screen {
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  isolation: isolate;
+}
+
 </style>
 </head>
 <body>
@@ -6546,6 +6582,12 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
 
 <!-- Screenshot flash blocker -->
 <div id="screenshot-flash"></div>
+
+<!-- Always-on secure overlay (screen capture / recording block) -->
+<div id="sl-secure-overlay">
+  <div class="so-icon">🔐</div>
+  <div class="so-text">SecretLine &mdash; Screen capture blocked</div>
+</div>
 
 <!-- Privacy toast notification -->
 <div class="privacy-toast" id="privacy-toast"></div>
@@ -17853,6 +17895,212 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 console.log('%c Auth Gate v2 loaded \u2713', 'color:#3de8a0;font-weight:bold;font-size:13px');
+</script>
+
+<!-- ═══════════════════════════════════════════════════
+     ALWAYS-ON SCREENSHOT & SCREEN RECORDING PREVENTION
+     Works on ALL screens at ALL times (no toggle needed)
+═══════════════════════════════════════════════════ -->
+<script>
+(function() {
+  'use strict';
+
+  // ─── Helpers ────────────────────────────────────────
+  var overlay = null;
+  var overlayTimer = null;
+
+  function getOverlay() {
+    if (!overlay) overlay = document.getElementById('sl-secure-overlay');
+    return overlay;
+  }
+
+  function showOverlay(ms) {
+    var el = getOverlay();
+    if (!el) return;
+    el.classList.add('show');
+    clearTimeout(overlayTimer);
+    if (ms) {
+      overlayTimer = setTimeout(function() {
+        el.classList.remove('show');
+      }, ms);
+    }
+  }
+
+  function hideOverlay() {
+    var el = getOverlay();
+    if (el) el.classList.remove('show');
+    clearTimeout(overlayTimer);
+  }
+
+  // ─── Method 1: Screen Capture API detection ──────────
+  // Detect when browser's getDisplayMedia / Screen Capture API is used
+  if (navigator.mediaDevices) {
+    var _origGetDisplayMedia = navigator.mediaDevices.getDisplayMedia;
+    if (_origGetDisplayMedia) {
+      navigator.mediaDevices.getDisplayMedia = function() {
+        showOverlay(0); // show black screen permanently until focus
+        console.warn('[SecretLine] Screen capture API blocked.');
+        // Return a rejected promise instead of capturing
+        return Promise.reject(new DOMException('Screen capture not permitted on SecretLine.', 'NotAllowedError'));
+      };
+    }
+  }
+
+  // ─── Method 2: Keyboard shortcut blocking ────────────
+  // Block all known screenshot shortcuts across Windows/Mac/Linux
+  document.addEventListener('keydown', function(e) {
+    var blocked = false;
+
+    // PrintScreen (Windows/Linux)
+    if (e.key === 'PrintScreen' || e.keyCode === 44) blocked = true;
+
+    // Windows Snipping Tool: Win+Shift+S
+    if (e.metaKey && e.shiftKey && (e.key === 's' || e.key === 'S')) blocked = true;
+
+    // Mac screenshot shortcuts: Cmd+Shift+3, 4, 5, 6
+    if (e.metaKey && e.shiftKey && ['3','4','5','6'].includes(e.key)) blocked = true;
+
+    // Mac Cmd+Ctrl+Shift+3/4 (saves to clipboard)
+    if (e.metaKey && e.ctrlKey && e.shiftKey && ['3','4'].includes(e.key)) blocked = true;
+
+    // Chrome OS: Ctrl+Show Windows (keyCode 183)
+    if (e.ctrlKey && e.keyCode === 183) blocked = true;
+
+    // Alt+PrintScreen
+    if (e.altKey && (e.key === 'PrintScreen' || e.keyCode === 44)) blocked = true;
+
+    if (blocked) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      showOverlay(1500);
+      if (window.showToast) window.showToast('\u26d4 Screenshot blocked!');
+      return false;
+    }
+  }, true);
+
+  // ─── Method 3: Visibility & focus loss detection ─────
+  // When tab/window hidden (screen recorders, Alt+Tab, task switchers)
+  var isAppActive = true;
+
+  document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'hidden') {
+      isAppActive = false;
+      showOverlay(0); // keep black until user returns
+    } else {
+      isAppActive = true;
+      // Small delay to let screen capture tools see black frame first
+      setTimeout(hideOverlay, 300);
+    }
+  });
+
+  // ─── Method 4: Window blur (screen recorder focus detection) ─
+  var blurTimer = null;
+  window.addEventListener('blur', function() {
+    blurTimer = setTimeout(function() {
+      if (!isAppActive) showOverlay(0);
+    }, 150);
+  });
+
+  window.addEventListener('focus', function() {
+    clearTimeout(blurTimer);
+    isAppActive = true;
+    setTimeout(hideOverlay, 300);
+  });
+
+  // ─── Method 5: Context menu disable ──────────────────
+  // Prevents right-click > "Save image as" tricks
+  document.addEventListener('contextmenu', function(e) {
+    // Only block inside chat/social screens
+    var inApp = !!(
+      document.getElementById('chat-screen') && 
+      !document.getElementById('chat-screen').classList.contains('hidden')
+    ) || !!(
+      document.getElementById('social-screen') && 
+      !document.getElementById('social-screen').classList.contains('hidden')
+    );
+    if (inApp) {
+      e.preventDefault();
+      return false;
+    }
+  });
+
+  // ─── Method 6: Drag protection ───────────────────────
+  // Block drag-and-drop of content/images out of the app
+  document.addEventListener('dragstart', function(e) {
+    var tag = e.target && e.target.tagName;
+    if (tag === 'IMG' || tag === 'VIDEO' || tag === 'A') {
+      e.preventDefault();
+      return false;
+    }
+  });
+
+  // ─── Method 7: CSS @media (display-mode) based hiding ─
+  // Inject print-media rule dynamically to ensure it's applied
+  try {
+    var styleEl = document.createElement('style');
+    styleEl.id = 'sl-screenshot-css';
+    styleEl.textContent = [
+      // Hide content from print / PDF screenshots
+      '@media print { body > * { display: none !important; } ',
+      'body::after { content: "\1F510 SecretLine content is protected."; ',
+      'display: block; text-align: center; margin-top: 40vh; font-size: 24px; } }',
+
+      // Blur text in screen-magnifier captures
+      // (some screen readers / magnifiers trigger this media query)
+      '@media (forced-colors: active) { ',
+      '#chat-screen .msg-bubble, #social-screen .soc-post-text { ',
+      'filter: blur(0); } }', // keep readable but force compositing
+    ].join('');
+    document.head.appendChild(styleEl);
+  } catch(e) {}
+
+  // ─── Method 8: Selection & clipboard lock ────────────
+  // Prevent selecting and copying content from chat/lobby
+  document.addEventListener('selectstart', function(e) {
+    var inApp = !!(
+      document.getElementById('chat-screen') && 
+      !document.getElementById('chat-screen').classList.contains('hidden')
+    ) || !!(
+      document.getElementById('social-screen') && 
+      !document.getElementById('social-screen').classList.contains('hidden')
+    );
+    if (inApp) {
+      // Allow selecting input/textarea fields only
+      var t = e.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+      e.preventDefault();
+    }
+  });
+
+  // ─── Method 9: iOS/Android screen recording detection ─
+  // On iOS 14+ and some Android, Screen Time / recording triggers
+  // a resize or pixel ratio change — detect and cover
+  var _lastPR = window.devicePixelRatio;
+  setInterval(function() {
+    var pr = window.devicePixelRatio;
+    if (pr !== _lastPR) {
+      _lastPR = pr;
+      // Pixel ratio change can indicate screen recording on some devices
+      showOverlay(1000);
+    }
+  }, 1000);
+
+  // ─── Method 10: Android screenshot gesture detection ──
+  // Android often changes window dimensions briefly during screenshot
+  var _lastH = window.innerHeight;
+  window.addEventListener('resize', function() {
+    var newH = window.innerHeight;
+    // A very small, brief height change can indicate screenshot on Android
+    if (Math.abs(newH - _lastH) > 0 && Math.abs(newH - _lastH) < 60) {
+      showOverlay(800);
+    }
+    _lastH = newH;
+  });
+
+  console.log('%c SecretLine Screenshot Protection v2 active \u2713', 
+    'color:#3de8a0;font-weight:bold;font-size:12px;background:#0b0f14;padding:4px 8px;border-radius:4px;');
+
+})();
 </script>
 
 </body>
