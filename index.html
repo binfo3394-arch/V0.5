@@ -6973,6 +6973,7 @@ try {
     document.getElementById('chat-screen').classList.remove('hidden');
     document.getElementById('h-room').textContent = '# ' + roomCode;
     window._safeRoom = safeRoom;
+    try { localStorage.setItem('sl_active_screen', 'chat'); } catch(e) {}
     syncPCSidebar();
 
     // Unsubscribe any stale listeners before re-attaching
@@ -6992,6 +6993,37 @@ try {
     hideLoading();
     localStorage.removeItem('sl_session');
     console.warn('Auto-rejoin failed:', e);
+  }
+})();
+
+// ─── Auto-restore lobby on refresh if was in lobby ───
+(function() {
+  var activeScreen = localStorage.getItem('sl_active_screen');
+  var chatSession  = localStorage.getItem('sl_session');
+  // Only restore lobby if was in lobby AND not currently in chat
+  if (activeScreen === 'lobby' && !chatSession) {
+    var tries = 0;
+    var lobbyRestore = setInterval(function() {
+      tries++;
+      var authOk = false;
+      try {
+        var sess = JSON.parse(localStorage.getItem('sl_auth_v2') || 'null');
+        authOk = !!(sess && sess.verified);
+      } catch(e) {}
+      if (!authOk) {
+        try {
+          var gp = JSON.parse(localStorage.getItem('sl_google_profile') || 'null');
+          authOk = !!(gp && gp.email);
+        } catch(e) {}
+      }
+      if (authOk && window.__db && window.openSocialArea) {
+        clearInterval(lobbyRestore);
+        try { window.openSocialArea(); } catch(e) { console.warn('Lobby restore failed:', e); }
+      } else if (tries > 20) {
+        clearInterval(lobbyRestore);
+        console.warn('Lobby restore: auth/Firebase not ready in time');
+      }
+    }, 500);
   }
 })();
 
@@ -7067,6 +7099,8 @@ window.joinRoom = window._joinRoom = async () => {
     localStorage.setItem('sl_session', JSON.stringify({
       roomCode, myName, myColor, myPass, myId, myPhoto, myEmail, ts: Date.now()
     }));
+    // ─── Save active screen state ───
+    try { localStorage.setItem('sl_active_screen', 'chat'); } catch(e) {}
 
     window._safeRoom = safeRoom;
     showToast('🎉 Joined room: ' + roomCode);
@@ -7797,6 +7831,7 @@ window.leaveRoom = async () => {
   if (unsubTyping)   { unsubTyping();   unsubTyping   = null; }
   await remove(ref(db, `rooms/${window._safeRoom}/presence/${myId}`));
   localStorage.removeItem('sl_session');
+  try { localStorage.removeItem('sl_active_screen'); } catch(e) {}
   location.reload();
 };
 
@@ -9842,6 +9877,9 @@ window.openSocialArea = function() {
   document.getElementById('setup-screen').classList.add('hidden');
   document.getElementById('social-screen').classList.remove('hidden');
 
+  // ─── Save active screen so refresh restores lobby ───
+  try { localStorage.setItem('sl_active_screen', 'lobby'); } catch(e) {}
+
   const { ref, set, onValue, onChildAdded, onChildChanged, onChildRemoved, onDisconnect, serverTimestamp } = socGetFB();
   const db2 = socGetDB();
 
@@ -10755,6 +10793,8 @@ window.socGoBack=function(){
   try { if(socFriendsUnsub){socFriendsUnsub();socFriendsUnsub=null;} } catch(e){}
   document.getElementById('social-screen').classList.add('hidden');
   document.getElementById('setup-screen').classList.remove('hidden');
+  // ─── Clear lobby screen state ───
+  try { localStorage.removeItem('sl_active_screen'); } catch(e){}
 };
 window.socGoHome = function() {
   var feedCol = document.querySelector('.soc-feed-col');
