@@ -19743,8 +19743,8 @@ window.openGamesPanel = function() {
     modeDiv.className = 'game-mode-selector';
     modeDiv.id = 'games-mode-selector';
     modeDiv.innerHTML =
-      '<button class="game-mode-btn" id="mode-single" onclick="setGameMode('single')">🤖 vs AI</button>' +
-      '<button class="game-mode-btn" id="mode-multi" onclick="setGameMode('multi')">👥 vs Friend</button>';
+      '<button class="game-mode-btn" id="mode-single" onclick="setGameMode(this.dataset.m)" data-m="single">🤖 vs AI</button>' +
+      '<button class="game-mode-btn" id="mode-multi" onclick="setGameMode(this.dataset.m)" data-m="multi">👥 vs Friend</button>';
     body.insertBefore(modeDiv, body.firstChild);
     // Apply current mode highlight
     setGameMode(_currentGameMode, true);
@@ -21099,9 +21099,10 @@ console.log('%c 🎮 SecretLine Games v2 + 5 new games loaded ✓', 'color:#3de8
 <script>
 // Stubs ensure onclick handlers work even before IIFE scripts execute
 // Real implementations override these when scripts load
-window.openSinglePlayer = window.openSinglePlayer || function(t){ console.warn('openSinglePlayer not ready, retry...'); setTimeout(function(){ if(window.openSinglePlayer._ready) window.openSinglePlayer(t); },500); };
-window.launchGame       = window.launchGame       || function(t){ setTimeout(function(){ window.launchGame && window.launchGame(t); },300); };
-window.openGamesPanel   = window.openGamesPanel   || function(){ console.warn('openGamesPanel not ready'); };
+// These will be overridden by IIFE scripts — just silent fallbacks
+window.openSinglePlayer = window.openSinglePlayer || function(t){ console.log('openSinglePlayer loading...'); };
+window.launchGame       = window.launchGame       || function(t){ console.log('launchGame loading...'); };
+window.openGamesPanel   = window.openGamesPanel   || function(){ };
 window.closeGamesPanel  = window.closeGamesPanel  || function(){ var p=document.getElementById('games-panel'); if(p) p.classList.remove('open'); };
 window.closeGameOverlay = window.closeGameOverlay || function(){ var o=document.getElementById('game-overlay'); if(o) o.classList.remove('open'); };
 </script>
