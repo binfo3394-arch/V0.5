@@ -19885,8 +19885,8 @@ window.openSinglePlayer = function(gameType) {
   _currentGameId = 'sp_' + gameType;
   var ov = document.getElementById('game-overlay');
   var title = document.getElementById('game-overlay-title');
-  var icons = {ttt:'⭕',rps:'✊',c4:'🔴',wg:'📝',snake:'🐍',memory:'🃏',g2048:'🔢'};
-  var names = {ttt:'Tic-Tac-Toe',rps:'Rock Paper Scissors',c4:'Connect Four',wg:'Word Guess',snake:'Snake',memory:'Memory Match',g2048:'2048'};
+  var icons = {ttt:'⭕',rps:'✊',c4:'🔴',wg:'📝',snake:'🐍',memory:'🃏',g2048:'🔢',ludo:'🎲',carrom:'🎯',checkers:'♟️',minesweeper:'💣',flappy:'🐦'};
+  var names = {ttt:'Tic-Tac-Toe',rps:'Rock Paper Scissors',c4:'Connect Four',wg:'Word Guess',snake:'Snake',memory:'Memory Match',g2048:'2048',ludo:'Ludo',carrom:'Carrom',checkers:'Checkers',minesweeper:'Minesweeper',flappy:'Flappy Bird'};
   if (title) title.textContent = (icons[gameType]||'🎮') + ' ' + (names[gameType]||gameType) + ' — vs AI';
   var statusEl = document.getElementById('game-overlay-status');
   if (statusEl) statusEl.textContent = 'Single Player';
@@ -19897,13 +19897,18 @@ window.openSinglePlayer = function(gameType) {
 window._launchSinglePlayer = function(type) {
   var body = document.getElementById('game-overlay-body');
   if (!body) return;
-  if (type === 'ttt')    _spTTT(body);
+  if (type === 'ttt')        _spTTT(body);
   else if (type === 'rps')   _spRPS(body);
   else if (type === 'c4')    _spC4(body);
   else if (type === 'wg')    _spWG(body);
   else if (type === 'snake') _launchSnake(body);
   else if (type === 'memory')_launchMemory(body);
   else if (type === 'g2048') _launch2048(body);
+  else if (type === 'ludo')      _launchLudo(body);
+  else if (type === 'carrom')    _launchCarrom(body);
+  else if (type === 'checkers')  _launchCheckers(body);
+  else if (type === 'minesweeper') _launchMinesweeper(body);
+  else if (type === 'flappy')    _launchFlappy(body);
 }
 
 /* ─── AI: Tic-Tac-Toe ─────────────────────────────────── */
@@ -20300,9 +20305,14 @@ window.openGamesPanel = function() {
     var grid = document.querySelector('.games-grid');
     if (!grid || document.getElementById('game-tile-snake')) return;
     var extras = [
-      {id:'snake', icon:'🐍', name:'Snake', desc:'Classic arcade'},
-      {id:'memory', icon:'🃏', name:'Memory Match', desc:'Flip & match'},
-      {id:'g2048', icon:'🔢', name:'2048', desc:'Merge tiles'},
+      {id:'snake',       icon:'🐍', name:'Snake',        desc:'Classic arcade'},
+      {id:'memory',      icon:'🃏', name:'Memory Match',  desc:'Flip & match'},
+      {id:'g2048',       icon:'🔢', name:'2048',          desc:'Merge tiles'},
+      {id:'ludo',        icon:'🎲', name:'Ludo',          desc:'Roll & race'},
+      {id:'carrom',      icon:'🎯', name:'Carrom',        desc:'Strike & pocket'},
+      {id:'checkers',    icon:'♟️', name:'Checkers',      desc:'vs AI'},
+      {id:'minesweeper', icon:'💣', name:'Minesweeper',   desc:'Clear the field'},
+      {id:'flappy',      icon:'🐦', name:'Flappy Bird',   desc:'Tap to fly'},
     ];
     extras.forEach(function(g) {
       var tile = document.createElement('div');
@@ -20315,7 +20325,7 @@ window.openGamesPanel = function() {
     // Add SP-only label for new games
     var note = document.createElement('div');
     note.style.cssText = 'font-size:10px;color:var(--text3);font-family:var(--mono);text-align:center;margin-top:-4px;grid-column:1/-1;';
-    note.textContent = '🐍🃏🔢 = Single Player only';
+    note.textContent = '🐍🃏🔢🎲🎯♟️💣🐦 = Single Player';
     grid.appendChild(note);
   }, 80);
 };
@@ -20323,11 +20333,901 @@ window.openGamesPanel = function() {
 /* ─── Cleanup on overlay close ─────────────────────────── */
 var _origCloseGameOverlay = window.closeGameOverlay;
 window.closeGameOverlay = function() {
-  if (_snakeInterval) { clearInterval(_snakeInterval); _snakeInterval = null; }
+  if (_snakeInterval)  { clearInterval(_snakeInterval);  _snakeInterval  = null; }
+  if (_flappyRAF)      { cancelAnimationFrame(_flappyRAF); _flappyRAF = null; }
+  if (_ludoAITimer)    { clearTimeout(_ludoAITimer);     _ludoAITimer    = null; }
   if (_origCloseGameOverlay) _origCloseGameOverlay();
 };
 
-console.log('%c 🎮 SecretLine Games v2 loaded ✓', 'color:#3de8a0;font-weight:bold;background:#0b0f14;padding:4px 8px;border-radius:4px;');
+
+/* ═══════════════════════════════════════════════════════
+   LUDO (4-player simplified: You vs 3 AI)
+   - Full board with safe zones, home, star cells
+   - Dice animation, piece movement, captures
+═══════════════════════════════════════════════════════ */
+var _ludoAITimer = null;
+function _launchLudo(body) {
+  var COLORS = ['#ff5c5c','#4fa3ff','#3de8a0','#ffd460'];
+  var CNAMES = ['Red','Blue','Green','Yellow'];
+  var YOU = 0; // player index
+
+  // Board path (52 cells) start offsets per color
+  var START_IDX = [0, 13, 26, 39];
+  var HOME_STRETCH = [
+    [52,53,54,55,56],   // Red home stretch
+    [57,58,59,60,61],   // Blue
+    [62,63,64,65,66],   // Green
+    [71,72,73,74,75],   // Yellow (offset for clarity)
+  ];
+  var SAFE_CELLS = [0,8,13,21,26,34,39,47];
+
+  // Each piece: {pos:-1=yard, 0-51=board, 52-56=home stretch, 57=finished}
+  var pieces = COLORS.map(function(_,pi) {
+    return [0,1,2,3].map(function(i){ return {pos:-1, id:pi*4+i, player:pi}; });
+  });
+
+  var dice = 0, turn = YOU, rolled = false, msg = '', winner = -1;
+  var selectedPiece = -1;
+
+  // Simplified board positions (canvas coords for 52 + home stretch cells)
+  var SZ = 320, CS = SZ/15;
+  // Path coords (x,y) for each of 52 board cells + home columns
+  function pathCoord(idx) {
+    // Standard ludo board path layout
+    var path = [
+      // Bottom row (0-5): col 6-0, row 12
+      [6,12],[5,12],[4,12],[3,12],[2,12],[1,12],
+      // Left col down (6-11): col 0, row 11-6
+      [0,11],[0,10],[0,9],[0,8],[0,7],[0,6],
+      // Left row middle (12-18): col 1-6, row 6
+      [1,6],[2,6],[3,6],[4,6],[5,6],[6,6],
+      // Top left (19-24): col 6, row 5-0
+      [6,5],[6,4],[6,3],[6,2],[6,1],[6,0],
+      // Top row (25-30): col 7-12, row 0
+      [7,0],[8,0],[9,0],[10,0],[11,0],[12,0],
+      // Right col up (31-36): col 14, row 1-6
+      [14,1],[14,2],[14,3],[14,4],[14,5],[14,6],
+      // Right middle (37-43): col 13-8, row 6
+      [13,6],[12,6],[11,6],[10,6],[9,6],[8,6],
+      // Bottom right (44-51): col 8, row 7-12
+      [8,7],[8,8],[8,9],[8,10],[8,11],[8,12],
+    ];
+    if (idx < 0 || idx > 51) return [7,7];
+    var c = path[idx % 52];
+    return [(c[0]+0.5)*CS, (c[1]+0.5)*CS];
+  }
+
+  function yardPos(player, pieceIdx) {
+    var bases = [[1.5,10.5],[10.5,10.5],[10.5,1.5],[1.5,1.5]];
+    var b = bases[player];
+    var offsets = [[0.8,0.8],[2.2,0.8],[0.8,2.2],[2.2,2.2]];
+    return [(b[0]+offsets[pieceIdx][0])*CS, (b[1]+offsets[pieceIdx][1])*CS];
+  }
+
+  function homePos(player, step) {
+    var homeLines = [
+      [[1,7],[2,7],[3,7],[4,7],[5,7]],  // Red: left→center
+      [[7,13],[7,12],[7,11],[7,10],[7,9]], // Blue: bottom→center
+      [[13,7],[12,7],[11,7],[10,7],[9,7]], // Green: right→center
+      [[7,1],[7,2],[7,3],[7,4],[7,5]],    // Yellow: top→center
+    ];
+    var c = homeLines[player][step];
+    return [(c[0]+0.5)*CS, (c[1]+0.5)*CS];
+  }
+
+  function getPiecePos(piece) {
+    if (piece.pos === -1) return yardPos(piece.player, piece.id % 4);
+    if (piece.pos >= 52) return homePos(piece.player, piece.pos - 52);
+    // Board position relative to player start
+    var absPos = (START_IDX[piece.player] + piece.pos) % 52;
+    return pathCoord(absPos);
+  }
+
+  function rollDice() {
+    if (rolled) return;
+    dice = Math.floor(Math.random()*6)+1;
+    rolled = true;
+    var moves = getValidMoves(turn, dice);
+    if (moves.length === 0) {
+      msg = (turn===YOU?'You':CNAMES[turn])+' rolled '+dice+' — no moves!';
+      setTimeout(nextTurn, 700);
+    } else {
+      msg = (turn===YOU?'You':CNAMES[turn])+' rolled '+dice;
+      if (turn !== YOU) setTimeout(function(){ doAIMove(moves); }, 800);
+    }
+    render();
+  }
+
+  function getValidMoves(player, d) {
+    var moves = [];
+    pieces[player].forEach(function(p, idx) {
+      if (p.pos === 57) return; // finished
+      if (p.pos === -1 && d === 6) { moves.push(idx); return; }
+      if (p.pos >= 0 && p.pos < 52) {
+        var newPos = p.pos + d;
+        if (newPos <= 56) moves.push(idx);
+      }
+    });
+    return moves;
+  }
+
+  function movePiece(player, pieceIdx) {
+    var p = pieces[player][pieceIdx];
+    if (p.pos === -1) {
+      p.pos = 0; msg = CNAMES[player]+' enters the board!';
+    } else {
+      p.pos += dice;
+      if (p.pos === 56) { p.pos = 57; msg = CNAMES[player]+' piece home! 🎉'; }
+      else {
+        // Check capture
+        var absPos = (START_IDX[player] + p.pos) % 52;
+        if (!SAFE_CELLS.includes(absPos)) {
+          pieces.forEach(function(pp, pi) {
+            if (pi === player) return;
+            pp.forEach(function(op) {
+              if (op.pos >= 0 && op.pos < 52) {
+                var opAbs = (START_IDX[pi] + op.pos) % 52;
+                if (opAbs === absPos) { op.pos = -1; msg = CNAMES[player]+' captured '+CNAMES[pi]+'! 💥'; }
+              }
+            });
+          });
+        }
+      }
+    }
+    // Check winner
+    if (pieces[player].every(function(p){ return p.pos === 57; })) {
+      winner = player;
+    }
+    var extra = dice === 6;
+    rolled = false;
+    if (!extra) nextTurn(); else { msg += ' (Roll again!)'; render(); }
+    render();
+  }
+
+  function doAIMove(moves) {
+    // AI: prefer captures > home > any
+    var best = moves[0];
+    moves.forEach(function(idx) {
+      var p = pieces[turn][idx];
+      var newPos = p.pos === -1 ? 0 : p.pos + dice;
+      var absPos = (START_IDX[turn] + newPos) % 52;
+      var captures = !SAFE_CELLS.includes(absPos) && pieces.some(function(pp, pi) {
+        if (pi === turn) return false;
+        return pp.some(function(op){ return op.pos >= 0 && op.pos < 52 && (START_IDX[pi]+op.pos)%52===absPos; });
+      });
+      if (captures || newPos > (p.pos===-1?0:p.pos)) best = idx;
+    });
+    movePiece(turn, best);
+  }
+
+  function nextTurn() {
+    turn = (turn + 1) % 4;
+    rolled = false;
+    if (turn !== YOU && !winner) {
+      _ludoAITimer = setTimeout(function(){ rollDice(); }, 600);
+    }
+  }
+
+  function render() {
+    var canvas = document.getElementById('ludo-canvas');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, SZ, SZ);
+
+    // Board background
+    ctx.fillStyle = '#1a1f2e'; ctx.fillRect(0,0,SZ,SZ);
+
+    // Quadrant bases
+    var bases = [
+      {x:0,y:CS*9,c:'#ff5c5c44'},{x:CS*9,y:CS*9,c:'#4fa3ff44'},
+      {x:CS*9,y:0,c:'#3de8a044'},{x:0,y:0,c:'#ffd46044'}
+    ];
+    bases.forEach(function(b){
+      ctx.fillStyle=b.c; ctx.fillRect(b.x,b.y,CS*6,CS*6);
+    });
+
+    // Center cross paths
+    var pathCols = ['#ff5c5c','#4fa3ff','#3de8a0','#ffd460'];
+    // Left path (red home)
+    ctx.fillStyle='#ff5c5c33'; ctx.fillRect(0,CS*6,CS*6,CS*3);
+    // Bottom path (blue home)
+    ctx.fillStyle='#4fa3ff33'; ctx.fillRect(CS*6,CS*9,CS*3,CS*6);
+    // Right path (green home)
+    ctx.fillStyle='#3de8a033'; ctx.fillRect(CS*9,CS*6,CS*6,CS*3);
+    // Top path (yellow home)
+    ctx.fillStyle='#ffd46033'; ctx.fillRect(CS*6,0,CS*3,CS*6);
+    // Center
+    ctx.fillStyle='#2a3040'; ctx.fillRect(CS*6,CS*6,CS*3,CS*3);
+
+    // Safe cell markers
+    SAFE_CELLS.forEach(function(idx) {
+      var c = pathCoord(idx);
+      ctx.fillStyle='rgba(255,255,255,0.15)';
+      ctx.beginPath(); ctx.arc(c[0],c[1],CS*0.35,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='rgba(255,255,255,0.5)';
+      ctx.font='bold '+(CS*0.4)+'px sans-serif';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('★',c[0],c[1]);
+    });
+
+    // Draw all pieces
+    pieces.forEach(function(pp, pi) {
+      pp.forEach(function(p, idx) {
+        var pos = getPiecePos(p);
+        ctx.shadowColor = COLORS[pi]; ctx.shadowBlur = 6;
+        ctx.fillStyle = COLORS[pi];
+        ctx.beginPath(); ctx.arc(pos[0],pos[1],CS*0.38,0,Math.PI*2); ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.beginPath(); ctx.arc(pos[0]+1,pos[1]+1,CS*0.38,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle = COLORS[pi];
+        ctx.beginPath(); ctx.arc(pos[0],pos[1],CS*0.38,0,Math.PI*2); ctx.fill();
+        // Inner circle
+        ctx.fillStyle = 'rgba(255,255,255,0.6)';
+        ctx.beginPath(); ctx.arc(pos[0],pos[1],CS*0.18,0,Math.PI*2); ctx.fill();
+        if (p.pos === 57) {
+          ctx.fillStyle='#fff'; ctx.font='bold '+(CS*0.3)+'px sans-serif';
+          ctx.textAlign='center'; ctx.textBaseline='middle';
+          ctx.fillText('✓',pos[0],pos[1]);
+        }
+      });
+    });
+
+    // Turn indicator
+    ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(0,SZ-CS*2,SZ,CS*2);
+    ctx.fillStyle = COLORS[turn];
+    ctx.font = 'bold 13px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(turn===YOU?'YOUR TURN':CNAMES[turn]+"'S TURN", SZ/2, SZ-CS);
+  }
+
+  body.innerHTML = '<div class="snake-wrap" style="gap:10px;">' +
+    '<div style="font-family:var(--mono);font-size:12px;color:var(--text2);text-align:center;min-height:18px;" id="ludo-msg"></div>' +
+    '<div style="position:relative;display:inline-block;">' +
+    '<canvas id="ludo-canvas" width="'+SZ+'" height="'+SZ+'" style="border-radius:12px;border:1px solid var(--border2);display:block;cursor:pointer;max-width:100%;"></canvas>' +
+    '</div>' +
+    '<div style="display:flex;gap:10px;align-items:center;justify-content:center;">' +
+    '<div id="ludo-dice" style="width:52px;height:52px;background:var(--card);border:2px solid var(--border2);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:30px;cursor:pointer;transition:transform 0.1s;" onclick="window._ludoRoll()">🎲</div>' +
+    '<div style="font-family:var(--mono);font-size:11px;color:var(--text3);">Tap dice to roll<br>Then tap your piece</div>' +
+    '</div>' +
+    '<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;">' +
+    COLORS.map(function(c,i){ return '<div style="background:'+c+'22;border:1px solid '+c+'66;border-radius:6px;padding:3px 8px;font-size:11px;font-family:var(--mono);color:'+c+';">'+CNAMES[i]+(i===YOU?' (You)':'')+'</div>'; }).join('') +
+    '</div></div>';
+
+  var canvas = document.getElementById('ludo-canvas');
+  canvas.addEventListener('click', function(e) {
+    if (turn !== YOU || winner >= 0) return;
+    if (!rolled) return;
+    var rect = canvas.getBoundingClientRect();
+    var scaleX = SZ / rect.width, scaleY = SZ / rect.height;
+    var mx = (e.clientX - rect.left) * scaleX;
+    var my = (e.clientY - rect.top) * scaleY;
+    var moves = getValidMoves(YOU, dice);
+    var bestDist = CS;
+    var clickedIdx = -1;
+    moves.forEach(function(idx) {
+      var pos = getPiecePos(pieces[YOU][idx]);
+      var d = Math.hypot(pos[0]-mx, pos[1]-my);
+      if (d < bestDist) { bestDist = d; clickedIdx = idx; }
+    });
+    if (clickedIdx >= 0) movePiece(YOU, clickedIdx);
+  });
+
+  window._ludoRoll = function() {
+    if (turn !== YOU || winner >= 0) return;
+    if (rolled) { showToast && showToast('Already rolled! Tap your piece.'); return; }
+    var dice_el = document.getElementById('ludo-dice');
+    if (dice_el) { dice_el.style.transform='rotate(20deg)'; setTimeout(function(){dice_el.style.transform='';},150); }
+    rollDice();
+    var msg_el = document.getElementById('ludo-msg');
+    if (msg_el) msg_el.textContent = msg;
+  };
+
+  function renderLoop() {
+    render();
+    var msg_el = document.getElementById('ludo-msg');
+    if (msg_el) msg_el.textContent = winner>=0 ? (winner===YOU?'🎉 You Win!':'🤖 '+CNAMES[winner]+' wins!') : msg;
+    var dc = document.getElementById('ludo-dice');
+    if (dc) { var faces=['','⚀','⚁','⚂','⚃','⚄','⚅']; dc.textContent = dice>0?faces[dice]:'🎲'; }
+    if (!document.getElementById('ludo-canvas')) return;
+    requestAnimationFrame(renderLoop);
+  }
+  renderLoop();
+  // AI starts if not your turn first (it is)
+}
+
+/* ═══════════════════════════════════════════════════════
+   CARROM (Physics-based striker + coins)
+═══════════════════════════════════════════════════════ */
+function _launchCarrom(body) {
+  var SZ = 320;
+  var canvas, ctx;
+  var coins = [], striker = {x:SZ/2, y:SZ*0.82, vx:0, vy:0, r:14, mass:2};
+  var aiCoins = [], myCoins = [];
+  var score = {you:0, ai:0};
+  var aiming = false, aimAngle = -Math.PI/2, power = 0.6;
+  var turn = 'you', shooting = false, msg = 'Aim and shoot!';
+  var pocketCt = 0;
+
+  function initCoins() {
+    coins = [];
+    var cx = SZ/2, cy = SZ/2;
+    var R = 28;
+    // Center queen (black)
+    coins.push({x:cx, y:cy, vx:0, vy:0, r:9, color:'#111', owner:'queen', pocketed:false});
+    // Ring of 9 white + 9 black alternating
+    for (var i=0;i<18;i++) {
+      var a = (i/18)*Math.PI*2;
+      coins.push({x:cx+Math.cos(a)*R, y:cy+Math.sin(a)*R, vx:0, vy:0, r:8,
+        color: i%2===0?'#eee':'#555', owner:i%2===0?'ai':'you', pocketed:false});
+    }
+  }
+  initCoins();
+
+  var pockets = [{x:22,y:22},{x:SZ-22,y:22},{x:22,y:SZ-22},{x:SZ-22,y:SZ-22}];
+
+  function physics() {
+    if (!shooting) return;
+    var allStop = true;
+    // Move coins
+    [striker].concat(coins).forEach(function(c) {
+      if (c.pocketed) return;
+      c.x += c.vx; c.y += c.vy;
+      c.vx *= 0.985; c.vy *= 0.985;
+      if (Math.abs(c.vx) > 0.01 || Math.abs(c.vy) > 0.01) allStop = false;
+      // Board walls
+      if (c.x - c.r < 18) { c.x = 18+c.r; c.vx = Math.abs(c.vx)*0.7; }
+      if (c.x + c.r > SZ-18) { c.x = SZ-18-c.r; c.vx = -Math.abs(c.vx)*0.7; }
+      if (c.y - c.r < 18) { c.y = 18+c.r; c.vy = Math.abs(c.vy)*0.7; }
+      if (c.y + c.r > SZ-18) { c.y = SZ-18-c.r; c.vy = -Math.abs(c.vy)*0.7; }
+      // Pocket detection
+      pockets.forEach(function(p) {
+        if (Math.hypot(c.x-p.x, c.y-p.y) < c.r+8) {
+          if (c === striker) { striker.x=SZ/2; striker.y=SZ*0.82; striker.vx=0; striker.vy=0; }
+          else if (!c.pocketed) {
+            c.pocketed = true;
+            if (c.owner==='you') { score.you++; msg='✅ Pocketed! +1'; }
+            else if (c.owner==='ai') { score.ai++; msg='Opponent: +1'; }
+            else { score.you+=3; msg='👑 Queen! +3'; }
+          }
+        }
+      });
+    });
+    // Coin-coin collisions
+    var all = [striker].concat(coins.filter(function(c){return !c.pocketed;}));
+    for (var i=0;i<all.length;i++) for (var j=i+1;j<all.length;j++) {
+      var a=all[i], b=all[j];
+      var dx=b.x-a.x, dy=b.y-a.y, dist=Math.hypot(dx,dy);
+      var minD = a.r+b.r;
+      if (dist < minD && dist > 0.1) {
+        var nx=dx/dist, ny=dy/dist;
+        var overlap=(minD-dist)/2;
+        a.x-=nx*overlap; a.y-=ny*overlap; b.x+=nx*overlap; b.y+=ny*overlap;
+        var dv = (a.vx-b.vx)*nx + (a.vy-b.vy)*ny;
+        if (dv > 0) {
+          var ma=a.mass||1, mb=b.mass||1;
+          var imp = 2*dv/(ma+mb);
+          a.vx-=imp*mb*nx; a.vy-=imp*mb*ny;
+          b.vx+=imp*ma*nx; b.vy+=imp*ma*ny;
+        }
+      }
+    }
+    if (allStop) {
+      shooting = false;
+      if (turn==='you') { turn='ai'; setTimeout(aiShoot, 600); }
+      else { turn='you'; msg='Your turn! Aim and tap.'; }
+    }
+  }
+
+  function aiShoot() {
+    if (turn !== 'ai') return;
+    // Find nearest ai coin and aim at it
+    var target = null, minD = 9999;
+    coins.filter(function(c){return !c.pocketed && c.owner==='ai';}).forEach(function(c) {
+      pockets.forEach(function(p) {
+        var d = Math.hypot(c.x-p.x, c.y-p.y);
+        if (d < minD) { minD=d; target=c; }
+      });
+    });
+    if (!target) { turn='you'; msg='Your turn!'; return; }
+    striker.x = SZ/2 + (Math.random()-0.5)*40;
+    striker.y = SZ*0.18;
+    var ang = Math.atan2(target.y - striker.y, target.x - striker.x);
+    var spd = 7 + Math.random()*3;
+    striker.vx = Math.cos(ang)*spd;
+    striker.vy = Math.sin(ang)*spd;
+    shooting = true;
+    msg = '🤖 AI shooting...';
+  }
+
+  function shoot() {
+    if (turn!=='you'||shooting) return;
+    var spd = power * 12;
+    striker.vx = Math.cos(aimAngle)*spd;
+    striker.vy = Math.sin(aimAngle)*spd;
+    shooting = true;
+  }
+
+  function drawCarrom() {
+    if (!ctx) return;
+    ctx.clearRect(0,0,SZ,SZ);
+    // Board
+    ctx.fillStyle='#8B6914'; ctx.fillRect(0,0,SZ,SZ);
+    ctx.fillStyle='#A0785A'; ctx.fillRect(18,18,SZ-36,SZ-36);
+    // Center circle
+    ctx.strokeStyle='rgba(255,255,255,0.3)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.arc(SZ/2,SZ/2,32,0,Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(SZ/2,SZ/2,10,0,Math.PI*2); ctx.stroke();
+    // Pockets
+    pockets.forEach(function(p) {
+      ctx.fillStyle='#000'; ctx.beginPath(); ctx.arc(p.x,p.y,10,0,Math.PI*2); ctx.fill();
+    });
+    // Coins
+    coins.filter(function(c){return !c.pocketed;}).forEach(function(c) {
+      ctx.shadowColor=c.color==='#eee'?'#fff':'#aaa'; ctx.shadowBlur=4;
+      ctx.fillStyle=c.color; ctx.beginPath(); ctx.arc(c.x,c.y,c.r,0,Math.PI*2); ctx.fill();
+      ctx.shadowBlur=0;
+      ctx.strokeStyle='rgba(0,0,0,0.4)'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.arc(c.x,c.y,c.r,0,Math.PI*2); ctx.stroke();
+    });
+    // Striker
+    ctx.shadowColor='#ffd460'; ctx.shadowBlur=8;
+    ctx.fillStyle='#ffd460'; ctx.beginPath(); ctx.arc(striker.x,striker.y,striker.r,0,Math.PI*2); ctx.fill();
+    ctx.shadowBlur=0;
+    // Aim line
+    if (!shooting && turn==='you') {
+      ctx.strokeStyle='rgba(255,212,96,0.5)'; ctx.lineWidth=1.5;
+      ctx.setLineDash([4,4]);
+      ctx.beginPath(); ctx.moveTo(striker.x,striker.y);
+      ctx.lineTo(striker.x+Math.cos(aimAngle)*80, striker.y+Math.sin(aimAngle)*80);
+      ctx.stroke(); ctx.setLineDash([]);
+    }
+    physics();
+    if (document.getElementById('carrom-canvas')) requestAnimationFrame(drawCarrom);
+    var si = document.getElementById('carrom-score');
+    if (si) si.textContent = 'You: '+score.you+' | AI: '+score.ai;
+    var mi = document.getElementById('carrom-msg');
+    if (mi) mi.textContent = msg;
+  }
+
+  body.innerHTML = '<div class="snake-wrap" style="gap:8px;">' +
+    '<div style="display:flex;justify-content:space-between;width:100%;max-width:320px;font-family:var(--mono);font-size:12px;color:var(--text2);" id="carrom-score">You: 0 | AI: 0</div>' +
+    '<div style="font-family:var(--mono);font-size:11px;color:var(--accent);text-align:center;" id="carrom-msg">Aim and shoot!</div>' +
+    '<canvas id="carrom-canvas" width="320" height="320" style="border-radius:10px;border:1px solid var(--border);display:block;max-width:100%;touch-action:none;"></canvas>' +
+    '<div style="display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;">' +
+    '<button onclick="window._carromLeft()" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:6px 12px;color:var(--text);cursor:pointer;font-size:16px;">◀</button>' +
+    '<button onclick="window._carromShoot()" style="background:var(--accent);border:none;border-radius:8px;padding:8px 20px;color:#000;font-weight:700;cursor:pointer;">🎯 SHOOT</button>' +
+    '<button onclick="window._carromRight()" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:6px 12px;color:var(--text);cursor:pointer;font-size:16px;">▶</button>' +
+    '</div>' +
+    '<div style="font-size:10px;color:var(--text3);font-family:var(--mono);">◀▶ to aim • White coins = yours • Black = AI</div>' +
+    '</div>';
+
+  canvas = document.getElementById('carrom-canvas');
+  ctx = canvas.getContext('2d');
+  window._carromLeft  = function(){ aimAngle -= 0.08; };
+  window._carromRight = function(){ aimAngle += 0.08; };
+  window._carromShoot = function(){ shoot(); };
+  canvas.addEventListener('touchstart', function(e) {
+    var rect = canvas.getBoundingClientRect();
+    var mx = (e.touches[0].clientX-rect.left)*(SZ/rect.width);
+    var my = (e.touches[0].clientY-rect.top)*(SZ/rect.height);
+    aimAngle = Math.atan2(my-striker.y, mx-striker.x);
+    shoot(); e.preventDefault();
+  }, {passive:false});
+  drawCarrom();
+}
+
+/* ═══════════════════════════════════════════════════════
+   CHECKERS (8x8, vs AI)
+═══════════════════════════════════════════════════════ */
+function _launchCheckers(body) {
+  var SZ = 320, CS = SZ/8;
+  var board = Array(64).fill(null);
+  // 0=empty, 1=player(red), 2=AI(black), 3=player king, 4=AI king
+  for (var r=0;r<3;r++) for (var c=0;c<8;c++) if ((r+c)%2===1) board[r*8+c]=2;
+  for (var r=5;r<8;r++) for (var c=0;c<8;c++) if ((r+c)%2===1) board[r*8+c]=1;
+  var selected = -1, turn = 'you', gameOver = false, msg = 'Your turn — tap a red piece';
+
+  function getMoves(idx, b, piece) {
+    var moves = [];
+    var r = Math.floor(idx/8), c = idx%8;
+    var dirs = [];
+    if (piece===1||piece===3) dirs.push([-1,-1],[-1,1]);
+    if (piece===2||piece===3||piece===4) dirs.push([1,-1],[1,1]);
+    if (piece===2||piece===4) dirs.push([-1,-1],[-1,1]);
+    dirs.forEach(function(d) {
+      var nr=r+d[0], nc=c+d[1];
+      if (nr>=0&&nr<8&&nc>=0&&nc<8) {
+        var ni = nr*8+nc;
+        if (!b[ni]) moves.push({from:idx, to:ni, capture:-1});
+        else if ((piece<=2&&b[ni]>2)||(piece>2&&b[ni]<=2&&b[ni]>0)||
+                 (piece===1&&b[ni]===2)||(piece===2&&b[ni]===1)||
+                 (piece===3&&(b[ni]===2||b[ni]===4))||(piece===4&&(b[ni]===1||b[ni]===3))) {
+          var jr=nr+d[0], jc=nc+d[1];
+          if (jr>=0&&jr<8&&jc>=0&&jc<8&&!b[jr*8+jc]) {
+            moves.push({from:idx, to:jr*8+jc, capture:ni});
+          }
+        }
+      }
+    });
+    return moves;
+  }
+
+  function allMoves(isAI) {
+    var ms = [];
+    board.forEach(function(v,i) {
+      if (isAI && (v===2||v===4)) ms = ms.concat(getMoves(i,board,v));
+      if (!isAI && (v===1||v===3)) ms = ms.concat(getMoves(i,board,v));
+    });
+    return ms;
+  }
+
+  function doMove(m) {
+    board[m.to] = board[m.from];
+    board[m.from] = null;
+    if (m.capture>=0) board[m.capture] = null;
+    // King promotion
+    if (board[m.to]===1 && Math.floor(m.to/8)===0) board[m.to]=3;
+    if (board[m.to]===2 && Math.floor(m.to/8)===7) board[m.to]=4;
+  }
+
+  function checkWin() {
+    var hasP = board.some(function(v){return v===1||v===3;});
+    var hasA = board.some(function(v){return v===2||v===4;});
+    if (!hasA) { gameOver=true; msg='🎉 You Win!'; }
+    if (!hasP) { gameOver=true; msg='🤖 AI Wins!'; }
+    if (!allMoves(false).length && !gameOver) { gameOver=true; msg='🤖 AI Wins (no moves)!'; }
+    if (!allMoves(true).length && !gameOver)  { gameOver=true; msg='🎉 You Win (AI stuck)!'; }
+  }
+
+  function aiMove() {
+    var moves = allMoves(true);
+    if (!moves.length) { checkWin(); render(); return; }
+    // Prefer captures
+    var captures = moves.filter(function(m){return m.capture>=0;});
+    var m = captures.length ? captures[Math.floor(Math.random()*captures.length)] : moves[Math.floor(Math.random()*moves.length)];
+    doMove(m); checkWin(); turn='you'; msg='Your turn'; render();
+  }
+
+  function handleClick(idx) {
+    if (turn!=='you'||gameOver) return;
+    var v = board[idx];
+    if (selected>=0) {
+      var moves = getMoves(selected, board, board[selected]);
+      var m = moves.find(function(mv){return mv.to===idx;});
+      if (m) {
+        doMove(m); checkWin(); selected=-1;
+        if (!gameOver) { turn='ai'; msg='AI thinking...'; render(); setTimeout(aiMove,600); }
+      } else if (v===1||v===3) { selected=idx; msg='Selected — tap destination'; }
+      else { selected=-1; msg='Your turn'; }
+    } else if (v===1||v===3) { selected=idx; msg='Tap destination square'; }
+    render();
+  }
+
+  function render() {
+    var canvas = document.getElementById('checkers-canvas');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    var moves = selected>=0 ? getMoves(selected,board,board[selected]) : [];
+    var validTo = moves.map(function(m){return m.to;});
+    for (var r=0;r<8;r++) for (var c=0;c<8;c++) {
+      var idx = r*8+c;
+      var dark = (r+c)%2===1;
+      ctx.fillStyle = dark ? '#4a3728' : '#c8a87a';
+      ctx.fillRect(c*CS, r*CS, CS, CS);
+      if (idx===selected) { ctx.fillStyle='rgba(61,232,160,0.3)'; ctx.fillRect(c*CS,r*CS,CS,CS); }
+      if (validTo.includes(idx)) { ctx.fillStyle='rgba(61,232,160,0.5)'; ctx.beginPath(); ctx.arc(c*CS+CS/2,r*CS+CS/2,CS*0.2,0,Math.PI*2); ctx.fill(); }
+      var v = board[idx];
+      if (v) {
+        var isKing = v>=3;
+        ctx.fillStyle = (v===1||v===3)?'#ff5c5c':'#222';
+        ctx.shadowColor = (v===1||v===3)?'#ff8888':'#888'; ctx.shadowBlur=6;
+        ctx.beginPath(); ctx.arc(c*CS+CS/2, r*CS+CS/2, CS*0.38, 0, Math.PI*2); ctx.fill();
+        ctx.shadowBlur=0;
+        if (isKing) {
+          ctx.fillStyle='#ffd460'; ctx.font='bold '+(CS*0.35)+'px sans-serif';
+          ctx.textAlign='center'; ctx.textBaseline='middle';
+          ctx.fillText('♛',c*CS+CS/2, r*CS+CS/2);
+        }
+      }
+    }
+    var mi = document.getElementById('checkers-msg');
+    if (mi) mi.textContent = msg;
+    if (gameOver) {
+      var btn = document.getElementById('checkers-restart');
+      if (btn) btn.style.display='block';
+    }
+  }
+
+  body.innerHTML = '<div class="snake-wrap" style="gap:8px;">' +
+    '<div style="font-family:var(--mono);font-size:12px;color:var(--accent);text-align:center;" id="checkers-msg">Your turn</div>' +
+    '<canvas id="checkers-canvas" width="320" height="320" style="border-radius:8px;display:block;max-width:100%;cursor:pointer;border:1px solid var(--border);"></canvas>' +
+    '<button id="checkers-restart" style="display:none;background:var(--accent);color:#000;border:none;border-radius:10px;padding:8px 24px;font-weight:700;cursor:pointer;" onclick="_launchSinglePlayer(\'checkers\')">🔄 Play Again</button>' +
+    '<div style="font-size:10px;color:var(--text3);font-family:var(--mono);">🔴 = You &nbsp; ⚫ = AI &nbsp; ♛ = King</div>' +
+    '</div>';
+
+  var canvas = document.getElementById('checkers-canvas');
+  canvas.addEventListener('click', function(e) {
+    var rect = canvas.getBoundingClientRect();
+    var c = Math.floor((e.clientX-rect.left)/(rect.width/8));
+    var r = Math.floor((e.clientY-rect.top)/(rect.height/8));
+    handleClick(r*8+c);
+  });
+  render();
+}
+
+/* ═══════════════════════════════════════════════════════
+   MINESWEEPER
+═══════════════════════════════════════════════════════ */
+function _launchMinesweeper(body) {
+  var ROWS=9, COLS=9, MINES=10;
+  var cells = [], revealed = [], flagged = [], gameOver=false, won=false, firstClick=true;
+  var timeStart = 0, timer = 0;
+
+  function init(safeIdx) {
+    cells = Array(ROWS*COLS).fill(0);
+    var placed = 0;
+    while (placed < MINES) {
+      var i = Math.floor(Math.random()*ROWS*COLS);
+      if (i !== safeIdx && cells[i] !== -1) { cells[i]=-1; placed++; }
+    }
+    // Count adjacent mines
+    for (var i=0;i<ROWS*COLS;i++) {
+      if (cells[i]===-1) continue;
+      var r=Math.floor(i/COLS), c=i%COLS, cnt=0;
+      for (var dr=-1;dr<=1;dr++) for (var dc=-1;dc<=1;dc++) {
+        var nr=r+dr, nc=c+dc;
+        if (nr>=0&&nr<ROWS&&nc>=0&&nc<COLS&&cells[nr*COLS+nc]===-1) cnt++;
+      }
+      cells[i]=cnt;
+    }
+    revealed = Array(ROWS*COLS).fill(false);
+    flagged  = Array(ROWS*COLS).fill(false);
+    timeStart = Date.now();
+  }
+
+  function reveal(i) {
+    if (revealed[i]||flagged[i]) return;
+    revealed[i]=true;
+    if (cells[i]===0) {
+      var r=Math.floor(i/COLS),c=i%COLS;
+      for (var dr=-1;dr<=1;dr++) for (var dc=-1;dc<=1;dc++) {
+        var nr=r+dr,nc=c+dc;
+        if (nr>=0&&nr<ROWS&&nc>=0&&nc<COLS) reveal(nr*COLS+nc);
+      }
+    }
+  }
+
+  function checkWin() {
+    var unrevealed = cells.filter(function(_,i){return !revealed[i];}).length;
+    if (unrevealed === MINES) { won=true; gameOver=true; }
+  }
+
+  var numColors=['','#4fa3ff','#3de8a0','#ff5c5c','#9b59b6','#e74c3c','#1abc9c','#000','#888'];
+
+  function render() {
+    var g = document.getElementById('ms-grid');
+    if (!g) return;
+    g.innerHTML = '';
+    g.style.gridTemplateColumns = 'repeat('+COLS+',1fr)';
+    timer = gameOver ? timer : Math.floor((Date.now()-timeStart)/1000);
+    var ti = document.getElementById('ms-timer'); if (ti) ti.textContent = timer+'s';
+    var fi = document.getElementById('ms-flags'); if (fi) fi.textContent = '🚩'+flagged.filter(Boolean).length+'/'+MINES;
+
+    cells.forEach(function(v,i) {
+      var btn = document.createElement('div');
+      btn.style.cssText = 'aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;border-radius:4px;cursor:pointer;font-family:var(--mono);user-select:none;';
+      if (revealed[i]) {
+        btn.style.background = 'var(--card2)'; btn.style.border = '1px solid var(--border)';
+        if (v===-1) { btn.textContent='💥'; btn.style.background='#ff5c5c44'; }
+        else if (v>0) { btn.textContent=v; btn.style.color=numColors[v]; }
+      } else if (flagged[i]) {
+        btn.style.background='var(--card)'; btn.style.border='1px solid rgba(255,92,92,0.5)';
+        btn.textContent='🚩';
+      } else {
+        btn.style.background='var(--card)'; btn.style.border='1px solid var(--border2)';
+        if (gameOver && v===-1) { btn.textContent='💣'; btn.style.background='var(--card2)'; }
+      }
+      btn.addEventListener('click', function() {
+        if (gameOver||revealed[i]) return;
+        if (flagged[i]) return;
+        if (firstClick) { firstClick=false; init(i); timeStart=Date.now(); }
+        if (cells[i]===-1) { reveal(i); gameOver=true; cells.forEach(function(_,j){if(cells[j]===-1)revealed[j]=true;}); render(); return; }
+        reveal(i); checkWin(); render();
+      });
+      btn.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+        if (!revealed[i]&&!gameOver) { flagged[i]=!flagged[i]; render(); }
+      });
+      g.appendChild(btn);
+    });
+
+    var ov = document.getElementById('ms-overlay');
+    if (ov) {
+      if (gameOver) {
+        ov.style.display='flex';
+        ov.innerHTML = '<div style="font-size:28px;">'+(won?'🎉':'💥')+'</div>' +
+          '<div style="font-size:16px;font-weight:700;color:var(--accent);">'+(won?'You cleared it!':'BOOM!')+'</div>' +
+          '<div style="font-size:12px;color:var(--text2);font-family:var(--mono);">Time: '+timer+'s</div>' +
+          '<button onclick="_launchSinglePlayer(\'minesweeper\')" style="background:var(--accent);color:#000;border:none;border-radius:10px;padding:8px 20px;font-weight:700;cursor:pointer;margin-top:4px;">🔄 New Game</button>';
+      } else { ov.style.display='none'; }
+    }
+    if (!gameOver) requestAnimationFrame(function(){
+      var ti2=document.getElementById('ms-timer');
+      if(ti2) ti2.textContent=Math.floor((Date.now()-timeStart)/1000)+'s';
+    });
+  }
+
+  body.innerHTML = '<div class="snake-wrap" style="gap:10px;">' +
+    '<div style="display:flex;justify-content:space-between;width:100%;max-width:320px;font-family:var(--mono);font-size:12px;color:var(--text2);">' +
+    '<span id="ms-flags">🚩0/'+MINES+'</span>' +
+    '<span style="color:var(--accent);">MINESWEEPER</span>' +
+    '<span id="ms-timer">0s</span>' +
+    '</div>' +
+    '<div style="position:relative;width:100%;max-width:320px;">' +
+    '<div id="ms-grid" style="display:grid;gap:3px;width:100%;"></div>' +
+    '<div id="ms-overlay" style="display:none;position:absolute;inset:0;background:rgba(5,7,10,0.9);border-radius:8px;flex-direction:column;align-items:center;justify-content:center;gap:8px;"></div>' +
+    '</div>' +
+    '<div style="font-size:10px;color:var(--text3);font-family:var(--mono);">Tap = reveal • Long press / Right click = 🚩 flag</div>' +
+    '</div>';
+
+  // Init with no safe cell first (will reinit on first click)
+  cells = Array(ROWS*COLS).fill(0);
+  revealed = Array(ROWS*COLS).fill(false);
+  flagged  = Array(ROWS*COLS).fill(false);
+  timer = 0;
+  render();
+
+  // Long press for mobile flagging
+  var lpTimer;
+  var grid = document.getElementById('ms-grid');
+  grid.addEventListener('touchstart', function(e) {
+    var t = e.target; var i = Array.from(grid.children).indexOf(t);
+    if (i>=0) lpTimer = setTimeout(function(){ if(!revealed[i]&&!gameOver){flagged[i]=!flagged[i];render();} },500);
+  });
+  grid.addEventListener('touchend', function(){ clearTimeout(lpTimer); });
+}
+
+/* ═══════════════════════════════════════════════════════
+   FLAPPY BIRD
+═══════════════════════════════════════════════════════ */
+var _flappyRAF = null;
+function _launchFlappy(body) {
+  var W=320, H=480, GR=0.35, JUMP=-7.5, PIPE_W=52, GAP=120, SPEED=2.2;
+  var bird={x:70,y:H/2,vy:0,r:16}, pipes=[], score=0, best=parseInt(localStorage.getItem('sl_flappy_best')||'0');
+  var state='idle'; // idle, playing, dead
+  var frameCount=0;
+
+  function reset() {
+    bird={x:70,y:H/2,vy:0,r:16}; pipes=[]; score=0; state='playing'; frameCount=0;
+  }
+
+  function addPipe() {
+    var gap_y = 80 + Math.random()*(H-200);
+    pipes.push({x:W, top:gap_y-GAP/2, bot:gap_y+GAP/2, scored:false});
+  }
+
+  function jump() {
+    if (state==='idle') { reset(); return; }
+    if (state==='dead') { reset(); return; }
+    bird.vy = JUMP;
+  }
+
+  function loop() {
+    var canvas = document.getElementById('flappy-canvas');
+    if (!canvas) { _flappyRAF=null; return; }
+    var ctx = canvas.getContext('2d');
+    _flappyRAF = requestAnimationFrame(loop);
+
+    // Update
+    if (state==='playing') {
+      bird.vy += GR; bird.y += bird.vy;
+      frameCount++;
+      if (frameCount%90===0) addPipe();
+      pipes.forEach(function(p) { p.x -= SPEED; });
+      pipes = pipes.filter(function(p){return p.x > -PIPE_W;});
+      // Scoring
+      pipes.forEach(function(p) {
+        if (!p.scored && p.x+PIPE_W < bird.x) { p.scored=true; score++; if(score>best){best=score;localStorage.setItem('sl_flappy_best',best);} }
+      });
+      // Collision
+      if (bird.y+bird.r > H-40 || bird.y-bird.r < 0) state='dead';
+      pipes.forEach(function(p) {
+        if (bird.x+bird.r>p.x && bird.x-bird.r<p.x+PIPE_W) {
+          if (bird.y-bird.r<p.top || bird.y+bird.r>p.bot) state='dead';
+        }
+      });
+    }
+
+    // Draw sky gradient
+    var grd = ctx.createLinearGradient(0,0,0,H);
+    grd.addColorStop(0,'#1a2a4a'); grd.addColorStop(1,'#0a1020');
+    ctx.fillStyle=grd; ctx.fillRect(0,0,W,H);
+
+    // Clouds (decorative)
+    ctx.fillStyle='rgba(255,255,255,0.06)';
+    [60,140,220].forEach(function(y,i){ ctx.beginPath(); ctx.ellipse((frameCount*0.3+(i*110))%W,y,35,18,0,0,Math.PI*2); ctx.fill(); });
+
+    // Ground
+    ctx.fillStyle='#2a3a1a'; ctx.fillRect(0,H-40,W,40);
+    ctx.fillStyle='#3a5a2a'; ctx.fillRect(0,H-40,W,8);
+
+    // Pipes with gradient
+    pipes.forEach(function(p) {
+      var pg = ctx.createLinearGradient(p.x,0,p.x+PIPE_W,0);
+      pg.addColorStop(0,'#2d8a2d'); pg.addColorStop(0.5,'#4ab44a'); pg.addColorStop(1,'#1d6a1d');
+      ctx.fillStyle=pg;
+      // Top pipe
+      ctx.fillRect(p.x,0,PIPE_W,p.top);
+      ctx.fillRect(p.x-4,p.top-18,PIPE_W+8,18);
+      // Bottom pipe
+      ctx.fillRect(p.x,p.bot,PIPE_W,H-p.bot-40);
+      ctx.fillRect(p.x-4,p.bot,PIPE_W+8,18);
+    });
+
+    // Bird
+    ctx.save();
+    ctx.translate(bird.x, bird.y);
+    var tilt = Math.min(Math.max(bird.vy*3, -30), 60);
+    ctx.rotate(tilt*Math.PI/180);
+    // Body
+    ctx.fillStyle='#ffd460';
+    ctx.beginPath(); ctx.ellipse(0,0,bird.r,bird.r*0.85,0,0,Math.PI*2); ctx.fill();
+    // Wing
+    ctx.fillStyle='#f4a020';
+    ctx.beginPath(); ctx.ellipse(-4, 4+Math.sin(frameCount*0.2)*3, 8, 5, 0.3, 0, Math.PI*2); ctx.fill();
+    // Eye
+    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(7,-3,5,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#333'; ctx.beginPath(); ctx.arc(8.5,-3,2.5,0,Math.PI*2); ctx.fill();
+    // Beak
+    ctx.fillStyle='#e06020'; ctx.beginPath();
+    ctx.moveTo(14,-1); ctx.lineTo(20,2); ctx.lineTo(14,5); ctx.closePath(); ctx.fill();
+    ctx.restore();
+
+    // HUD
+    ctx.fillStyle='rgba(0,0,0,0.4)'; ctx.fillRect(W/2-40,8,80,32);
+    ctx.fillStyle='#fff'; ctx.font='bold 20px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(score, W/2, 24);
+    ctx.font='10px monospace'; ctx.fillStyle='rgba(255,255,255,0.5)';
+    ctx.fillText('BEST '+best, W/2, 50);
+
+    // State overlays
+    if (state==='idle') {
+      ctx.fillStyle='rgba(5,7,10,0.7)'; ctx.fillRect(0,0,W,H);
+      ctx.fillStyle='#ffd460'; ctx.font='bold 32px sans-serif'; ctx.textAlign='center';
+      ctx.fillText('🐦', W/2, H/2-40);
+      ctx.fillStyle='#fff'; ctx.font='bold 20px monospace';
+      ctx.fillText('FLAPPY BIRD', W/2, H/2);
+      ctx.fillStyle='rgba(255,255,255,0.6)'; ctx.font='13px monospace';
+      ctx.fillText('Tap to start', W/2, H/2+30);
+    }
+    if (state==='dead') {
+      ctx.fillStyle='rgba(5,7,10,0.75)'; ctx.fillRect(0,0,W,H);
+      ctx.fillStyle='#ff5c5c'; ctx.font='bold 24px monospace'; ctx.textAlign='center';
+      ctx.fillText('GAME OVER', W/2, H/2-30);
+      ctx.fillStyle='#fff'; ctx.font='16px monospace';
+      ctx.fillText('Score: '+score, W/2, H/2+5);
+      ctx.fillStyle='rgba(255,255,255,0.6)'; ctx.font='13px monospace';
+      ctx.fillText('Tap to try again', W/2, H/2+35);
+    }
+  }
+
+  body.innerHTML = '<div class="snake-wrap" style="gap:8px;">' +
+    '<canvas id="flappy-canvas" width="320" height="480" style="border-radius:12px;display:block;max-width:100%;cursor:pointer;border:1px solid var(--border2);touch-action:none;"></canvas>' +
+    '<div style="font-size:10px;color:var(--text3);font-family:var(--mono);text-align:center;">Tap / Space to flap • Avoid the pipes!</div>' +
+    '</div>';
+
+  var canvas = document.getElementById('flappy-canvas');
+  canvas.addEventListener('click', jump);
+  canvas.addEventListener('touchstart', function(e){ jump(); e.preventDefault(); }, {passive:false});
+  document.addEventListener('keydown', function flapKey(e) {
+    if (_currentGameType !== 'flappy') return document.removeEventListener('keydown', flapKey);
+    if (e.code==='Space'||e.key===' ') { jump(); e.preventDefault(); }
+  });
+
+  loop();
+}
+
+console.log('%c 🎮 SecretLine Games v2 + 5 new games loaded ✓', 'color:#3de8a0;font-weight:bold;background:#0b0f14;padding:4px 8px;border-radius:4px;');
 })();
 
 </script>
