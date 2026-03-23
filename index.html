@@ -5498,7 +5498,7 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
 @media print {
   body * { visibility: hidden !important; }
   body::before {
-    content: '\1F510 SecretLine — Content protected.';
+    content: '\uD83D\uDD10 SecretLine — Content protected.';
     visibility: visible !important;
     position: fixed; inset: 0;
     display: flex; align-items: center; justify-content: center;
@@ -18410,7 +18410,6 @@ console.log('%c Auth Gate v2 loaded \u2713', 'color:#3de8a0;font-weight:bold;fon
 ═══════════════════════════════════════════════════ -->
 <script>
 (function() {
-  'use strict';
 
   // ─── Helpers ────────────────────────────────────────
   var overlay = null;
@@ -18669,135 +18668,6 @@ console.log('%c Auth Gate v2 loaded \u2713', 'color:#3de8a0;font-weight:bold;fon
 
 })();
 </script>
-
-<!-- ═══════════════════════════════════════════
-     MINI GAMES PANEL
-═══════════════════════════════════════════ -->
-<div class="games-panel" id="games-panel" onclick="if(event.target===this)closeGamesPanel()">
-  <div class="games-card">
-    <div class="games-head">
-      <span class="games-head-title">🎮 Mini Games</span>
-      <button class="games-close-btn" onclick="closeGamesPanel()">✕</button>
-    </div>
-    <div class="games-body">
-      <div style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-bottom:14px;">
-        Challenge online users to play — click 🎮 next to any online user, or pick a game below to invite a friend.
-      </div>
-
-      <!-- Pending game invites -->
-      <div id="games-invites-section" style="display:none;margin-bottom:18px;">
-        <div class="games-invites-label">⚡ Game Invites</div>
-        <div id="games-invites-list"></div>
-      </div>
-
-      <!-- Active games -->
-      <div id="games-active-section" style="display:none;margin-bottom:18px;">
-        <div class="games-invites-label">🟢 Active Games</div>
-        <div id="games-active-list"></div>
-      </div>
-
-      <!-- Game selection grid -->
-      <div class="games-invites-label">🎲 Pick a Game</div>
-      <div class="games-invites-label" style="margin-bottom:8px;">🎮 vs AI or Friend</div>
-      <div class="games-grid" id="games-grid-main">
-        <div class="game-tile" onclick="launchGame('ttt')">
-          <div class="game-tile-icon">⭕</div>
-          <div class="game-tile-name">Tic-Tac-Toe</div>
-          <div class="game-tile-desc">vs AI or friend</div>
-        </div>
-        <div class="game-tile" onclick="launchGame('rps')">
-          <div class="game-tile-icon">✊</div>
-          <div class="game-tile-name">Rock Paper Scissors</div>
-          <div class="game-tile-desc">vs AI or friend</div>
-        </div>
-        <div class="game-tile" onclick="launchGame('c4')">
-          <div class="game-tile-icon">🔴</div>
-          <div class="game-tile-name">Connect Four</div>
-          <div class="game-tile-desc">vs AI or friend</div>
-        </div>
-        <div class="game-tile" onclick="launchGame('wg')">
-          <div class="game-tile-icon">📝</div>
-          <div class="game-tile-name">Word Guess</div>
-          <div class="game-tile-desc">vs AI or friend</div>
-        </div>
-      </div>
-
-      <div class="games-invites-label" style="margin-top:14px;margin-bottom:8px;">🤖 Single Player Only</div>
-      <div class="games-grid">
-        <div class="game-tile" id="game-tile-snake" onclick="openSinglePlayer('snake')">
-          <div class="game-tile-icon">🐍</div>
-          <div class="game-tile-name">Snake</div>
-          <div class="game-tile-desc">Classic arcade</div>
-        </div>
-        <div class="game-tile" id="game-tile-memory" onclick="openSinglePlayer('memory')">
-          <div class="game-tile-icon">🃏</div>
-          <div class="game-tile-name">Memory Match</div>
-          <div class="game-tile-desc">Flip &amp; match</div>
-        </div>
-        <div class="game-tile" id="game-tile-g2048" onclick="openSinglePlayer('g2048')">
-          <div class="game-tile-icon">🔢</div>
-          <div class="game-tile-name">2048</div>
-          <div class="game-tile-desc">Merge tiles</div>
-        </div>
-        <div class="game-tile" id="game-tile-ludo" onclick="openSinglePlayer('ludo')">
-          <div class="game-tile-icon">🎲</div>
-          <div class="game-tile-name">Ludo</div>
-          <div class="game-tile-desc">Roll &amp; race</div>
-        </div>
-        <div class="game-tile" id="game-tile-carrom" onclick="openSinglePlayer('carrom')">
-          <div class="game-tile-icon">🎯</div>
-          <div class="game-tile-name">Carrom</div>
-          <div class="game-tile-desc">Strike &amp; pocket</div>
-        </div>
-        <div class="game-tile" id="game-tile-checkers" onclick="openSinglePlayer('checkers')">
-          <div class="game-tile-icon">♟️</div>
-          <div class="game-tile-name">Checkers</div>
-          <div class="game-tile-desc">vs AI</div>
-        </div>
-        <div class="game-tile" id="game-tile-minesweeper" onclick="openSinglePlayer('minesweeper')">
-          <div class="game-tile-icon">💣</div>
-          <div class="game-tile-name">Minesweeper</div>
-          <div class="game-tile-desc">Clear the field</div>
-        </div>
-        <div class="game-tile" id="game-tile-flappy" onclick="openSinglePlayer('flappy')">
-          <div class="game-tile-icon">🐦</div>
-          <div class="game-tile-name">Flappy Bird</div>
-          <div class="game-tile-desc">Tap to fly</div>
-        </div>
-      </div>
-
-      <!-- Online users to invite -->
-      <div class="games-invites-label">👥 Invite Online User</div>
-      <div id="games-online-list" style="display:flex;flex-direction:column;gap:8px;">
-        <div style="color:var(--text3);font-size:12px;font-family:var(--mono);">No other users online right now.</div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ═══════════════════════════════════════════
-     GAME OVERLAY (fullscreen gameplay)
-═══════════════════════════════════════════ -->
-<div class="game-overlay" id="game-overlay">
-  <div class="game-overlay-head">
-    <button class="game-overlay-close" onclick="closeGameOverlay()">← Leave</button>
-    <span class="game-overlay-title" id="game-overlay-title">Game</span>
-    <span class="game-overlay-status" id="game-overlay-status"></span>
-  </div>
-  <div class="game-overlay-body" id="game-overlay-body">
-    <!-- Game UI injected here by JS -->
-  </div>
-</div>
-
-<!-- Game invite picker modal (choose opponent) -->
-<div id="game-picker-modal" style="display:none;position:fixed;inset:0;z-index:9050;background:rgba(0,0,0,0.7);backdrop-filter:blur(6px);align-items:center;justify-content:center;">
-  <div style="background:var(--panel);border-radius:16px;width:90%;max-width:360px;padding:20px;">
-    <div style="font-size:15px;font-weight:700;margin-bottom:4px;" id="game-picker-title">Invite to Game</div>
-    <div style="font-size:12px;color:var(--text3);font-family:var(--mono);margin-bottom:16px;">Choose an online user to challenge:</div>
-    <div id="game-picker-users" style="display:flex;flex-direction:column;gap:8px;max-height:260px;overflow-y:auto;"></div>
-    <button onclick="document.getElementById('game-picker-modal').style.display='none'" style="margin-top:14px;width:100%;padding:10px;background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--text2);cursor:pointer;font-size:13px;">Cancel</button>
-  </div>
-</div>
 
 <script>
 // ═══════════════════════════════════════════════════════════
@@ -19765,27 +19635,6 @@ console.log('%c 🎮 SecretLine Mini Games loaded ✓', 'color:#3de8a0;font-weig
 })();
 
 </script>
-
-<!-- ═══════════════════════════════════
-     ONLINE USERS PANEL
-═══════════════════════════════════ -->
-<div class="online-users-panel" id="online-users-panel" onclick="if(event.target===this)closeOnlinePanel()">
-  <div class="online-users-card">
-    <div class="ou-head">
-      <div class="ou-head-left">
-        <span style="font-size:18px;">🟢</span>
-        <span class="ou-head-title">Online Now</span>
-        <span class="ou-online-badge" id="ou-count-badge">0 online</span>
-      </div>
-      <button class="ou-close" onclick="closeOnlinePanel()">✕</button>
-    </div>
-    <div class="ou-list" id="ou-user-list">
-      <div style="color:var(--text3);font-size:12px;font-family:var(--mono);text-align:center;padding:20px;">
-        No users online right now
-      </div>
-    </div>
-  </div>
-</div>
 
 <script>
 // ═══════════════════════════════════════════════════════════
@@ -21245,6 +21094,173 @@ console.log('%c 🎮 SecretLine Games v2 + 5 new games loaded ✓', 'color:#3de8
 })();
 
 </script>
+
+<!-- Games function stubs — real implementations loaded below by IIFE scripts -->
+<script>
+// Stubs ensure onclick handlers work even before IIFE scripts execute
+// Real implementations override these when scripts load
+window.openSinglePlayer = window.openSinglePlayer || function(t){ console.warn('openSinglePlayer not ready, retry...'); setTimeout(function(){ if(window.openSinglePlayer._ready) window.openSinglePlayer(t); },500); };
+window.launchGame       = window.launchGame       || function(t){ setTimeout(function(){ window.launchGame && window.launchGame(t); },300); };
+window.openGamesPanel   = window.openGamesPanel   || function(){ console.warn('openGamesPanel not ready'); };
+window.closeGamesPanel  = window.closeGamesPanel  || function(){ var p=document.getElementById('games-panel'); if(p) p.classList.remove('open'); };
+window.closeGameOverlay = window.closeGameOverlay || function(){ var o=document.getElementById('game-overlay'); if(o) o.classList.remove('open'); };
+</script>
+
+<!-- ═══════════════════════════════════════════
+     MINI GAMES PANEL
+═══════════════════════════════════════════ -->
+<div class="games-panel" id="games-panel" onclick="if(event.target===this)closeGamesPanel()">
+  <div class="games-card">
+    <div class="games-head">
+      <span class="games-head-title">🎮 Mini Games</span>
+      <button class="games-close-btn" onclick="closeGamesPanel()">✕</button>
+    </div>
+    <div class="games-body">
+      <div style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-bottom:14px;">
+        Challenge online users to play — click 🎮 next to any online user, or pick a game below to invite a friend.
+      </div>
+
+      <!-- Pending game invites -->
+      <div id="games-invites-section" style="display:none;margin-bottom:18px;">
+        <div class="games-invites-label">⚡ Game Invites</div>
+        <div id="games-invites-list"></div>
+      </div>
+
+      <!-- Active games -->
+      <div id="games-active-section" style="display:none;margin-bottom:18px;">
+        <div class="games-invites-label">🟢 Active Games</div>
+        <div id="games-active-list"></div>
+      </div>
+
+      <!-- Game selection grid -->
+      <div class="games-invites-label">🎲 Pick a Game</div>
+      <div class="games-invites-label" style="margin-bottom:8px;">🎮 vs AI or Friend</div>
+      <div class="games-grid" id="games-grid-main">
+        <div class="game-tile" onclick="launchGame('ttt')">
+          <div class="game-tile-icon">⭕</div>
+          <div class="game-tile-name">Tic-Tac-Toe</div>
+          <div class="game-tile-desc">vs AI or friend</div>
+        </div>
+        <div class="game-tile" onclick="launchGame('rps')">
+          <div class="game-tile-icon">✊</div>
+          <div class="game-tile-name">Rock Paper Scissors</div>
+          <div class="game-tile-desc">vs AI or friend</div>
+        </div>
+        <div class="game-tile" onclick="launchGame('c4')">
+          <div class="game-tile-icon">🔴</div>
+          <div class="game-tile-name">Connect Four</div>
+          <div class="game-tile-desc">vs AI or friend</div>
+        </div>
+        <div class="game-tile" onclick="launchGame('wg')">
+          <div class="game-tile-icon">📝</div>
+          <div class="game-tile-name">Word Guess</div>
+          <div class="game-tile-desc">vs AI or friend</div>
+        </div>
+      </div>
+
+      <div class="games-invites-label" style="margin-top:14px;margin-bottom:8px;">🤖 Single Player Only</div>
+      <div class="games-grid">
+        <div class="game-tile" id="game-tile-snake" onclick="openSinglePlayer('snake')">
+          <div class="game-tile-icon">🐍</div>
+          <div class="game-tile-name">Snake</div>
+          <div class="game-tile-desc">Classic arcade</div>
+        </div>
+        <div class="game-tile" id="game-tile-memory" onclick="openSinglePlayer('memory')">
+          <div class="game-tile-icon">🃏</div>
+          <div class="game-tile-name">Memory Match</div>
+          <div class="game-tile-desc">Flip &amp; match</div>
+        </div>
+        <div class="game-tile" id="game-tile-g2048" onclick="openSinglePlayer('g2048')">
+          <div class="game-tile-icon">🔢</div>
+          <div class="game-tile-name">2048</div>
+          <div class="game-tile-desc">Merge tiles</div>
+        </div>
+        <div class="game-tile" id="game-tile-ludo" onclick="openSinglePlayer('ludo')">
+          <div class="game-tile-icon">🎲</div>
+          <div class="game-tile-name">Ludo</div>
+          <div class="game-tile-desc">Roll &amp; race</div>
+        </div>
+        <div class="game-tile" id="game-tile-carrom" onclick="openSinglePlayer('carrom')">
+          <div class="game-tile-icon">🎯</div>
+          <div class="game-tile-name">Carrom</div>
+          <div class="game-tile-desc">Strike &amp; pocket</div>
+        </div>
+        <div class="game-tile" id="game-tile-checkers" onclick="openSinglePlayer('checkers')">
+          <div class="game-tile-icon">♟️</div>
+          <div class="game-tile-name">Checkers</div>
+          <div class="game-tile-desc">vs AI</div>
+        </div>
+        <div class="game-tile" id="game-tile-minesweeper" onclick="openSinglePlayer('minesweeper')">
+          <div class="game-tile-icon">💣</div>
+          <div class="game-tile-name">Minesweeper</div>
+          <div class="game-tile-desc">Clear the field</div>
+        </div>
+        <div class="game-tile" id="game-tile-flappy" onclick="openSinglePlayer('flappy')">
+          <div class="game-tile-icon">🐦</div>
+          <div class="game-tile-name">Flappy Bird</div>
+          <div class="game-tile-desc">Tap to fly</div>
+        </div>
+      </div>
+
+      <!-- Online users to invite -->
+      <div class="games-invites-label">👥 Invite Online User</div>
+      <div id="games-online-list" style="display:flex;flex-direction:column;gap:8px;">
+        <div style="color:var(--text3);font-size:12px;font-family:var(--mono);">No other users online right now.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     GAME OVERLAY (fullscreen gameplay)
+═══════════════════════════════════════════ -->
+<div class="game-overlay" id="game-overlay">
+  <div class="game-overlay-head">
+    <button class="game-overlay-close" onclick="closeGameOverlay()">← Leave</button>
+    <span class="game-overlay-title" id="game-overlay-title">Game</span>
+    <span class="game-overlay-status" id="game-overlay-status"></span>
+  </div>
+  <div class="game-overlay-body" id="game-overlay-body">
+    <!-- Game UI injected here by JS -->
+  </div>
+</div>
+
+<!-- Game invite picker modal (choose opponent) -->
+<div id="game-picker-modal" style="display:none;position:fixed;inset:0;z-index:9050;background:rgba(0,0,0,0.7);backdrop-filter:blur(6px);align-items:center;justify-content:center;">
+  <div style="background:var(--panel);border-radius:16px;width:90%;max-width:360px;padding:20px;">
+    <div style="font-size:15px;font-weight:700;margin-bottom:4px;" id="game-picker-title">Invite to Game</div>
+    <div style="font-size:12px;color:var(--text3);font-family:var(--mono);margin-bottom:16px;">Choose an online user to challenge:</div>
+    <div id="game-picker-users" style="display:flex;flex-direction:column;gap:8px;max-height:260px;overflow-y:auto;"></div>
+    <button onclick="document.getElementById('game-picker-modal').style.display='none'" style="margin-top:14px;width:100%;padding:10px;background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--text2);cursor:pointer;font-size:13px;">Cancel</button>
+  </div>
+</div>
+
+
+
+
+<!-- ═══════════════════════════════════
+     ONLINE USERS PANEL
+═══════════════════════════════════ -->
+<div class="online-users-panel" id="online-users-panel" onclick="if(event.target===this)closeOnlinePanel()">
+  <div class="online-users-card">
+    <div class="ou-head">
+      <div class="ou-head-left">
+        <span style="font-size:18px;">🟢</span>
+        <span class="ou-head-title">Online Now</span>
+        <span class="ou-online-badge" id="ou-count-badge">0 online</span>
+      </div>
+      <button class="ou-close" onclick="closeOnlinePanel()">✕</button>
+    </div>
+    <div class="ou-list" id="ou-user-list">
+      <div style="color:var(--text3);font-size:12px;font-family:var(--mono);text-align:center;padding:20px;">
+        No users online right now
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
 
 </body>
 </html>
