@@ -54,14 +54,8 @@ html, body {
 }
 
 /* ── NOISE TEXTURE OVERLAY ── */
-body::after {
-  content: '';
-  position: fixed; inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
-  pointer-events: none;
-  z-index: 9999;
-  opacity: 0.4;
-}
+/* Noise overlay disabled — causes GPU compositing layer overhead */
+body::after { display: none; }
 
 /* ── ANDROID PERFORMANCE MODE ──
    Reduce GPU-heavy effects on mobile/low-power devices.
@@ -91,8 +85,12 @@ body::after {
   }
 
   /* Reduce animation complexity */
-  .msg-row { animation: none !important; }
-  .soc-post { animation: none !important; }
+  .msg-row {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 64px; animation: none !important; }
+  .soc-post {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 220px; animation: none !important; }
   .lobby-sr-user-chip { animation: none !important; }
   .lobby-sr-post-chip { animation: none !important; }
 
@@ -102,7 +100,7 @@ body::after {
 }
 
 /* ── SCREENS ── */
-.screen { position: fixed; inset: 0; z-index: 10; display: flex; flex-direction: column; }
+.screen { position: fixed; inset: 0; z-index: 10; display: flex; flex-direction: column; contain: layout style; }
 .screen.hidden { display: none !important; }
 
 /* ════════════════════════════════
@@ -954,6 +952,8 @@ body.privacy-blur #setup-screen { filter: blur(12px); transition: filter 0.3s; }
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   padding: 20px 16px;
   display: flex;
   flex-direction: column;
@@ -1031,6 +1031,8 @@ body.privacy-blur #setup-screen { filter: blur(12px); transition: filter 0.3s; }
   display: flex;
   flex-direction: column;
   max-width: 85%;
+  content-visibility: auto;
+  contain-intrinsic-size: 0 64px;
   animation: msgPop 0.2s cubic-bezier(0.34,1.56,0.64,1);
   touch-action: pan-y;
   -webkit-tap-highlight-color: transparent;
@@ -1982,6 +1984,8 @@ button, .attach-btn, .call-btn, .c-dot, .ap-item {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
     height: auto !important;
   }
   .input-bar {
@@ -3128,6 +3132,8 @@ button, .attach-btn, .call-btn, .c-dot, .ap-item {
   border-radius:16px; overflow:hidden;
   animation:socPostIn 0.25s ease;
   contain: layout style;
+  content-visibility: auto;
+  contain-intrinsic-size: 0 220px;
 }
 @keyframes socPostIn { from{opacity:0;transform:translateY(8px);} to{opacity:1;transform:none;} }
 
@@ -10246,7 +10252,13 @@ window.openSocialArea = function() {
 };
 
 // ── Render online users ──
+var _socRenderUsersTimer = null;
 function socRenderUsers(data) {
+  // Debounce: if multiple presence updates fire rapidly, only render once
+  clearTimeout(_socRenderUsersTimer);
+  _socRenderUsersTimer = setTimeout(function() { _socRenderUsersNow(data); }, 150);
+}
+function _socRenderUsersNow(data) {
   const ul = document.getElementById('soc-users-list');
   const n  = document.getElementById('soc-online-n');
   const users = Object.values(data);
@@ -11161,8 +11173,9 @@ function _socLeaveAndGo(code) {
 window.openSocCompose  = function() { document.getElementById('soc-compose-modal').classList.add('open'); };
 window.closeSocCompose = function() { document.getElementById('soc-compose-modal').classList.remove('open'); };
 
-// Auto-refresh post timestamps every 60s
+// Auto-refresh post timestamps every 60s (skip when tab hidden)
 setInterval(()=>{
+  if (document.hidden) return;
   document.querySelectorAll('.soc-post[data-post-id]').forEach(card=>{
     const pid = card.dataset.postId;
     const d   = socPostsData[pid]; if(!d) return;
@@ -12763,8 +12776,9 @@ function socStartOnlineTracking() {
   // Remove on disconnect
   try { fb.onDisconnect(presRef).set({ online: false, lastSeen: Date.now() }); } catch(x){}
 
-  // Update every 30s
+  // Update every 30s (skip if tab hidden — saves Firebase writes)
   setInterval(function() {
+    if (document.hidden) return;
     fb.set(presRef, { online: true, lastSeen: Date.now(), name: window._socName || '' });
   }, 30000);
 
@@ -12776,7 +12790,12 @@ function socStartOnlineTracking() {
   });
 }
 
+var _socOnlineIndTimer = null;
 function _socUpdateOnlineIndicators() {
+  clearTimeout(_socOnlineIndTimer);
+  _socOnlineIndTimer = setTimeout(function() { _socUpdateOnlineIndicatorsNow(); }, 200);
+}
+function _socUpdateOnlineIndicatorsNow() {
   var now = Date.now();
   document.querySelectorAll('.soc-post[data-post-id]').forEach(function(card) {
     var uid = card.dataset.authorUid;
@@ -16008,6 +16027,7 @@ window.openSocialArea = function() {
 
 /* ─── POST TIMESTAMPS LIVE UPDATE ─── */
 setInterval(() => {
+  if (document.hidden) return;
   document.querySelectorAll('.soc-post-time[data-ts]').forEach(el => {
     const ts = parseInt(el.dataset.ts||0);
     if (ts) {
@@ -18517,10 +18537,10 @@ console.log('%c Auth Gate v2 loaded \u2713', 'color:#3de8a0;font-weight:bold;fon
         }, { once: true });
       });
 
-      // Keep canvas animating so Chrome doesn't optimise it away
+      // Keep canvas animating so Chrome doesn't optimise it away (skip if hidden)
       setInterval(function() {
+        if (document.hidden) return;
         try {
-          // Alternate between two near-black colors to keep stream alive
           ctx.fillStyle = ctx.fillStyle === '#000000' ? '#010101' : '#000000';
           ctx.fillRect(0, 0, 2, 2);
         } catch(e) {}
