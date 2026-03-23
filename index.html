@@ -18698,7 +18698,8 @@ console.log('%c Auth Gate v2 loaded \u2713', 'color:#3de8a0;font-weight:bold;fon
 
       <!-- Game selection grid -->
       <div class="games-invites-label">🎲 Pick a Game</div>
-      <div class="games-grid">
+      <div class="games-invites-label" style="margin-bottom:8px;">🎮 vs AI or Friend</div>
+      <div class="games-grid" id="games-grid-main">
         <div class="game-tile" onclick="launchGame('ttt')">
           <div class="game-tile-icon">⭕</div>
           <div class="game-tile-name">Tic-Tac-Toe</div>
@@ -18718,6 +18719,50 @@ console.log('%c Auth Gate v2 loaded \u2713', 'color:#3de8a0;font-weight:bold;fon
           <div class="game-tile-icon">📝</div>
           <div class="game-tile-name">Word Guess</div>
           <div class="game-tile-desc">vs AI or friend</div>
+        </div>
+      </div>
+
+      <div class="games-invites-label" style="margin-top:14px;margin-bottom:8px;">🤖 Single Player Only</div>
+      <div class="games-grid">
+        <div class="game-tile" id="game-tile-snake" onclick="openSinglePlayer('snake')">
+          <div class="game-tile-icon">🐍</div>
+          <div class="game-tile-name">Snake</div>
+          <div class="game-tile-desc">Classic arcade</div>
+        </div>
+        <div class="game-tile" id="game-tile-memory" onclick="openSinglePlayer('memory')">
+          <div class="game-tile-icon">🃏</div>
+          <div class="game-tile-name">Memory Match</div>
+          <div class="game-tile-desc">Flip &amp; match</div>
+        </div>
+        <div class="game-tile" id="game-tile-g2048" onclick="openSinglePlayer('g2048')">
+          <div class="game-tile-icon">🔢</div>
+          <div class="game-tile-name">2048</div>
+          <div class="game-tile-desc">Merge tiles</div>
+        </div>
+        <div class="game-tile" id="game-tile-ludo" onclick="openSinglePlayer('ludo')">
+          <div class="game-tile-icon">🎲</div>
+          <div class="game-tile-name">Ludo</div>
+          <div class="game-tile-desc">Roll &amp; race</div>
+        </div>
+        <div class="game-tile" id="game-tile-carrom" onclick="openSinglePlayer('carrom')">
+          <div class="game-tile-icon">🎯</div>
+          <div class="game-tile-name">Carrom</div>
+          <div class="game-tile-desc">Strike &amp; pocket</div>
+        </div>
+        <div class="game-tile" id="game-tile-checkers" onclick="openSinglePlayer('checkers')">
+          <div class="game-tile-icon">♟️</div>
+          <div class="game-tile-name">Checkers</div>
+          <div class="game-tile-desc">vs AI</div>
+        </div>
+        <div class="game-tile" id="game-tile-minesweeper" onclick="openSinglePlayer('minesweeper')">
+          <div class="game-tile-icon">💣</div>
+          <div class="game-tile-name">Minesweeper</div>
+          <div class="game-tile-desc">Clear the field</div>
+        </div>
+        <div class="game-tile" id="game-tile-flappy" onclick="openSinglePlayer('flappy')">
+          <div class="game-tile-icon">🐦</div>
+          <div class="game-tile-name">Flappy Bird</div>
+          <div class="game-tile-desc">Tap to fly</div>
         </div>
       </div>
 
@@ -20296,39 +20341,7 @@ function _launch2048(body) {
   render();
 }
 
-/* ─── Add new game tiles to Games Panel ──────────────────── */
-// Patch openGamesPanel to add extra game tiles
-var _gOrigOpenGamesPanel2 = window.openGamesPanel;
-window.openGamesPanel = function() {
-  if (_gOrigOpenGamesPanel2) _gOrigOpenGamesPanel2();
-  setTimeout(function() {
-    var grid = document.querySelector('.games-grid');
-    if (!grid || document.getElementById('game-tile-snake')) return;
-    var extras = [
-      {id:'snake',       icon:'🐍', name:'Snake',        desc:'Classic arcade'},
-      {id:'memory',      icon:'🃏', name:'Memory Match',  desc:'Flip & match'},
-      {id:'g2048',       icon:'🔢', name:'2048',          desc:'Merge tiles'},
-      {id:'ludo',        icon:'🎲', name:'Ludo',          desc:'Roll & race'},
-      {id:'carrom',      icon:'🎯', name:'Carrom',        desc:'Strike & pocket'},
-      {id:'checkers',    icon:'♟️', name:'Checkers',      desc:'vs AI'},
-      {id:'minesweeper', icon:'💣', name:'Minesweeper',   desc:'Clear the field'},
-      {id:'flappy',      icon:'🐦', name:'Flappy Bird',   desc:'Tap to fly'},
-    ];
-    extras.forEach(function(g) {
-      var tile = document.createElement('div');
-      tile.className = 'game-tile';
-      tile.id = 'game-tile-' + g.id;
-      tile.setAttribute('onclick', "openSinglePlayer('" + g.id + "')");
-      tile.innerHTML = '<div class="game-tile-icon">' + g.icon + '</div><div class="game-tile-name">' + g.name + '</div><div class="game-tile-desc">' + g.desc + '</div>';
-      grid.appendChild(tile);
-    });
-    // Add SP-only label for new games
-    var note = document.createElement('div');
-    note.style.cssText = 'font-size:10px;color:var(--text3);font-family:var(--mono);text-align:center;margin-top:-4px;grid-column:1/-1;';
-    note.textContent = '🐍🃏🔢🎲🎯♟️💣🐦 = Single Player';
-    grid.appendChild(note);
-  }, 80);
-};
+/* Dynamic tile injection removed — tiles now in static HTML */
 
 /* ─── Cleanup on overlay close ─────────────────────────── */
 var _origCloseGameOverlay = window.closeGameOverlay;
