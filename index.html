@@ -63,6 +63,46 @@ body::after {
   opacity: 0.4;
 }
 
+/* ── ANDROID PERFORMANCE MODE ──
+   Reduce GPU-heavy effects on mobile/low-power devices.
+   backdrop-filter:blur() is the #1 cause of frame drops on Android.
+*/
+@media (max-width: 768px) and (hover: none) and (pointer: coarse) {
+  /* Disable noise overlay on mobile — GPU compositing cost */
+  body::after { display: none; }
+
+  /* Replace backdrop-filter blur with solid dark background */
+  .search-panel,
+  .starred-panel,
+  .room-settings-modal,
+  .msg-info-overlay,
+  .ctx-menu,
+  .emoji-picker-wrap,
+  .call-screen,
+  .incoming-call,
+  .vid-call-screen,
+  .media-lightbox,
+  .games-panel,
+  .online-users-panel,
+  .soc-fullpost-modal,
+  .soc-saved-panel,
+  .soc-edit-modal,
+  .story-upload-sheet {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  /* Reduce animation complexity */
+  .msg-row { animation: none !important; }
+  .soc-post { animation: none !important; }
+  .lobby-sr-user-chip { animation: none !important; }
+  .lobby-sr-post-chip { animation: none !important; }
+
+  /* Faster transitions */
+  * { transition-duration: 0.1s !important; }
+  .msgs-wrap * { transition: none !important; }
+}
+
 /* ── SCREENS ── */
 .screen { position: fixed; inset: 0; z-index: 10; display: flex; flex-direction: column; }
 .screen.hidden { display: none !important; }
@@ -920,6 +960,11 @@ body.privacy-blur #setup-screen { filter: blur(12px); transition: filter 0.3s; }
   display: flex;
   flex-direction: column;
   gap: 3px;
+  /* Android performance: promote to GPU layer */
+  will-change: scroll-position;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  overscroll-behavior: contain;
 }
 
 /* Wider messages on desktop */
@@ -930,6 +975,12 @@ body.privacy-blur #setup-screen { filter: blur(12px); transition: filter 0.3s; }
 
 .msgs-wrap::-webkit-scrollbar { width: 3px; }
 .msgs-wrap::-webkit-scrollbar-thumb { background: var(--card2); border-radius: 2px; }
+
+/* Android: isolate message row repaints */
+.msg-row {
+  contain: layout style;
+  transform: translateZ(0);
+}
 
 @media (min-width: 700px) {
   .msgs-wrap::-webkit-scrollbar { width: 5px; }
@@ -3078,6 +3129,7 @@ button, .attach-btn, .call-btn, .c-dot, .ap-item {
   background:var(--panel); border:1px solid var(--border);
   border-radius:16px; overflow:hidden;
   animation:socPostIn 0.25s ease;
+  contain: layout style;
 }
 @keyframes socPostIn { from{opacity:0;transform:translateY(8px);} to{opacity:1;transform:none;} }
 
@@ -3768,6 +3820,7 @@ button, .attach-btn, .call-btn, .c-dot, .ap-item {
   border: 1px solid var(--border); border-radius: 12px;
   cursor: pointer; transition: border-color 0.15s, background 0.15s;
   animation: socPostIn 0.15s ease;
+  contain: layout style;
 }
 .lobby-sr-user-chip:hover { border-color: rgba(61,232,160,0.3); background: var(--card); }
 .lobby-sr-av {
@@ -3787,6 +3840,7 @@ button, .attach-btn, .call-btn, .c-dot, .ap-item {
   border: 1px solid var(--border); border-radius: 12px;
   cursor: pointer; transition: border-color 0.15s, background 0.15s;
   animation: socPostIn 0.15s ease;
+  contain: layout style;
 }
 .lobby-sr-post-chip:hover { border-color: rgba(61,232,160,0.3); background: var(--card); }
 .lobby-sr-post-sender { font-size: 11px; font-weight: 700; margin-bottom: 2px; }
@@ -8678,7 +8732,7 @@ document.getElementById('msgs-wrap').addEventListener('scroll', () => {
   } else {
     document.getElementById('scroll-down-btn').classList.add('show');
   }
-});
+}, { passive: true });
 
 /* ══════════════════════════════
    SOUND EFFECTS
@@ -9827,18 +9881,25 @@ function startCallTimer() {
 (function() {
   if (!window.visualViewport) return;
   const chatCol = document.getElementById('chat-column');
+  var _vpRaf = null;
   function onViewportChange() {
     const cs = document.getElementById('chat-screen');
     if (!cs || cs.classList.contains('hidden')) return;
-    const vh = window.visualViewport.height;
-    if (chatCol) chatCol.style.height = vh + 'px';
-    setTimeout(() => {
+    // Use rAF to batch layout changes — avoids forced reflow on Android
+    if (_vpRaf) cancelAnimationFrame(_vpRaf);
+    _vpRaf = requestAnimationFrame(function() {
+      const vh = window.visualViewport.height;
+      const offsetTop = window.visualViewport.offsetTop || 0;
+      if (chatCol) {
+        chatCol.style.height = vh + 'px';
+        chatCol.style.transform = 'translateY(' + offsetTop + 'px)';
+      }
       const wrap = document.getElementById('msgs-wrap');
       if (wrap) wrap.scrollTop = wrap.scrollHeight;
-    }, 100);
+    });
   }
-  window.visualViewport.addEventListener('resize', onViewportChange);
-  window.visualViewport.addEventListener('scroll', onViewportChange);
+  window.visualViewport.addEventListener('resize', onViewportChange, { passive: true });
+  window.visualViewport.addEventListener('scroll', onViewportChange, { passive: true });
 })();
 
 /* ══════════════════════════════════════════════════════
@@ -11523,6 +11584,9 @@ document.addEventListener('DOMContentLoaded', ()=>{
 function getStarred(){ try{ return JSON.parse(localStorage.getItem('sl_starred')||'[]'); }catch(e){return[];} }
 function saveStarred(arr){ localStorage.setItem('sl_starred', JSON.stringify(arr)); }
 
+/* ─── escHtml2: safe HTML escape for chat/starred content ─── */
+function escHtml2(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
 window.openStarredPanel = function(){
   renderStarredList();
   document.getElementById('starred-panel').classList.add('open');
@@ -11556,8 +11620,6 @@ window.unstarMsg = function(key){
   if(btn){ btn.classList.remove('bookmarked'); btn.title='Star message'; }
   showToast('Unstarred');
 };
-
-function escHtml2(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 /* ─── Context Menu: Star ─── */
 window.ctxStar = function(){
@@ -11672,7 +11734,7 @@ window.doSearchMessages = function(q){
   results.innerHTML = '';
   hits.slice(0,50).forEach(m => {
     const highlighted = escHtml2(m.text.slice(0,120)).replace(
-      new RegExp(escHtml2(q).replace(/[\\^$.|?*+()[{]/g,'\\$&'),'gi'),
+      new RegExp(escHtml2(q).replace(/[\\^$.|?*+()[\]{]/g,'\\$&'),'gi'),
       match => `<mark>${match}</mark>`
     );
     const el = document.createElement('div');
@@ -11684,10 +11746,13 @@ window.doSearchMessages = function(q){
       closeSearchPanel();
       const target = document.querySelector(`.msg-row[data-key="${m.key}"]`);
       if(target){
-        target.scrollIntoView({ behavior:'smooth', block:'center' });
-        target.style.transition = 'background 0.3s';
-        target.style.background = 'rgba(61,232,160,0.12)';
-        setTimeout(()=>{ target.style.background=''; }, 1500);
+        // Wait for panel close animation before scrolling
+        setTimeout(() => {
+          target.scrollIntoView({ behavior:'smooth', block:'center' });
+          target.style.transition = 'background 0.3s';
+          target.style.background = 'rgba(61,232,160,0.12)';
+          setTimeout(()=>{ target.style.background=''; }, 1500);
+        }, 250);
       }
     };
     results.appendChild(el);
@@ -12019,6 +12084,12 @@ window.lobbySearch = function(q) {
   const clearBtn = document.getElementById('lobby-search-clear');
   if (clearBtn) clearBtn.style.display = q ? 'block' : 'none';
 
+  // Sync both inputs to same value
+  const inp1 = document.getElementById('lobby-search-input');
+  const inp2 = document.getElementById('lobby-mob-search-input');
+  if (inp1 && inp1 !== document.activeElement && inp1.value !== q) inp1.value = q;
+  if (inp2 && inp2 !== document.activeElement && inp2.value !== q) inp2.value = q;
+
   const results = document.getElementById('lobby-search-results');
   if (!results) return;
 
@@ -12087,7 +12158,7 @@ function doLobbySearch(q) {
     matchedPosts.slice(0, 15).forEach(([pid, p]) => {
       if (!p.text) return;
       const hl = escHtml(p.text.slice(0, 120)).replace(
-        new RegExp(escHtml(q).replace(/[\\^$.|?*+()[{]/g,'\\$&'),'gi'),
+        new RegExp(escHtml(q).replace(/[\\^$.|?*+()[\]{]/g,'\\$&'),'gi'),
         m => `<mark>${m}</mark>`
       );
       const chip = document.createElement('div');
@@ -12242,9 +12313,15 @@ document.addEventListener('keydown', e => {
   // Ctrl+F in lobby = lobby search
   if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
     e.preventDefault();
-    const inp = document.getElementById('lobby-search-input') || document.getElementById('lobby-mob-search-input');
-    if (inp) { inp.focus(); }
-    toggleLobbySearchMob();
+    const desktopInp = document.getElementById('lobby-search-input');
+    if (desktopInp && desktopInp.offsetParent !== null) {
+      // Desktop: focus the visible desktop search bar
+      desktopInp.focus();
+    } else {
+      // Mobile: toggle the mobile search bar
+      toggleLobbySearchMob();
+      setTimeout(() => document.getElementById('lobby-mob-search-input')?.focus(), 100);
+    }
   }
 });
 
@@ -15909,9 +15986,9 @@ function renderStoriesBar() {
       var _ht = null;
       item.addEventListener('touchstart',function(){_ht=setTimeout(function(){
         if(confirm('Story delete \u0d9a\u0dbb\u0db1\u0dca\u0db1\u0daf?'))window._socDeleteStoryByUid(story.uid);
-      },700);});
-      item.addEventListener('touchend',function(){clearTimeout(_ht);});
-      item.addEventListener('touchmove',function(){clearTimeout(_ht);});
+      },700);},{passive:true});
+      item.addEventListener('touchend',function(){clearTimeout(_ht);},{passive:true});
+      item.addEventListener('touchmove',function(){clearTimeout(_ht);},{passive:true});
       item.addEventListener('contextmenu',function(e){
         e.preventDefault();
         if(confirm('Story delete \u0d9a\u0dbb\u0db1\u0dca\u0db1\u0daf?'))window._socDeleteStoryByUid(story.uid);
