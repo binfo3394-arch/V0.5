@@ -18638,9 +18638,32 @@ let _gamesInviteUnsub = null;
 let _gamesActiveUnsub = null;
 
 function _gInit() {
-  _gameMyId    = window._socUserId || '';
-  _gameMyName  = window._socName   || 'Player';
-  _gameMyColor = window._socColor  || '#3de8a0';
+  // Try all sources for user identity
+  _gameMyId = window._socUserId || _gameMyId || '';
+  _gameMyName = window._socName || _gameMyName || 'Player';
+  _gameMyColor = window._socColor || _gameMyColor || '#3de8a0';
+
+  // Fallback: read from auth session
+  if (!_gameMyId) {
+    try {
+      var sess = JSON.parse(localStorage.getItem('sl_auth_v2') || 'null');
+      if (sess && sess.uid) {
+        _gameMyId    = sess.uid;
+        _gameMyName  = sess.displayName || _gameMyName;
+        _gameMyColor = sess.color || _gameMyColor;
+      }
+    } catch(e) {}
+  }
+  // Fallback: google profile
+  if (!_gameMyId) {
+    try {
+      var gp = JSON.parse(localStorage.getItem('sl_google_profile') || 'null');
+      if (gp && gp.email) {
+        _gameMyId   = 'g_' + gp.email.replace(/[^a-z0-9]/gi,'_');
+        _gameMyName = gp.name || gp.email;
+      }
+    } catch(e) {}
+  }
 }
 
 /* ── Firebase helpers ── */
@@ -18662,7 +18685,21 @@ function _gListen(path, cb) {
 window.openGamesPanel = function() {
   _gInit();
   document.getElementById('games-panel').classList.add('open');
+
+  // Show cached first (instant), then refresh from Firebase
   _renderOnlineUsersInPanel();
+
+  // Always fetch live presence directly from Firebase when panel opens
+  var db2 = _gDB();
+  if (db2) {
+    _gOnce('social/presence', function(data) {
+      if (data) {
+        window._lobbyPresenceData = data;
+        _renderOnlineUsersInPanel();
+      }
+    });
+  }
+
   _listenInvites();
   _listenActiveGames();
 };
@@ -18673,10 +18710,16 @@ window.closeGamesPanel = function() {
 /* ── Render online users ── */
 function _renderOnlineUsersInPanel() {
   const presence = window._lobbyPresenceData || {};
-  const myId = _gameMyId || window._socUserId;
+  const myId = _gameMyId || window._socUserId || '';
   const list = document.getElementById('games-online-list');
   if (!list) return;
-  const others = Object.entries(presence).filter(([uid]) => uid !== myId);
+  // Filter out self — try both uid formats
+  const others = Object.entries(presence).filter(([uid, u]) => {
+    if (!uid) return false;
+    if (myId && uid === myId) return false;
+    // Also filter by email/name match with current user
+    return true;
+  });
   if (!others.length) {
     list.innerHTML = '<div style="color:var(--text3);font-size:12px;font-family:var(--mono);">No other users online right now.</div>';
     return;
@@ -18773,6 +18816,14 @@ window._inviteUser = function(toUid, toName, toPhoto, toColor, gameType) {
 function _listenInvites() {
   _gInit();
   const db = _gDB(); if (!db) return;
+  // Re-resolve myId in case auth completed after load
+  if (!_gameMyId) {
+    try {
+      var authSess = JSON.parse(localStorage.getItem('sl_auth_v2')||'null');
+      if (authSess && authSess.uid) { _gameMyId = authSess.uid; _gameMyName = authSess.displayName || _gameMyName; }
+    } catch(e) {}
+    if (!_gameMyId) _gameMyId = window._socUserId || '';
+  }
   const myId = _gameMyId;
   if (_gamesInviteUnsub) { try { _gamesInviteUnsub(); } catch(e){} }
   _gamesInviteUnsub = _gListen(GAMES_PATH, function(all) {
@@ -19401,30 +19452,52 @@ var _presencePatchApplied = false;
 function _patchPresence() {
   if (_presencePatchApplied) return;
   _presencePatchApplied = true;
-  // Patch socRenderUsers or presence listener to update games panel
+
+  // Patch socRenderUsers to also trigger games panel refresh
   var _origRU = window.socRenderUsers;
   window.socRenderUsers = function(data) {
     window._lobbyPresenceData = data;
     if (_origRU) _origRU(data);
-    // If games panel open, refresh
+    // If games panel open, refresh online list
     var panel = document.getElementById('games-panel');
     if (panel && panel.classList.contains('open')) _renderOnlineUsersInPanel();
   };
+
+  // Also set up an independent Firebase listener so we always have presence
+  // even if socRenderUsers hasn't fired yet (e.g. panel opened before lobby)
+  var db2 = _gDB();
+  if (db2) {
+    _gFB().onValue(_gFB().ref(db2, 'social/presence'), function(snap) {
+      var data = snap.val() || {};
+      // Merge into existing data, don't overwrite if lobby listener is active
+      if (!window._lobbyPresenceData || Object.keys(window._lobbyPresenceData).length === 0) {
+        window._lobbyPresenceData = data;
+      }
+      // Always refresh panel if open
+      var panel = document.getElementById('games-panel');
+      if (panel && panel.classList.contains('open')) _renderOnlineUsersInPanel();
+    });
+  }
 }
 
+// Patch presence as early as possible
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(_patchPresence, 500);
+});
 window.addEventListener('load', function() {
   setTimeout(function() {
     _patchPresence();
-    // Start listening for invites when user is in lobby
+    // Patch openSocialArea to start invite listener when lobby opens
     var _origOSA = window.openSocialArea;
     window.openSocialArea = function() {
       if (_origOSA) _origOSA();
       setTimeout(function() {
         _gInit();
+        _patchPresence(); // ensure presence listener is active
         if (_gameMyId) _listenInvites();
-      }, 800);
+      }, 600);
     };
-  }, 1500);
+  }, 800);
 });
 
 console.log('%c 🎮 SecretLine Mini Games loaded ✓', 'color:#3de8a0;font-weight:bold;font-size:12px;background:#0b0f14;padding:4px 8px;border-radius:4px;');
