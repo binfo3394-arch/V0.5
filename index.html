@@ -18638,13 +18638,14 @@ let _gamesInviteUnsub = null;
 let _gamesActiveUnsub = null;
 
 function _gInit() {
-  // Try all sources for user identity
-  _gameMyId = window._socUserId || _gameMyId || '';
-  _gameMyName = window._socName || _gameMyName || 'Player';
+  // Use EXACTLY the same uid used in presence registration (openSocialArea uses window._socUserId || socUserId)
+  // Priority: window._socUserId (set by auth) > window.socUserId (module scoped) > fallbacks
+  _gameMyId    = window._socUserId || (window.socUserId && !window.socUserId.startsWith('su_') ? window.socUserId : '') || _gameMyId || '';
+  _gameMyName  = window._socName  || _gameMyName  || 'Player';
   _gameMyColor = window._socColor || _gameMyColor || '#3de8a0';
 
-  // Fallback: read from auth session
-  if (!_gameMyId) {
+  // If still no id or it's a random su_ id, try auth session
+  if (!_gameMyId || _gameMyId.startsWith('su_')) {
     try {
       var sess = JSON.parse(localStorage.getItem('sl_auth_v2') || 'null');
       if (sess && sess.uid) {
@@ -18654,8 +18655,8 @@ function _gInit() {
       }
     } catch(e) {}
   }
-  // Fallback: google profile
-  if (!_gameMyId) {
+  // Last resort: google profile
+  if (!_gameMyId || _gameMyId.startsWith('su_')) {
     try {
       var gp = JSON.parse(localStorage.getItem('sl_google_profile') || 'null');
       if (gp && gp.email) {
@@ -18664,6 +18665,8 @@ function _gInit() {
       }
     } catch(e) {}
   }
+  // If STILL su_, just use it — it matches what lobby registered with
+  if (!_gameMyId) _gameMyId = window._socUserId || window.socUserId || '';
 }
 
 /* ── Firebase helpers ── */
@@ -18689,15 +18692,19 @@ window.openGamesPanel = function() {
   // Show cached first (instant), then refresh from Firebase
   _renderOnlineUsersInPanel();
 
-  // Always fetch live presence directly from Firebase when panel opens
+  // Fetch live presence directly from Firebase when panel opens
   var db2 = _gDB();
   if (db2) {
-    _gOnce('social/presence', function(data) {
-      if (data) {
-        window._lobbyPresenceData = data;
-        _renderOnlineUsersInPanel();
-      }
-    });
+    try {
+      var presRef2 = _gFB().ref(db2, 'social/presence');
+      _gFB().get(presRef2).then(function(snap) {
+        var data = snap.val();
+        if (data && Object.keys(data).length > 0) {
+          window._lobbyPresenceData = data;
+          _renderOnlineUsersInPanel();
+        }
+      }).catch(function(){});
+    } catch(e) {}
   }
 
   _listenInvites();
@@ -18710,16 +18717,13 @@ window.closeGamesPanel = function() {
 /* ── Render online users ── */
 function _renderOnlineUsersInPanel() {
   const presence = window._lobbyPresenceData || {};
-  const myId = _gameMyId || window._socUserId || '';
+  // Use same uid resolution as openSocialArea presence registration
+  const myPresUid = window._socUserId || window.socUserId || _gameMyId || '';
   const list = document.getElementById('games-online-list');
   if (!list) return;
-  // Filter out self — try both uid formats
-  const others = Object.entries(presence).filter(([uid, u]) => {
-    if (!uid) return false;
-    if (myId && uid === myId) return false;
-    // Also filter by email/name match with current user
-    return true;
-  });
+  const allEntries = Object.entries(presence);
+  // Filter out self using presence uid
+  const others = allEntries.filter(([uid]) => uid && uid !== myPresUid);
   if (!others.length) {
     list.innerHTML = '<div style="color:var(--text3);font-size:12px;font-family:var(--mono);">No other users online right now.</div>';
     return;
@@ -19463,21 +19467,30 @@ function _patchPresence() {
     if (panel && panel.classList.contains('open')) _renderOnlineUsersInPanel();
   };
 
-  // Also set up an independent Firebase listener so we always have presence
-  // even if socRenderUsers hasn't fired yet (e.g. panel opened before lobby)
-  var db2 = _gDB();
-  if (db2) {
-    _gFB().onValue(_gFB().ref(db2, 'social/presence'), function(snap) {
-      var data = snap.val() || {};
-      // Merge into existing data, don't overwrite if lobby listener is active
-      if (!window._lobbyPresenceData || Object.keys(window._lobbyPresenceData).length === 0) {
+  // Independent Firebase presence listener — keeps data fresh at all times
+  function _setupPresenceListener() {
+    var fb = window.__fbx; var db2 = window.__db;
+    if (!fb || !db2 || !fb.ref || !fb.onValue) {
+      // Firebase not ready yet — retry
+      setTimeout(_setupPresenceListener, 1000);
+      return;
+    }
+    try {
+      fb.onValue(fb.ref(db2, 'social/presence'), function(snap) {
+        var data = snap.val() || {};
+        // Always update — socRenderUsers will also update it, but this is our safety net
         window._lobbyPresenceData = data;
-      }
-      // Always refresh panel if open
-      var panel = document.getElementById('games-panel');
-      if (panel && panel.classList.contains('open')) _renderOnlineUsersInPanel();
-    });
+        // Refresh panel if open
+        var panel = document.getElementById('games-panel');
+        if (panel && panel.classList.contains('open')) {
+          _renderOnlineUsersInPanel();
+        }
+      });
+    } catch(e) {
+      setTimeout(_setupPresenceListener, 1500);
+    }
   }
+  _setupPresenceListener();
 }
 
 // Patch presence as early as possible
