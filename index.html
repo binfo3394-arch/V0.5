@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a0a10">
+<title>RideGo — Sri Lanka's Ride Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800;900&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+:root{
+  --bg:#0a0a10;
+  --surface:#12121a;
+  --card:#1a1a26;
+  --border:#252535;
+  --accent:#f5c842;
+  --accent2:#c9a020;
+  --orange:#ff6b35;
+  --green:#27ae60;
+  --text:#f0f0f8;
+  --muted:#6a6a7c;
+  --sat:env(safe-area-inset-top,0px);
+  --sab:env(safe-area-inset-bottom,0px);
+}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);}
+body{font-family:'DM Sans',sans-serif;color:var(--text);position:fixed;inset:0;display:flex;flex-direction:column;}
+
+/* ── NOISE TEXTURE OVERLAY ── */
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  opacity:0.6;
+}
+
+/* ── BACKGROUND GLOW ── */
+.bg-glow{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+.glow-1{position:absolute;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(245,200,66,0.08) 0%,transparent 70%);top:-100px;left:-100px;animation:floatGlow 8s ease-in-out infinite;}
+.glow-2{position:absolute;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(255,107,53,0.06) 0%,transparent 70%);bottom:-80px;right:-80px;animation:floatGlow 10s ease-in-out infinite reverse;}
+.glow-3{position:absolute;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(39,174,96,0.05) 0%,transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);animation:floatGlow 12s ease-in-out infinite 2s;}
+@keyframes floatGlow{0%,100%{transform:scale(1) translate(0,0)}50%{transform:scale(1.1) translate(10px,-10px)}}
+.glow-2{animation-name:floatGlow2;}
+@keyframes floatGlow2{0%,100%{transform:scale(1)}50%{transform:scale(1.15) translate(-8px,8px)}}
+
+/* ── MAIN WRAPPER ── */
+.wrapper{
+  position:relative;z-index:1;
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:calc(var(--sat)+20px) 24px calc(var(--sab)+20px);
+  gap:0;
+}
+
+/* ── LOGO ── */
+.logo-wrap{text-align:center;margin-bottom:8px;animation:fadeUp 0.7s cubic-bezier(0.4,0,0.2,1) both;}
+.logo{font-family:'Syne',sans-serif;font-size:clamp(2.8rem,10vw,4rem);font-weight:900;letter-spacing:-2px;line-height:1;}
+.logo b{color:var(--accent);}
+.logo-tagline{font-size:0.78rem;color:var(--muted);letter-spacing:0.18em;text-transform:uppercase;margin-top:6px;}
+
+/* ── ANIMATED ICON ROW ── */
+.icon-row{
+  display:flex;align-items:center;justify-content:center;gap:12px;
+  margin:22px 0 28px;
+  animation:fadeUp 0.7s cubic-bezier(0.4,0,0.2,1) 0.1s both;
+}
+.icon-blob{
+  width:52px;height:52px;border-radius:16px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.5rem;position:relative;
+  border:1.5px solid var(--border);
+  background:var(--card);
+  animation:blobFloat 3s ease-in-out infinite;
+}
+.icon-blob:nth-child(1){animation-delay:0s;}
+.icon-blob:nth-child(2){animation-delay:0.3s;background:rgba(245,200,66,0.08);border-color:rgba(245,200,66,0.25);}
+.icon-blob:nth-child(3){animation-delay:0.6s;}
+.icon-blob:nth-child(4){animation-delay:0.9s;}
+@keyframes blobFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+
+/* ── HEADLINE ── */
+.headline{
+  text-align:center;
+  font-family:'Syne',sans-serif;font-size:clamp(1.1rem,5vw,1.4rem);font-weight:700;
+  line-height:1.4;margin-bottom:8px;
+  animation:fadeUp 0.7s cubic-bezier(0.4,0,0.2,1) 0.15s both;
+}
+.headline span{color:var(--accent);}
+.sub-text{
+  text-align:center;color:var(--muted);font-size:0.88rem;line-height:1.6;
+  max-width:300px;margin-bottom:32px;
+  animation:fadeUp 0.7s cubic-bezier(0.4,0,0.2,1) 0.2s both;
+}
+
+/* ── CARDS ── */
+.cards{
+  display:grid;grid-template-columns:1fr 1fr;gap:12px;
+  width:100%;max-width:380px;
+  animation:fadeUp 0.7s cubic-bezier(0.4,0,0.2,1) 0.25s both;
+}
+
+.role-card{
+  background:var(--card);
+  border:1.5px solid var(--border);
+  border-radius:22px;
+  padding:22px 16px 20px;
+  text-align:center;
+  cursor:pointer;
+  position:relative;overflow:hidden;
+  transition:transform 0.2s cubic-bezier(0.34,1.56,0.64,1),border-color 0.2s,box-shadow 0.2s;
+  -webkit-tap-highlight-color:transparent;
+  text-decoration:none;display:block;
+}
+.role-card::before{
+  content:'';position:absolute;inset:0;opacity:0;transition:opacity 0.3s;
+}
+.role-card.rider::before{background:radial-gradient(circle at 50% 0%,rgba(245,200,66,0.12) 0%,transparent 70%);}
+.role-card.driver::before{background:radial-gradient(circle at 50% 0%,rgba(255,107,53,0.12) 0%,transparent 70%);}
+.role-card:active{transform:scale(0.96);}
+.role-card:hover{border-color:rgba(245,200,66,0.3);box-shadow:0 8px 32px rgba(0,0,0,0.3);}
+.role-card:hover::before{opacity:1;}
+.role-card.driver:hover{border-color:rgba(255,107,53,0.3);}
+
+.card-icon{
+  width:54px;height:54px;border-radius:15px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.7rem;margin:0 auto 13px;
+}
+.rider .card-icon{background:rgba(245,200,66,0.1);border:1.5px solid rgba(245,200,66,0.2);}
+.driver .card-icon{background:rgba(255,107,53,0.1);border:1.5px solid rgba(255,107,53,0.2);}
+
+.card-title{
+  font-family:'Syne',sans-serif;font-size:1rem;font-weight:800;margin-bottom:4px;
+}
+.rider .card-title{color:var(--accent);}
+.driver .card-title{color:var(--orange);}
+
+.card-desc{font-size:0.75rem;color:var(--muted);line-height:1.5;margin-bottom:14px;}
+
+.card-btn{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:8px 16px;border-radius:99px;
+  font-family:'Syne',sans-serif;font-size:0.75rem;font-weight:700;
+  transition:transform 0.15s;
+}
+.rider .card-btn{background:var(--accent);color:#000;}
+.driver .card-btn{background:var(--orange);color:#fff;}
+.role-card:active .card-btn{transform:scale(0.95);}
+
+/* ── CORNER BADGE ── */
+.card-badge{
+  position:absolute;top:12px;right:12px;
+  font-size:0.58rem;font-weight:700;font-family:'Syne',sans-serif;
+  padding:3px 8px;border-radius:99px;letter-spacing:0.05em;
+}
+.rider .card-badge{background:rgba(245,200,66,0.15);color:var(--accent);}
+.driver .card-badge{background:rgba(255,107,53,0.15);color:var(--orange);}
+
+/* ── FEATURES ROW ── */
+.features{
+  display:flex;gap:16px;margin-top:20px;
+  animation:fadeUp 0.7s cubic-bezier(0.4,0,0.2,1) 0.35s both;
+}
+.feat{display:flex;align-items:center;gap:5px;font-size:0.72rem;color:var(--muted);}
+.feat-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
+.feat-dot.g{background:var(--green);}
+.feat-dot.y{background:var(--accent);}
+.feat-dot.o{background:var(--orange);}
+
+/* ── FOOTER ── */
+.footer{
+  position:relative;z-index:1;
+  text-align:center;padding:10px 0 calc(var(--sab)+10px);
+  font-size:0.7rem;color:var(--muted);letter-spacing:0.04em;
+  animation:fadeUp 0.7s cubic-bezier(0.4,0,0.2,1) 0.4s both;
+}
+
+/* ── REDIRECT OVERLAY ── */
+#redirectOverlay{
+  position:fixed;inset:0;z-index:100;
+  background:var(--bg);
+  display:none;flex-direction:column;
+  align-items:center;justify-content:center;gap:16px;
+}
+#redirectOverlay.show{display:flex;}
+.redirect-ic{font-size:3rem;animation:pulse 1s ease-in-out infinite;}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+.redirect-title{font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem;}
+.redirect-sub{font-size:0.82rem;color:var(--muted);}
+.redirect-bar{width:160px;height:3px;background:var(--border);border-radius:99px;overflow:hidden;}
+.redirect-prog{height:100%;background:var(--accent);border-radius:99px;width:0;transition:width 0.6s ease;}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── PULSE DOT ON ONLINE ── */
+@keyframes ping{0%{transform:scale(1);opacity:0.8}100%{transform:scale(1.6);opacity:0}}
+.live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);position:relative;margin-right:4px;}
+.live-dot::after{content:'';position:absolute;inset:0;border-radius:50%;background:var(--green);animation:ping 1.4s ease-out infinite;}
+</style>
+</head>
+<body>
+
+<!-- Background effects -->
+<div class="bg-glow">
+  <div class="glow-1"></div>
+  <div class="glow-2"></div>
+  <div class="glow-3"></div>
+</div>
+
+<!-- Main content -->
+<div class="wrapper">
+
+  <!-- Logo -->
+  <div class="logo-wrap">
+    <div class="logo">Ride<b>Go</b></div>
+    <div class="logo-tagline">Sri Lanka's Ride Platform</div>
+  </div>
+
+  <!-- Vehicle icons -->
+  <div class="icon-row">
+    <div class="icon-blob">🛺</div>
+    <div class="icon-blob">🚗</div>
+    <div class="icon-blob">🏍️</div>
+    <div class="icon-blob">🚐</div>
+  </div>
+
+  <!-- Headline -->
+  <div class="headline">ඔබ <span>Rider</span> ද?<br>නැත්නම් <span style="color:var(--orange)">Driver</span> ද?</div>
+  <div class="sub-text">App type select කරන්න — ඒ app ලෙ redirect කරනවා</div>
+
+  <!-- Role cards -->
+  <div class="cards">
+
+    <!-- Rider -->
+    <a class="role-card rider" href="rider_advanced.html" onclick="handleRedirect(event,'rider_advanced.html','🛺','Rider App','Rider app load වෙනවා...')">
+      <div class="card-badge">RIDER</div>
+      <div class="card-icon">👤</div>
+      <div class="card-title">Rider</div>
+      <div class="card-desc">Ride book කරන්න, driver track කරන්න</div>
+      <div class="card-btn">Open App →</div>
+    </a>
+
+    <!-- Driver -->
+    <a class="role-card driver" href="driver_advanced.html" onclick="handleRedirect(event,'driver_advanced.html','🚗','Driver App','Driver app load වෙනවා...')">
+      <div class="card-badge">DRIVER</div>
+      <div class="card-icon">🚗</div>
+      <div class="card-title">Driver</div>
+      <div class="card-desc">Rides accept කරන්න, earn කරන්න</div>
+      <div class="card-btn" style="background:var(--orange);">Open App →</div>
+    </a>
+
+  </div>
+
+  <!-- Feature pills -->
+  <div class="features">
+    <div class="feat"><span class="live-dot"></span> <span>Real-time GPS</span></div>
+    <div class="feat"><div class="feat-dot y"></div> <span>Free In-App Call</span></div>
+    <div class="feat"><div class="feat-dot o"></div> <span>Live Chat</span></div>
+  </div>
+
+</div>
+
+<!-- Footer -->
+<div class="footer">RideGo © 2025 &nbsp;•&nbsp; Sri Lanka 🇱🇰</div>
+
+<!-- Redirect overlay -->
+<div id="redirectOverlay">
+  <div class="redirect-ic" id="redIc">🛺</div>
+  <div class="redirect-title" id="redTitle">Loading...</div>
+  <div class="redirect-sub" id="redSub">Please wait</div>
+  <div class="redirect-bar"><div class="redirect-prog" id="redProg"></div></div>
+</div>
+
+<script>
+function handleRedirect(e, url, icon, title, sub){
+  e.preventDefault();
+  const overlay = document.getElementById('redirectOverlay');
+  document.getElementById('redIc').textContent = icon;
+  document.getElementById('redTitle').textContent = title;
+  document.getElementById('redSub').textContent = sub;
+  overlay.classList.add('show');
+  // Animate progress bar
+  setTimeout(()=>{ document.getElementById('redProg').style.width = '100%'; }, 50);
+  // Redirect after animation
+  setTimeout(()=>{ window.location.href = url; }, 700);
+}
+</script>
+</body>
+</html>
