@@ -3120,24 +3120,25 @@ button, .attach-btn, .call-btn, .c-dot, .ap-item {
   width: 100%;
   background: var(--card);
   overflow: hidden;
+  /* Auto height — shows image at original aspect ratio */
 }
 
-/* Default: 4:5 (portrait — like Instagram) */
+/* Disable forced aspect ratio — image dictates height naturally */
 .soc-post-media-wrap::before {
-  content: '';
-  display: block;
-  padding-top: 125%; /* 4:5 ratio = 5/4 * 100 */
+  content: none;
+  display: none;
 }
 
 /* Ratio variants set by JS */
-.soc-post-media-wrap.ratio-1-1::before  { padding-top: 100%; }      /* Square */
-.soc-post-media-wrap.ratio-4-5::before  { padding-top: 125%; }      /* Portrait (default) */
-.soc-post-media-wrap.ratio-3-4::before  { padding-top: 133.33%; }   /* 3:4 portrait */
-.soc-post-media-wrap.ratio-9-16::before { padding-top: 177.78%; }   /* 9:16 vertical */
-.soc-post-media-wrap.ratio-16-9::before { padding-top: 56.25%; }    /* 16:9 landscape */
-.soc-post-media-wrap.ratio-4-3::before  { padding-top: 75%; }       /* 4:3 landscape */
-.soc-post-media-wrap.ratio-3-2::before  { padding-top: 66.67%; }    /* 3:2 landscape */
-.soc-post-media-wrap.ratio-2-3::before  { padding-top: 150%; }      /* 2:3 portrait */
+/* Ratio classes disabled — image shows at natural size */
+.soc-post-media-wrap.ratio-1-1::before,
+.soc-post-media-wrap.ratio-4-5::before,
+.soc-post-media-wrap.ratio-3-4::before,
+.soc-post-media-wrap.ratio-9-16::before,
+.soc-post-media-wrap.ratio-16-9::before,
+.soc-post-media-wrap.ratio-4-3::before,
+.soc-post-media-wrap.ratio-3-2::before,
+.soc-post-media-wrap.ratio-2-3::before { content: none; display: none; }
 
 .soc-post-img {
   position: absolute;
@@ -3153,13 +3154,14 @@ button, .attach-btn, .call-btn, .c-dot, .ap-item {
 .soc-post-img:hover { transform: scale(1.02); }
 
 .soc-post-video {
-  position: absolute;
-  inset: 0;
+  position: relative;
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  height: auto;
+  max-height: 600px;
+  object-fit: contain;
   display: block;
   background: #000;
+  border-radius: 10px;
 }
 
 /* Badge stays on top */
@@ -4926,7 +4928,7 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
   /* Post cards */
   .soc-post { padding: 12px !important; border-radius: 12px !important; }
   .soc-post-text { font-size: 13px !important; line-height: 1.6 !important; }
-  .soc-post-img { max-height: 260px !important; border-radius: 10px !important; }
+  .soc-post-img { border-radius: 10px !important; }
   .soc-post-header { gap: 8px !important; }
   .soc-post-av { width: 34px !important; height: 34px !important; }
   .soc-post-name { font-size: 13px !important; }
@@ -10029,13 +10031,13 @@ window.socRenderPost = function socRenderPost(postId, data) {
       (data.edited ? '<span style="font-size:10px;color:var(--text3);margin-left:6px;font-family:var(--mono)">(edited)</span>' : '') +
       '</div>' : '';
   const imageHtml  = data.image
-    ? '<div class="soc-post-media-wrap ratio-4-5" id="media-wrap-' + postId + '">' +
-      '<img class="soc-post-img" src="' + data.image + '" alt="" onclick="socOpenFullPost(\'' + postId + '\')" onload="socSetAspectRatio(this,\'media-wrap-' + postId + '\')">' +
+    ? '<div class="soc-post-media-wrap" id="media-wrap-' + postId + '" style="position:relative;width:100%;background:var(--card);overflow:hidden;">' +
+      '<img class="soc-post-img" src="' + data.image + '" alt="" onclick="socOpenFullPost(\'' + postId + '\')" style="position:relative;width:100%;height:auto;object-fit:contain;display:block;cursor:zoom-in;border-radius:10px;">' +
       '<button class="soc-media-expand" onclick="socOpenFullPost(\'' + postId + '\')" title="Expand">&#x2922;</button>' +
       '<span class="soc-media-type-badge">&#x1F4F7; Photo</span></div>' : '';
   const videoHtml  = data.video
-    ? '<div class="soc-post-media-wrap ratio-16-9" id="media-wrap-' + postId + '">' +
-      '<video class="soc-post-video" src="' + data.video + '" controls playsinline></video>' +
+    ? '<div class="soc-post-media-wrap" id="media-wrap-' + postId + '" style="position:relative;width:100%;background:#000;overflow:hidden;">' +
+      '<video class="soc-post-video" src="' + data.video + '" controls playsinline style="position:relative;width:100%;height:auto;max-height:600px;object-fit:contain;display:block;background:#000;border-radius:10px;"></video>' +
       '<span class="soc-media-type-badge">&#x1F3AC; Video</span></div>' : '';
 
   card.innerHTML =
@@ -10245,7 +10247,7 @@ window.socCreatePostMob = function() {
 // ── Image pick ──
 function _readImg(file, cb) {
   if(!file) return;
-  if(file.size>3*1024*1024){showToast('⚠️ Max 3MB');return;}
+  if(file.size>10*1024*1024){showToast('⚠️ Max 10MB');return;}
   const r=new FileReader(); r.onload=e=>cb(e.target.result); r.readAsDataURL(file);
 }
 window.socPickImg = function(inp) {
@@ -15169,12 +15171,17 @@ window.closeStoryUpload = function() {
   document.getElementById('story-upload-sheet')?.classList.remove('open');
   document.getElementById('story-text-input').value = '';
   _storyImgDataLocal = '';
+  if (typeof _storyVidDataLocal !== 'undefined') _storyVidDataLocal = '';
   document.getElementById('story-img-preview-wrap').style.display = 'none';
+  var vidEl = document.getElementById('story-vid-preview-el');
+  if (vidEl) { vidEl.src = ''; }
+  var vidWrap = document.getElementById('story-img-preview-vid-wrap');
+  if (vidWrap) vidWrap.style.display = 'none';
 };
 
 window.onStoryImgSelect = function(inp) {
   const file = inp.files[0]; if (!file) return;
-  if (file.size > 3*1024*1024) { showToast('&#x26A0;&#xFE0F; Max 3MB'); return; }
+  if (file.size > 10*1024*1024) { showToast('&#x26A0;&#xFE0F; Max 10MB'); return; }
   const r = new FileReader();
   r.onload = ev => {
     _storyImgDataLocal = ev.target.result;
@@ -15187,6 +15194,31 @@ window.onStoryImgSelect = function(inp) {
 window.removeStoryImg = function() {
   _storyImgDataLocal = '';
   document.getElementById('story-img-preview-wrap').style.display = 'none';
+};
+
+// ── Story video pick/remove ──
+var _storyVidDataLocal = '';
+window.onStoryVidSelect = function(inp) {
+  var file = inp.files[0];
+  if (!file) return;
+  if (file.size > 10 * 1024 * 1024) { showToast('⚠️ Max 10MB for video'); return; }
+  // Clear image if video selected
+  _storyImgDataLocal = '';
+  document.getElementById('story-img-preview-wrap').style.display = 'none';
+  var r = new FileReader();
+  r.onload = function(e) {
+    _storyVidDataLocal = e.target.result;
+    var vidEl = document.getElementById('story-vid-preview-el');
+    if (vidEl) { vidEl.src = _storyVidDataLocal; }
+    document.getElementById('story-img-preview-vid-wrap').style.display = 'block';
+  };
+  r.readAsDataURL(file);
+};
+window.removeStoryVid = function() {
+  _storyVidDataLocal = '';
+  var vidEl = document.getElementById('story-vid-preview-el');
+  if (vidEl) { vidEl.src = ''; }
+  document.getElementById('story-img-preview-vid-wrap').style.display = 'none';
 };
 
 window.submitStory = function() {
@@ -15202,16 +15234,18 @@ window.submitStory = function() {
     return;
   }
   
+  var _storyVid = (typeof _storyVidDataLocal !== 'undefined') ? _storyVidDataLocal : '';
   push(ref(db2, 'social/stories'), {
     uid: window._socUserId,
     name: window._socName || 'Someone',
     photo: window._socPhoto || '',
     image: _storyImgDataLocal,
+    video: _storyVid,
     text: text || '',
     ts: Date.now(),
     expiresAt: Date.now() + 24*60*60*1000  // 24 hours
   }).then(ref => {
-    showToast('📸 Story shared!');
+    showToast(_storyVid ? '🎬 Story shared!' : '📸 Story shared!');
     closeStoryUpload();
     // Immediately show in stories bar without waiting for Firebase listener
     if (ref && ref.key) {
@@ -15221,6 +15255,7 @@ window.submitStory = function() {
         name: window._socName || 'Someone',
         photo: window._socPhoto || '',
         image: _storyImgDataLocal,
+        video: _storyVid,
         text: document.getElementById('story-text-input')?.value?.trim() || '',
         ts: Date.now()
       };
@@ -15401,7 +15436,17 @@ function showStoryAt(idx) {
   const nameEl = document.getElementById('story-viewer-name');
   const timeEl = document.getElementById('story-viewer-time');
 
-  if (imgEl)  { imgEl.src = story.image || ''; imgEl.style.display = story.image ? 'block' : 'none'; }
+  // Handle image vs video story
+  var vidEl = document.getElementById('story-viewer-vid');
+  if (story.video) {
+    // Video story
+    if (imgEl)  { imgEl.src = ''; imgEl.style.display = 'none'; }
+    if (vidEl)  { vidEl.src = story.video; vidEl.style.display = 'block'; vidEl.load(); vidEl.play().catch(function(){}); }
+  } else {
+    // Image story
+    if (vidEl)  { vidEl.pause(); vidEl.src = ''; vidEl.style.display = 'none'; }
+    if (imgEl)  { imgEl.src = story.image || ''; imgEl.style.display = story.image ? 'block' : 'none'; }
+  }
   if (textEl) {
     textEl.textContent = story.text || '';
     // For text-only stories, make text bigger and centered
@@ -15446,9 +15491,23 @@ function showStoryAt(idx) {
     clearTimeout(_storyProgressTimer);
     const currentFill = barsWrap.children[idx]?.querySelector('.story-progress-fill');
     if (currentFill) {
-      currentFill.style.transition = 'width 5s linear';
-      requestAnimationFrame(() => { currentFill.style.width = '100%'; });
-      _storyProgressTimer = setTimeout(() => storyNext(null), 5100);
+      const _vidEl2 = document.getElementById('story-viewer-vid');
+      const isVidStory = !!(story.video && _vidEl2 && _vidEl2.style.display !== 'none');
+      if (isVidStory) {
+        // For video stories, sync progress bar with video duration
+        const setupVidProgress = function() {
+          const dur = _vidEl2.duration || 10;
+          currentFill.style.transition = 'width ' + dur + 's linear';
+          requestAnimationFrame(function() { currentFill.style.width = '100%'; });
+          _storyProgressTimer = setTimeout(function() { storyNext(null); }, dur * 1000 + 200);
+        };
+        if (_vidEl2.readyState >= 1) { setupVidProgress(); }
+        else { _vidEl2.addEventListener('loadedmetadata', setupVidProgress, { once: true }); }
+      } else {
+        currentFill.style.transition = 'width 5s linear';
+        requestAnimationFrame(() => { currentFill.style.width = '100%'; });
+        _storyProgressTimer = setTimeout(() => storyNext(null), 5100);
+      }
     }
   }
 
@@ -15479,6 +15538,9 @@ window.storyTapHandler = function(e) {
 window.closeStoryViewer = function(e) {
   if (e && e.stopPropagation) e.stopPropagation();
   clearTimeout(_storyProgressTimer);
+  // Pause video if playing
+  var _cv = document.getElementById('story-viewer-vid');
+  if (_cv) { try { _cv.pause(); _cv.src = ''; } catch(ex){} }
   var sv = document.getElementById('story-viewer');
   if (sv) { sv.classList.remove('open'); sv.style.display='none'; }
   window._storyViewerList = null;
@@ -16966,6 +17028,9 @@ console.log('%c DM v2 + Profile v2 + Friends RT loaded \u2713', 'color:#3de8a0;f
     <button class="story-viewer-close" id="story-close-btn" onclick="event.stopPropagation();closeStoryViewer();">&#x2715;</button>
   </div>
   <img class="story-viewer-img" id="story-viewer-img" src="" alt="">
+  <video id="story-viewer-vid" autoplay muted playsinline controls
+    style="display:none;max-width:100%;max-height:85vh;object-fit:contain;position:relative;z-index:2;border-radius:8px;">
+  </video>
   <div class="story-viewer-text" id="story-viewer-text"></div>
   <div class="story-views-badge" id="story-views-badge">&#x1F441; 0</div>
   <button class="story-delete-btn" id="story-delete-btn" onclick="event.stopPropagation();deleteCurrentStory();">&#x1F5D1; Delete</button>
@@ -16990,10 +17055,17 @@ console.log('%c DM v2 + Profile v2 + Friends RT loaded \u2713', 'color:#3de8a0;f
       <img id="story-img-preview" style="max-width:100%;max-height:200px;border-radius:10px;object-fit:cover;display:block;">
       <button onclick="removeStoryImg()" style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.6);border:none;border-radius:50%;width:24px;height:24px;color:#fff;font-size:12px;cursor:pointer;">&#x2715;</button>
     </div>
+    <div id="story-img-preview-vid-wrap" style="display:none;margin-bottom:12px;position:relative;">
+      <video id="story-vid-preview-el" style="max-width:100%;max-height:200px;border-radius:10px;display:block;" controls muted playsinline></video>
+      <button onclick="removeStoryVid()" style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.6);border:none;border-radius:50%;width:24px;height:24px;color:#fff;font-size:12px;cursor:pointer;">&#x2715;</button>
+    </div>
     <div style="display:flex;gap:8px;margin-bottom:14px;">
       <button onclick="document.getElementById('story-img-input').click()" style="flex:1;padding:10px;background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--text2);font-family:var(--sans);font-size:13px;cursor:pointer;">&#x1F4F7; Photo</button>
       <input type="file" id="story-img-input" accept="image/*" style="display:none" onchange="onStoryImgSelect(this)">
+      <button onclick="document.getElementById('story-vid-input').click()" style="flex:1;padding:10px;background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--text2);font-family:var(--sans);font-size:13px;cursor:pointer;">&#x1F3AC; Video</button>
+      <input type="file" id="story-vid-input" accept="video/*" style="display:none" onchange="onStoryVidSelect(this)">
     </div>
+    <div id="story-upload-size-note" style="font-size:11px;color:var(--text3);font-family:var(--mono);text-align:center;margin-bottom:10px;">Max 10MB per photo/video</div>
     <button onclick="submitStory()" style="width:100%;padding:12px;background:var(--accent);color:#000;border:none;border-radius:10px;font-family:var(--display);font-size:14px;font-weight:700;cursor:pointer;">Share Story &#x1F680;</button>
   </div>
 </div>
