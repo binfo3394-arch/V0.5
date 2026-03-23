@@ -18669,2442 +18669,801 @@ console.log('%c Auth Gate v2 loaded \u2713', 'color:#3de8a0;font-weight:bold;fon
 })();
 </script>
 
+
+
+
+
+
+
 <script>
-// ═══════════════════════════════════════════════════════════
-//  SECRETLINE MINI GAMES ENGINE v1.0
-//  Realtime multiplayer via Firebase social/games/{gameId}
-// ═══════════════════════════════════════════════════════════
-(function() {
-/* no strict mode — needed for window property bridges */
+/* ═══════════════════════════════════════════════════════════
+   SECRETLINE GAMES — Complete Clean Implementation
+   Single file, no IIFE, all globals, no strict mode
+═══════════════════════════════════════════════════════════ */
 
-/* ── Constants ── */
-const GAMES_PATH = 'social/games';
-const WORDS_5 = ['about','above','abuse','actor','acute','admit','adopt','adult','after','again',
-  'agent','agree','ahead','alarm','album','alert','alike','alive','alley','allow','alone','along',
-  'alter','angel','anger','angle','angry','anime','annex','antic','anvil','apart','apple','apply',
-  'arena','argue','arise','array','aside','asset','atlas','attic','audio','audit','avoid','awake',
-  'award','aware','awful','basic','basis','batch','beach','began','begin','being','below','bench',
-  'bible','birth','black','blade','blame','bland','blank','blast','blaze','bleed','bless','blind',
-  'block','blood','bloom','blown','blues','blunt','board','bonus','boost','booth','bound','brave',
-  'bread','break','breed','brick','bride','brief','bring','broad','broke','brook','brown','build',
-  'built','bunch','burst','buyer','camel','candy','carry','catch','cause','chain','chair','chaos',
-  'charm','chase','cheap','check','cheek','chess','chest','chief','child','china','civic','civil',
-  'claim','class','clean','clear','clerk','click','cliff','climb','clock','close','cloud','coach',
-  'coast','comet','comic','comma','coral','could','count','court','cover','crack','craft','crash',
-  'crazy','cream','creek','crime','crisp','cross','crowd','crown','crush','cubic','curve','cycle',
-  'daily','dance','dates','deals','decay','delta','dense','depot','depot','depth','derby','dirty',
-  'disco','dodge','doing','donor','doubt','dough','draft','drain','drama','drank','drawn','dream',
-  'dress','drift','drive','drove','drown','drugs','drunk','dryer','dwell','eagle','early','earth',
-  'elite','email','empty','ended','enemy','enjoy','enter','entry','equal','error','essay','event',
-  'every','exact','exist','extra','fable','faced','fact','faith','false','fancy','fault','feast',
-  'fence','fever','fiber','field','fifth','fifty','fight','final','first','fixed','flame','flash',
-  'float','flood','floor','flora','flour','fluid','focus','force','forge','found','frame','frank',
-  'fraud','fresh','front','froze','fruit','fully','funny','giant','given','gland','glass','globe',
-  'gloss','glove','going','grace','grade','grain','grand','grant','grasp','grass','grave','great',
-  'green','grief','grind','groan','gross','group','grove','grown','guard','guess','guest','guide',
-  'guild','guile','guilt','guise','gusto','habit','happy','harsh','hasn\'t','haven','heard','heart',
-  'heavy','hence','herbs','heron','honor','horse','hotel','house','human','humor','hurry','ideal',
-  'image','imply','inbox','index','indie','inner','input','inter','intro','irony','issue','joint',
-  'joker','judge','juice','jumpy','juror','karma','knack','knife','knock','known','label','lance',
-  'large','laser','later','laugh','layer','learn','lease','least','leave','legal','lemon','level',
-  'light','limit','links','liver','local','lodge','logic','login','loose','lucky','lunar','magic',
-  'major','maker','manor','march','marks','match','mayor','medal','media','mercy','merge','metal',
-  'might','mimic','minor','minus','model','money','month','moral','motto','mount','mouse','mouth',
-  'moved','movie','music','naive','named','nerve','never','night','noble','noise','north','noted',
-  'novel','nurse','nymph','oasis','ocean','offer','often','olive','onset','opera','order','other',
-  'outer','outdo','oxide','ozone','paint','panel','paper','party','pasta','patch','pause','peace',
-  'pearl','pedal','phone','photo','piano','pilot','pinch','pixel','pizza','place','plain','plane',
-  'plant','plate','plaza','plead','pluck','plumb','plume','point','polar','pound','power','press',
-  'price','pride','prime','print','prior','prize','probe','prove','proxy','pulse','punch','purse',
-  'queen','query','quest','queue','quick','quiet','quota','quote','radar','radio','raise','rally',
-  'range','rapid','ratio','reach','react','ready','realm','rebut','refer','reign','relax','rely',
-  'remix','renew','repay','reset','rider','right','rigid','risky','rival','river','robot','rocky',
-  'rouge','rough','round','route','royal','rugby','ruler','rumor','rural','sadly','saint','salon',
-  'sauce','scale','scene','scope','score','scout','screw','seize','sense','serve','setup','seven',
-  'shade','shaft','shake','shall','shame','shape','share','sharp','shelf','shell','shift','shine',
-  'shirt','shock','shoot','shore','short','shout','sight','since','sixth','sixty','skill','slate',
-  'sleep','slice','slide','small','smart','smell','smile','smoke','snake','solar','solid','solve',
-  'sorry','south','space','spare','spark','speak','spear','speed','spend','spent','spice','spike',
-  'spine','spite','split','spoke','sport','spray','squad','stack','staff','stage','stain','stale',
-  'stand','stark','start','state','stays','steam','steel','steep','steer','stick','still','stock',
-  'stone','stood','store','storm','story','strap','stray','strip','stuck','study','style','sugar',
-  'suite','sunny','super','surge','swamp','swear','sweat','sweep','sweet','swift','swing','table',
-  'taste','teach','tears','teeth','thing','think','those','three','threw','throw','thumb','tiger',
-  'timer','tired','title','token','total','touch','tough','tower','toxic','trace','track','trade',
-  'trail','train','trait','tramp','treat','trend','trial','trick','tried','troop','trout','truck',
-  'truly','trump','trunk','trust','truth','tumor','tutor','tweet','twice','twist','tying','under',
-  'unify','union','unity','until','upper','upset','urban','usage','usual','utter','vague','valid',
-  'value','valve','video','vigil','viral','virus','visit','vista','vivid','vocal','voice','voter',
-  'waste','watch','water','weary','weave','wedge','weird','wheat','where','which','while','white',
-  'whole','whose','wield','witch','woman','women','woods','world','worry','worse','worst','worth',
-  'would','wound','wrath','write','wrote','yacht','yield','young','youth','zebra','zesty'];
+// ── State ──────────────────────────────────────────────────
+var _gMode        = 'single';   // 'single' | 'multi'
+var _gType        = null;       // current game type
+var _gId          = null;       // current game id
+var _gMyId        = null;
+var _gMyName      = null;
+var _gMyColor     = '#3de8a0';
+var _gUnsub       = null;       // Firebase listener unsub
+var _gInvUnsub    = null;       // Invites listener
+var _snakeIv      = null;       // Snake interval
+var _flappyRaf    = null;       // Flappy RAF
+var _ludoTimer    = null;       // Ludo AI timer
+var _gPresUnsub   = null;       // Presence listener
 
-/* ── State ── */
-let _gameMyId     = null;
-let _gameMyName   = null;
-let _gameMyColor  = null;
-var _currentGameId = null;
-var _currentGameType = null;
-var _currentGameUnsub = null;
-// Expose directly to window so games v2 IIFE can access
-window._currentGameId   = _currentGameId;
-window._currentGameType = _currentGameType;
-let _gamePendingType = null;
-let _presenceCache = {};
-let _gamesInviteUnsub = null;
-let _gamesActiveUnsub = null;
+var GAMES_PATH = 'social/games';
+var WORDS_5 = ['crane','slate','audio','raise','stare','arise','later','irate',
+  'stone','phone','alone','close','brave','plant','smart','storm','tiger','youth',
+  'water','sport','prize','sword','light','flame','dance','night','space','dream',
+  'lucky','world','heart','peace','power','river','smile','trust','voice','ocean',
+  'magic','angel','ghost','blood','crown','blade','chess','chess','piano','solar',
+  'grace','elite','pilot','radar','shark','shift','skate','sleek','snack','snare',
+  'speak','spell','spine','squad','stack','staff','stage','stark','start','state',
+  'steam','steel','steep','stick','still','stock','stomp','stood','store','strap'];
 
-function _gInit() {
-  // Use EXACTLY the same uid used in presence registration (openSocialArea uses window._socUserId || socUserId)
-  // Priority: window._socUserId (set by auth) > window.socUserId (module scoped) > fallbacks
-  _gameMyId    = window._socUserId || (window.socUserId && !window.socUserId.startsWith('su_') ? window.socUserId : '') || _gameMyId || '';
-  _gameMyName  = window._socName  || _gameMyName  || 'Player';
-  _gameMyColor = window._socColor || _gameMyColor || '#3de8a0';
+// ── Firebase helpers ───────────────────────────────────────
+function gFB()       { return window.__fbx || {}; }
+function gDB()       { return window.__db; }
+function gRef(p)     { return gFB().ref(gDB(), p); }
+function gSet(p,v)   { return gFB().set(gRef(p), v); }
+function gPush(p,v)  { return gFB().push(gRef(p), v); }
+function gDel(p)     { return gFB().remove(gRef(p)); }
+function gGet(p)     { return gFB().get(gRef(p)); }
+function gOn(p,cb)   { return gFB().onValue(gRef(p), function(s){ cb(s.val()); }); }
 
-  // If still no id or it's a random su_ id, try auth session
-  if (!_gameMyId || _gameMyId.startsWith('su_')) {
-    try {
-      var sess = JSON.parse(localStorage.getItem('sl_auth_v2') || 'null');
-      if (sess && sess.uid) {
-        _gameMyId    = sess.uid;
-        _gameMyName  = sess.displayName || _gameMyName;
-        _gameMyColor = sess.color || _gameMyColor;
-      }
-    } catch(e) {}
+function gInit() {
+  _gMyId    = window._socUserId || window.socUserId || _gMyId || '';
+  _gMyName  = window._socName   || _gMyName  || 'Player';
+  _gMyColor = window._socColor  || _gMyColor || '#3de8a0';
+  if (!_gMyId) {
+    try { var s=JSON.parse(localStorage.getItem('sl_auth_v2')||'null');
+      if(s&&s.uid){_gMyId=s.uid;_gMyName=s.displayName||_gMyName;} } catch(e){}
   }
-  // Last resort: google profile
-  if (!_gameMyId || _gameMyId.startsWith('su_')) {
-    try {
-      var gp = JSON.parse(localStorage.getItem('sl_google_profile') || 'null');
-      if (gp && gp.email) {
-        _gameMyId   = 'g_' + gp.email.replace(/[^a-z0-9]/gi,'_');
-        _gameMyName = gp.name || gp.email;
-      }
-    } catch(e) {}
-  }
-  // If STILL su_, just use it — it matches what lobby registered with
-  if (!_gameMyId) _gameMyId = window._socUserId || window.socUserId || '';
 }
 
-/* ── Firebase helpers ── */
-function _gFB() { return window.__fbx || {}; }
-function _gDB() { return window.__db; }
-function _gRef(path) { return _gFB().ref(_gDB(), path); }
-function _gSet(path, val) { return _gFB().set(_gRef(path), val); }
-function _gPush(path, val) { return _gFB().push(_gRef(path), val); }
-function _gGet(path) { return _gFB().get(_gRef(path)); }
-function _gRemove(path) { return _gFB().remove(_gRef(path)); }
-function _gOnce(path, cb) {
-  _gGet(path).then(snap => cb(snap.val())).catch(() => cb(null));
-}
-function _gListen(path, cb) {
-  return _gFB().onValue(_gRef(path), snap => cb(snap.val()));
-}
-
-/* ── Panel open/close ── */
+// ── Panel open/close ────────────────────────────────────────
 window.openGamesPanel = function() {
-  _gInit();
-  document.getElementById('games-panel').classList.add('open');
-
-  // Show cached first (instant), then refresh from Firebase
-  _renderOnlineUsersInPanel();
-
-  // Fetch live presence directly from Firebase when panel opens
-  var db2 = _gDB();
-  if (db2) {
-    try {
-      var presRef2 = _gFB().ref(db2, 'social/presence');
-      _gFB().get(presRef2).then(function(snap) {
-        var data = snap.val();
-        if (data && Object.keys(data).length > 0) {
-          window._lobbyPresenceData = data;
-          _renderOnlineUsersInPanel();
-        }
-      }).catch(function(){});
-    } catch(e) {}
-  }
-
-  _listenInvites();
-  _listenActiveGames();
+  gInit();
+  var p = document.getElementById('games-panel');
+  if (p) p.classList.add('open');
+  gRefreshOnlineList();
+  gListenInvites();
+  gListenPresence();
 };
+
 window.closeGamesPanel = function() {
-  document.getElementById('games-panel').classList.remove('open');
+  var p = document.getElementById('games-panel');
+  if (p) p.classList.remove('open');
 };
 
-/* ── Render online users ── */
-function _renderOnlineUsersInPanel() {
-  const presence = window._lobbyPresenceData || {};
-  // Use same uid resolution as openSocialArea presence registration
-  const myPresUid = window._socUserId || window.socUserId || _gameMyId || '';
-  const list = document.getElementById('games-online-list');
+// ── Mode selector ──────────────────────────────────────────
+window.setGameMode = function(mode) {
+  _gMode = mode;
+  var s = document.getElementById('mode-single');
+  var m = document.getElementById('mode-multi');
+  if (s) s.classList.toggle('active', mode==='single');
+  if (m) m.classList.toggle('active', mode==='multi');
+};
+
+window.launchGame = function(type) {
+  if (_gMode === 'multi') openGamePicker(type);
+  else window.openSinglePlayer(type);
+};
+
+// ── Single player launcher ─────────────────────────────────
+window.openSinglePlayer = function(type) {
+  window.closeGamesPanel();
+  _gType = type;
+  _gId   = 'sp_' + type;
+  var icons = {ttt:'⭕',rps:'✊',c4:'🔴',wg:'📝',snake:'🐍',
+               memory:'🃏',g2048:'🔢',ludo:'🎲',carrom:'🎯',
+               checkers:'♟️',minesweeper:'💣',flappy:'🐦'};
+  var names = {ttt:'Tic-Tac-Toe',rps:'Rock Paper Scissors',c4:'Connect Four',
+               wg:'Word Guess',snake:'Snake',memory:'Memory Match',g2048:'2048',
+               ludo:'Ludo',carrom:'Carrom',checkers:'Checkers',
+               minesweeper:'Minesweeper',flappy:'Flappy Bird'};
+  var ov = document.getElementById('game-overlay');
+  var tl = document.getElementById('game-overlay-title');
+  var st = document.getElementById('game-overlay-status');
+  if (tl) tl.textContent = (icons[type]||'🎮') + ' ' + (names[type]||type);
+  if (st) st.textContent = 'Single Player';
+  if (ov) ov.classList.add('open');
+  gLaunchSP(type);
+};
+
+function gLaunchSP(type) {
+  var body = document.getElementById('game-overlay-body');
+  if (!body) return;
+  body.innerHTML = '';
+  if (type==='ttt')         gSpTTT(body);
+  else if (type==='rps')    gSpRPS(body);
+  else if (type==='c4')     gSpC4(body);
+  else if (type==='wg')     gSpWG(body);
+  else if (type==='snake')  gLaunchSnake(body);
+  else if (type==='memory') gLaunchMemory(body);
+  else if (type==='g2048')  gLaunch2048(body);
+  else if (type==='ludo')   gLaunchLudo(body);
+  else if (type==='carrom') gLaunchCarrom(body);
+  else if (type==='checkers')    gLaunchCheckers(body);
+  else if (type==='minesweeper') gLaunchMinesweeper(body);
+  else if (type==='flappy') gLaunchFlappy(body);
+}
+
+// ── Close overlay ──────────────────────────────────────────
+window.closeGameOverlay = function() {
+  if (_snakeIv)  { clearInterval(_snakeIv);           _snakeIv  = null; }
+  if (_flappyRaf){ cancelAnimationFrame(_flappyRaf);  _flappyRaf= null; }
+  if (_ludoTimer){ clearTimeout(_ludoTimer);          _ludoTimer= null; }
+  if (_gUnsub)   { try{_gUnsub();}catch(e){}         _gUnsub   = null; }
+  _gType = null; _gId = null;
+  var ov = document.getElementById('game-overlay');
+  if (ov) ov.classList.remove('open');
+};
+
+// ── Presence + Online users ────────────────────────────────
+function gListenPresence() {
+  if (_gPresUnsub) { try{_gPresUnsub();}catch(e){} }
+  var db = gDB(); if (!db) return;
+  _gPresUnsub = gOn('social/presence', function(data) {
+    window._lobbyPresenceData = data || {};
+    gRefreshOnlineList();
+    var badge = document.getElementById('soc-online-badge');
+    var cnt = Object.keys(data||{}).length;
+    if (badge) { badge.style.display = cnt>0?'flex':'none'; badge.textContent=cnt; }
+  });
+}
+
+function gRefreshOnlineList() {
+  var list = document.getElementById('games-online-list');
   if (!list) return;
-  const allEntries = Object.entries(presence);
-  // Filter out self using presence uid
-  const others = allEntries.filter(([uid]) => uid && uid !== myPresUid);
+  var presence = window._lobbyPresenceData || {};
+  var myId = _gMyId || window._socUserId || window.socUserId || '';
+  var others = Object.entries(presence).filter(function(e){ return e[0] !== myId; });
   if (!others.length) {
     list.innerHTML = '<div style="color:var(--text3);font-size:12px;font-family:var(--mono);">No other users online right now.</div>';
     return;
   }
-  list.innerHTML = others.map(([uid, u]) => `
-    <div style="display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;">
-      <div style="width:32px;height:32px;border-radius:50%;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;font-family:var(--mono);flex-shrink:0;${u.photo?'padding:0;overflow:hidden;':''}">
-        ${u.photo ? `<img src="${u.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` : (u.name||'?').slice(0,2).toUpperCase()}
-      </div>
-      <div style="flex:1;font-size:13px;font-weight:600;">${u.name||'User'}</div>
-      <button onclick="openGamePickerForUser('${uid}','${(u.name||'User').replace(/'/g,"\\'")}','${u.photo||''}','${u.color||'#3de8a0'}')"
-        style="background:var(--accent);color:#000;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;">
-        🎮 Challenge
-      </button>
-    </div>
-  `).join('');
+  list.innerHTML = others.map(function(e) {
+    var uid = e[0], u = e[1];
+    var av = u.photo
+      ? '<img src="'+u.photo+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">'
+      : '<span style="font-size:13px;font-weight:700;">'+(u.name||'?').slice(0,2).toUpperCase()+'</span>';
+    return '<div style="display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;">'
+      + '<div style="width:36px;height:36px;border-radius:50%;background:var(--card2);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;color:'+(u.color||'#3de8a0')+';border:2px solid rgba(61,232,160,0.3);">'+av+'</div>'
+      + '<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;">'+escHtml(u.name||'User')+'</div>'
+      + '<div style="font-size:11px;color:var(--accent);font-family:var(--mono);">● Online</div></div>'
+      + '<button onclick="openGamePickerForUser(\''+uid+'\',\''+escAttr(u.name||'User')+'\',\''+escAttr(u.photo||'')+'\',\''+escAttr(u.color||'#3de8a0')+'\')" style="background:var(--accent);color:#000;border:none;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;">🎮</button>'
+      + '</div>';
+  }).join('');
 }
 
-/* ── Game picker (which game to play) ── */
-window.openGamePicker = function(gameType) {
-  _gamePendingType = gameType;
-  const presence = window._lobbyPresenceData || {};
-  const myId = _gameMyId || window._socUserId;
-  const others = Object.entries(presence).filter(([uid]) => uid !== myId);
-  if (!others.length) {
-    if(window.showToast) showToast('⚠️ No other users online right now');
-    return;
-  }
-  const modal = document.getElementById('game-picker-modal');
-  const names = {ttt:'Tic-Tac-Toe', rps:'Rock Paper Scissors', c4:'Connect Four', wg:'Word Guess'};
-  document.getElementById('game-picker-title').textContent = '🎮 ' + (names[gameType]||'Game');
-  document.getElementById('game-picker-users').innerHTML = others.map(([uid, u]) => `
-    <div onclick="_inviteUser('${uid}','${(u.name||'User').replace(/'/g,"\\'")}','${u.photo||''}','${u.color||'#3de8a0'}','${gameType}')"
-      style="display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer;">
-      <div style="width:30px;height:30px;border-radius:50%;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;font-family:var(--mono);overflow:hidden;flex-shrink:0;">
-        ${u.photo ? `<img src="${u.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` : (u.name||'?').slice(0,2).toUpperCase()}
-      </div>
-      <div style="font-size:13px;font-weight:600;">${u.name||'User'}</div>
-    </div>
-  `).join('');
-  modal.style.display = 'flex';
+function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escAttr(s){ return String(s).replace(/'/g,'&#39;').replace(/"/g,'&quot;'); }
+
+// ── Invites listener ───────────────────────────────────────
+function gListenInvites() {
+  gInit();
+  var db = gDB(); if (!db || !_gMyId) return;
+  if (_gInvUnsub) { try{_gInvUnsub();}catch(e){} }
+  var myId = _gMyId;
+  _gInvUnsub = gOn(GAMES_PATH, function(all) {
+    if (!all) { gRenderInvites([]); gRenderActive([]); return; }
+    var invites = [], active = [];
+    Object.entries(all).forEach(function(e) {
+      var id=e[0], g=e[1]; if(!g) return;
+      if (g.status==='invite' && g.guest===myId) invites.push(Object.assign({id:id},g));
+      if (g.status==='active' && (g.host===myId||g.guest===myId)) active.push(Object.assign({id:id},g));
+    });
+    gRenderInvites(invites);
+    gRenderActive(active);
+    var badge = document.getElementById('soc-games-badge');
+    var tot = invites.length + active.length;
+    if (badge) { badge.style.display=tot?'flex':'none'; badge.textContent=tot||''; }
+    if (invites.length && window.showToast) showToast('🎮 '+invites[0].hostName+' challenged you!');
+  });
+}
+
+function gRenderInvites(invites) {
+  var sec  = document.getElementById('games-invites-section');
+  var list = document.getElementById('games-invites-list');
+  if (!sec||!list) return;
+  sec.style.display = invites.length ? 'block' : 'none';
+  list.innerHTML = invites.map(function(inv) {
+    return '<div style="display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;">'
+      + '<div style="width:34px;height:34px;border-radius:50%;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;">'+(inv.hostName||'?').slice(0,2).toUpperCase()+'</div>'
+      + '<div style="flex:1;"><div style="font-size:13px;font-weight:600;">'+escHtml(inv.hostName||'Someone')+'</div>'
+      + '<div style="font-size:11px;color:var(--text2);">wants to play '+gName(inv.type)+'</div></div>'
+      + '<div style="display:flex;gap:6px;">'
+      + '<button onclick="gAcceptInvite(\''+inv.id+'\')" style="background:var(--accent);color:#000;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;">Accept</button>'
+      + '<button onclick="gDeclineInvite(\''+inv.id+'\')" style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;color:var(--text2);">✕</button>'
+      + '</div></div>';
+  }).join('');
+}
+
+function gRenderActive(games) {
+  var sec  = document.getElementById('games-active-section');
+  var list = document.getElementById('games-active-list');
+  if (!sec||!list) return;
+  sec.style.display = games.length ? 'block' : 'none';
+  list.innerHTML = games.map(function(g) {
+    var opp = g.host===_gMyId ? g.guestName : g.hostName;
+    return '<div onclick="gRejoinGame(\''+g.id+'\')" style="display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid rgba(61,232,160,0.3);border-radius:10px;padding:10px 12px;margin-bottom:8px;cursor:pointer;">'
+      + '<span style="font-size:20px;">'+gIcon(g.type)+'</span>'
+      + '<div><div style="font-size:13px;font-weight:600;">'+gName(g.type)+' vs '+escHtml(opp||'?')+'</div>'
+      + '<div style="font-size:11px;color:var(--accent);font-family:var(--mono);">● Active — Tap to rejoin</div></div></div>';
+  }).join('');
+}
+
+window.gAcceptInvite = function(id) {
+  gGet(GAMES_PATH+'/'+id).then(function(s) {
+    var g = s.val(); if (!g) return;
+    gSet(GAMES_PATH+'/'+id+'/status','active').then(function() {
+      _gId = id; closeGamesPanel();
+      gOpenMultiOverlay(g.type, Object.assign({},g,{status:'active'}), id);
+    });
+  });
+};
+window.gDeclineInvite = function(id) { gDel(GAMES_PATH+'/'+id); };
+window.gRejoinGame = function(id) {
+  gGet(GAMES_PATH+'/'+id).then(function(s) {
+    var g=s.val(); if(!g) return;
+    _gId=id; closeGamesPanel();
+    gOpenMultiOverlay(g.type,g,id);
+  });
+};
+
+// ── Multiplayer game picker ─────────────────────────────────
+window.openGamePicker = function(type) {
+  var presence = window._lobbyPresenceData || {};
+  var myId = _gMyId || window._socUserId || '';
+  var others = Object.entries(presence).filter(function(e){return e[0]!==myId;});
+  if (!others.length) { if(window.showToast) showToast('⚠️ No other users online'); return; }
+  var modal = document.getElementById('game-picker-modal');
+  var title = document.getElementById('game-picker-title');
+  if (title) title.textContent = '🎮 ' + gName(type);
+  var users = document.getElementById('game-picker-users');
+  if (users) users.innerHTML = others.map(function(e) {
+    var uid=e[0], u=e[1];
+    return '<div onclick="gSendInvite(\''+uid+'\',\''+escAttr(u.name||'User')+'\',\''+escAttr(u.photo||'')+'\',\''+escAttr(u.color||'#3de8a0')+'\',\''+type+'\')" style="display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer;margin-bottom:6px;">'
+      + '<div style="width:30px;height:30px;border-radius:50%;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;">'+escHtml((u.name||'?').slice(0,2).toUpperCase())+'</div>'
+      + '<div style="font-size:13px;font-weight:600;">'+escHtml(u.name||'User')+'</div></div>';
+  }).join('');
+  if (modal) modal.style.display='flex';
 };
 
 window.openGamePickerForUser = function(uid, name, photo, color) {
-  const modal = document.getElementById('game-picker-modal');
-  document.getElementById('game-picker-title').textContent = '🎮 Challenge ' + name;
-  document.getElementById('game-picker-users').innerHTML = `
-    <div style="font-size:12px;color:var(--text2);font-family:var(--mono);margin-bottom:10px;">Choose a game:</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-      <div onclick="_inviteUser('${uid}','${name.replace(/'/g,"\\'")}','${photo}','${color}','ttt')" class="game-tile" style="padding:12px 8px;">
-        <div class="game-tile-icon">⭕</div><div class="game-tile-name">Tic-Tac-Toe</div>
-      </div>
-      <div onclick="_inviteUser('${uid}','${name.replace(/'/g,"\\'")}','${photo}','${color}','rps')" class="game-tile" style="padding:12px 8px;">
-        <div class="game-tile-icon">✊</div><div class="game-tile-name">Rock Paper Scissors</div>
-      </div>
-      <div onclick="_inviteUser('${uid}','${name.replace(/'/g,"\\'")}','${photo}','${color}','c4')" class="game-tile" style="padding:12px 8px;">
-        <div class="game-tile-icon">🔴</div><div class="game-tile-name">Connect Four</div>
-      </div>
-      <div onclick="_inviteUser('${uid}','${name.replace(/'/g,"\\'")}','${photo}','${color}','wg')" class="game-tile" style="padding:12px 8px;">
-        <div class="game-tile-icon">📝</div><div class="game-tile-name">Word Guess</div>
-      </div>
-    </div>
-  `;
-  modal.style.display = 'flex';
+  var modal = document.getElementById('game-picker-modal');
+  var title = document.getElementById('game-picker-title');
+  if (title) title.textContent = '🎮 Challenge ' + name;
+  var users = document.getElementById('game-picker-users');
+  if (users) users.innerHTML = '<div style="font-size:12px;color:var(--text2);font-family:var(--mono);margin-bottom:10px;">Choose a game:</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'
+    + ['ttt','rps','c4','wg'].map(function(t) {
+        return '<div onclick="gSendInvite(\''+uid+'\',\''+escAttr(name)+'\',\''+escAttr(photo)+'\',\''+escAttr(color)+'\',\''+t+'\')" class="game-tile" style="padding:10px 6px;">'
+          + '<div class="game-tile-icon">'+gIcon(t)+'</div><div class="game-tile-name">'+gName(t)+'</div></div>';
+      }).join('') + '</div>';
+  if (modal) modal.style.display='flex';
 };
 
-/* ── Send invite ── */
-window._inviteUser = function(toUid, toName, toPhoto, toColor, gameType) {
-  _gInit();
-  document.getElementById('game-picker-modal').style.display = 'none';
+window.gSendInvite = function(toUid, toName, toPhoto, toColor, type) {
+  gInit();
+  var modal = document.getElementById('game-picker-modal');
+  if (modal) modal.style.display='none';
   closeGamesPanel();
-  const db = _gDB(); if (!db) { showToast('❌ Not connected'); return; }
-  const gameId = _gameMyId + '_' + toUid + '_' + gameType + '_' + Date.now();
-  const gameData = {
-    type: gameType,
-    host: _gameMyId, hostName: _gameMyName, hostColor: _gameMyColor,
-    guest: toUid, guestName: toName, guestColor: toColor,
-    status: 'invite', // invite → active → done
-    ts: Date.now(),
-    state: _initGameState(gameType, _gameMyId, toUid)
-  };
-  _gSet(GAMES_PATH + '/' + gameId, gameData).then(() => {
-    _currentGameId = gameId;
-    showToast('🎮 Game invite sent to ' + toName + '!');
-    // Show waiting overlay
-    _openOverlay(gameType, gameData);
-    // Badge
-    var badge = document.getElementById('soc-games-badge');
-    if (badge) { badge.style.display='flex'; badge.textContent='1'; }
-  }).catch(e => showToast('❌ Could not send invite: ' + e.message));
-};
-
-/* ── Listen for incoming invites ── */
-function _listenInvites() {
-  _gInit();
-  const db = _gDB(); if (!db) return;
-  // Re-resolve myId in case auth completed after load
-  if (!_gameMyId) {
-    try {
-      var authSess = JSON.parse(localStorage.getItem('sl_auth_v2')||'null');
-      if (authSess && authSess.uid) { _gameMyId = authSess.uid; _gameMyName = authSess.displayName || _gameMyName; }
-    } catch(e) {}
-    if (!_gameMyId) _gameMyId = window._socUserId || '';
-  }
-  const myId = _gameMyId;
-  if (_gamesInviteUnsub) { try { _gamesInviteUnsub(); } catch(e){} }
-  _gamesInviteUnsub = _gListen(GAMES_PATH, function(all) {
-    if (!all) { _renderInvites([]); _renderActiveGames([]); return; }
-    const invites = [], active = [];
-    Object.entries(all).forEach(([id, g]) => {
-      if (!g) return;
-      if (g.status === 'invite' && g.guest === myId) invites.push({id, ...g});
-      if (g.status === 'active' && (g.host === myId || g.guest === myId)) active.push({id, ...g});
-      // Update badge
-      if (g.status === 'active' && _currentGameId === id && _currentGameType) {
-        _updateGameState(g);
-      }
-    });
-    _renderInvites(invites);
-    _renderActiveGames(active);
-    // Badge
-    var badge = document.getElementById('soc-games-badge');
-    if (badge) {
-      var total = invites.length + active.length;
-      if (total > 0) { badge.style.display='flex'; badge.textContent=total; }
-      else { badge.style.display='none'; }
-    }
-    // Show notification for new invite
-    if (invites.length > 0 && window.showToast) {
-      // Only toast if games panel not open
-      var panel = document.getElementById('games-panel');
-      if (!panel || !panel.classList.contains('open')) {
-        var inv = invites[0];
-        showToast('🎮 ' + (inv.hostName||'Someone') + ' challenged you to ' + _gameName(inv.type) + '!');
-      }
-    }
-  });
-}
-
-function _listenActiveGames() { /* handled inside _listenInvites */ }
-
-function _renderInvites(invites) {
-  var sec = document.getElementById('games-invites-section');
-  var list = document.getElementById('games-invites-list');
-  if (!sec || !list) return;
-  if (!invites.length) { sec.style.display = 'none'; return; }
-  sec.style.display = 'block';
-  list.innerHTML = invites.map(inv => `
-    <div class="game-invite-row">
-      <div class="game-invite-av">${(inv.hostName||'?').slice(0,2).toUpperCase()}</div>
-      <div class="game-invite-info">
-        <div class="game-invite-name">${inv.hostName||'Someone'}</div>
-        <div class="game-invite-game">wants to play ${_gameName(inv.type)}</div>
-      </div>
-      <div class="game-invite-btns">
-        <button class="game-invite-accept" onclick="acceptGameInvite('${inv.id}')">Accept</button>
-        <button class="game-invite-decline" onclick="declineGameInvite('${inv.id}')">✕</button>
-      </div>
-    </div>
-  `).join('');
-}
-
-function _renderActiveGames(games) {
-  var sec = document.getElementById('games-active-section');
-  var list = document.getElementById('games-active-list');
-  if (!sec || !list) return;
-  if (!games.length) { sec.style.display = 'none'; return; }
-  sec.style.display = 'block';
-  list.innerHTML = games.map(g => {
-    var opponent = g.host === _gameMyId ? g.guestName : g.hostName;
-    return `
-      <div onclick="rejoinGame('${g.id}')" style="display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid rgba(61,232,160,0.3);border-radius:10px;padding:10px 12px;cursor:pointer;">
-        <span style="font-size:20px;">${_gameIcon(g.type)}</span>
-        <div style="flex:1;">
-          <div style="font-size:13px;font-weight:600;">${_gameName(g.type)} vs ${opponent}</div>
-          <div style="font-size:11px;color:var(--accent);font-family:var(--mono);">● Active — Tap to rejoin</div>
-        </div>
-      </div>`;
-  }).join('');
-}
-
-window.acceptGameInvite = function(gameId) {
-  _gInit();
-  _gGet(GAMES_PATH + '/' + gameId).then(snap => {
-    var g = snap.val(); if (!g) return;
-    _gSet(GAMES_PATH + '/' + gameId + '/status', 'active').then(() => {
-      _currentGameId = gameId;
-      closeGamesPanel();
-      _openOverlay(g.type, {...g, status:'active'});
-      _listenGame(gameId, g.type);
-    });
-  });
-};
-window.declineGameInvite = function(gameId) {
-  _gRemove(GAMES_PATH + '/' + gameId);
-  if(window.showToast) showToast('Game declined');
-};
-window.rejoinGame = function(gameId) {
-  _gGet(GAMES_PATH + '/' + gameId).then(snap => {
-    var g = snap.val(); if (!g) return;
-    _currentGameId = gameId;
-    closeGamesPanel();
-    _openOverlay(g.type, g);
-    _listenGame(gameId, g.type);
+  var db=gDB(); if(!db){showToast('❌ Not connected');return;}
+  var id = _gMyId+'_'+toUid+'_'+type+'_'+Date.now();
+  var data = {type:type, host:_gMyId, hostName:_gMyName, hostColor:_gMyColor,
+              guest:toUid, guestName:toName, guestColor:toColor||'#4fa3ff',
+              status:'invite', ts:Date.now(), state:gInitState(type,_gMyId,toUid)};
+  _gId = id;
+  gSet(GAMES_PATH+'/'+id, data).then(function() {
+    showToast && showToast('🎮 Invite sent to '+toName+'!');
+    gOpenMultiOverlay(type, data, id);
   });
 };
 
-/* ── Overlay open/close ── */
-function _openOverlay(gameType, gameData) {
-  _currentGameType = gameType;
-  _currentGameId = _currentGameId || (gameData && gameData.id);
+// ── Multiplayer overlay ─────────────────────────────────────
+function gOpenMultiOverlay(type, data, id) {
+  _gType = type; _gId = id;
+  var icons={ttt:'⭕',rps:'✊',c4:'🔴',wg:'📝'};
+  var names={ttt:'Tic-Tac-Toe',rps:'Rock Paper Scissors',c4:'Connect Four',wg:'Word Guess'};
+  var tl = document.getElementById('game-overlay-title');
+  var st = document.getElementById('game-overlay-status');
   var ov = document.getElementById('game-overlay');
-  var title = document.getElementById('game-overlay-title');
-  if (title) title.textContent = _gameIcon(gameType) + ' ' + _gameName(gameType);
+  if (tl) tl.textContent = (icons[type]||'🎮') + ' ' + (names[type]||type);
+  var opp = data.host===_gMyId ? data.guestName : data.hostName;
+  if (st) st.textContent = 'vs ' + (opp||'?');
   if (ov) ov.classList.add('open');
-  _renderGame(gameType, gameData);
-  if (gameData && gameData.status === 'active') {
-    _listenGame(_currentGameId, gameType);
-  } else if (gameData && gameData.status === 'invite' && gameData.host === _gameMyId) {
-    // Waiting for opponent to accept
-    _listenGame(_currentGameId, gameType);
-  }
-}
-
-window.closeGameOverlay = function() {
-  var ov = document.getElementById('game-overlay');
-  if (ov) ov.classList.remove('open');
-  if (_currentGameUnsub) { try { _currentGameUnsub(); } catch(e){} _currentGameUnsub = null; }
-  _currentGameId = null;
-  _currentGameType = null;
-};
-
-/* ── Listen to live game updates ── */
-function _listenGame(gameId, gameType) {
-  if (_currentGameUnsub) { try { _currentGameUnsub(); } catch(e){} }
-  _currentGameUnsub = _gListen(GAMES_PATH + '/' + gameId, function(g) {
+  gRenderMulti(type, data);
+  if (_gUnsub) { try{_gUnsub();}catch(e){} }
+  _gUnsub = gOn(GAMES_PATH+'/'+id, function(g) {
     if (!g) { closeGameOverlay(); return; }
-    _renderGame(gameType, g);
+    gRenderMulti(type, g);
   });
 }
 
-function _updateGameState(g) {
-  _renderGame(g.type, g);
-}
-
-/* ── Init game states ── */
-function _initGameState(type, hostId, guestId) {
-  if (type === 'ttt') return { board: Array(9).fill(null), turn: hostId, winner: null };
-  if (type === 'rps') return { round: 1, hostChoice: null, guestChoice: null, hostScore: 0, guestScore: 0, result: null };
-  if (type === 'c4') return { board: Array(42).fill(null), turn: hostId, winner: null };
-  if (type === 'wg') {
-    var word = WORDS_5[Math.floor(Math.random() * WORDS_5.length)];
-    return { word: word, hostGuesses: [], guestGuesses: [], hostDone: false, guestDone: false, winner: null };
-  }
+function gInitState(type, host, guest) {
+  if (type==='ttt') return {board:Array(9).fill(null), turn:host, winner:null};
+  if (type==='rps') return {round:1,hostChoice:null,guestChoice:null,hostScore:0,guestScore:0};
+  if (type==='c4')  return {board:Array(42).fill(null), turn:host, winner:null};
+  if (type==='wg')  return {word:WORDS_5[Math.floor(Math.random()*WORDS_5.length)],hostGuesses:[],guestGuesses:[],hostDone:false,guestDone:false,winner:null};
   return {};
 }
 
-/* ── Render current game ── */
-function _renderGame(gameType, gameData) {
+function gRenderMulti(type, g) {
   var body = document.getElementById('game-overlay-body');
-  var status = document.getElementById('game-overlay-status');
-  if (!body) return;
-  var g = gameData || {};
+  if (!body||!g) return;
+  var amHost = _gMyId === g.host;
+  var oppName = amHost ? (g.guestName||'Opponent') : (g.hostName||'Opponent');
   var s = g.state || {};
-  var amHost  = _gameMyId === g.host;
-  var myRole  = amHost ? 'host' : 'guest';
-  var myName  = amHost ? g.hostName : g.guestName;
-  var oppName = amHost ? g.guestName : g.hostName;
-
-  if (status) {
-    status.textContent = 'vs ' + (oppName || '?');
-  }
 
   if (g.status === 'invite') {
-    if (amHost) {
-      body.innerHTML = `<div class="game-waiting">
-        <div class="game-waiting-spinner"></div>
-        <div>Waiting for ${oppName||'opponent'} to accept...</div>
-        <button onclick="_cancelGame('${_currentGameId}')" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 18px;color:var(--red);cursor:pointer;font-size:13px;margin-top:8px;">Cancel Invite</button>
-      </div>`;
-    } else {
-      body.innerHTML = `<div class="game-waiting">
-        <div style="font-size:32px;">${_gameIcon(gameType)}</div>
-        <div>${g.hostName} wants to play ${_gameName(gameType)}!</div>
-        <button onclick="acceptGameInvite('${_currentGameId}')" style="background:var(--accent);color:#000;border:none;border-radius:10px;padding:12px 28px;font-size:14px;font-weight:700;cursor:pointer;">Accept &amp; Play!</button>
-      </div>`;
-    }
+    body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;gap:16px;padding:20px;">'
+      + '<div style="font-size:32px;">'+(amHost?'⏳':'🎮')+'</div>'
+      + '<div style="font-size:15px;font-weight:700;text-align:center;">'+(amHost?'Waiting for '+oppName+'...':g.hostName+' challenges you to '+gName(type)+'!')+'</div>'
+      + (amHost
+          ? '<button onclick="gDel(GAMES_PATH+\'/\'+_gId);closeGameOverlay();" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 18px;color:var(--red);cursor:pointer;">Cancel</button>'
+          : '<button onclick="gAcceptInvite(\''+g.id||_gId+'\')" style="background:var(--accent);color:#000;border:none;border-radius:10px;padding:12px 28px;font-size:14px;font-weight:700;cursor:pointer;">Accept & Play!</button>')
+      + '</div>';
     return;
   }
 
-  // Active game render
-  if (gameType === 'ttt') _renderTTT(body, g, amHost);
-  else if (gameType === 'rps') _renderRPS(body, g, amHost);
-  else if (gameType === 'c4') _renderC4(body, g, amHost);
-  else if (gameType === 'wg') _renderWG(body, g, amHost);
+  if (type==='ttt')  gRenderTTT(body, g, amHost, oppName);
+  else if(type==='rps') gRenderRPS(body, g, amHost, oppName);
+  else if(type==='c4')  gRenderC4(body, g, amHost, oppName);
+  else if(type==='wg')  gRenderWGMulti(body, g, amHost, oppName);
 }
 
-window._cancelGame = function(gameId) {
-  _gRemove(GAMES_PATH + '/' + gameId);
-  closeGameOverlay();
+// ── Multiplayer: Tic-Tac-Toe ───────────────────────────────
+function gRenderTTT(body, g, amHost, oppName) {
+  var s=g.state||{}, board=s.board||Array(9).fill(null);
+  var myMark=amHost?'❌':'⭕', mine=amHost?g.host:g.guest;
+  var isMyTurn=s.turn===_gMyId&&!s.winner&&g.status==='active';
+  var wc=tttWinCells(board);
+  var status=s.winner==='draw'?"It's a draw! 🤝":s.winner===_gMyId?'🎉 You win!':s.winner?oppName+' wins!':isMyTurn?'Your turn ('+myMark+')':oppName+"'s turn...";
+  body.innerHTML='<div class="ttt-wrap"><div class="ttt-status">'+status+'</div>'
+    +'<div class="ttt-board">'+board.map(function(c,i){
+      var m=c===g.host?'❌':c===g.guest?'⭕':'';
+      var cls='ttt-cell'+(c?' taken':'')+(wc.includes(i)?' win-cell':'');
+      return '<div class="'+cls+'"'+((!c&&isMyTurn)?' onclick="gTTTMove('+i+')"':'')+'>'+m+'</div>';
+    }).join('')+'</div>'
+    +(s.winner?'<button onclick="gRematch(\'ttt\')" style="background:var(--accent);color:#000;border:none;border-radius:10px;padding:10px 28px;font-weight:700;cursor:pointer;">🔄 Rematch</button>':'')
+    +'<div style="font-size:11px;color:var(--text3);font-family:var(--mono);">❌ = '+g.hostName+' &nbsp; ⭕ = '+g.guestName+'</div></div>';
+}
+window.gTTTMove = function(i) {
+  if(!_gId) return;
+  gGet(GAMES_PATH+'/'+_gId).then(function(snap){
+    var g=snap.val(); if(!g||g.status!=='active') return;
+    var s=g.state; if(s.turn!==_gMyId||s.board[i]||s.winner) return;
+    var b=[...s.board]; b[i]=_gMyId;
+    var win=tttCheck(b);
+    gSet(GAMES_PATH+'/'+_gId+'/state',{...s,board:b,turn:s.turn===g.host?g.guest:g.host,winner:win});
+  });
 };
+function tttWinCells(b){var L=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];for(var l of L){if(b[l[0]]&&b[l[0]]===b[l[1]]&&b[l[0]]===b[l[2]])return l;}return[];}
+function tttCheck(b){var L=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];for(var l of L){if(b[l[0]]&&b[l[0]]===b[l[1]]&&b[l[0]]===b[l[2]])return b[l[0]];}return b.every(function(c){return c;})?'draw':null;}
 
-/* ════════════════════════════
-   TIC TAC TOE
-════════════════════════════ */
-function _renderTTT(body, g, amHost) {
-  var s = g.state || {};
-  var board = s.board || Array(9).fill(null);
-  var myMark = amHost ? '❌' : '⭕';
-  var oppMark = amHost ? '⭕' : '❌';
-  var myId = _gameMyId;
-  var isMyTurn = s.turn === myId && !s.winner && g.status === 'active';
-  var winCells = _tttWinCells(board);
-
-  var statusText = s.winner === 'draw' ? "It's a draw! 🤝"
-    : s.winner === myId ? '🎉 You win!'
-    : s.winner && s.winner !== myId ? oppName(g, amHost) + ' wins!'
-    : isMyTurn ? 'Your turn (' + myMark + ')' : oppName(g, amHost) + "'s turn...";
-
-  body.innerHTML = `<div class="ttt-wrap">
-    <div class="ttt-status">${statusText}</div>
-    <div class="ttt-board" id="ttt-board">
-      ${board.map((cell, i) => {
-        var mark = cell === g.host ? '❌' : cell === g.guest ? '⭕' : '';
-        var cls = 'ttt-cell' + (cell ? ' taken' : '') + (winCells.includes(i) ? ' win-cell' : '');
-        var click = (!cell && isMyTurn) ? `onclick="_tttMove(${i})"` : '';
-        return `<div class="${cls}" ${click}>${mark}</div>`;
-      }).join('')}
-    </div>
-    ${s.winner ? `<button onclick="_gameRematch('${_currentGameId}','ttt')" style="background:var(--accent);color:#000;border:none;border-radius:10px;padding:10px 28px;font-size:14px;font-weight:700;cursor:pointer;">🔄 Rematch</button>` : ''}
-    <div style="font-size:11px;color:var(--text3);font-family:var(--mono);">❌ = ${g.hostName} &nbsp; ⭕ = ${g.guestName}</div>
-  </div>`;
+// ── Multiplayer: RPS ────────────────────────────────────────
+function gRenderRPS(body, g, amHost, oppName) {
+  var s=g.state||{}, em={rock:'✊',paper:'🖐️',scissors:'✌️'};
+  var myC=amHost?s.hostChoice:s.guestChoice, oppC=amHost?s.guestChoice:s.hostChoice;
+  var myS=amHost?(s.hostScore||0):(s.guestScore||0), oppS=amHost?(s.guestScore||0):(s.hostScore||0);
+  var both=s.hostChoice&&s.guestChoice, win=myS>=3||oppS>=3;
+  body.innerHTML='<div class="rps-wrap">'
+    +'<div class="rps-score">You: '+myS+' | '+oppName+': '+oppS+' — Best of 5</div>'
+    +(win?'<div class="rps-status" style="font-size:18px;">'+(myS>=3?'🎉 You win!':'😅 '+oppName+' wins!')+'</div><button onclick="gRematch(\'rps\')" style="background:var(--accent);color:#000;border:none;border-radius:10px;padding:10px 28px;font-weight:700;cursor:pointer;">🔄 Play Again</button>'
+    :both?'<div class="rps-result-wrap"><div>'+(em[amHost?s.hostChoice:s.guestChoice]||'?')+'</div><div class="rps-vs">vs</div><div>'+(em[amHost?s.guestChoice:s.hostChoice]||'?')+'</div></div>'
+      +'<div class="rps-status">'+(myC===oppC?"It's a draw!":((myC==='rock'&&oppC==='scissors')||(myC==='scissors'&&oppC==='paper')||(myC==='paper'&&oppC==='rock'))?'🎉 You win this round!':'😅 Opponent wins')+'</div>'
+      +'<button class="rps-play-again" onclick="gRPSNext()">Next Round →</button>'
+    :myC?'<div class="rps-status">Waiting for '+oppName+'...</div>'
+    :'<div class="rps-status">Round '+(s.round||1)+' — Choose!</div><div class="rps-choices">'
+    +['rock','paper','scissors'].map(function(c){return '<button class="rps-btn" onclick="gRPSPick(\''+c+'\')">'+em[c]+'</button>';}).join('')+'</div>')
+    +'</div>';
 }
+window.gRPSPick = function(choice) {
+  if(!_gId) return;
+  gGet(GAMES_PATH+'/'+_gId).then(function(snap){
+    var g=snap.val(); if(!g) return;
+    var amHost=g.host===_gMyId, s=g.state;
+    if((amHost&&s.hostChoice)||(!amHost&&s.guestChoice)) return;
+    var upd=amHost?{hostChoice:choice}:{guestChoice:choice};
+    var ns=Object.assign({},s,upd);
+    if(ns.hostChoice&&ns.guestChoice){
+      var w=rpsWin(ns.hostChoice,ns.guestChoice);
+      if(w==='host')ns.hostScore=(s.hostScore||0)+1;else if(w==='guest')ns.guestScore=(s.guestScore||0)+1;
+    }
+    gSet(GAMES_PATH+'/'+_gId+'/state',ns);
+  });
+};
+window.gRPSNext = function() {
+  if(!_gId) return;
+  gGet(GAMES_PATH+'/'+_gId).then(function(snap){
+    var g=snap.val(); if(!g) return; var s=g.state;
+    if((s.hostScore||0)>=3||(s.guestScore||0)>=3) return;
+    gSet(GAMES_PATH+'/'+_gId+'/state',Object.assign({},s,{round:(s.round||1)+1,hostChoice:null,guestChoice:null}));
+  });
+};
+function rpsWin(h,gr){if(h===gr)return'draw';return((h==='rock'&&gr==='scissors')||(h==='scissors'&&gr==='paper')||(h==='paper'&&gr==='rock'))?'host':'guest';}
 
-window._tttMove = function(idx) {
-  if (!_currentGameId) return;
-  _gOnce(GAMES_PATH + '/' + _currentGameId, function(g) {
-    if (!g || g.status !== 'active') return;
-    var s = g.state;
-    if (s.turn !== _gameMyId || s.board[idx] || s.winner) return;
-    var board = [...s.board]; board[idx] = _gameMyId;
-    var winner = _checkTTT(board, g.host, g.guest);
-    _gSet(GAMES_PATH + '/' + _currentGameId + '/state', {
-      ...s, board,
-      turn: s.turn === g.host ? g.guest : g.host,
-      winner: winner
+// ── Multiplayer: Connect Four ───────────────────────────────
+function gRenderC4(body, g, amHost, oppName) {
+  var s=g.state||{}, board=s.board||Array(42).fill(null);
+  var isMyTurn=s.turn===_gMyId&&!s.winner&&g.status==='active';
+  var wc=s.winCells||[];
+  var status=s.winner==='draw'?"It's a draw!":s.winner===_gMyId?'🎉 You win!':s.winner?oppName+' wins!':isMyTurn?'Your turn ('+( amHost?'🔴':'🔵')+')':oppName+"'s turn...";
+  body.innerHTML='<div class="c4-wrap"><div class="c4-status">'+status+'</div>'
+    +'<div class="c4-col-btn-row">'+Array(7).fill(0).map(function(_,c){return'<button class="c4-col-btn" onclick="gC4Drop('+c+')"'+((!isMyTurn||s.winner)?' disabled':'')+'>▼</button>';}).join('')+'</div>'
+    +'<div class="c4-board">'+board.map(function(c,i){return'<div class="c4-cell'+(c===g.host?' p1':c===g.guest?' p2':'')+(wc.includes(i)?' win-cell':'')+'"></div>';}).join('')+'</div>'
+    +'<div style="font-size:11px;color:var(--text3);font-family:var(--mono);">🔴 = '+g.hostName+' &nbsp; 🔵 = '+g.guestName+'</div>'
+    +(s.winner?'<button onclick="gRematch(\'c4\')" style="background:var(--accent);color:#000;border:none;border-radius:10px;padding:10px 28px;font-weight:700;cursor:pointer;">🔄 Rematch</button>':'')
+    +'</div>';
+}
+window.gC4Drop = function(col) {
+  if(!_gId) return;
+  gGet(GAMES_PATH+'/'+_gId).then(function(snap){
+    var g=snap.val(); if(!g||g.status!=='active') return;
+    var s=g.state; if(s.turn!==_gMyId||s.winner) return;
+    var b=[...s.board]; var row=-1;
+    for(var r=5;r>=0;r--){if(!b[r*7+col]){row=r;break;}}
+    if(row<0) return;
+    b[row*7+col]=_gMyId;
+    var win=c4Check(b), wc=win&&win!=='draw'?c4WinCells(b):[];
+    gSet(GAMES_PATH+'/'+_gId+'/state',Object.assign({},s,{board:b,turn:s.turn===g.host?g.guest:g.host,winner:win,winCells:wc}));
+  });
+};
+function c4Check(b){var D=[[1,0],[0,1],[1,1],[1,-1]];for(var r=0;r<6;r++)for(var c=0;c<7;c++){var cell=b[r*7+c];if(!cell)continue;for(var i=0;i<D.length;i++){var dr=D[i][0],dc=D[i][1],cnt=1;for(var k=1;k<4;k++){var nr=r+dr*k,nc=c+dc*k;if(nr<0||nr>=6||nc<0||nc>=7||b[nr*7+nc]!==cell)break;cnt++;}if(cnt>=4)return cell;}}return b.every(function(c){return c;})?'draw':null;}
+function c4WinCells(b){var D=[[1,0],[0,1],[1,1],[1,-1]];for(var r=0;r<6;r++)for(var c=0;c<7;c++){var cell=b[r*7+c];if(!cell)continue;for(var i=0;i<D.length;i++){var dr=D[i][0],dc=D[i][1],cells=[r*7+c];for(var k=1;k<4;k++){var nr=r+dr*k,nc=c+dc*k;if(nr<0||nr>=6||nc<0||nc>=7||b[nr*7+nc]!==cell)break;cells.push(nr*7+nc);}if(cells.length>=4)return cells;}}return[];}
+
+// ── Multiplayer: Word Guess ─────────────────────────────────
+var _wgGuess = '';
+function gRenderWGMulti(body, g, amHost, oppName) {
+  var s=g.state||{};
+  var myG=amHost?(s.hostGuesses||[]):(s.guestGuesses||[]);
+  var oppG=amHost?(s.guestGuesses||[]):(s.hostGuesses||[]);
+  var myDone=amHost?s.hostDone:s.guestDone;
+  var word=s.word||'?????';
+  var canPlay=!myDone&&g.status==='active';
+  var stat=s.winner===_gMyId?'🎉 You guessed first!':s.winner&&s.winner!==_gMyId?oppName+' got it! Word: '+word.toUpperCase():s.winner==='draw'?'Tie! Word: '+word.toUpperCase():myDone?'Waiting for '+oppName+'...':'Guess the word! ('+myG.length+'/6)';
+  var rows='';
+  for(var r=0;r<6;r++){
+    var guess=myG[r]; var isCur=r===myG.length&&canPlay;
+    rows+='<div class="wg-row">';
+    for(var c=0;c<5;c++){
+      var letter=guess?guess[c]:(isCur?(_wgGuess[c]||''):'');
+      var cls='wg-tile';
+      if(guess){var ev=wgEval(guess,word);cls+=' '+ev[c];}
+      else if(isCur&&letter)cls+=' current-input';
+      rows+='<div class="'+cls+'">'+(letter||'')+'</div>';
+    }
+    rows+='</div>';
+  }
+  var kbR=[['Q','W','E','R','T','Y','U','I','O','P'],['A','S','D','F','G','H','J','K','L'],['ENTER','Z','X','C','V','B','N','M','⌫']];
+  var km={}; myG.forEach(function(gs){var ev=wgEval(gs,word);for(var i=0;i<5;i++){var k=gs[i].toUpperCase();if(ev[i]==='correct')km[k]='correct';else if(ev[i]==='present'&&km[k]!=='correct')km[k]='present';else if(!km[k])km[k]='absent';}});
+  var kb=kbR.map(function(row){return'<div class="wg-kb-row">'+row.map(function(k){return'<button class="wg-key'+(k.length>1?' wide':'')+(km[k]?' '+km[k]:'')+'" onclick="gWGKey(\''+k+'\')"'+(canPlay?'':' disabled')+'>'+k+'</button>';}).join('')+'</div>';}).join('');
+  body.innerHTML='<div class="wg-wrap"><div class="wg-status">'+stat+'</div>'
+    +'<div style="display:flex;gap:20px;flex-wrap:wrap;justify-content:center;">'
+    +'<div><div style="font-size:10px;color:var(--accent);font-family:var(--mono);text-align:center;margin-bottom:4px;">YOUR BOARD</div><div class="wg-grid">'+rows+'</div></div>'
+    +'<div><div style="font-size:10px;color:var(--text3);font-family:var(--mono);text-align:center;margin-bottom:4px;">'+oppName.toUpperCase()+'</div><div style="font-size:12px;color:var(--text2);font-family:var(--mono);">'+oppG.length+'/6</div></div>'
+    +'</div>'
+    +(canPlay?'<div class="wg-keyboard">'+kb+'</div>':'')
+    +(s.winner?'<button onclick="gRematch(\'wg\')" style="background:var(--accent);color:#000;border:none;border-radius:10px;padding:10px 28px;font-weight:700;cursor:pointer;">🔄 New Word</button>':'')
+    +'</div>';
+}
+window.gWGKey = function(key) {
+  if(key==='⌫') _wgGuess=_wgGuess.slice(0,-1);
+  else if(key==='ENTER'){
+    if(_wgGuess.length!==5){showToast&&showToast('⚠️ 5 letters!');return;}
+    if(!_gId) return;
+    gGet(GAMES_PATH+'/'+_gId).then(function(snap){
+      var g=snap.val(); if(!g) return;
+      var amHost=g.host===_gMyId, s=g.state;
+      var myG=amHost?[...(s.hostGuesses||[])]: [...(s.guestGuesses||[])];
+      myG.push(_wgGuess);
+      var correct=_wgGuess===s.word, done=correct||myG.length>=6;
+      _wgGuess='';
+      var upd=amHost?{hostGuesses:myG,hostDone:done}:{guestGuesses:myG,guestDone:done};
+      var ns=Object.assign({},s,upd);
+      if(done){var oppDone=amHost?s.guestDone:s.hostDone;if(correct&&!oppDone)ns.winner=_gMyId;else if(done&&oppDone)ns.winner='draw';}
+      gSet(GAMES_PATH+'/'+_gId+'/state',ns);
     });
-  });
-};
-
-function _tttWinCells(board) {
-  var lines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-  for (var l of lines) {
-    if (board[l[0]] && board[l[0]] === board[l[1]] && board[l[0]] === board[l[2]]) return l;
-  }
-  return [];
-}
-
-function _checkTTT(board, host, guest) {
-  var lines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-  for (var l of lines) {
-    if (board[l[0]] && board[l[0]] === board[l[1]] && board[l[0]] === board[l[2]]) return board[l[0]];
-  }
-  if (board.every(c => c)) return 'draw';
-  return null;
-}
-
-/* ════════════════════════════
-   ROCK PAPER SCISSORS
-════════════════════════════ */
-function _renderRPS(body, g, amHost) {
-  var s = g.state || {};
-  var myRole = amHost ? 'host' : 'guest';
-  var myChoice = amHost ? s.hostChoice : s.guestChoice;
-  var oppChoice = amHost ? s.guestChoice : s.hostChoice;
-  var myScore  = amHost ? (s.hostScore||0) : (s.guestScore||0);
-  var oppScore = amHost ? (s.guestScore||0) : (s.hostScore||0);
-  var bothChose = s.hostChoice && s.guestChoice;
-  var emojis = { rock: '✊', paper: '🖐️', scissors: '✌️' };
-  var result = bothChose ? _rpsResult(s.hostChoice, s.guestChoice, amHost) : null;
-  var winner = (s.hostScore||0) >= 3 ? g.hostName : (s.guestScore||0) >= 3 ? g.guestName : null;
-
-  body.innerHTML = `<div class="rps-wrap">
-    <div class="rps-score">${g.hostName}: ${s.hostScore||0} &nbsp;|&nbsp; ${g.guestName}: ${s.guestScore||0} &nbsp;—&nbsp; Best of 5</div>
-    ${winner ? `<div class="rps-status" style="font-size:18px;">${winner === (amHost?g.hostName:g.guestName) ? '🎉 You win the match!' : winner + ' wins the match!'}</div>` : ''}
-    ${!winner && bothChose ? `
-      <div class="rps-result-wrap">
-        <div>${emojis[s.hostChoice]||'?'}</div>
-        <div class="rps-vs">vs</div>
-        <div>${emojis[s.guestChoice]||'?'}</div>
-      </div>
-      <div class="rps-status">${result}</div>
-      <button class="rps-play-again" onclick="_rpsNextRound('${_currentGameId}')">Next Round →</button>
-    ` : ''}
-    ${!winner && !bothChose ? `
-      <div class="rps-status">${myChoice ? 'Waiting for opponent...' : 'Round ' + (s.round||1) + ' — Choose!'}</div>
-      <div class="rps-choices">
-        ${['rock','paper','scissors'].map(c => `
-          <button class="rps-btn ${myChoice===c?'selected':''}" onclick="_rpsPick('${c}')" ${myChoice?'disabled':''}>
-            ${emojis[c]}
-          </button>
-        `).join('')}
-      </div>
-    ` : ''}
-    ${winner ? `<button onclick="_gameRematch('${_currentGameId}','rps')" style="background:var(--accent);color:#000;border:none;border-radius:10px;padding:10px 28px;font-size:14px;font-weight:700;cursor:pointer;">🔄 Play Again</button>` : ''}
-  </div>`;
-}
-
-window._rpsPick = function(choice) {
-  if (!_currentGameId) return;
-  _gOnce(GAMES_PATH + '/' + _currentGameId, function(g) {
-    if (!g) return;
-    var amHost = g.host === _gameMyId;
-    var s = g.state;
-    if ((amHost && s.hostChoice) || (!amHost && s.guestChoice)) return;
-    var update = amHost ? { hostChoice: choice } : { guestChoice: choice };
-    var newState = {...s, ...update};
-    // Check if both picked
-    if (newState.hostChoice && newState.guestChoice) {
-      var winner = _rpsWinner(newState.hostChoice, newState.guestChoice);
-      if (winner === 'host') newState.hostScore = (s.hostScore||0) + 1;
-      else if (winner === 'guest') newState.guestScore = (s.guestScore||0) + 1;
-    }
-    _gSet(GAMES_PATH + '/' + _currentGameId + '/state', newState);
-  });
-};
-
-window._rpsNextRound = function(gameId) {
-  _gOnce(GAMES_PATH + '/' + gameId, function(g) {
-    if (!g) return;
-    var s = g.state;
-    if ((s.hostScore||0) >= 3 || (s.guestScore||0) >= 3) return; // match over
-    _gSet(GAMES_PATH + '/' + gameId + '/state', {
-      ...s, round: (s.round||1)+1, hostChoice: null, guestChoice: null
-    });
-  });
-};
-
-function _rpsWinner(h, gr) {
-  if (h === gr) return 'draw';
-  if ((h==='rock'&&gr==='scissors')||(h==='scissors'&&gr==='paper')||(h==='paper'&&gr==='rock')) return 'host';
-  return 'guest';
-}
-function _rpsResult(h, gr, amHost) {
-  var w = _rpsWinner(h, gr);
-  if (w === 'draw') return "It's a draw! 🤝";
-  if ((w==='host'&&amHost)||(w==='guest'&&!amHost)) return '🎉 You win this round!';
-  return '😅 Opponent wins this round';
-}
-
-/* ════════════════════════════
-   CONNECT FOUR
-════════════════════════════ */
-function _renderC4(body, g, amHost) {
-  var s = g.state || {};
-  var board = s.board || Array(42).fill(null);
-  var myColor  = amHost ? 'p1' : 'p2';
-  var oppColor = amHost ? 'p2' : 'p1';
-  var isMyTurn = s.turn === _gameMyId && !s.winner && g.status === 'active';
-  var winCells  = s.winCells || [];
-  var myColorEmoji  = amHost ? '🔴' : '🔵';
-  var oppColorEmoji = amHost ? '🔵' : '🔴';
-
-  var statusText = s.winner === 'draw' ? "It's a draw! 🤝"
-    : s.winner === _gameMyId ? '🎉 You win!'
-    : s.winner && s.winner !== _gameMyId ? oppName(g, amHost) + ' wins!'
-    : isMyTurn ? 'Your turn (' + myColorEmoji + ')' : oppName(g, amHost) + "'s turn...";
-
-  body.innerHTML = `<div class="c4-wrap">
-    <div class="c4-status">${statusText}</div>
-    <div class="c4-col-btn-row">
-      ${Array(7).fill(0).map((_,c) => `<button class="c4-col-btn" onclick="_c4Drop(${c})" ${!isMyTurn?'disabled':''}>▼</button>`).join('')}
-    </div>
-    <div class="c4-board">
-      ${board.map((cell, i) => {
-        var cls = 'c4-cell' + (cell===g.host?' p1':cell===g.guest?' p2':'') + (winCells.includes(i)?' win-cell':'');
-        return `<div class="${cls}"></div>`;
-      }).join('')}
-    </div>
-    <div style="font-size:11px;color:var(--text3);font-family:var(--mono);">🔴 = ${g.hostName} &nbsp; 🔵 = ${g.guestName}</div>
-    ${s.winner ? `<button onclick="_gameRematch('${_currentGameId}','c4')" style="background:var(--accent);color:#000;border:none;border-radius:10px;padding:10px 28px;font-size:14px;font-weight:700;cursor:pointer;">🔄 Rematch</button>` : ''}
-  </div>`;
-}
-
-window._c4Drop = function(col) {
-  if (!_currentGameId) return;
-  _gOnce(GAMES_PATH + '/' + _currentGameId, function(g) {
-    if (!g || g.status !== 'active') return;
-    var s = g.state; if (s.turn !== _gameMyId || s.winner) return;
-    var board = [...s.board];
-    // Find lowest empty row in col
-    var row = -1;
-    for (var r = 5; r >= 0; r--) { if (!board[r*7+col]) { row = r; break; } }
-    if (row < 0) return; // column full
-    board[row*7+col] = _gameMyId;
-    var winner = _checkC4(board, g.host, g.guest);
-    var winCells = winner && winner !== 'draw' ? _c4WinCells(board, g.host, g.guest) : [];
-    _gSet(GAMES_PATH + '/' + _currentGameId + '/state', {
-      ...s, board,
-      turn: s.turn === g.host ? g.guest : g.host,
-      winner: winner, winCells: winCells
-    });
-  });
-};
-
-function _checkC4(board, host, guest) {
-  var dirs = [[1,0],[0,1],[1,1],[1,-1]];
-  for (var r = 0; r < 6; r++) for (var c = 0; c < 7; c++) {
-    var cell = board[r*7+c]; if (!cell) continue;
-    for (var [dr,dc] of dirs) {
-      var count = 1;
-      for (var k = 1; k < 4; k++) {
-        var nr = r+dr*k, nc = c+dc*k;
-        if (nr<0||nr>=6||nc<0||nc>=7||board[nr*7+nc]!==cell) break;
-        count++;
-      }
-      if (count >= 4) return cell;
-    }
-  }
-  if (board.every(c => c)) return 'draw';
-  return null;
-}
-
-function _c4WinCells(board, host, guest) {
-  var dirs = [[1,0],[0,1],[1,1],[1,-1]];
-  for (var r = 0; r < 6; r++) for (var c2 = 0; c2 < 7; c2++) {
-    var cell = board[r*7+c2]; if (!cell) continue;
-    for (var [dr,dc] of dirs) {
-      var cells = [r*7+c2];
-      for (var k = 1; k < 4; k++) {
-        var nr = r+dr*k, nc = c2+dc*k;
-        if (nr<0||nr>=6||nc<0||nc>=7||board[nr*7+nc]!==cell) break;
-        cells.push(nr*7+nc);
-      }
-      if (cells.length >= 4) return cells;
-    }
-  }
-  return [];
-}
-
-/* ════════════════════════════
-   WORD GUESS (Wordle vs Friend)
-════════════════════════════ */
-var _wgCurrentGuess = '';
-var _wgKeyboardMap = {};
-
-function _renderWG(body, g, amHost) {
-  var s = g.state || {};
-  var myGuesses  = amHost ? (s.hostGuesses||[]) : (s.guestGuesses||[]);
-  var oppGuesses = amHost ? (s.guestGuesses||[]) : (s.hostGuesses||[]);
-  var word       = s.word || '?????';
-  var myDone     = amHost ? s.hostDone : s.guestDone;
-  var maxRows    = 6;
-  var isMyTurn   = !myDone && g.status === 'active';
-
-  // Build status text
-  var statusText = '';
-  if (s.winner === _gameMyId) statusText = '🎉 You guessed it first!';
-  else if (s.winner && s.winner !== _gameMyId) statusText = oppName(g,amHost) + ' got it first! Word: ' + word.toUpperCase();
-  else if (s.winner === 'draw') statusText = 'Tie! Word was: ' + word.toUpperCase();
-  else if (myDone && !s.winner) statusText = 'Waiting for ' + oppName(g,amHost) + '...';
-  else statusText = 'Guess the 5-letter word! (' + myGuesses.length + '/6)';
-
-  // Render grid rows
-  var rows = '';
-  for (var r = 0; r < maxRows; r++) {
-    var guess = myGuesses[r];
-    var isCurrent = r === myGuesses.length && isMyTurn;
-    rows += '<div class="wg-row">';
-    for (var c = 0; c < 5; c++) {
-      var letter = guess ? guess[c] : (isCurrent ? (_wgCurrentGuess[c]||'') : '');
-      var cls = 'wg-tile';
-      if (guess) {
-        var result = _wgEval(guess, word);
-        if (result[c] === 'correct') cls += ' correct';
-        else if (result[c] === 'present') cls += ' present';
-        else cls += ' absent';
-      } else if (isCurrent && letter) {
-        cls += ' current-input';
-      }
-      rows += `<div class="${cls}">${letter}</div>`;
-    }
-    rows += '</div>';
-  }
-
-  // Keyboard
-  var kbRows = [
-    ['Q','W','E','R','T','Y','U','I','O','P'],
-    ['A','S','D','F','G','H','J','K','L'],
-    ['ENTER','Z','X','C','V','B','N','M','⌫']
-  ];
-  // Build key color map
-  _wgKeyboardMap = {};
-  myGuesses.forEach(guess => {
-    var res = _wgEval(guess, word);
-    for (var i = 0; i < 5; i++) {
-      var k = guess[i].toUpperCase();
-      var prev = _wgKeyboardMap[k];
-      if (res[i]==='correct') _wgKeyboardMap[k] = 'correct';
-      else if (res[i]==='present' && prev!=='correct') _wgKeyboardMap[k] = 'present';
-      else if (!prev) _wgKeyboardMap[k] = 'absent';
-    }
-  });
-
-  var keyboard = kbRows.map(row =>
-    '<div class="wg-kb-row">' +
-    row.map(k => {
-      var kClass = 'wg-key' + (k.length>1?' wide':'') + (_wgKeyboardMap[k]?' '+_wgKeyboardMap[k]:'');
-      return `<button class="${kClass}" onclick="_wgKey('${k}')" ${!isMyTurn?'disabled':''}>${k}</button>`;
-    }).join('') + '</div>'
-  ).join('');
-
-  body.innerHTML = `<div class="wg-wrap">
-    <div class="wg-status">${statusText}</div>
-    <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;justify-content:center;">
-      <div>
-        <div style="font-size:11px;color:var(--accent);font-family:var(--mono);text-align:center;margin-bottom:6px;">YOUR BOARD</div>
-        <div class="wg-grid" id="wg-grid">${rows}</div>
-      </div>
-      <div>
-        <div style="font-size:11px;color:var(--text3);font-family:var(--mono);text-align:center;margin-bottom:6px;">${oppName(g,amHost).toUpperCase()}</div>
-        <div style="font-size:12px;color:var(--text2);font-family:var(--mono);text-align:center;">${oppGuesses.length}/6 guesses</div>
-      </div>
-    </div>
-    ${isMyTurn ? `<div class="wg-keyboard" id="wg-keyboard">${keyboard}</div>` : ''}
-    ${s.winner ? `<button onclick="_gameRematch('${_currentGameId}','wg')" style="background:var(--accent);color:#000;border:none;border-radius:10px;padding:10px 28px;font-size:14px;font-weight:700;cursor:pointer;">🔄 New Word</button>` : ''}
-  </div>`;
-}
-
-window._wgKey = function(key) {
-  if (key === '⌫') { _wgCurrentGuess = _wgCurrentGuess.slice(0,-1); }
-  else if (key === 'ENTER') { _wgSubmit(); return; }
-  else if (_wgCurrentGuess.length < 5) { _wgCurrentGuess += key.toLowerCase(); }
-  // Re-render just the current row
-  var grid = document.getElementById('wg-grid');
-  if (!grid) return;
-  var rows2 = grid.querySelectorAll('.wg-row');
-  // Find current row index from game state
-  _gOnce(GAMES_PATH + '/' + _currentGameId, function(g) {
-    if (!g) return;
-    var amHost2 = g.host === _gameMyId;
-    var myGuesses = amHost2 ? (g.state.hostGuesses||[]) : (g.state.guestGuesses||[]);
-    var currentRow = rows2[myGuesses.length];
-    if (!currentRow) return;
-    var tiles = currentRow.querySelectorAll('.wg-tile');
-    for (var i = 0; i < 5; i++) {
-      tiles[i].textContent = _wgCurrentGuess[i] || '';
-      tiles[i].className = 'wg-tile' + (_wgCurrentGuess[i]?' current-input':'');
-    }
-  });
-};
-
-window._wgSubmit = function() {
-  if (_wgCurrentGuess.length !== 5) { showToast('⚠️ 5 letters required'); return; }
-  if (!_currentGameId) return;
-  _gOnce(GAMES_PATH + '/' + _currentGameId, function(g) {
-    if (!g) return;
-    var amHost = g.host === _gameMyId;
-    var s = g.state;
-    var myGuesses = amHost ? [...(s.hostGuesses||[])] : [...(s.guestGuesses||[])];
-    if (myGuesses.length >= 6) return;
-    myGuesses.push(_wgCurrentGuess);
-    _wgCurrentGuess = '';
-    var correct = _wgCurrentGuess === s.word || myGuesses[myGuesses.length-1] === s.word;
-    var done = correct || myGuesses.length >= 6;
-    var stateUpdate = amHost
-      ? { hostGuesses: myGuesses, hostDone: done }
-      : { guestGuesses: myGuesses, guestDone: done };
-    var newState = {...s, ...stateUpdate};
-    // Check winner
-    if (done) {
-      var oppDone = amHost ? s.guestDone : s.hostDone;
-      if (correct) {
-        if (!oppDone) { newState.winner = _gameMyId; }
-        else { newState.winner = 'draw'; } // both got it
-      } else if (myGuesses.length >= 6 && oppDone) {
-        newState.winner = 'draw';
-      }
-    }
-    _gSet(GAMES_PATH + '/' + _currentGameId + '/state', newState);
-  });
-};
-
-function _wgEval(guess, word) {
-  var res = Array(5).fill('absent');
-  var wordArr = word.split('');
-  var guessArr = guess.split('');
-  // First pass: correct
-  for (var i = 0; i < 5; i++) {
-    if (guessArr[i] === wordArr[i]) { res[i] = 'correct'; wordArr[i] = null; guessArr[i] = null; }
-  }
-  // Second pass: present
-  for (var i = 0; i < 5; i++) {
-    if (guessArr[i] === null) continue;
-    var idx = wordArr.indexOf(guessArr[i]);
-    if (idx !== -1) { res[i] = 'present'; wordArr[idx] = null; }
-  }
-  return res;
-}
-
-/* ── Keyboard input for Word Guess ── */
-document.addEventListener('keydown', function(e) {
-  if (!window._currentGameType || window._currentGameType !== 'wg') return;
-  var ov = document.getElementById('game-overlay');
-  if (!ov || !ov.classList.contains('open')) return;
-  if (e.key === 'Backspace') { _wgKey('⌫'); }
-  else if (e.key === 'Enter') { _wgKey('ENTER'); }
-  else if (/^[a-zA-Z]$/.test(e.key)) { _wgKey(e.key.toUpperCase()); }
-});
-
-/* ════════════════════════════
-   REMATCH
-════════════════════════════ */
-window._gameRematch = function(gameId, type) {
-  _gOnce(GAMES_PATH + '/' + gameId, function(g) {
-    if (!g) return;
-    _gSet(GAMES_PATH + '/' + gameId + '/state', _initGameState(type, g.host, g.guest));
-    _gSet(GAMES_PATH + '/' + gameId + '/status', 'active');
-  });
-};
-
-/* ── Helpers ── */
-function oppName(g, amHost) { return amHost ? (g.guestName||'Opponent') : (g.hostName||'Opponent'); }
-function _gameName(t) { return {ttt:'Tic-Tac-Toe',rps:'Rock Paper Scissors',c4:'Connect Four',wg:'Word Guess'}[t]||t; }
-function _gameIcon(t) { return {ttt:'⭕',rps:'✊',c4:'🔴',wg:'📝'}[t]||'🎮'; }
-
-/* ── Hook into lobby presence to refresh online list in panel ── */
-var _origLobbyPresence = null;
-var _presencePatchApplied = false;
-function _patchPresence() {
-  if (_presencePatchApplied) return;
-  _presencePatchApplied = true;
-
-  // Patch socRenderUsers to also trigger games panel refresh
-  var _origRU = window.socRenderUsers;
-  window.socRenderUsers = function(data) {
-    window._lobbyPresenceData = data;
-    if (_origRU) _origRU(data);
-    // If games panel open, refresh online list
-    var panel = document.getElementById('games-panel');
-    if (panel && panel.classList.contains('open')) _renderOnlineUsersInPanel();
-  };
-
-  // Independent Firebase presence listener — keeps data fresh at all times
-  function _setupPresenceListener() {
-    var fb = window.__fbx; var db2 = window.__db;
-    if (!fb || !db2 || !fb.ref || !fb.onValue) {
-      // Firebase not ready yet — retry
-      setTimeout(_setupPresenceListener, 1000);
-      return;
-    }
-    try {
-      fb.onValue(fb.ref(db2, 'social/presence'), function(snap) {
-        var data = snap.val() || {};
-        // Always update — socRenderUsers will also update it, but this is our safety net
-        window._lobbyPresenceData = data;
-        // Refresh panel if open
-        var panel = document.getElementById('games-panel');
-        if (panel && panel.classList.contains('open')) {
-          _renderOnlineUsersInPanel();
-        }
-      });
-    } catch(e) {
-      setTimeout(_setupPresenceListener, 1500);
-    }
-  }
-  _setupPresenceListener();
-}
-
-// Patch presence as early as possible
-document.addEventListener('DOMContentLoaded', function() {
-  setTimeout(_patchPresence, 500);
-});
-window.addEventListener('load', function() {
-  setTimeout(function() {
-    _patchPresence();
-    // Patch openSocialArea to start invite listener when lobby opens
-    var _origOSA = window.openSocialArea;
-    window.openSocialArea = function() {
-      if (_origOSA) _origOSA();
-      setTimeout(function() {
-        _gInit();
-        _patchPresence(); // ensure presence listener is active
-        if (_gameMyId) _listenInvites();
-      }, 600);
-    };
-  }, 800);
-});
-
-console.log('%c 🎮 SecretLine Mini Games loaded ✓', 'color:#3de8a0;font-weight:bold;font-size:12px;background:#0b0f14;padding:4px 8px;border-radius:4px;');
-
-})();
-
-</script>
-
-<script>
-// ═══════════════════════════════════════════════════════════
-//  SECRETLINE GAMES v2 — Online Users Panel + Single Player + New Games
-// ═══════════════════════════════════════════════════════════
-(function() {
-
-/* ─── Online Users Panel ──────────────────────────────── */
-window.openOnlinePanel = function() {
-  var panel = document.getElementById('online-users-panel');
-  if (panel) panel.classList.add('open');
-  _renderOnlinePanel();
-  // Subscribe to live updates while panel is open
-  _startOnlinePanelListener();
-};
-window.closeOnlinePanel = function() {
-  var panel = document.getElementById('online-users-panel');
-  if (panel) panel.classList.remove('open');
-};
-
-var _ouPanelUnsub = null;
-function _startOnlinePanelListener() {
-  var fb = window.__fbx; var db = window.__db;
-  if (!fb || !db) return;
-  if (_ouPanelUnsub) { try { _ouPanelUnsub(); } catch(e){} }
-  _ouPanelUnsub = fb.onValue(fb.ref(db, 'social/presence'), function(snap) {
-    var data = snap.val() || {};
-    window._lobbyPresenceData = data;
-    _renderOnlinePanel();
-    _updateOnlineBadge(Object.keys(data).length);
-  });
-}
-
-function _renderOnlinePanel() {
-  var list   = document.getElementById('ou-user-list');
-  var badge  = document.getElementById('ou-count-badge');
-  var presence = window._lobbyPresenceData || {};
-  var myId   = window._socUserId || window.socUserId || '';
-  var users  = Object.entries(presence).filter(([uid]) => uid !== myId);
-
-  if (badge) badge.textContent = users.length + ' online';
-
-  if (!list) return;
-  if (!users.length) {
-    list.innerHTML = '<div style="color:var(--text3);font-size:12px;font-family:var(--mono);text-align:center;padding:20px;">No users online right now</div>';
     return;
   }
-  list.innerHTML = users.map(([uid, u]) => {
-    var initials = (u.name||'?').slice(0,2).toUpperCase();
-    var photoHtml = u.photo
-      ? `<img src="${u.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
-      : `<span>${initials}</span>`;
-    return `<div class="ou-user-row" onclick="socShowProfile && socShowProfile({...${JSON.stringify(u)},uid:'${uid}'})">
-      <div class="ou-av" style="color:${u.color||'#3de8a0'}">
-        ${photoHtml}
-        <div class="ou-av-dot"></div>
-      </div>
-      <div class="ou-info">
-        <div class="ou-name">${u.name||'User'}</div>
-        <div class="ou-bio">${u.bio||'Online now'}</div>
-      </div>
-      <div class="ou-actions" onclick="event.stopPropagation()">
-        <button class="ou-game-btn" onclick="openGamePickerForUser('${uid}','${(u.name||'User').replace(/'/g,"\\'")}','${u.photo||''}','${u.color||'#3de8a0'}')">🎮</button>
-        <button class="ou-dm-btn" onclick="openDmWith && openDmWith({uid:'${uid}',name:'${(u.name||'').replace(/'/g,"\\'")}'})">💬</button>
-      </div>
-    </div>`;
-  }).join('');
-}
+  else if(_wgGuess.length<5) _wgGuess+=key.toLowerCase();
+  // Re-render current row
+  var body=document.getElementById('game-overlay-body');
+  if(body){var rows=body.querySelectorAll('.wg-row');if(rows.length){gGet(GAMES_PATH+'/'+_gId).then(function(snap){var g=snap.val();if(!g)return;var amHost=g.host===_gMyId;var myG=amHost?(g.state.hostGuesses||[]):(g.state.guestGuesses||[]);var row=rows[myG.length];if(!row)return;var tiles=row.querySelectorAll('.wg-tile');for(var i=0;i<5;i++){tiles[i].textContent=_wgGuess[i]||'';tiles[i].className='wg-tile'+(_wgGuess[i]?' current-input':'');}});}}
+};
+function wgEval(g,w){var r=Array(5).fill('absent'),wa=w.split(''),ga=g.split('');for(var i=0;i<5;i++){if(ga[i]===wa[i]){r[i]='correct';wa[i]=null;ga[i]=null;}}for(var i=0;i<5;i++){if(!ga[i])continue;var x=wa.indexOf(ga[i]);if(x!==-1){r[i]='present';wa[x]=null;}}return r;}
+document.addEventListener('keydown',function(e){if(_gType!=='wg')return;var ov=document.getElementById('game-overlay');if(!ov||!ov.classList.contains('open'))return;if(e.key==='Backspace')gWGKey('⌫');else if(e.key==='Enter')gWGKey('ENTER');else if(/^[a-zA-Z]$/.test(e.key))gWGKey(e.key.toUpperCase());});
 
-function _updateOnlineBadge(count) {
-  var badge = document.getElementById('soc-online-badge');
-  if (!badge) return;
-  if (count > 1) { // more than just self
-    badge.style.display = 'flex';
-    badge.textContent = count;
-  } else {
-    badge.style.display = 'none';
-  }
-}
-
-// Patch socRenderUsers to update online panel + badge
-(function() {
-  var _origRU2 = window.socRenderUsers;
-  window.socRenderUsers = function(data) {
-    if (_origRU2) _origRU2(data);
-    window._lobbyPresenceData = data;
-    _updateOnlineBadge(Object.keys(data||{}).length);
-    var panel = document.getElementById('online-users-panel');
-    if (panel && panel.classList.contains('open')) _renderOnlinePanel();
-    var gPanel = document.getElementById('games-panel');
-    if (gPanel && gPanel.classList.contains('open') && window._renderOnlineUsersInPanel) window._renderOnlineUsersInPanel();
-  };
-})();
-
-/* ─── Games Panel: Mode selector (clean version) ─────── */
-var _currentGameMode = 'single'; // Default: single player
-
-// Inject mode selector into games panel on open
-var _gOrigOpenGamesPanel = window.openGamesPanel;
-window.openGamesPanel = function() {
-  if (_gOrigOpenGamesPanel) _gOrigOpenGamesPanel();
-  setTimeout(function() {
-    var body = document.querySelector('.games-body');
-    if (!body || document.getElementById('games-mode-selector')) return;
-    var modeDiv = document.createElement('div');
-    modeDiv.className = 'game-mode-selector';
-    modeDiv.id = 'games-mode-selector';
-    modeDiv.innerHTML =
-      '<button class="game-mode-btn" id="mode-single" onclick="setGameMode(this.dataset.m)" data-m="single">🤖 vs AI</button>' +
-      '<button class="game-mode-btn" id="mode-multi" onclick="setGameMode(this.dataset.m)" data-m="multi">👥 vs Friend</button>';
-    body.insertBefore(modeDiv, body.firstChild);
-    // Apply current mode highlight
-    setGameMode(_currentGameMode, true);
-  }, 60);
+window.gRematch = function(type) {
+  if(!_gId) return;
+  gGet(GAMES_PATH+'/'+_gId).then(function(snap){
+    var g=snap.val(); if(!g) return;
+    gSet(GAMES_PATH+'/'+_gId+'/state', gInitState(type,g.host,g.guest));
+    gSet(GAMES_PATH+'/'+_gId+'/status','active');
+  });
 };
 
-window.setGameMode = function(mode, silent) {
-  _currentGameMode = mode;
-  var sm = document.getElementById('mode-single');
-  var mm = document.getElementById('mode-multi');
-  if (sm) sm.classList.toggle('active', mode === 'single');
-  if (mm) mm.classList.toggle('active', mode === 'multi');
-  if (!silent && window.showToast) {
-    showToast(mode === 'single' ? '🤖 Single Player mode' : '👥 Multiplayer mode');
+// ── Single Player: Tic-Tac-Toe ─────────────────────────────
+function gSpTTT(body) {
+  var board=Array(9).fill(null), over=false;
+  function render(){
+    var wc=tttWinCells(board);
+    var stat=over?(tttCheck(board)==='X'?'🎉 You win!':tttCheck(board)==='O'?'🤖 AI wins!':"It's a draw!"):'Your turn (❌)';
+    body.innerHTML='<div class="ttt-wrap"><div class="ttt-status">'+stat+'</div><div class="ttt-board">'
+      +board.map(function(c,i){var m=c==='X'?'❌':c==='O'?'⭕':'';return'<div class="ttt-cell'+(c?' taken':'')+(wc.includes(i)?' win-cell':'')+'"'+((!c&&!over)?' onclick="gSpTTTClick('+i+')"':'')+'>'+m+'</div>';}).join('')
+      +'</div>'+(over?'<button onclick="gLaunchSP(\'ttt\')" style="background:var(--accent);color:#000;border:none;border-radius:10px;padding:10px 28px;font-weight:700;cursor:pointer;">🔄 Rematch</button>':'')
+      +'</div>';
+    window.gSpTTTBoard = board; window.gSpTTTOver = over;
   }
-};
-
-// Unified launcher — checks mode and routes correctly
-window.launchGame = function(gameType) {
-  if (_currentGameMode === 'multi') {
-    openGamePicker(gameType);
-  } else {
-    openSinglePlayer(gameType);
-  }
-};
-
-/* ─── Single Player Launcher ──────────────────────────── */
-window.openSinglePlayer = function(gameType) {
-  closeGamesPanel();
-  window._currentGameType = gameType;
-  window._currentGameId = 'sp_' + gameType;
-  var ov = document.getElementById('game-overlay');
-  var title = document.getElementById('game-overlay-title');
-  var icons = {ttt:'⭕',rps:'✊',c4:'🔴',wg:'📝',snake:'🐍',memory:'🃏',g2048:'🔢',ludo:'🎲',carrom:'🎯',checkers:'♟️',minesweeper:'💣',flappy:'🐦'};
-  var names = {ttt:'Tic-Tac-Toe',rps:'Rock Paper Scissors',c4:'Connect Four',wg:'Word Guess',snake:'Snake',memory:'Memory Match',g2048:'2048',ludo:'Ludo',carrom:'Carrom',checkers:'Checkers',minesweeper:'Minesweeper',flappy:'Flappy Bird'};
-  if (title) title.textContent = (icons[gameType]||'🎮') + ' ' + (names[gameType]||gameType) + ' — vs AI';
-  var statusEl = document.getElementById('game-overlay-status');
-  if (statusEl) statusEl.textContent = 'Single Player';
-  if (ov) ov.classList.add('open');
-  _launchSinglePlayer(gameType);
-};
-
-window._launchSinglePlayer = function(type) {
-  var body = document.getElementById('game-overlay-body');
-  if (!body) return;
-  if (type === 'ttt')        _spTTT(body);
-  else if (type === 'rps')   _spRPS(body);
-  else if (type === 'c4')    _spC4(body);
-  else if (type === 'wg')    _spWG(body);
-  else if (type === 'snake') _launchSnake(body);
-  else if (type === 'memory')_launchMemory(body);
-  else if (type === 'g2048') _launch2048(body);
-  else if (type === 'ludo')      _launchLudo(body);
-  else if (type === 'carrom')    _launchCarrom(body);
-  else if (type === 'checkers')  _launchCheckers(body);
-  else if (type === 'minesweeper') _launchMinesweeper(body);
-  else if (type === 'flappy')    _launchFlappy(body);
-}
-
-/* ─── AI: Tic-Tac-Toe ─────────────────────────────────── */
-function _spTTT(body) {
-  var board = Array(9).fill(null); var gameOver = false;
-  function render() {
-    var status = gameOver
-      ? (winner(board,'X') ? '🎉 You win!' : winner(board,'O') ? '🤖 AI wins!' : "It's a draw! 🤝")
-      : 'Your turn (❌)';
-    body.innerHTML = `<div class="ttt-wrap">
-      <div class="ttt-status">${status}</div>
-      <div class="ttt-board">
-        ${board.map((c,i) => `<div class="ttt-cell${c?' taken':''}${winCells(board).includes(i)?' win-cell':''}" onclick="_spTTTMove(${i})">${c==='X'?'❌':c==='O'?'⭕':''}</div>`).join('')}
-      </div>
-      ${gameOver ? `<button onclick="_launchSinglePlayer('ttt')" style="background:var(--accent);color:#000;border:none;border-radius:10px;padding:10px 28px;font-weight:700;cursor:pointer;">🔄 Rematch</button>` : ''}
-    </div>`;
-  }
-  function winner(b,m) { return [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]].some(l=>b[l[0]]===m&&b[l[1]]===m&&b[l[2]]===m); }
-  function winCells(b) { for(var l of [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]]){ if(b[l[0]]&&b[l[0]]===b[l[1]]&&b[l[0]]===b[l[2]])return l; } return []; }
-  function minimax(b,isMax) {
-    if(winner(b,'O'))return 10; if(winner(b,'X'))return -10;
-    if(b.every(c=>c))return 0;
-    var scores=b.map((_,i)=>{ if(b[i])return null; var nb=[...b]; nb[i]=isMax?'O':'X'; return minimax(nb,!isMax); }).filter(s=>s!==null);
-    return isMax?Math.max(...scores):Math.min(...scores);
-  }
-  function aiMove() {
-    var best=-Infinity,move=0;
-    board.forEach((_,i)=>{ if(!board[i]){ var nb=[...board]; nb[i]='O'; var s=minimax(nb,false); if(s>best){best=s;move=i;} } });
-    board[move]='O'; gameOver=winner(board,'O')||board.every(c=>c); render();
-  }
-  window._spTTTMove = function(i) {
-    if(board[i]||gameOver)return;
-    board[i]='X'; gameOver=winner(board,'X')||board.every(c=>c); render();
-    if(!gameOver) setTimeout(aiMove, 400);
-  };
+  function minimax(b,isMax){if(tttCheck(b)==='O')return 10;if(tttCheck(b)==='X')return -10;if(b.every(function(c){return c;}))return 0;var s=[];b.forEach(function(_,i){if(!b[i]){var nb=[...b];nb[i]=isMax?'O':'X';s.push(minimax(nb,!isMax));}});return isMax?Math.max.apply(null,s):Math.min.apply(null,s);}
+  function aiMove(){var best=-Infinity,move=0;board.forEach(function(_,i){if(!board[i]){var nb=[...board];nb[i]='O';var sc=minimax(nb,false);if(sc>best){best=sc;move=i;}}});board[move]='O';over=!!(tttCheck(board)||board.every(function(c){return c;}));render();}
+  window.gSpTTTClick = function(i){if(board[i]||over)return;board[i]='X';over=!!(tttCheck(board)||board.every(function(c){return c;}));render();if(!over)setTimeout(aiMove,400);};
   render();
 }
 
-/* ─── AI: Rock Paper Scissors ─────────────────────────── */
-function _spRPS(body) {
-  var score={p:0,ai:0}; var round=1;
-  function render(pChoice,aiChoice,result) {
+// ── Single Player: RPS ─────────────────────────────────────
+function gSpRPS(body) {
+  var score={p:0,ai:0},round=1;
+  function render(pC,aiC,res){
     var em={rock:'✊',paper:'🖐️',scissors:'✌️'};
-    body.innerHTML = `<div class="rps-wrap">
-      <div class="rps-score">You: ${score.p} &nbsp;|&nbsp; AI: ${score.ai} &nbsp;—&nbsp; Best of 5 • Round ${round}</div>
-      ${score.p>=3||score.ai>=3 ? `<div class="rps-status" style="font-size:18px;">${score.p>=3?'🎉 You win the match!':'🤖 AI wins the match!'}</div>
-        <button onclick="_launchSinglePlayer('rps')" style="background:var(--accent);color:#000;border:none;border-radius:10px;padding:10px 28px;font-weight:700;cursor:pointer;">🔄 Play Again</button>` : `
-      ${pChoice ? `<div class="rps-result-wrap"><div>${em[pChoice]}</div><div class="rps-vs">vs</div><div>${em[aiChoice]}</div></div>
-        <div class="rps-status">${result}</div>
-        <button class="rps-play-again" onclick="window._spRPSNext()">Next Round →</button>` : `
-      <div class="rps-status">Choose your move:</div>
-      <div class="rps-choices">
-        ${['rock','paper','scissors'].map(c=>`<button class="rps-btn" onclick="window._spRPSPick('${c}')">${em[c]}</button>`).join('')}
-      </div>`}`}
-    </div>`;
+    body.innerHTML='<div class="rps-wrap"><div class="rps-score">You: '+score.p+' | AI: '+score.ai+' — Round '+round+'</div>'
+      +(score.p>=3||score.ai>=3?'<div class="rps-status" style="font-size:18px;">'+(score.p>=3?'🎉 You win!':'🤖 AI wins!')+'</div><button onclick="gLaunchSP(\'rps\')" style="background:var(--accent);color:#000;border:none;border-radius:10px;padding:10px 28px;font-weight:700;cursor:pointer;">🔄 Play Again</button>'
+      :pC?'<div class="rps-result-wrap"><div>'+em[pC]+'</div><div class="rps-vs">vs</div><div>'+em[aiC]+'</div></div><div class="rps-status">'+res+'</div><button class="rps-play-again" onclick="window.gSpRPSNext()">Next Round →</button>'
+      :'<div class="rps-status">Choose:</div><div class="rps-choices">'+['rock','paper','scissors'].map(function(c){return'<button class="rps-btn" onclick="window.gSpRPSPick(\''+c+'\')">'+em[c]+'</button>';}).join('')+'</div>')
+      +'</div>';
   }
-  window._spRPSPick = function(choice) {
-    var moves=['rock','paper','scissors'];
-    var ai=moves[Math.floor(Math.random()*3)];
-    var w=choice===ai?'draw':((choice==='rock'&&ai==='scissors')||(choice==='scissors'&&ai==='paper')||(choice==='paper'&&ai==='rock'))?'p':'ai';
-    if(w==='p')score.p++; else if(w==='ai')score.ai++;
-    render(choice,ai,w==='draw'?"It's a draw! 🤝":w==='p'?'🎉 You win this round!':'🤖 AI wins this round');
-  };
-  window._spRPSNext = function() { if(score.p<3&&score.ai<3){round++; render();} else render(); };
+  window.gSpRPSPick=function(c){var ai=['rock','paper','scissors'][Math.floor(Math.random()*3)];var w=c===ai?'draw':((c==='rock'&&ai==='scissors')||(c==='scissors'&&ai==='paper')||(c==='paper'&&ai==='rock'))?'p':'ai';if(w==='p')score.p++;else if(w==='ai')score.ai++;render(c,ai,w==='draw'?"Draw!":w==='p'?'🎉 You win!':'🤖 AI wins');};
+  window.gSpRPSNext=function(){if(score.p<3&&score.ai<3){round++;render();}else render();};
   render();
 }
 
-/* ─── AI: Connect Four ─────────────────────────────────── */
-function _spC4(body) {
-  var board=Array(42).fill(null); var gameOver=false;
-  function render() {
-    var wc=c4WinCells(); var status=c4Winner()==='X'?'🎉 You win!':c4Winner()==='O'?'🤖 AI wins!':board.every(c=>c)?"Draw! 🤝":!gameOver?'Your turn (🔴)':'';
-    body.innerHTML = `<div class="c4-wrap">
-      <div class="c4-status">${status}</div>
-      <div class="c4-col-btn-row">${Array(7).fill(0).map((_,c)=>`<button class="c4-col-btn" onclick="_spC4Drop(${c})" ${gameOver?'disabled':''}>▼</button>`).join('')}</div>
-      <div class="c4-board">${board.map((c,i)=>`<div class="c4-cell${c==='X'?' p1':c==='O'?' p2':''}${wc.includes(i)?' win-cell':''}"></div>`).join('')}</div>
-      <div style="font-size:11px;color:var(--text3);font-family:var(--mono);">🔴 = You &nbsp; 🔵 = AI</div>
-      ${gameOver?`<button onclick="_launchSinglePlayer('c4')" style="background:var(--accent);color:#000;border:none;border-radius:10px;padding:10px 28px;font-weight:700;cursor:pointer;">🔄 Rematch</button>`:''}
-    </div>`;
+// ── Single Player: Connect Four ────────────────────────────
+function gSpC4(body) {
+  var board=Array(42).fill(null), over=false;
+  function render(){
+    var wc=c4WinCells(board), w=c4Check(board);
+    var stat=w==='X'?'🎉 You win!':w==='O'?'🤖 AI wins!':w==='draw'?"Draw!":!over?'Your turn 🔴':'';
+    body.innerHTML='<div class="c4-wrap"><div class="c4-status">'+stat+'</div>'
+      +'<div class="c4-col-btn-row">'+Array(7).fill(0).map(function(_,c){return'<button class="c4-col-btn" onclick="gSpC4Drop('+c+')"'+(over?' disabled':'')+'>▼</button>';}).join('')+'</div>'
+      +'<div class="c4-board">'+board.map(function(c,i){return'<div class="c4-cell'+(c==='X'?' p1':c==='O'?' p2':'')+(wc.includes(i)?' win-cell':'')+'"></div>';}).join('')+'</div>'
+      +'<div style="font-size:11px;color:var(--text3);font-family:var(--mono);">🔴 = You &nbsp; 🔵 = AI</div>'
+      +(over?'<button onclick="gLaunchSP(\'c4\')" style="background:var(--accent);color:#000;border:none;border-radius:10px;padding:10px 28px;font-weight:700;cursor:pointer;">🔄 Rematch</button>':'')
+      +'</div>';
   }
-  function drop(col,mark){for(var r=5;r>=0;r--){if(!board[r*7+col]){board[r*7+col]=mark;return true;}}return false;}
-  function c4Winner(){var d=[[1,0],[0,1],[1,1],[1,-1]];for(var r=0;r<6;r++)for(var c=0;c<7;c++){var cell=board[r*7+c];if(!cell)continue;for(var[dr,dc]of d){var cnt=1;for(var k=1;k<4;k++){var nr=r+dr*k,nc=c+dc*k;if(nr<0||nr>=6||nc<0||nc>=7||board[nr*7+nc]!==cell)break;cnt++;}if(cnt>=4)return cell;}}return null;}
-  function c4WinCells(){var d=[[1,0],[0,1],[1,1],[1,-1]];for(var r=0;r<6;r++)for(var c=0;c<7;c++){var cell=board[r*7+c];if(!cell)continue;for(var[dr,dc]of d){var cells=[r*7+c];for(var k=1;k<4;k++){var nr=r+dr*k,nc=c+dc*k;if(nr<0||nr>=6||nc<0||nc>=7||board[nr*7+nc]!==cell)break;cells.push(nr*7+nc);}if(cells.length>=4)return cells;}}return[];}
-  function c4Score(mark){var s=0,d=[[1,0],[0,1],[1,1],[1,-1]];for(var r=0;r<6;r++)for(var c=0;c<7;c++)for(var[dr,dc]of d){var seg=[];for(var k=0;k<4;k++){var nr=r+dr*k,nc=c+dc*k;if(nr>=0&&nr<6&&nc>=0&&nc<7)seg.push(board[nr*7+nc]);}if(seg.length===4){var m=seg.filter(x=>x===mark).length,e=seg.filter(x=>!x).length;if(m===3&&e===1)s+=50;else if(m===2&&e===2)s+=3;}}return s;}
-  function aiC4(){var best=-Infinity,col=0;for(var c=0;c<7;c++){if(!board[c]){var nb=[...board];for(var r=5;r>=0;r--){if(!nb[r*7+c]){nb[r*7+c]='O';break;}}var s=c4Score('O')-c4Score('X');if(s>best){best=s;col=c;}}}drop(col,'O');gameOver=!!(c4Winner()||board.every(c=>c));render();}
-  window._spC4Drop = function(col) {
-    if(!drop(col,'X')||gameOver)return;
-    gameOver=!!(c4Winner()||board.every(c=>c)); render();
-    if(!gameOver) setTimeout(aiC4,500);
-  };
+  function drop(col,m){for(var r=5;r>=0;r--){if(!board[r*7+col]){board[r*7+col]=m;return true;}}return false;}
+  function score(m){var s=0,D=[[1,0],[0,1],[1,1],[1,-1]];for(var r=0;r<6;r++)for(var c=0;c<7;c++)for(var i=0;i<D.length;i++){var seg=[];for(var k=0;k<4;k++){var nr=r+D[i][0]*k,nc=c+D[i][1]*k;if(nr>=0&&nr<6&&nc>=0&&nc<7)seg.push(board[nr*7+nc]);}if(seg.length===4){var mc=seg.filter(function(x){return x===m;}).length,ec=seg.filter(function(x){return!x;}).length;if(mc===3&&ec===1)s+=50;else if(mc===2&&ec===2)s+=3;}}return s;}
+  function aiMove(){var best=-Infinity,col=0;for(var c=0;c<7;c++){if(!board[c]){var nb=[...board];for(var r=5;r>=0;r--){if(!nb[r*7+c]){nb[r*7+c]='O';break;}}var sc=score('O')-score('X');if(sc>best){best=sc;col=c;}}}drop(col,'O');over=!!(c4Check(board));render();}
+  window.gSpC4Drop=function(col){if(!drop(col,'X')||over)return;over=!!(c4Check(board)||board.every(function(c){return c;}));render();if(!over)setTimeout(aiMove,500);};
   render();
 }
 
-/* ─── AI: Word Guess ──────────────────────────────────── */
-function _spWG(body) {
-  var words=window.WORDS_5||['crane','slate','audio','raise','stare','arise','later','irate','snare','atone','stone','phone','alone','close'];
-  var word=words[Math.floor(Math.random()*words.length)];
-  var guesses=[]; var current=''; var done=false; var kbMap={};
+// ── Single Player: Word Guess ──────────────────────────────
+function gSpWG(body) {
+  var word=WORDS_5[Math.floor(Math.random()*WORDS_5.length)], guesses=[], cur='', done=false, km={};
   function render(){
     var rows='';
-    for(var r=0;r<6;r++){
-      var g=guesses[r]; var isCurr=r===guesses.length&&!done;
-      rows+='<div class="wg-row">';
-      for(var c=0;c<5;c++){
-        var letter=g?g[c]:(isCurr?current[c]:'');
-        var cls='wg-tile';
-        if(g){var ev=evalWG(g,word);cls+=' '+ev[c];}
-        else if(isCurr&&letter)cls+=' current-input';
-        rows+=`<div class="${cls}">${letter||''}</div>`;
-      }
-      rows+='</div>';
-    }
-    var kbRows=[['Q','W','E','R','T','Y','U','I','O','P'],['A','S','D','F','G','H','J','K','L'],['ENTER','Z','X','C','V','B','N','M','⌫']];
-    var kb=kbRows.map(row=>'<div class="wg-kb-row">'+row.map(k=>`<button class="wg-key${k.length>1?' wide':''}${kbMap[k]?' '+kbMap[k]:''}" onclick="window._spWGKey('${k}')" ${done?'disabled':''}>${k}</button>`).join('')+'</div>').join('');
-    var status=done?(guesses[guesses.length-1]===word?'🎉 You got it!':'Word was: '+word.toUpperCase()):'Guess the word!';
-    body.innerHTML=`<div class="wg-wrap">
-      <div class="wg-status">${status}</div>
-      <div class="wg-grid">${rows}</div>
-      <div class="wg-keyboard">${kb}</div>
-      ${done?`<button onclick="_launchSinglePlayer('wg')" style="background:var(--accent);color:#000;border:none;border-radius:10px;padding:10px 28px;font-weight:700;cursor:pointer;margin-top:8px;">🔄 New Word</button>`:''}
-    </div>`;
+    for(var r=0;r<6;r++){var g=guesses[r],isCur=r===guesses.length&&!done;rows+='<div class="wg-row">';for(var c=0;c<5;c++){var l=g?g[c]:(isCur?cur[c]:'');var cls='wg-tile';if(g){var ev=wgEval(g,word);cls+=' '+ev[c];}else if(isCur&&l)cls+=' current-input';rows+='<div class="'+cls+'">'+(l||'')+'</div>';}rows+='</div>';}
+    var kbR=[['Q','W','E','R','T','Y','U','I','O','P'],['A','S','D','F','G','H','J','K','L'],['ENTER','Z','X','C','V','B','N','M','⌫']];
+    var kb=kbR.map(function(row){return'<div class="wg-kb-row">'+row.map(function(k){return'<button class="wg-key'+(k.length>1?' wide':'')+(km[k]?' '+km[k]:'')+'" onclick="gSpWGKey(\''+k+'\')"'+(done?' disabled':'')+'>'+k+'</button>';}).join('')+'</div>';}).join('');
+    var stat=done?(guesses[guesses.length-1]===word?'🎉 Got it!':'Word: '+word.toUpperCase()):'Guess the 5-letter word!';
+    body.innerHTML='<div class="wg-wrap"><div class="wg-status">'+stat+'</div><div class="wg-grid">'+rows+'</div>'+(done?'':'<div class="wg-keyboard">'+kb+'</div>')+(done?'<button onclick="gLaunchSP(\'wg\')" style="background:var(--accent);color:#000;border:none;border-radius:10px;padding:10px 28px;font-weight:700;cursor:pointer;margin-top:8px;">🔄 New Word</button>':'')+'</div>';
   }
-  function evalWG(g,w){var r=Array(5).fill('absent'),wa=w.split(''),ga=g.split('');for(var i=0;i<5;i++){if(ga[i]===wa[i]){r[i]='correct';wa[i]=null;ga[i]=null;}}for(var i=0;i<5;i++){if(ga[i]===null)continue;var idx=wa.indexOf(ga[i]);if(idx!==-1){r[i]='present';wa[idx]=null;}}return r;}
-  window._spWGKey = function(key) {
-    if(done)return;
-    if(key==='⌫'){current=current.slice(0,-1);}
-    else if(key==='ENTER'){
-      if(current.length!==5){window.showToast&&showToast('⚠️ 5 letters!');return;}
-      guesses.push(current);
-      // Update keyboard map
-      var ev=evalWG(current,word);
-      for(var i=0;i<5;i++){var k=current[i].toUpperCase();if(ev[i]==='correct')kbMap[k]='correct';else if(ev[i]==='present'&&kbMap[k]!=='correct')kbMap[k]='present';else if(!kbMap[k])kbMap[k]='absent';}
-      if(current===word||guesses.length>=6)done=true;
-      current='';
-    }
-    else if(current.length<5){current+=key.toLowerCase();}
-    render();
-  };
+  window.gSpWGKey=function(key){if(done)return;if(key==='⌫')cur=cur.slice(0,-1);else if(key==='ENTER'){if(cur.length!==5){showToast&&showToast('⚠️ 5 letters!');return;}guesses.push(cur);var ev=wgEval(cur,word);for(var i=0;i<5;i++){var k=cur[i].toUpperCase();if(ev[i]==='correct')km[k]='correct';else if(ev[i]==='present'&&km[k]!=='correct')km[k]='present';else if(!km[k])km[k]='absent';}if(cur===word||guesses.length>=6)done=true;cur='';}else if(cur.length<5)cur+=key.toLowerCase();render();};
+  document.addEventListener('keydown',function spWGK(e){if(_gType!=='wg'||document.getElementById('game-overlay-body')!==body)return document.removeEventListener('keydown',spWGK);if(e.key==='Backspace')gSpWGKey('⌫');else if(e.key==='Enter')gSpWGKey('ENTER');else if(/^[a-zA-Z]$/.test(e.key))gSpWGKey(e.key.toUpperCase());});
   render();
 }
-function evalWG(g,w){var r=Array(5).fill('absent'),wa=w.split(''),ga=g.split('');for(var i=0;i<5;i++){if(ga[i]===wa[i]){r[i]='correct';wa[i]=null;ga[i]=null;}}for(var i=0;i<5;i++){if(ga[i]===null)continue;var idx=wa.indexOf(ga[i]);if(idx!==-1){r[i]='present';wa[idx]=null;}}return r;}
 
-/* ═══════════════════════════════════════════
-   SNAKE GAME
-═══════════════════════════════════════════ */
-var _snakeRAF=null, _snakeInterval=null;
-function _launchSnake(body) {
-  var SZ=16, COLS=20, ROWS=20, W=COLS*SZ, H=ROWS*SZ;
-  var snake, dir, nextDir, food, score, hiscore=parseInt(localStorage.getItem('sl_snake_hi')||'0'), running=false, started=false;
-
-  body.innerHTML = `<div class="snake-wrap">
-    <div class="snake-hud">
-      <div><div style="font-size:10px;color:var(--text3);font-family:var(--mono);">SCORE</div><div class="snake-hud-val" id="sk-score">0</div></div>
-      <div style="text-align:center"><div style="font-size:10px;color:var(--text3);font-family:var(--mono);">SNAKE</div><div style="font-size:14px;color:var(--accent)">🐍</div></div>
-      <div style="text-align:right"><div style="font-size:10px;color:var(--text3);font-family:var(--mono);">BEST</div><div class="snake-hud-val" id="sk-hi">${hiscore}</div></div>
-    </div>
-    <div style="position:relative;display:inline-block;">
-      <canvas id="snake-canvas" width="${W}" height="${H}"></canvas>
-      <div class="snake-overlay" id="snake-overlay">
-        <div class="snake-overlay-title">🐍 SNAKE</div>
-        <div class="snake-overlay-sub">Tap to start</div>
-      </div>
-    </div>
-    <div class="snake-dpad">
-      <div></div><button class="snake-dpad-btn" onclick="snakeDpad('U')">▲</button><div></div>
-      <button class="snake-dpad-btn" onclick="snakeDpad('L')">◀</button>
-      <button class="snake-dpad-btn" onclick="snakeDpad('D')">▼</button>
-      <button class="snake-dpad-btn" onclick="snakeDpad('R')">▶</button>
-    </div>
-  </div>`;
-
-  var canvas=document.getElementById('snake-canvas');
-  var ctx=canvas.getContext('2d');
-
-  function initGame(){
-    snake=[{x:10,y:10},{x:9,y:10},{x:8,y:10}];
-    dir={x:1,y:0}; nextDir={x:1,y:0};
-    food=randomFood(); score=0; running=true; started=true;
-    var ov=document.getElementById('snake-overlay'); if(ov)ov.style.display='none';
-    draw();
-    if(_snakeInterval)clearInterval(_snakeInterval);
-    _snakeInterval=setInterval(tick,130);
-  }
-
-  function randomFood(){
-    var f;
-    do { f={x:Math.floor(Math.random()*COLS),y:Math.floor(Math.random()*ROWS)}; }
-    while(snake.some(s=>s.x===f.x&&s.y===f.y));
-    return f;
-  }
-
-  function tick(){
-    dir=nextDir;
-    var head={x:(snake[0].x+dir.x+COLS)%COLS, y:(snake[0].y+dir.y+ROWS)%ROWS};
-    if(snake.some(s=>s.x===head.x&&s.y===head.y)){
-      running=false; clearInterval(_snakeInterval);
-      if(score>hiscore){hiscore=score;localStorage.setItem('sl_snake_hi',score);}
-      var ov=document.getElementById('snake-overlay');
-      if(ov){ov.style.display='flex';ov.innerHTML=`<div class="snake-overlay-title">💀 GAME OVER</div><div class="snake-overlay-sub">Score: ${score} • Best: ${hiscore}</div><div style="font-size:13px;color:var(--accent);font-family:var(--mono);margin-top:4px;">Tap to restart</div>`;}
-      return;
-    }
-    snake.unshift(head);
-    if(head.x===food.x&&head.y===food.y){
-      score+=10; food=randomFood();
-      var se=document.getElementById('sk-score'); if(se)se.textContent=score;
-      var he=document.getElementById('sk-hi'); if(he)he.textContent=Math.max(score,hiscore);
-    } else { snake.pop(); }
-    draw();
-  }
-
-  function draw(){
-    ctx.fillStyle='#0a0e14'; ctx.fillRect(0,0,W,H);
-    // Grid dots
-    ctx.fillStyle='rgba(255,255,255,0.04)';
-    for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++)ctx.fillRect(c*SZ+SZ/2-1,r*SZ+SZ/2-1,2,2);
-    // Food with glow
-    ctx.shadowColor='#3de8a0'; ctx.shadowBlur=10;
-    ctx.fillStyle='#3de8a0';
-    ctx.beginPath(); ctx.arc(food.x*SZ+SZ/2,food.y*SZ+SZ/2,SZ/2-2,0,Math.PI*2); ctx.fill();
-    ctx.shadowBlur=0;
-    // Snake
-    snake.forEach(function(s,i){
-      var t=i/snake.length;
-      ctx.fillStyle=i===0?'#4fffb0':`hsl(${150-t*30},${90-t*20}%,${60-t*20}%)`;
-      var r2=i===0?SZ/2-1:SZ/2-2;
-      ctx.beginPath(); ctx.roundRect(s.x*SZ+2,s.y*SZ+2,SZ-4,SZ-4,i===0?5:3); ctx.fill();
-      // Eyes on head
-      if(i===0){
-        ctx.fillStyle='#000';
-        var ex=dir.x,ey=dir.y;
-        ctx.beginPath(); ctx.arc(s.x*SZ+SZ/2+ex*3+ey*3,s.y*SZ+SZ/2+ey*3-ex*3,2,0,Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.arc(s.x*SZ+SZ/2+ex*3-ey*3,s.y*SZ+SZ/2+ey*3+ex*3,2,0,Math.PI*2); ctx.fill();
-      }
-    });
-  }
-
-  canvas.addEventListener('click', function(){ if(!started||!running)initGame(); });
-  var touchStart={x:0,y:0};
-  canvas.addEventListener('touchstart',function(e){touchStart={x:e.touches[0].clientX,y:e.touches[0].clientY};e.preventDefault();},{passive:false});
-  canvas.addEventListener('touchend',function(e){
-    if(!started||!running){initGame();return;}
-    var dx=e.changedTouches[0].clientX-touchStart.x, dy=e.changedTouches[0].clientY-touchStart.y;
-    if(Math.abs(dx)>Math.abs(dy)){nextDir=dx>0?{x:1,y:0}:{x:-1,y:0};}
-    else{nextDir=dy>0?{x:0,y:1}:{x:0,y:-1};}
-    e.preventDefault();
-  },{passive:false});
-
-  window.snakeDpad=function(d){
-    if(!started||!running)return;
-    if(d==='U'&&dir.y!==1)nextDir={x:0,y:-1};
-    else if(d==='D'&&dir.y!==-1)nextDir={x:0,y:1};
-    else if(d==='L'&&dir.x!==1)nextDir={x:-1,y:0};
-    else if(d==='R'&&dir.x!==-1)nextDir={x:1,y:0};
-  };
-
-  document.addEventListener('keydown',function skKey(e){
-    if(window._currentGameType!=='snake')return document.removeEventListener('keydown',skKey);
-    var map={ArrowUp:'U',ArrowDown:'D',ArrowLeft:'L',ArrowRight:'R'};
-    if(map[e.key]){window.snakeDpad(map[e.key]);e.preventDefault();}
-  });
-
+// ── Snake ─────────────────────────────────────────────────
+function gLaunchSnake(body) {
+  var SZ=320,COLS=20,ROWS=20,CS=SZ/COLS;
+  var snake,dir,nextDir,food,score,hi=parseInt(localStorage.getItem('sl_snake_hi')||'0'),running=false;
+  body.innerHTML='<div class="snake-wrap"><div style="display:flex;justify-content:space-between;width:100%;max-width:'+SZ+'px;font-family:var(--mono);font-size:12px;color:var(--text2);"><div>SCORE<div class="snake-hud-val" id="sk-sc">0</div></div><div style="text-align:center">SNAKE<div>🐍</div></div><div style="text-align:right">BEST<div class="snake-hud-val" id="sk-hi">'+hi+'</div></div></div><div style="position:relative;"><canvas id="sk-cv" width="'+SZ+'" height="'+SZ+'" style="border-radius:10px;border:1px solid var(--border2);display:block;touch-action:none;cursor:pointer;max-width:100%;"></canvas><div id="sk-ov" class="snake-overlay"><div class="snake-overlay-title">🐍 SNAKE</div><div class="snake-overlay-sub">Tap to start</div></div></div><div class="snake-dpad"><div></div><button class="snake-dpad-btn" onclick="skDir(0,-1)">▲</button><div></div><button class="snake-dpad-btn" onclick="skDir(-1,0)">◀</button><button class="snake-dpad-btn" onclick="skDir(0,1)">▼</button><button class="snake-dpad-btn" onclick="skDir(1,0)">▶</button></div></div>';
+  var cv=document.getElementById('sk-cv'),ctx=cv.getContext('2d');
+  function rndFood(){var f;do{f={x:Math.floor(Math.random()*COLS),y:Math.floor(Math.random()*ROWS)};}while(snake.some(function(s){return s.x===f.x&&s.y===f.y;}));return f;}
+  function init(){snake=[{x:10,y:10},{x:9,y:10},{x:8,y:10}];dir={x:1,y:0};nextDir={x:1,y:0};food=rndFood();score=0;running=true;var ov=document.getElementById('sk-ov');if(ov)ov.style.display='none';if(_snakeIv)clearInterval(_snakeIv);_snakeIv=setInterval(tick,130);}
+  function tick(){dir=nextDir;var head={x:(snake[0].x+dir.x+COLS)%COLS,y:(snake[0].y+dir.y+ROWS)%ROWS};if(snake.some(function(s){return s.x===head.x&&s.y===head.y;})){running=false;clearInterval(_snakeIv);_snakeIv=null;if(score>hi){hi=score;localStorage.setItem('sl_snake_hi',score);}var ov=document.getElementById('sk-ov');if(ov){ov.style.display='flex';ov.innerHTML='<div class="snake-overlay-title">💀 GAME OVER</div><div class="snake-overlay-sub">Score: '+score+' • Best: '+hi+'</div><div style="font-size:12px;color:var(--accent);font-family:var(--mono);margin-top:4px;">Tap to restart</div>';}return;}snake.unshift(head);if(head.x===food.x&&head.y===food.y){score+=10;food=rndFood();var se=document.getElementById('sk-sc');if(se)se.textContent=score;var he=document.getElementById('sk-hi');if(he)he.textContent=Math.max(score,hi);}else snake.pop();draw();}
+  function draw(){ctx.fillStyle='#0a0e14';ctx.fillRect(0,0,SZ,SZ);ctx.fillStyle='rgba(255,255,255,0.04)';for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++)ctx.fillRect(c*CS+CS/2-1,r*CS+CS/2-1,2,2);ctx.shadowColor='#3de8a0';ctx.shadowBlur=10;ctx.fillStyle='#3de8a0';ctx.beginPath();ctx.arc(food.x*CS+CS/2,food.y*CS+CS/2,CS/2-2,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;snake.forEach(function(s,i){var t=i/snake.length;ctx.fillStyle=i===0?'#4fffb0':'hsl('+(150-t*30)+','+(90-t*20)+'%,'+(60-t*20)+'%)';ctx.beginPath();ctx.roundRect(s.x*CS+2,s.y*CS+2,CS-4,CS-4,i===0?5:3);ctx.fill();if(i===0){ctx.fillStyle='#000';ctx.beginPath();ctx.arc(s.x*CS+CS/2+dir.x*3+dir.y*3,s.y*CS+CS/2+dir.y*3-dir.x*3,2,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(s.x*CS+CS/2+dir.x*3-dir.y*3,s.y*CS+CS/2+dir.y*3+dir.x*3,2,0,Math.PI*2);ctx.fill();}});}
+  window.skDir=function(x,y){if(!running)return;if(x!==0&&dir.x===0)nextDir={x:x,y:0};else if(y!==0&&dir.y===0)nextDir={x:0,y:y};};
+  cv.addEventListener('click',function(){if(!running)init();});
+  var ts={x:0,y:0};
+  cv.addEventListener('touchstart',function(e){ts={x:e.touches[0].clientX,y:e.touches[0].clientY};e.preventDefault();},{passive:false});
+  cv.addEventListener('touchend',function(e){if(!running){init();return;}var dx=e.changedTouches[0].clientX-ts.x,dy=e.changedTouches[0].clientY-ts.y;if(Math.abs(dx)>Math.abs(dy))skDir(dx>0?1:-1,0);else skDir(0,dy>0?1:-1);e.preventDefault();},{passive:false});
+  document.addEventListener('keydown',function skK(e){if(_gType!=='snake')return document.removeEventListener('keydown',skK);var m={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0]};if(m[e.key]){skDir(m[e.key][0],m[e.key][1]);e.preventDefault();}});
   draw();
 }
 
-/* ═══════════════════════════════════════════
-   MEMORY MATCH
-═══════════════════════════════════════════ */
-function _launchMemory(body) {
-  var emojis=['🐶','🐱','🦊','🐸','🦁','🐻','🦄','🐼','🦋','🌸','🍕','⚡','🎸','🚀','🌈','💎'];
-  var cols=4; var pairs=8;
-  var cards=[...emojis.slice(0,pairs),...emojis.slice(0,pairs)].sort(()=>Math.random()-0.5).map((e,i)=>({id:i,emoji:e,flipped:false,matched:false}));
-  var flipped=[], moves=0, matched=0, locked=false;
-  var startTime=Date.now();
-
+// ── Memory Match ───────────────────────────────────────────
+function gLaunchMemory(body) {
+  var em=['🐶','🐱','🦊','🐸','🦁','🐻','🦄','🐼','🦋','🌸','🍕','⚡','🎸','🚀','🌈','💎'];
+  var cards=[...em.slice(0,8),...em.slice(0,8)].sort(function(){return Math.random()-0.5;}).map(function(e,i){return{id:i,emoji:e,flipped:false,matched:false};});
+  var flipped=[],moves=0,matched=0,locked=false,t0=Date.now();
   function render(){
-    var elapsed=Math.floor((Date.now()-startTime)/1000);
-    body.innerHTML=`<div class="memory-wrap">
-      <div class="memory-hud">
-        <div>Moves: <span class="memory-hud-val">${moves}</span></div>
-        <div>Matches: <span class="memory-hud-val">${matched}/${pairs}</span></div>
-        <div>Time: <span class="memory-hud-val" id="mem-timer">${elapsed}s</span></div>
-      </div>
-      <div class="memory-grid" style="grid-template-columns:repeat(${cols},1fr);">
-        ${cards.map((c,i)=>`
-          <div class="mem-card${c.flipped||c.matched?' flipped':''}${c.matched?' matched':''}" onclick="window._memFlip(${i})" id="mc${i}">
-            <div class="mem-card-inner">
-              <div class="mem-front">❓</div>
-              <div class="mem-back">${c.emoji}</div>
-            </div>
-          </div>`).join('')}
-      </div>
-      ${matched===pairs?`<div style="text-align:center;margin-top:8px;">
-        <div style="font-size:20px;font-weight:700;color:var(--accent);">🎉 Completed!</div>
-        <div style="font-size:12px;color:var(--text2);font-family:var(--mono);">${moves} moves in ${elapsed}s</div>
-        <button onclick="_launchMemory(document.getElementById('game-overlay-body'))" style="background:var(--accent);color:#000;border:none;border-radius:10px;padding:10px 28px;font-weight:700;cursor:pointer;margin-top:8px;">🔄 New Game</button>
-      </div>`:''}
-    </div>`;
-    // Update timer
-    if(matched<pairs){var t=setInterval(function(){var el=document.getElementById('mem-timer');if(!el)return clearInterval(t);el.textContent=Math.floor((Date.now()-startTime)/1000)+'s';},1000);}
+    var el=Math.floor((Date.now()-t0)/1000);
+    body.innerHTML='<div class="memory-wrap"><div class="memory-hud"><div>Moves: <span class="memory-hud-val">'+moves+'</span></div><div>Matches: <span class="memory-hud-val">'+matched+'/8</span></div><div>Time: <span class="memory-hud-val" id="mem-t">'+el+'s</span></div></div>'
+      +'<div class="memory-grid" style="grid-template-columns:repeat(4,1fr);">'
+      +cards.map(function(c,i){return'<div class="mem-card'+(c.flipped||c.matched?' flipped':'')+(c.matched?' matched':'')+'" onclick="gMemFlip('+i+')" id="mc'+i+'"><div class="mem-card-inner"><div class="mem-front">❓</div><div class="mem-back">'+c.emoji+'</div></div></div>';}).join('')
+      +'</div>'+(matched===8?'<div style="text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--accent);">🎉 Completed in '+moves+' moves!</div><button onclick="gLaunchSP(\'memory\')" style="background:var(--accent);color:#000;border:none;border-radius:10px;padding:10px 28px;font-weight:700;cursor:pointer;margin-top:8px;">🔄 New Game</button></div>':'')+'</div>';
+    if(matched<8)setInterval(function(){var e=document.getElementById('mem-t');if(e)e.textContent=Math.floor((Date.now()-t0)/1000)+'s';},1000);
   }
-
-  window._memFlip = function(i) {
-    var c=cards[i];
-    if(locked||c.flipped||c.matched)return;
-    c.flipped=true; flipped.push(i);
-    var el=document.getElementById('mc'+i);
-    if(el)el.classList.add('flipped');
-    if(flipped.length===2){
-      locked=true; moves++;
-      var[a,b]=flipped;
-      if(cards[a].emoji===cards[b].emoji){
-        cards[a].matched=cards[b].matched=true; matched++;
-        setTimeout(function(){
-          [a,b].forEach(function(idx){var el=document.getElementById('mc'+idx);if(el)el.classList.add('matched');});
-          flipped=[]; locked=false;
-          if(matched===pairs) render();
-        },400);
-      } else {
-        setTimeout(function(){
-          cards[a].flipped=cards[b].flipped=false;
-          [a,b].forEach(function(idx){var el=document.getElementById('mc'+idx);if(el)el.classList.remove('flipped');});
-          flipped=[]; locked=false;
-        },900);
-      }
-    }
-  };
+  window.gMemFlip=function(i){var c=cards[i];if(locked||c.flipped||c.matched)return;c.flipped=true;flipped.push(i);var el=document.getElementById('mc'+i);if(el)el.classList.add('flipped');if(flipped.length===2){locked=true;moves++;var a=flipped[0],b=flipped[1];if(cards[a].emoji===cards[b].emoji){cards[a].matched=cards[b].matched=true;matched++;setTimeout(function(){var ea=document.getElementById('mc'+a),eb=document.getElementById('mc'+b);if(ea)ea.classList.add('matched');if(eb)eb.classList.add('matched');flipped=[];locked=false;if(matched===8)render();},400);}else{setTimeout(function(){cards[a].flipped=cards[b].flipped=false;var ea=document.getElementById('mc'+a),eb=document.getElementById('mc'+b);if(ea)ea.classList.remove('flipped');if(eb)eb.classList.remove('flipped');flipped=[];locked=false;},900);}}};
   render();
 }
 
-/* ═══════════════════════════════════════════
-   2048
-═══════════════════════════════════════════ */
-function _launch2048(body) {
-  var grid=Array(16).fill(0); var score=0; var best=parseInt(localStorage.getItem('sl_2048_best')||'0');
-  var touchStart={x:0,y:0};
-
-  function addRandom(){var empty=grid.map((_,i)=>i).filter(i=>grid[i]===0);if(!empty.length)return;var i=empty[Math.floor(Math.random()*empty.length)];grid[i]=Math.random()<0.9?2:4;}
-  addRandom(); addRandom();
-
-  function move(dir){
-    var prev=[...grid]; var moved=false;
-    function slide(row){
-      var r=row.filter(v=>v);var out=[];
-      for(var i=0;i<r.length;i++){if(r[i]===r[i+1]){out.push(r[i]*2);score+=r[i]*2;i++;}else out.push(r[i]);}
-      while(out.length<4)out.push(0);return out;
-    }
-    if(dir==='L'||dir==='R'){
-      for(var r=0;r<4;r++){var row=grid.slice(r*4,(r+1)*4);if(dir==='R')row.reverse();var slid=slide(row);if(dir==='R')slid.reverse();for(var c=0;c<4;c++)grid[r*4+c]=slid[c];}
-    } else {
-      for(var c=0;c<4;c++){var col=[grid[c],grid[c+4],grid[c+8],grid[c+12]];if(dir==='D')col.reverse();var slid=slide(col);if(dir==='D')slid.reverse();for(var r=0;r<4;r++)grid[r*4+c]=slid[r];}
-    }
-    if(grid.some((v,i)=>v!==prev[i])){moved=true;addRandom();}
-    if(score>best){best=score;localStorage.setItem('sl_2048_best',best);}
-    render();
-  }
-
+// ── 2048 ──────────────────────────────────────────────────
+function gLaunch2048(body) {
+  var grid=Array(16).fill(0),score=0,best=parseInt(localStorage.getItem('sl_2048_best')||'0');
+  function add(){var e=grid.map(function(_,i){return i;}).filter(function(i){return grid[i]===0;});if(!e.length)return;var i=e[Math.floor(Math.random()*e.length)];grid[i]=Math.random()<0.9?2:4;}
+  add();add();
+  function move(d){var prev=[...grid],moved=false;function slide(r){var f=r.filter(function(v){return v;});var o=[];for(var i=0;i<f.length;i++){if(f[i]===f[i+1]){o.push(f[i]*2);score+=f[i]*2;i++;}else o.push(f[i]);}while(o.length<4)o.push(0);return o;}
+  if(d==='L'||d==='R'){for(var r=0;r<4;r++){var row=grid.slice(r*4,(r+1)*4);if(d==='R')row.reverse();var s=slide(row);if(d==='R')s.reverse();for(var c=0;c<4;c++)grid[r*4+c]=s[c];}}
+  else{for(var c=0;c<4;c++){var col=[grid[c],grid[c+4],grid[c+8],grid[c+12]];if(d==='D')col.reverse();var s=slide(col);if(d==='D')s.reverse();for(var r=0;r<4;r++)grid[r*4+c]=s[r];}}
+  if(grid.some(function(v,i){return v!==prev[i];})){moved=true;add();}if(score>best){best=score;localStorage.setItem('sl_2048_best',best);}render();}
+  var ts2={x:0,y:0};
   function render(){
-    body.innerHTML=`<div class="g2048-wrap">
-      <div class="g2048-hud">
-        <div class="g2048-hud-box"><span class="g2048-hud-val">${score}</span><span class="g2048-hud-lbl">Score</span></div>
-        <div class="g2048-hud-box"><span class="g2048-hud-val">${best}</span><span class="g2048-hud-lbl">Best</span></div>
-      </div>
-      <div id="g2048-board">
-        ${grid.map(v=>`<div class="t2048" data-v="${v||''}">${v||''}</div>`).join('')}
-      </div>
-      <div style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-top:4px;">Swipe or use arrow keys</div>
-      <button onclick="_launch2048(document.getElementById('game-overlay-body'))" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:6px 16px;color:var(--text2);cursor:pointer;font-size:12px;">🔄 New Game</button>
-    </div>`;
-    var board=document.getElementById('g2048-board');
-    if(!board)return;
-    board.addEventListener('touchstart',function(e){touchStart={x:e.touches[0].clientX,y:e.touches[0].clientY};e.preventDefault();},{passive:false,once:true});
-    board.addEventListener('touchend',function(e){
-      var dx=e.changedTouches[0].clientX-touchStart.x,dy=e.changedTouches[0].clientY-touchStart.y;
-      if(Math.abs(dx)>Math.abs(dy))move(dx>0?'R':'L');else move(dy>0?'D':'U');
-      e.preventDefault();
-    },{passive:false,once:true});
+    body.innerHTML='<div class="g2048-wrap"><div class="g2048-hud"><div class="g2048-hud-box"><span class="g2048-hud-val">'+score+'</span><span class="g2048-hud-lbl">Score</span></div><div class="g2048-hud-box"><span class="g2048-hud-val">'+best+'</span><span class="g2048-hud-lbl">Best</span></div></div>'
+      +'<div id="g2k-board" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;background:var(--card2);padding:10px;border-radius:12px;width:100%;max-width:320px;touch-action:none;">'+grid.map(function(v){return'<div class="t2048" data-v="'+(v||'')+'">'+( v||'')+'</div>';}).join('')+'</div>'
+      +'<div style="font-size:10px;color:var(--text3);font-family:var(--mono);">Swipe or arrow keys</div>'
+      +'<button onclick="gLaunchSP(\'g2048\')" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:6px 16px;color:var(--text2);cursor:pointer;font-size:12px;">🔄 New Game</button></div>';
+    var bd=document.getElementById('g2k-board');
+    if(bd){bd.addEventListener('touchstart',function(e){ts2={x:e.touches[0].clientX,y:e.touches[0].clientY};e.preventDefault();},{passive:false,once:true});bd.addEventListener('touchend',function(e){var dx=e.changedTouches[0].clientX-ts2.x,dy=e.changedTouches[0].clientY-ts2.y;if(Math.abs(dx)>Math.abs(dy))move(dx>0?'R':'L');else move(dy>0?'D':'U');e.preventDefault();},{passive:false,once:true});}
   }
-
-  document.addEventListener('keydown',function g2kKey(e){
-    if(window._currentGameType!=='g2048')return document.removeEventListener('keydown',g2kKey);
-    var map={ArrowLeft:'L',ArrowRight:'R',ArrowUp:'U',ArrowDown:'D'};
-    if(map[e.key]){move(map[e.key]);e.preventDefault();}
-  });
-
+  document.addEventListener('keydown',function g2k(e){if(_gType!=='g2048')return document.removeEventListener('keydown',g2k);var m={ArrowLeft:'L',ArrowRight:'R',ArrowUp:'U',ArrowDown:'D'};if(m[e.key]){move(m[e.key]);e.preventDefault();}});
   render();
 }
 
-/* Dynamic tile injection removed — tiles now in static HTML */
-
-/* ─── Cleanup on overlay close ─────────────────────────── */
-var _origCloseGameOverlay = window.closeGameOverlay;
-window.closeGameOverlay = function() {
-  if (_snakeInterval)  { clearInterval(_snakeInterval);  _snakeInterval  = null; }
-  if (_flappyRAF)      { cancelAnimationFrame(_flappyRAF); _flappyRAF = null; }
-  if (_ludoAITimer)    { clearTimeout(_ludoAITimer);     _ludoAITimer    = null; }
-  window._currentGameType = null;
-  window._currentGameId   = null;
-  if (_origCloseGameOverlay) _origCloseGameOverlay();
-};
-
-
-/* ═══════════════════════════════════════════════════════
-   LUDO (4-player simplified: You vs 3 AI)
-   - Full board with safe zones, home, star cells
-   - Dice animation, piece movement, captures
-═══════════════════════════════════════════════════════ */
-var _ludoAITimer = null;
-function _launchLudo(body) {
-  var COLORS = ['#ff5c5c','#4fa3ff','#3de8a0','#ffd460'];
-  var CNAMES = ['Red','Blue','Green','Yellow'];
-  var YOU = 0; // player index
-
-  // Board path (52 cells) start offsets per color
-  var START_IDX = [0, 13, 26, 39];
-  var HOME_STRETCH = [
-    [52,53,54,55,56],   // Red home stretch
-    [57,58,59,60,61],   // Blue
-    [62,63,64,65,66],   // Green
-    [71,72,73,74,75],   // Yellow (offset for clarity)
-  ];
-  var SAFE_CELLS = [0,8,13,21,26,34,39,47];
-
-  // Each piece: {pos:-1=yard, 0-51=board, 52-56=home stretch, 57=finished}
-  var pieces = COLORS.map(function(_,pi) {
-    return [0,1,2,3].map(function(i){ return {pos:-1, id:pi*4+i, player:pi}; });
-  });
-
-  var dice = 0, turn = YOU, rolled = false, msg = '', winner = -1;
-  var selectedPiece = -1;
-
-  // Simplified board positions (canvas coords for 52 + home stretch cells)
-  var SZ = 320, CS = SZ/15;
-  // Path coords (x,y) for each of 52 board cells + home columns
-  function pathCoord(idx) {
-    // Standard ludo board path layout
-    var path = [
-      // Bottom row (0-5): col 6-0, row 12
-      [6,12],[5,12],[4,12],[3,12],[2,12],[1,12],
-      // Left col down (6-11): col 0, row 11-6
-      [0,11],[0,10],[0,9],[0,8],[0,7],[0,6],
-      // Left row middle (12-18): col 1-6, row 6
-      [1,6],[2,6],[3,6],[4,6],[5,6],[6,6],
-      // Top left (19-24): col 6, row 5-0
-      [6,5],[6,4],[6,3],[6,2],[6,1],[6,0],
-      // Top row (25-30): col 7-12, row 0
-      [7,0],[8,0],[9,0],[10,0],[11,0],[12,0],
-      // Right col up (31-36): col 14, row 1-6
-      [14,1],[14,2],[14,3],[14,4],[14,5],[14,6],
-      // Right middle (37-43): col 13-8, row 6
-      [13,6],[12,6],[11,6],[10,6],[9,6],[8,6],
-      // Bottom right (44-51): col 8, row 7-12
-      [8,7],[8,8],[8,9],[8,10],[8,11],[8,12],
-    ];
-    if (idx < 0 || idx > 51) return [7,7];
-    var c = path[idx % 52];
-    return [(c[0]+0.5)*CS, (c[1]+0.5)*CS];
-  }
-
-  function yardPos(player, pieceIdx) {
-    var bases = [[1.5,10.5],[10.5,10.5],[10.5,1.5],[1.5,1.5]];
-    var b = bases[player];
-    var offsets = [[0.8,0.8],[2.2,0.8],[0.8,2.2],[2.2,2.2]];
-    return [(b[0]+offsets[pieceIdx][0])*CS, (b[1]+offsets[pieceIdx][1])*CS];
-  }
-
-  function homePos(player, step) {
-    var homeLines = [
-      [[1,7],[2,7],[3,7],[4,7],[5,7]],  // Red: left→center
-      [[7,13],[7,12],[7,11],[7,10],[7,9]], // Blue: bottom→center
-      [[13,7],[12,7],[11,7],[10,7],[9,7]], // Green: right→center
-      [[7,1],[7,2],[7,3],[7,4],[7,5]],    // Yellow: top→center
-    ];
-    var c = homeLines[player][step];
-    return [(c[0]+0.5)*CS, (c[1]+0.5)*CS];
-  }
-
-  function getPiecePos(piece) {
-    if (piece.pos === -1) return yardPos(piece.player, piece.id % 4);
-    if (piece.pos >= 52) return homePos(piece.player, piece.pos - 52);
-    // Board position relative to player start
-    var absPos = (START_IDX[piece.player] + piece.pos) % 52;
-    return pathCoord(absPos);
-  }
-
-  function rollDice() {
-    if (rolled) return;
-    dice = Math.floor(Math.random()*6)+1;
-    rolled = true;
-    var moves = getValidMoves(turn, dice);
-    if (moves.length === 0) {
-      msg = (turn===YOU?'You':CNAMES[turn])+' rolled '+dice+' — no moves!';
-      setTimeout(nextTurn, 700);
-    } else {
-      msg = (turn===YOU?'You':CNAMES[turn])+' rolled '+dice;
-      if (turn !== YOU) setTimeout(function(){ doAIMove(moves); }, 800);
-    }
-    render();
-  }
-
-  function getValidMoves(player, d) {
-    var moves = [];
-    pieces[player].forEach(function(p, idx) {
-      if (p.pos === 57) return; // finished
-      if (p.pos === -1 && d === 6) { moves.push(idx); return; }
-      if (p.pos >= 0 && p.pos < 52) {
-        var newPos = p.pos + d;
-        if (newPos <= 56) moves.push(idx);
-      }
-    });
-    return moves;
-  }
-
-  function movePiece(player, pieceIdx) {
-    var p = pieces[player][pieceIdx];
-    if (p.pos === -1) {
-      p.pos = 0; msg = CNAMES[player]+' enters the board!';
-    } else {
-      p.pos += dice;
-      if (p.pos === 56) { p.pos = 57; msg = CNAMES[player]+' piece home! 🎉'; }
-      else {
-        // Check capture
-        var absPos = (START_IDX[player] + p.pos) % 52;
-        if (!SAFE_CELLS.includes(absPos)) {
-          pieces.forEach(function(pp, pi) {
-            if (pi === player) return;
-            pp.forEach(function(op) {
-              if (op.pos >= 0 && op.pos < 52) {
-                var opAbs = (START_IDX[pi] + op.pos) % 52;
-                if (opAbs === absPos) { op.pos = -1; msg = CNAMES[player]+' captured '+CNAMES[pi]+'! 💥'; }
-              }
-            });
-          });
-        }
-      }
-    }
-    // Check winner
-    if (pieces[player].every(function(p){ return p.pos === 57; })) {
-      winner = player;
-    }
-    var extra = dice === 6;
-    rolled = false;
-    if (!extra) nextTurn(); else { msg += ' (Roll again!)'; render(); }
-    render();
-  }
-
-  function doAIMove(moves) {
-    // AI: prefer captures > home > any
-    var best = moves[0];
-    moves.forEach(function(idx) {
-      var p = pieces[turn][idx];
-      var newPos = p.pos === -1 ? 0 : p.pos + dice;
-      var absPos = (START_IDX[turn] + newPos) % 52;
-      var captures = !SAFE_CELLS.includes(absPos) && pieces.some(function(pp, pi) {
-        if (pi === turn) return false;
-        return pp.some(function(op){ return op.pos >= 0 && op.pos < 52 && (START_IDX[pi]+op.pos)%52===absPos; });
-      });
-      if (captures || newPos > (p.pos===-1?0:p.pos)) best = idx;
-    });
-    movePiece(turn, best);
-  }
-
-  function nextTurn() {
-    turn = (turn + 1) % 4;
-    rolled = false;
-    if (turn !== YOU && !winner) {
-      _ludoAITimer = setTimeout(function(){ rollDice(); }, 600);
-    }
-  }
-
-  function render() {
-    var canvas = document.getElementById('ludo-canvas');
-    if (!canvas) return;
-    var ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, SZ, SZ);
-
-    // Board background
-    ctx.fillStyle = '#1a1f2e'; ctx.fillRect(0,0,SZ,SZ);
-
-    // Quadrant bases
-    var bases = [
-      {x:0,y:CS*9,c:'#ff5c5c44'},{x:CS*9,y:CS*9,c:'#4fa3ff44'},
-      {x:CS*9,y:0,c:'#3de8a044'},{x:0,y:0,c:'#ffd46044'}
-    ];
-    bases.forEach(function(b){
-      ctx.fillStyle=b.c; ctx.fillRect(b.x,b.y,CS*6,CS*6);
-    });
-
-    // Center cross paths
-    var pathCols = ['#ff5c5c','#4fa3ff','#3de8a0','#ffd460'];
-    // Left path (red home)
-    ctx.fillStyle='#ff5c5c33'; ctx.fillRect(0,CS*6,CS*6,CS*3);
-    // Bottom path (blue home)
-    ctx.fillStyle='#4fa3ff33'; ctx.fillRect(CS*6,CS*9,CS*3,CS*6);
-    // Right path (green home)
-    ctx.fillStyle='#3de8a033'; ctx.fillRect(CS*9,CS*6,CS*6,CS*3);
-    // Top path (yellow home)
-    ctx.fillStyle='#ffd46033'; ctx.fillRect(CS*6,0,CS*3,CS*6);
-    // Center
-    ctx.fillStyle='#2a3040'; ctx.fillRect(CS*6,CS*6,CS*3,CS*3);
-
-    // Safe cell markers
-    SAFE_CELLS.forEach(function(idx) {
-      var c = pathCoord(idx);
-      ctx.fillStyle='rgba(255,255,255,0.15)';
-      ctx.beginPath(); ctx.arc(c[0],c[1],CS*0.35,0,Math.PI*2); ctx.fill();
-      ctx.fillStyle='rgba(255,255,255,0.5)';
-      ctx.font='bold '+(CS*0.4)+'px sans-serif';
-      ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.fillText('★',c[0],c[1]);
-    });
-
-    // Draw all pieces
-    pieces.forEach(function(pp, pi) {
-      pp.forEach(function(p, idx) {
-        var pos = getPiecePos(p);
-        ctx.shadowColor = COLORS[pi]; ctx.shadowBlur = 6;
-        ctx.fillStyle = COLORS[pi];
-        ctx.beginPath(); ctx.arc(pos[0],pos[1],CS*0.38,0,Math.PI*2); ctx.fill();
-        ctx.shadowBlur = 0;
-        ctx.fillStyle = 'rgba(0,0,0,0.5)';
-        ctx.beginPath(); ctx.arc(pos[0]+1,pos[1]+1,CS*0.38,0,Math.PI*2); ctx.fill();
-        ctx.fillStyle = COLORS[pi];
-        ctx.beginPath(); ctx.arc(pos[0],pos[1],CS*0.38,0,Math.PI*2); ctx.fill();
-        // Inner circle
-        ctx.fillStyle = 'rgba(255,255,255,0.6)';
-        ctx.beginPath(); ctx.arc(pos[0],pos[1],CS*0.18,0,Math.PI*2); ctx.fill();
-        if (p.pos === 57) {
-          ctx.fillStyle='#fff'; ctx.font='bold '+(CS*0.3)+'px sans-serif';
-          ctx.textAlign='center'; ctx.textBaseline='middle';
-          ctx.fillText('✓',pos[0],pos[1]);
-        }
-      });
-    });
-
-    // Turn indicator
-    ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(0,SZ-CS*2,SZ,CS*2);
-    ctx.fillStyle = COLORS[turn];
-    ctx.font = 'bold 13px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(turn===YOU?'YOUR TURN':CNAMES[turn]+"'S TURN", SZ/2, SZ-CS);
-  }
-
-  body.innerHTML = '<div class="snake-wrap" style="gap:10px;">' +
-    '<div style="font-family:var(--mono);font-size:12px;color:var(--text2);text-align:center;min-height:18px;" id="ludo-msg"></div>' +
-    '<div style="position:relative;display:inline-block;">' +
-    '<canvas id="ludo-canvas" width="'+SZ+'" height="'+SZ+'" style="border-radius:12px;border:1px solid var(--border2);display:block;cursor:pointer;max-width:100%;"></canvas>' +
-    '</div>' +
-    '<div style="display:flex;gap:10px;align-items:center;justify-content:center;">' +
-    '<div id="ludo-dice" style="width:52px;height:52px;background:var(--card);border:2px solid var(--border2);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:30px;cursor:pointer;transition:transform 0.1s;" onclick="window._ludoRoll()">🎲</div>' +
-    '<div style="font-family:var(--mono);font-size:11px;color:var(--text3);">Tap dice to roll<br>Then tap your piece</div>' +
-    '</div>' +
-    '<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;">' +
-    COLORS.map(function(c,i){ return '<div style="background:'+c+'22;border:1px solid '+c+'66;border-radius:6px;padding:3px 8px;font-size:11px;font-family:var(--mono);color:'+c+';">'+CNAMES[i]+(i===YOU?' (You)':'')+'</div>'; }).join('') +
-    '</div></div>';
-
-  var canvas = document.getElementById('ludo-canvas');
-  canvas.addEventListener('click', function(e) {
-    if (turn !== YOU || winner >= 0) return;
-    if (!rolled) return;
-    var rect = canvas.getBoundingClientRect();
-    var scaleX = SZ / rect.width, scaleY = SZ / rect.height;
-    var mx = (e.clientX - rect.left) * scaleX;
-    var my = (e.clientY - rect.top) * scaleY;
-    var moves = getValidMoves(YOU, dice);
-    var bestDist = CS;
-    var clickedIdx = -1;
-    moves.forEach(function(idx) {
-      var pos = getPiecePos(pieces[YOU][idx]);
-      var d = Math.hypot(pos[0]-mx, pos[1]-my);
-      if (d < bestDist) { bestDist = d; clickedIdx = idx; }
-    });
-    if (clickedIdx >= 0) movePiece(YOU, clickedIdx);
-  });
-
-  window._ludoRoll = function() {
-    if (turn !== YOU || winner >= 0) return;
-    if (rolled) { showToast && showToast('Already rolled! Tap your piece.'); return; }
-    var dice_el = document.getElementById('ludo-dice');
-    if (dice_el) { dice_el.style.transform='rotate(20deg)'; setTimeout(function(){dice_el.style.transform='';},150); }
-    rollDice();
-    var msg_el = document.getElementById('ludo-msg');
-    if (msg_el) msg_el.textContent = msg;
-  };
-
-  function renderLoop() {
-    render();
-    var msg_el = document.getElementById('ludo-msg');
-    if (msg_el) msg_el.textContent = winner>=0 ? (winner===YOU?'🎉 You Win!':'🤖 '+CNAMES[winner]+' wins!') : msg;
-    var dc = document.getElementById('ludo-dice');
-    if (dc) { var faces=['','⚀','⚁','⚂','⚃','⚄','⚅']; dc.textContent = dice>0?faces[dice]:'🎲'; }
-    if (!document.getElementById('ludo-canvas')) return;
-    requestAnimationFrame(renderLoop);
-  }
-  renderLoop();
-  // AI starts if not your turn first (it is)
-}
-
-/* ═══════════════════════════════════════════════════════
-   CARROM (Physics-based striker + coins)
-═══════════════════════════════════════════════════════ */
-function _launchCarrom(body) {
-  var SZ = 320;
-  var canvas, ctx;
-  var coins = [], striker = {x:SZ/2, y:SZ*0.82, vx:0, vy:0, r:14, mass:2};
-  var aiCoins = [], myCoins = [];
-  var score = {you:0, ai:0};
-  var aiming = false, aimAngle = -Math.PI/2, power = 0.6;
-  var turn = 'you', shooting = false, msg = 'Aim and shoot!';
-  var pocketCt = 0;
-
-  function initCoins() {
-    coins = [];
-    var cx = SZ/2, cy = SZ/2;
-    var R = 28;
-    // Center queen (black)
-    coins.push({x:cx, y:cy, vx:0, vy:0, r:9, color:'#111', owner:'queen', pocketed:false});
-    // Ring of 9 white + 9 black alternating
-    for (var i=0;i<18;i++) {
-      var a = (i/18)*Math.PI*2;
-      coins.push({x:cx+Math.cos(a)*R, y:cy+Math.sin(a)*R, vx:0, vy:0, r:8,
-        color: i%2===0?'#eee':'#555', owner:i%2===0?'ai':'you', pocketed:false});
-    }
-  }
-  initCoins();
-
-  var pockets = [{x:22,y:22},{x:SZ-22,y:22},{x:22,y:SZ-22},{x:SZ-22,y:SZ-22}];
-
-  function physics() {
-    if (!shooting) return;
-    var allStop = true;
-    // Move coins
-    [striker].concat(coins).forEach(function(c) {
-      if (c.pocketed) return;
-      c.x += c.vx; c.y += c.vy;
-      c.vx *= 0.985; c.vy *= 0.985;
-      if (Math.abs(c.vx) > 0.01 || Math.abs(c.vy) > 0.01) allStop = false;
-      // Board walls
-      if (c.x - c.r < 18) { c.x = 18+c.r; c.vx = Math.abs(c.vx)*0.7; }
-      if (c.x + c.r > SZ-18) { c.x = SZ-18-c.r; c.vx = -Math.abs(c.vx)*0.7; }
-      if (c.y - c.r < 18) { c.y = 18+c.r; c.vy = Math.abs(c.vy)*0.7; }
-      if (c.y + c.r > SZ-18) { c.y = SZ-18-c.r; c.vy = -Math.abs(c.vy)*0.7; }
-      // Pocket detection
-      pockets.forEach(function(p) {
-        if (Math.hypot(c.x-p.x, c.y-p.y) < c.r+8) {
-          if (c === striker) { striker.x=SZ/2; striker.y=SZ*0.82; striker.vx=0; striker.vy=0; }
-          else if (!c.pocketed) {
-            c.pocketed = true;
-            if (c.owner==='you') { score.you++; msg='✅ Pocketed! +1'; }
-            else if (c.owner==='ai') { score.ai++; msg='Opponent: +1'; }
-            else { score.you+=3; msg='👑 Queen! +3'; }
-          }
-        }
-      });
-    });
-    // Coin-coin collisions
-    var all = [striker].concat(coins.filter(function(c){return !c.pocketed;}));
-    for (var i=0;i<all.length;i++) for (var j=i+1;j<all.length;j++) {
-      var a=all[i], b=all[j];
-      var dx=b.x-a.x, dy=b.y-a.y, dist=Math.hypot(dx,dy);
-      var minD = a.r+b.r;
-      if (dist < minD && dist > 0.1) {
-        var nx=dx/dist, ny=dy/dist;
-        var overlap=(minD-dist)/2;
-        a.x-=nx*overlap; a.y-=ny*overlap; b.x+=nx*overlap; b.y+=ny*overlap;
-        var dv = (a.vx-b.vx)*nx + (a.vy-b.vy)*ny;
-        if (dv > 0) {
-          var ma=a.mass||1, mb=b.mass||1;
-          var imp = 2*dv/(ma+mb);
-          a.vx-=imp*mb*nx; a.vy-=imp*mb*ny;
-          b.vx+=imp*ma*nx; b.vy+=imp*ma*ny;
-        }
-      }
-    }
-    if (allStop) {
-      shooting = false;
-      if (turn==='you') { turn='ai'; setTimeout(aiShoot, 600); }
-      else { turn='you'; msg='Your turn! Aim and tap.'; }
-    }
-  }
-
-  function aiShoot() {
-    if (turn !== 'ai') return;
-    // Find nearest ai coin and aim at it
-    var target = null, minD = 9999;
-    coins.filter(function(c){return !c.pocketed && c.owner==='ai';}).forEach(function(c) {
-      pockets.forEach(function(p) {
-        var d = Math.hypot(c.x-p.x, c.y-p.y);
-        if (d < minD) { minD=d; target=c; }
-      });
-    });
-    if (!target) { turn='you'; msg='Your turn!'; return; }
-    striker.x = SZ/2 + (Math.random()-0.5)*40;
-    striker.y = SZ*0.18;
-    var ang = Math.atan2(target.y - striker.y, target.x - striker.x);
-    var spd = 7 + Math.random()*3;
-    striker.vx = Math.cos(ang)*spd;
-    striker.vy = Math.sin(ang)*spd;
-    shooting = true;
-    msg = '🤖 AI shooting...';
-  }
-
-  function shoot() {
-    if (turn!=='you'||shooting) return;
-    var spd = power * 12;
-    striker.vx = Math.cos(aimAngle)*spd;
-    striker.vy = Math.sin(aimAngle)*spd;
-    shooting = true;
-  }
-
-  function drawCarrom() {
-    if (!ctx) return;
-    ctx.clearRect(0,0,SZ,SZ);
-    // Board
-    ctx.fillStyle='#8B6914'; ctx.fillRect(0,0,SZ,SZ);
-    ctx.fillStyle='#A0785A'; ctx.fillRect(18,18,SZ-36,SZ-36);
-    // Center circle
-    ctx.strokeStyle='rgba(255,255,255,0.3)'; ctx.lineWidth=1;
-    ctx.beginPath(); ctx.arc(SZ/2,SZ/2,32,0,Math.PI*2); ctx.stroke();
-    ctx.beginPath(); ctx.arc(SZ/2,SZ/2,10,0,Math.PI*2); ctx.stroke();
-    // Pockets
-    pockets.forEach(function(p) {
-      ctx.fillStyle='#000'; ctx.beginPath(); ctx.arc(p.x,p.y,10,0,Math.PI*2); ctx.fill();
-    });
-    // Coins
-    coins.filter(function(c){return !c.pocketed;}).forEach(function(c) {
-      ctx.shadowColor=c.color==='#eee'?'#fff':'#aaa'; ctx.shadowBlur=4;
-      ctx.fillStyle=c.color; ctx.beginPath(); ctx.arc(c.x,c.y,c.r,0,Math.PI*2); ctx.fill();
-      ctx.shadowBlur=0;
-      ctx.strokeStyle='rgba(0,0,0,0.4)'; ctx.lineWidth=1;
-      ctx.beginPath(); ctx.arc(c.x,c.y,c.r,0,Math.PI*2); ctx.stroke();
-    });
-    // Striker
-    ctx.shadowColor='#ffd460'; ctx.shadowBlur=8;
-    ctx.fillStyle='#ffd460'; ctx.beginPath(); ctx.arc(striker.x,striker.y,striker.r,0,Math.PI*2); ctx.fill();
-    ctx.shadowBlur=0;
-    // Aim line
-    if (!shooting && turn==='you') {
-      ctx.strokeStyle='rgba(255,212,96,0.5)'; ctx.lineWidth=1.5;
-      ctx.setLineDash([4,4]);
-      ctx.beginPath(); ctx.moveTo(striker.x,striker.y);
-      ctx.lineTo(striker.x+Math.cos(aimAngle)*80, striker.y+Math.sin(aimAngle)*80);
-      ctx.stroke(); ctx.setLineDash([]);
-    }
-    physics();
-    if (document.getElementById('carrom-canvas')) requestAnimationFrame(drawCarrom);
-    var si = document.getElementById('carrom-score');
-    if (si) si.textContent = 'You: '+score.you+' | AI: '+score.ai;
-    var mi = document.getElementById('carrom-msg');
-    if (mi) mi.textContent = msg;
-  }
-
-  body.innerHTML = '<div class="snake-wrap" style="gap:8px;">' +
-    '<div style="display:flex;justify-content:space-between;width:100%;max-width:320px;font-family:var(--mono);font-size:12px;color:var(--text2);" id="carrom-score">You: 0 | AI: 0</div>' +
-    '<div style="font-family:var(--mono);font-size:11px;color:var(--accent);text-align:center;" id="carrom-msg">Aim and shoot!</div>' +
-    '<canvas id="carrom-canvas" width="320" height="320" style="border-radius:10px;border:1px solid var(--border);display:block;max-width:100%;touch-action:none;"></canvas>' +
-    '<div style="display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;">' +
-    '<button onclick="window._carromLeft()" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:6px 12px;color:var(--text);cursor:pointer;font-size:16px;">◀</button>' +
-    '<button onclick="window._carromShoot()" style="background:var(--accent);border:none;border-radius:8px;padding:8px 20px;color:#000;font-weight:700;cursor:pointer;">🎯 SHOOT</button>' +
-    '<button onclick="window._carromRight()" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:6px 12px;color:var(--text);cursor:pointer;font-size:16px;">▶</button>' +
-    '</div>' +
-    '<div style="font-size:10px;color:var(--text3);font-family:var(--mono);">◀▶ to aim • White coins = yours • Black = AI</div>' +
-    '</div>';
-
-  canvas = document.getElementById('carrom-canvas');
-  ctx = canvas.getContext('2d');
-  window._carromLeft  = function(){ aimAngle -= 0.08; };
-  window._carromRight = function(){ aimAngle += 0.08; };
-  window._carromShoot = function(){ shoot(); };
-  canvas.addEventListener('touchstart', function(e) {
-    var rect = canvas.getBoundingClientRect();
-    var mx = (e.touches[0].clientX-rect.left)*(SZ/rect.width);
-    var my = (e.touches[0].clientY-rect.top)*(SZ/rect.height);
-    aimAngle = Math.atan2(my-striker.y, mx-striker.x);
-    shoot(); e.preventDefault();
-  }, {passive:false});
-  drawCarrom();
-}
-
-/* ═══════════════════════════════════════════════════════
-   CHECKERS (8x8, vs AI)
-═══════════════════════════════════════════════════════ */
-function _launchCheckers(body) {
-  var SZ = 320, CS = SZ/8;
-  var board = Array(64).fill(null);
-  // 0=empty, 1=player(red), 2=AI(black), 3=player king, 4=AI king
-  for (var r=0;r<3;r++) for (var c=0;c<8;c++) if ((r+c)%2===1) board[r*8+c]=2;
-  for (var r=5;r<8;r++) for (var c=0;c<8;c++) if ((r+c)%2===1) board[r*8+c]=1;
-  var selected = -1, turn = 'you', gameOver = false, msg = 'Your turn — tap a red piece';
-
-  function getMoves(idx, b, piece) {
-    var moves = [];
-    var r = Math.floor(idx/8), c = idx%8;
-    var dirs = [];
-    if (piece===1||piece===3) dirs.push([-1,-1],[-1,1]);
-    if (piece===2||piece===3||piece===4) dirs.push([1,-1],[1,1]);
-    if (piece===2||piece===4) dirs.push([-1,-1],[-1,1]);
-    dirs.forEach(function(d) {
-      var nr=r+d[0], nc=c+d[1];
-      if (nr>=0&&nr<8&&nc>=0&&nc<8) {
-        var ni = nr*8+nc;
-        if (!b[ni]) moves.push({from:idx, to:ni, capture:-1});
-        else if ((piece<=2&&b[ni]>2)||(piece>2&&b[ni]<=2&&b[ni]>0)||
-                 (piece===1&&b[ni]===2)||(piece===2&&b[ni]===1)||
-                 (piece===3&&(b[ni]===2||b[ni]===4))||(piece===4&&(b[ni]===1||b[ni]===3))) {
-          var jr=nr+d[0], jc=nc+d[1];
-          if (jr>=0&&jr<8&&jc>=0&&jc<8&&!b[jr*8+jc]) {
-            moves.push({from:idx, to:jr*8+jc, capture:ni});
-          }
-        }
-      }
-    });
-    return moves;
-  }
-
-  function allMoves(isAI) {
-    var ms = [];
-    board.forEach(function(v,i) {
-      if (isAI && (v===2||v===4)) ms = ms.concat(getMoves(i,board,v));
-      if (!isAI && (v===1||v===3)) ms = ms.concat(getMoves(i,board,v));
-    });
-    return ms;
-  }
-
-  function doMove(m) {
-    board[m.to] = board[m.from];
-    board[m.from] = null;
-    if (m.capture>=0) board[m.capture] = null;
-    // King promotion
-    if (board[m.to]===1 && Math.floor(m.to/8)===0) board[m.to]=3;
-    if (board[m.to]===2 && Math.floor(m.to/8)===7) board[m.to]=4;
-  }
-
-  function checkWin() {
-    var hasP = board.some(function(v){return v===1||v===3;});
-    var hasA = board.some(function(v){return v===2||v===4;});
-    if (!hasA) { gameOver=true; msg='🎉 You Win!'; }
-    if (!hasP) { gameOver=true; msg='🤖 AI Wins!'; }
-    if (!allMoves(false).length && !gameOver) { gameOver=true; msg='🤖 AI Wins (no moves)!'; }
-    if (!allMoves(true).length && !gameOver)  { gameOver=true; msg='🎉 You Win (AI stuck)!'; }
-  }
-
-  function aiMove() {
-    var moves = allMoves(true);
-    if (!moves.length) { checkWin(); render(); return; }
-    // Prefer captures
-    var captures = moves.filter(function(m){return m.capture>=0;});
-    var m = captures.length ? captures[Math.floor(Math.random()*captures.length)] : moves[Math.floor(Math.random()*moves.length)];
-    doMove(m); checkWin(); turn='you'; msg='Your turn'; render();
-  }
-
-  function handleClick(idx) {
-    if (turn!=='you'||gameOver) return;
-    var v = board[idx];
-    if (selected>=0) {
-      var moves = getMoves(selected, board, board[selected]);
-      var m = moves.find(function(mv){return mv.to===idx;});
-      if (m) {
-        doMove(m); checkWin(); selected=-1;
-        if (!gameOver) { turn='ai'; msg='AI thinking...'; render(); setTimeout(aiMove,600); }
-      } else if (v===1||v===3) { selected=idx; msg='Selected — tap destination'; }
-      else { selected=-1; msg='Your turn'; }
-    } else if (v===1||v===3) { selected=idx; msg='Tap destination square'; }
-    render();
-  }
-
-  function render() {
-    var canvas = document.getElementById('checkers-canvas');
-    if (!canvas) return;
-    var ctx = canvas.getContext('2d');
-    var moves = selected>=0 ? getMoves(selected,board,board[selected]) : [];
-    var validTo = moves.map(function(m){return m.to;});
-    for (var r=0;r<8;r++) for (var c=0;c<8;c++) {
-      var idx = r*8+c;
-      var dark = (r+c)%2===1;
-      ctx.fillStyle = dark ? '#4a3728' : '#c8a87a';
-      ctx.fillRect(c*CS, r*CS, CS, CS);
-      if (idx===selected) { ctx.fillStyle='rgba(61,232,160,0.3)'; ctx.fillRect(c*CS,r*CS,CS,CS); }
-      if (validTo.includes(idx)) { ctx.fillStyle='rgba(61,232,160,0.5)'; ctx.beginPath(); ctx.arc(c*CS+CS/2,r*CS+CS/2,CS*0.2,0,Math.PI*2); ctx.fill(); }
-      var v = board[idx];
-      if (v) {
-        var isKing = v>=3;
-        ctx.fillStyle = (v===1||v===3)?'#ff5c5c':'#222';
-        ctx.shadowColor = (v===1||v===3)?'#ff8888':'#888'; ctx.shadowBlur=6;
-        ctx.beginPath(); ctx.arc(c*CS+CS/2, r*CS+CS/2, CS*0.38, 0, Math.PI*2); ctx.fill();
-        ctx.shadowBlur=0;
-        if (isKing) {
-          ctx.fillStyle='#ffd460'; ctx.font='bold '+(CS*0.35)+'px sans-serif';
-          ctx.textAlign='center'; ctx.textBaseline='middle';
-          ctx.fillText('♛',c*CS+CS/2, r*CS+CS/2);
-        }
-      }
-    }
-    var mi = document.getElementById('checkers-msg');
-    if (mi) mi.textContent = msg;
-    if (gameOver) {
-      var btn = document.getElementById('checkers-restart');
-      if (btn) btn.style.display='block';
-    }
-  }
-
-  body.innerHTML = '<div class="snake-wrap" style="gap:8px;">' +
-    '<div style="font-family:var(--mono);font-size:12px;color:var(--accent);text-align:center;" id="checkers-msg">Your turn</div>' +
-    '<canvas id="checkers-canvas" width="320" height="320" style="border-radius:8px;display:block;max-width:100%;cursor:pointer;border:1px solid var(--border);"></canvas>' +
-    '<button id="checkers-restart" style="display:none;background:var(--accent);color:#000;border:none;border-radius:10px;padding:8px 24px;font-weight:700;cursor:pointer;" onclick="_launchSinglePlayer(\'checkers\')">🔄 Play Again</button>' +
-    '<div style="font-size:10px;color:var(--text3);font-family:var(--mono);">🔴 = You &nbsp; ⚫ = AI &nbsp; ♛ = King</div>' +
-    '</div>';
-
-  var canvas = document.getElementById('checkers-canvas');
-  canvas.addEventListener('click', function(e) {
-    var rect = canvas.getBoundingClientRect();
-    var c = Math.floor((e.clientX-rect.left)/(rect.width/8));
-    var r = Math.floor((e.clientY-rect.top)/(rect.height/8));
-    handleClick(r*8+c);
-  });
-  render();
-}
-
-/* ═══════════════════════════════════════════════════════
-   MINESWEEPER
-═══════════════════════════════════════════════════════ */
-function _launchMinesweeper(body) {
-  var ROWS=9, COLS=9, MINES=10;
-  var cells = [], revealed = [], flagged = [], gameOver=false, won=false, firstClick=true;
-  var timeStart = 0, timer = 0;
-
-  function init(safeIdx) {
-    cells = Array(ROWS*COLS).fill(0);
-    var placed = 0;
-    while (placed < MINES) {
-      var i = Math.floor(Math.random()*ROWS*COLS);
-      if (i !== safeIdx && cells[i] !== -1) { cells[i]=-1; placed++; }
-    }
-    // Count adjacent mines
-    for (var i=0;i<ROWS*COLS;i++) {
-      if (cells[i]===-1) continue;
-      var r=Math.floor(i/COLS), c=i%COLS, cnt=0;
-      for (var dr=-1;dr<=1;dr++) for (var dc=-1;dc<=1;dc++) {
-        var nr=r+dr, nc=c+dc;
-        if (nr>=0&&nr<ROWS&&nc>=0&&nc<COLS&&cells[nr*COLS+nc]===-1) cnt++;
-      }
-      cells[i]=cnt;
-    }
-    revealed = Array(ROWS*COLS).fill(false);
-    flagged  = Array(ROWS*COLS).fill(false);
-    timeStart = Date.now();
-  }
-
-  function reveal(i) {
-    if (revealed[i]||flagged[i]) return;
-    revealed[i]=true;
-    if (cells[i]===0) {
-      var r=Math.floor(i/COLS),c=i%COLS;
-      for (var dr=-1;dr<=1;dr++) for (var dc=-1;dc<=1;dc++) {
-        var nr=r+dr,nc=c+dc;
-        if (nr>=0&&nr<ROWS&&nc>=0&&nc<COLS) reveal(nr*COLS+nc);
-      }
-    }
-  }
-
-  function checkWin() {
-    var unrevealed = cells.filter(function(_,i){return !revealed[i];}).length;
-    if (unrevealed === MINES) { won=true; gameOver=true; }
-  }
-
-  var numColors=['','#4fa3ff','#3de8a0','#ff5c5c','#9b59b6','#e74c3c','#1abc9c','#000','#888'];
-
-  function render() {
-    var g = document.getElementById('ms-grid');
-    if (!g) return;
-    g.innerHTML = '';
-    g.style.gridTemplateColumns = 'repeat('+COLS+',1fr)';
-    timer = gameOver ? timer : Math.floor((Date.now()-timeStart)/1000);
-    var ti = document.getElementById('ms-timer'); if (ti) ti.textContent = timer+'s';
-    var fi = document.getElementById('ms-flags'); if (fi) fi.textContent = '🚩'+flagged.filter(Boolean).length+'/'+MINES;
-
-    cells.forEach(function(v,i) {
-      var btn = document.createElement('div');
-      btn.style.cssText = 'aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;border-radius:4px;cursor:pointer;font-family:var(--mono);user-select:none;';
-      if (revealed[i]) {
-        btn.style.background = 'var(--card2)'; btn.style.border = '1px solid var(--border)';
-        if (v===-1) { btn.textContent='💥'; btn.style.background='#ff5c5c44'; }
-        else if (v>0) { btn.textContent=v; btn.style.color=numColors[v]; }
-      } else if (flagged[i]) {
-        btn.style.background='var(--card)'; btn.style.border='1px solid rgba(255,92,92,0.5)';
-        btn.textContent='🚩';
-      } else {
-        btn.style.background='var(--card)'; btn.style.border='1px solid var(--border2)';
-        if (gameOver && v===-1) { btn.textContent='💣'; btn.style.background='var(--card2)'; }
-      }
-      btn.addEventListener('click', function() {
-        if (gameOver||revealed[i]) return;
-        if (flagged[i]) return;
-        if (firstClick) { firstClick=false; init(i); timeStart=Date.now(); }
-        if (cells[i]===-1) { reveal(i); gameOver=true; cells.forEach(function(_,j){if(cells[j]===-1)revealed[j]=true;}); render(); return; }
-        reveal(i); checkWin(); render();
-      });
-      btn.addEventListener('contextmenu', function(e) {
-        e.preventDefault();
-        if (!revealed[i]&&!gameOver) { flagged[i]=!flagged[i]; render(); }
-      });
-      g.appendChild(btn);
-    });
-
-    var ov = document.getElementById('ms-overlay');
-    if (ov) {
-      if (gameOver) {
-        ov.style.display='flex';
-        ov.innerHTML = '<div style="font-size:28px;">'+(won?'🎉':'💥')+'</div>' +
-          '<div style="font-size:16px;font-weight:700;color:var(--accent);">'+(won?'You cleared it!':'BOOM!')+'</div>' +
-          '<div style="font-size:12px;color:var(--text2);font-family:var(--mono);">Time: '+timer+'s</div>' +
-          '<button onclick="_launchSinglePlayer(\'minesweeper\')" style="background:var(--accent);color:#000;border:none;border-radius:10px;padding:8px 20px;font-weight:700;cursor:pointer;margin-top:4px;">🔄 New Game</button>';
-      } else { ov.style.display='none'; }
-    }
-    if (!gameOver) requestAnimationFrame(function(){
-      var ti2=document.getElementById('ms-timer');
-      if(ti2) ti2.textContent=Math.floor((Date.now()-timeStart)/1000)+'s';
-    });
-  }
-
-  body.innerHTML = '<div class="snake-wrap" style="gap:10px;">' +
-    '<div style="display:flex;justify-content:space-between;width:100%;max-width:320px;font-family:var(--mono);font-size:12px;color:var(--text2);">' +
-    '<span id="ms-flags">🚩0/'+MINES+'</span>' +
-    '<span style="color:var(--accent);">MINESWEEPER</span>' +
-    '<span id="ms-timer">0s</span>' +
-    '</div>' +
-    '<div style="position:relative;width:100%;max-width:320px;">' +
-    '<div id="ms-grid" style="display:grid;gap:3px;width:100%;"></div>' +
-    '<div id="ms-overlay" style="display:none;position:absolute;inset:0;background:rgba(5,7,10,0.9);border-radius:8px;flex-direction:column;align-items:center;justify-content:center;gap:8px;"></div>' +
-    '</div>' +
-    '<div style="font-size:10px;color:var(--text3);font-family:var(--mono);">Tap = reveal • Long press / Right click = 🚩 flag</div>' +
-    '</div>';
-
-  // Init with no safe cell first (will reinit on first click)
-  cells = Array(ROWS*COLS).fill(0);
-  revealed = Array(ROWS*COLS).fill(false);
-  flagged  = Array(ROWS*COLS).fill(false);
-  timer = 0;
-  render();
-
-  // Long press for mobile flagging
-  var lpTimer;
-  var grid = document.getElementById('ms-grid');
-  grid.addEventListener('touchstart', function(e) {
-    var t = e.target; var i = Array.from(grid.children).indexOf(t);
-    if (i>=0) lpTimer = setTimeout(function(){ if(!revealed[i]&&!gameOver){flagged[i]=!flagged[i];render();} },500);
-  });
-  grid.addEventListener('touchend', function(){ clearTimeout(lpTimer); });
-}
-
-/* ═══════════════════════════════════════════════════════
-   FLAPPY BIRD
-═══════════════════════════════════════════════════════ */
-var _flappyRAF = null;
-function _launchFlappy(body) {
-  var W=320, H=480, GR=0.35, JUMP=-7.5, PIPE_W=52, GAP=120, SPEED=2.2;
-  var bird={x:70,y:H/2,vy:0,r:16}, pipes=[], score=0, best=parseInt(localStorage.getItem('sl_flappy_best')||'0');
-  var state='idle'; // idle, playing, dead
-  var frameCount=0;
-
-  function reset() {
-    bird={x:70,y:H/2,vy:0,r:16}; pipes=[]; score=0; state='playing'; frameCount=0;
-  }
-
-  function addPipe() {
-    var gap_y = 80 + Math.random()*(H-200);
-    pipes.push({x:W, top:gap_y-GAP/2, bot:gap_y+GAP/2, scored:false});
-  }
-
-  function jump() {
-    if (state==='idle') { reset(); return; }
-    if (state==='dead') { reset(); return; }
-    bird.vy = JUMP;
-  }
-
-  function loop() {
-    var canvas = document.getElementById('flappy-canvas');
-    if (!canvas) { _flappyRAF=null; return; }
-    var ctx = canvas.getContext('2d');
-    _flappyRAF = requestAnimationFrame(loop);
-
-    // Update
-    if (state==='playing') {
-      bird.vy += GR; bird.y += bird.vy;
-      frameCount++;
-      if (frameCount%90===0) addPipe();
-      pipes.forEach(function(p) { p.x -= SPEED; });
-      pipes = pipes.filter(function(p){return p.x > -PIPE_W;});
-      // Scoring
-      pipes.forEach(function(p) {
-        if (!p.scored && p.x+PIPE_W < bird.x) { p.scored=true; score++; if(score>best){best=score;localStorage.setItem('sl_flappy_best',best);} }
-      });
-      // Collision
-      if (bird.y+bird.r > H-40 || bird.y-bird.r < 0) state='dead';
-      pipes.forEach(function(p) {
-        if (bird.x+bird.r>p.x && bird.x-bird.r<p.x+PIPE_W) {
-          if (bird.y-bird.r<p.top || bird.y+bird.r>p.bot) state='dead';
-        }
-      });
-    }
-
-    // Draw sky gradient
-    var grd = ctx.createLinearGradient(0,0,0,H);
-    grd.addColorStop(0,'#1a2a4a'); grd.addColorStop(1,'#0a1020');
-    ctx.fillStyle=grd; ctx.fillRect(0,0,W,H);
-
-    // Clouds (decorative)
-    ctx.fillStyle='rgba(255,255,255,0.06)';
-    [60,140,220].forEach(function(y,i){ ctx.beginPath(); ctx.ellipse((frameCount*0.3+(i*110))%W,y,35,18,0,0,Math.PI*2); ctx.fill(); });
-
-    // Ground
-    ctx.fillStyle='#2a3a1a'; ctx.fillRect(0,H-40,W,40);
-    ctx.fillStyle='#3a5a2a'; ctx.fillRect(0,H-40,W,8);
-
-    // Pipes with gradient
-    pipes.forEach(function(p) {
-      var pg = ctx.createLinearGradient(p.x,0,p.x+PIPE_W,0);
-      pg.addColorStop(0,'#2d8a2d'); pg.addColorStop(0.5,'#4ab44a'); pg.addColorStop(1,'#1d6a1d');
-      ctx.fillStyle=pg;
-      // Top pipe
-      ctx.fillRect(p.x,0,PIPE_W,p.top);
-      ctx.fillRect(p.x-4,p.top-18,PIPE_W+8,18);
-      // Bottom pipe
-      ctx.fillRect(p.x,p.bot,PIPE_W,H-p.bot-40);
-      ctx.fillRect(p.x-4,p.bot,PIPE_W+8,18);
-    });
-
-    // Bird
-    ctx.save();
-    ctx.translate(bird.x, bird.y);
-    var tilt = Math.min(Math.max(bird.vy*3, -30), 60);
-    ctx.rotate(tilt*Math.PI/180);
-    // Body
-    ctx.fillStyle='#ffd460';
-    ctx.beginPath(); ctx.ellipse(0,0,bird.r,bird.r*0.85,0,0,Math.PI*2); ctx.fill();
-    // Wing
-    ctx.fillStyle='#f4a020';
-    ctx.beginPath(); ctx.ellipse(-4, 4+Math.sin(frameCount*0.2)*3, 8, 5, 0.3, 0, Math.PI*2); ctx.fill();
-    // Eye
-    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(7,-3,5,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle='#333'; ctx.beginPath(); ctx.arc(8.5,-3,2.5,0,Math.PI*2); ctx.fill();
-    // Beak
-    ctx.fillStyle='#e06020'; ctx.beginPath();
-    ctx.moveTo(14,-1); ctx.lineTo(20,2); ctx.lineTo(14,5); ctx.closePath(); ctx.fill();
-    ctx.restore();
-
-    // HUD
-    ctx.fillStyle='rgba(0,0,0,0.4)'; ctx.fillRect(W/2-40,8,80,32);
-    ctx.fillStyle='#fff'; ctx.font='bold 20px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(score, W/2, 24);
-    ctx.font='10px monospace'; ctx.fillStyle='rgba(255,255,255,0.5)';
-    ctx.fillText('BEST '+best, W/2, 50);
-
-    // State overlays
-    if (state==='idle') {
-      ctx.fillStyle='rgba(5,7,10,0.7)'; ctx.fillRect(0,0,W,H);
-      ctx.fillStyle='#ffd460'; ctx.font='bold 32px sans-serif'; ctx.textAlign='center';
-      ctx.fillText('🐦', W/2, H/2-40);
-      ctx.fillStyle='#fff'; ctx.font='bold 20px monospace';
-      ctx.fillText('FLAPPY BIRD', W/2, H/2);
-      ctx.fillStyle='rgba(255,255,255,0.6)'; ctx.font='13px monospace';
-      ctx.fillText('Tap to start', W/2, H/2+30);
-    }
-    if (state==='dead') {
-      ctx.fillStyle='rgba(5,7,10,0.75)'; ctx.fillRect(0,0,W,H);
-      ctx.fillStyle='#ff5c5c'; ctx.font='bold 24px monospace'; ctx.textAlign='center';
-      ctx.fillText('GAME OVER', W/2, H/2-30);
-      ctx.fillStyle='#fff'; ctx.font='16px monospace';
-      ctx.fillText('Score: '+score, W/2, H/2+5);
-      ctx.fillStyle='rgba(255,255,255,0.6)'; ctx.font='13px monospace';
-      ctx.fillText('Tap to try again', W/2, H/2+35);
-    }
-  }
-
-  body.innerHTML = '<div class="snake-wrap" style="gap:8px;">' +
-    '<canvas id="flappy-canvas" width="320" height="480" style="border-radius:12px;display:block;max-width:100%;cursor:pointer;border:1px solid var(--border2);touch-action:none;"></canvas>' +
-    '<div style="font-size:10px;color:var(--text3);font-family:var(--mono);text-align:center;">Tap / Space to flap • Avoid the pipes!</div>' +
-    '</div>';
-
-  var canvas = document.getElementById('flappy-canvas');
-  canvas.addEventListener('click', jump);
-  canvas.addEventListener('touchstart', function(e){ jump(); e.preventDefault(); }, {passive:false});
-  document.addEventListener('keydown', function flapKey(e) {
-    if (window._currentGameType !== 'flappy') return document.removeEventListener('keydown', flapKey);
-    if (e.code==='Space'||e.key===' ') { jump(); e.preventDefault(); }
-  });
-
+// ── Ludo (simplified) ──────────────────────────────────────
+function gLaunchLudo(body) {
+  var COLS=['#ff5c5c','#4fa3ff','#3de8a0','#ffd460'],CNAMES=['Red','Blue','Green','Yellow'],YOU=0;
+  var START=[0,13,26,39],SAFE=[0,8,13,21,26,34,39,47];
+  var pieces=COLS.map(function(_,pi){return[0,1,2,3].map(function(i){return{pos:-1,player:pi,idx:i};});});
+  var dice=0,turn=YOU,rolled=false,msg='',winner=-1;
+  var SZ=320,CS=SZ/15;
+  var PATH=[[6,12],[5,12],[4,12],[3,12],[2,12],[1,12],[0,11],[0,10],[0,9],[0,8],[0,7],[0,6],[1,6],[2,6],[3,6],[4,6],[5,6],[6,6],[6,5],[6,4],[6,3],[6,2],[6,1],[6,0],[7,0],[8,0],[9,0],[10,0],[11,0],[12,0],[14,1],[14,2],[14,3],[14,4],[14,5],[14,6],[13,6],[12,6],[11,6],[10,6],[9,6],[8,6],[8,7],[8,8],[8,9],[8,10],[8,11],[8,12],[8,13],[9,13],[9,12],[9,11]];
+  var HOMES=[[[1,7],[2,7],[3,7],[4,7],[5,7]],[[7,13],[7,12],[7,11],[7,10],[7,9]],[[13,7],[12,7],[11,7],[10,7],[9,7]],[[7,1],[7,2],[7,3],[7,4],[7,5]]];
+  var BASES=[[1.5,10.5],[10.5,10.5],[10.5,1.5],[1.5,1.5]];
+  var BOFF=[[0.8,0.8],[2.2,0.8],[0.8,2.2],[2.2,2.2]];
+  function getPos(p){if(p.pos===-1){var b=BASES[p.player],o=BOFF[p.idx];return[(b[0]+o[0])*CS,(b[1]+o[1])*CS];}if(p.pos>=52){var h=HOMES[p.player][p.pos-52];return[(h[0]+0.5)*CS,(h[1]+0.5)*CS];}var abs=(START[p.player]+p.pos)%52,pt=PATH[abs];return[(pt[0]+0.5)*CS,(pt[1]+0.5)*CS];}
+  function validMoves(pl,d){var mv=[];pieces[pl].forEach(function(p,i){if(p.pos===57)return;if(p.pos===-1&&d===6)mv.push(i);if(p.pos>=0&&p.pos<52&&p.pos+d<=56)mv.push(i);});return mv;}
+  function doMove(pl,pi){var p=pieces[pl][pi];if(p.pos===-1){p.pos=0;}else{p.pos+=dice;if(p.pos===56){p.pos=57;msg=CNAMES[pl]+' home! 🎉';}}if(pieces[pl].every(function(p){return p.pos===57;}))winner=pl;var extra=dice===6;rolled=false;if(!extra)nextTurn();else msg+=' (Roll again!)';}
+  function aiTurn(){_ludoTimer=setTimeout(function(){dice=Math.floor(Math.random()*6)+1;rolled=true;var mv=validMoves(turn,dice);if(!mv.length){rolled=false;nextTurn();return;}doMove(turn,mv[0]);draw();},600);}
+  function nextTurn(){turn=(turn+1)%4;rolled=false;if(turn!==YOU&&!winner)aiTurn();}
+  function draw(){var cv=document.getElementById('ludo-cv');if(!cv)return;var ctx=cv.getContext('2d');ctx.clearRect(0,0,SZ,SZ);ctx.fillStyle='#1a1f2e';ctx.fillRect(0,0,SZ,SZ);var BG=['#ff5c5c33','#4fa3ff33','#3de8a033','#ffd46033'];var BX=[[0,CS*9],[CS*9,CS*9],[CS*9,0],[0,0]];BX.forEach(function(b,i){ctx.fillStyle=BG[i];ctx.fillRect(b[0],b[1],CS*6,CS*6);});ctx.fillStyle='#ff5c5c33';ctx.fillRect(0,CS*6,CS*6,CS*3);ctx.fillStyle='#4fa3ff33';ctx.fillRect(CS*6,CS*9,CS*3,CS*6);ctx.fillStyle='#3de8a033';ctx.fillRect(CS*9,CS*6,CS*6,CS*3);ctx.fillStyle='#ffd46033';ctx.fillRect(CS*6,0,CS*3,CS*6);ctx.fillStyle='#2a3040';ctx.fillRect(CS*6,CS*6,CS*3,CS*3);SAFE.forEach(function(idx){var pt=PATH[idx];ctx.fillStyle='rgba(255,255,255,0.2)';ctx.font='bold '+(CS*0.4)+'px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('★',(pt[0]+0.5)*CS,(pt[1]+0.5)*CS);});pieces.forEach(function(pp,pi){pp.forEach(function(p){var pos=getPos(p);ctx.shadowColor=COLS[pi];ctx.shadowBlur=6;ctx.fillStyle=COLS[pi];ctx.beginPath();ctx.arc(pos[0],pos[1],CS*0.38,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='rgba(255,255,255,0.6)';ctx.beginPath();ctx.arc(pos[0],pos[1],CS*0.18,0,Math.PI*2);ctx.fill();if(p.pos===57){ctx.fillStyle='#000';ctx.font='bold '+(CS*0.3)+'px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('✓',pos[0],pos[1]);}});});ctx.fillStyle='rgba(0,0,0,0.5)';ctx.fillRect(0,SZ-CS*1.8,SZ,CS*1.8);ctx.fillStyle=COLS[turn];ctx.font='bold 13px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(winner>=0?(winner===YOU?'🎉 You Win!':CNAMES[winner]+' wins!'):turn===YOU?'YOUR TURN — Roll!':CNAMES[turn]+"'S TURN...",SZ/2,SZ-CS*0.9);var me=document.getElementById('ludo-msg');if(me)me.textContent=msg;var de=document.getElementById('ludo-dc');if(de){var fc=['','⚀','⚁','⚂','⚃','⚄','⚅'];de.textContent=dice>0?fc[dice]:'🎲';}}
+  body.innerHTML='<div class="snake-wrap" style="gap:8px;"><div id="ludo-msg" style="font-family:var(--mono);font-size:12px;color:var(--text2);text-align:center;min-height:16px;"></div><canvas id="ludo-cv" width="'+SZ+'" height="'+SZ+'" style="border-radius:12px;border:1px solid var(--border);max-width:100%;cursor:pointer;"></canvas><div style="display:flex;gap:10px;align-items:center;justify-content:center;"><div id="ludo-dc" onclick="window.ludoRoll()" style="width:52px;height:52px;background:var(--card);border:2px solid var(--border2);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:30px;cursor:pointer;user-select:none;">🎲</div><div style="font-size:11px;color:var(--text3);font-family:var(--mono);">Tap dice to roll<br>Then tap your piece</div></div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;">'+COLS.map(function(c,i){return'<div style="background:'+c+'22;border:1px solid '+c+'66;border-radius:6px;padding:3px 8px;font-size:11px;font-family:var(--mono);color:'+c+';">'+CNAMES[i]+(i===YOU?' (You)':'')+'</div>';}).join('')+'</div></div>';
+  window.ludoRoll=function(){if(turn!==YOU||winner>=0||rolled)return;dice=Math.floor(Math.random()*6)+1;rolled=true;var mv=validMoves(YOU,dice);msg='You rolled '+dice+(mv.length===0?' — no moves!':'');if(mv.length===0){setTimeout(function(){rolled=false;nextTurn();draw();},700);}else if(mv.length===1){doMove(YOU,mv[0]);}draw();};
+  var cv=document.getElementById('ludo-cv');
+  if(cv){cv.addEventListener('click',function(e){if(turn!==YOU||!rolled||winner>=0)return;var rect=cv.getBoundingClientRect(),sx=SZ/rect.width,sy=SZ/rect.height,mx=(e.clientX-rect.left)*sx,my=(e.clientY-rect.top)*sy,mv=validMoves(YOU,dice),best=-1,bestD=CS*1.5;mv.forEach(function(i){var pos=getPos(pieces[YOU][i]),d=Math.hypot(pos[0]-mx,pos[1]-my);if(d<bestD){bestD=d;best=i;}});if(best>=0){doMove(YOU,best);draw();}});}
+  function loop(){draw();if(document.getElementById('ludo-cv'))requestAnimationFrame(loop);}
   loop();
 }
 
-console.log('%c 🎮 SecretLine Games v2 + 5 new games loaded ✓', 'color:#3de8a0;font-weight:bold;background:#0b0f14;padding:4px 8px;border-radius:4px;');
+// ── Carrom ─────────────────────────────────────────────────
+function gLaunchCarrom(body) {
+  var SZ=320,coins=[],striker={x:SZ/2,y:SZ*0.82,vx:0,vy:0,r:14,mass:2},score={you:0,ai:0},aimAng=-Math.PI/2,turn='you',shooting=false,msg='Aim and shoot!';
+  var pockets=[{x:22,y:22},{x:SZ-22,y:22},{x:22,y:SZ-22},{x:SZ-22,y:SZ-22}];
+  function init(){coins=[];var cx=SZ/2,cy=SZ/2,R=28;coins.push({x:cx,y:cy,vx:0,vy:0,r:9,color:'#111',owner:'queen',pocketed:false});for(var i=0;i<18;i++){var a=(i/18)*Math.PI*2;coins.push({x:cx+Math.cos(a)*R,y:cy+Math.sin(a)*R,vx:0,vy:0,r:8,color:i%2===0?'#eee':'#555',owner:i%2===0?'ai':'you',pocketed:false});}}
+  init();
+  function physics(){var allStop=true;[striker].concat(coins).forEach(function(c){if(c.pocketed)return;c.x+=c.vx;c.y+=c.vy;c.vx*=0.985;c.vy*=0.985;if(Math.abs(c.vx)>0.01||Math.abs(c.vy)>0.01)allStop=false;if(c.x-c.r<18){c.x=18+c.r;c.vx=Math.abs(c.vx)*0.7;}if(c.x+c.r>SZ-18){c.x=SZ-18-c.r;c.vx=-Math.abs(c.vx)*0.7;}if(c.y-c.r<18){c.y=18+c.r;c.vy=Math.abs(c.vy)*0.7;}if(c.y+c.r>SZ-18){c.y=SZ-18-c.r;c.vy=-Math.abs(c.vy)*0.7;}pockets.forEach(function(p){if(Math.hypot(c.x-p.x,c.y-p.y)<c.r+8){if(c===striker){striker.x=SZ/2;striker.y=SZ*0.82;striker.vx=0;striker.vy=0;}else if(!c.pocketed){c.pocketed=true;if(c.owner==='you'){score.you++;msg='✅ Pocketed! +1';}else if(c.owner==='ai'){score.ai++;msg='Opponent +1';}else{score.you+=3;msg='👑 Queen! +3';}}}}); });var all=[striker].concat(coins.filter(function(c){return!c.pocketed;}));for(var i=0;i<all.length;i++)for(var j=i+1;j<all.length;j++){var a=all[i],b=all[j],dx=b.x-a.x,dy=b.y-a.y,dist=Math.hypot(dx,dy),minD=a.r+b.r;if(dist<minD&&dist>0.1){var nx=dx/dist,ny=dy/dist,ov=(minD-dist)/2;a.x-=nx*ov;a.y-=ny*ov;b.x+=nx*ov;b.y+=ny*ov;var dv=(a.vx-b.vx)*nx+(a.vy-b.vy)*ny;if(dv>0){var ma=a.mass||1,mb=b.mass||1,imp=2*dv/(ma+mb);a.vx-=imp*mb*nx;a.vy-=imp*mb*ny;b.vx+=imp*ma*nx;b.vy+=imp*ma*ny;}}}if(allStop&&shooting){shooting=false;if(turn==='you'){turn='ai';setTimeout(aiShoot,600);}else{turn='you';msg='Your turn!';}}}
+  function aiShoot(){if(turn!=='ai')return;var target=null,md=9999;coins.filter(function(c){return!c.pocketed&&c.owner==='ai';}).forEach(function(c){pockets.forEach(function(p){var d=Math.hypot(c.x-p.x,c.y-p.y);if(d<md){md=d;target=c;}});});striker.x=SZ/2+(Math.random()-0.5)*40;striker.y=SZ*0.18;if(!target){turn='you';msg='Your turn!';return;}var ang=Math.atan2(target.y-striker.y,target.x-striker.x),spd=7+Math.random()*3;striker.vx=Math.cos(ang)*spd;striker.vy=Math.sin(ang)*spd;shooting=true;msg='🤖 AI shooting...';}
+  function shoot(){if(turn!=='you'||shooting)return;var spd=aimAng?12:12;striker.vx=Math.cos(aimAng)*spd;striker.vy=Math.sin(aimAng)*spd;shooting=true;}
+  var cv,ctx;
+  function drawFrame(){cv=document.getElementById('carrom-cv');if(!cv)return;ctx=cv.getContext('2d');ctx.clearRect(0,0,SZ,SZ);ctx.fillStyle='#8B6914';ctx.fillRect(0,0,SZ,SZ);ctx.fillStyle='#A0785A';ctx.fillRect(18,18,SZ-36,SZ-36);ctx.strokeStyle='rgba(255,255,255,0.25)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(SZ/2,SZ/2,32,0,Math.PI*2);ctx.stroke();pockets.forEach(function(p){ctx.fillStyle='#000';ctx.beginPath();ctx.arc(p.x,p.y,10,0,Math.PI*2);ctx.fill();});coins.filter(function(c){return!c.pocketed;}).forEach(function(c){ctx.shadowColor=c.color==='#eee'?'#fff':'#888';ctx.shadowBlur=4;ctx.fillStyle=c.color;ctx.beginPath();ctx.arc(c.x,c.y,c.r,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle='rgba(0,0,0,0.3)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(c.x,c.y,c.r,0,Math.PI*2);ctx.stroke();});ctx.shadowColor='#ffd460';ctx.shadowBlur=8;ctx.fillStyle='#ffd460';ctx.beginPath();ctx.arc(striker.x,striker.y,striker.r,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;if(!shooting&&turn==='you'){ctx.strokeStyle='rgba(255,212,96,0.5)';ctx.lineWidth=1.5;ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(striker.x,striker.y);ctx.lineTo(striker.x+Math.cos(aimAng)*80,striker.y+Math.sin(aimAng)*80);ctx.stroke();ctx.setLineDash([]);}physics();var si=document.getElementById('carrom-sc');if(si)si.textContent='You: '+score.you+' | AI: '+score.ai;var mi=document.getElementById('carrom-msg');if(mi)mi.textContent=msg;if(document.getElementById('carrom-cv'))requestAnimationFrame(drawFrame);}
+  body.innerHTML='<div class="snake-wrap" style="gap:8px;"><div style="display:flex;justify-content:space-between;width:100%;max-width:320px;font-family:var(--mono);font-size:12px;color:var(--text2);" id="carrom-sc">You: 0 | AI: 0</div><div style="font-family:var(--mono);font-size:11px;color:var(--accent);text-align:center;" id="carrom-msg">Aim and shoot!</div><canvas id="carrom-cv" width="320" height="320" style="border-radius:10px;border:1px solid var(--border);max-width:100%;touch-action:none;"></canvas><div style="display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;"><button onclick="window.carromLeft()" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:6px 14px;color:var(--text);cursor:pointer;font-size:18px;">◀</button><button onclick="shoot()" style="background:var(--accent);border:none;border-radius:8px;padding:8px 20px;color:#000;font-weight:700;cursor:pointer;">🎯 SHOOT</button><button onclick="window.carromRight()" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:6px 14px;color:var(--text);cursor:pointer;font-size:18px;">▶</button></div><div style="font-size:10px;color:var(--text3);font-family:var(--mono);">◀▶ to aim • White = yours • Black = AI</div></div>';
+  window.carromLeft=function(){aimAng-=0.08;};window.carromRight=function(){aimAng+=0.08;};
+  cv=document.getElementById('carrom-cv');
+  if(cv){cv.addEventListener('touchstart',function(e){var rect=cv.getBoundingClientRect(),mx=(e.touches[0].clientX-rect.left)*(SZ/rect.width),my=(e.touches[0].clientY-rect.top)*(SZ/rect.height);aimAng=Math.atan2(my-striker.y,mx-striker.x);shoot();e.preventDefault();},{passive:false});}
+  drawFrame();
+}
+
+// ── Checkers ────────────────────────────────────────────────
+function gLaunchCheckers(body) {
+  var SZ=320,CS=SZ/8,board=Array(64).fill(null),sel=-1,turn='you',over=false,msg='Your turn — tap a red piece';
+  for(var r=0;r<3;r++)for(var c=0;c<8;c++)if((r+c)%2===1)board[r*8+c]=2;
+  for(var r=5;r<8;r++)for(var c=0;c<8;c++)if((r+c)%2===1)board[r*8+c]=1;
+  function moves(idx,b,v){var ms=[],r=Math.floor(idx/8),c=idx%8,dirs=[];if(v===1||v===3)dirs.push([-1,-1],[-1,1]);if(v===2||v===3||v===4)dirs.push([1,-1],[1,1]);if(v===2||v===4)dirs.push([-1,-1],[-1,1]);dirs.forEach(function(d){var nr=r+d[0],nc=c+d[1];if(nr>=0&&nr<8&&nc>=0&&nc<8){var ni=nr*8+nc;if(!b[ni])ms.push({from:idx,to:ni,cap:-1});else{var opp=(v===1||v===3)?(b[ni]===2||b[ni]===4):(b[ni]===1||b[ni]===3);if(opp){var jr=nr+d[0],jc=nc+d[1];if(jr>=0&&jr<8&&jc>=0&&jc<8&&!b[jr*8+jc])ms.push({from:idx,to:jr*8+jc,cap:ni});}}}});return ms;}
+  function allMoves(ai){var ms=[];board.forEach(function(v,i){if(ai&&(v===2||v===4))ms=ms.concat(moves(i,board,v));if(!ai&&(v===1||v===3))ms=ms.concat(moves(i,board,v));});return ms;}
+  function doMove(m){board[m.to]=board[m.from];board[m.from]=null;if(m.cap>=0)board[m.cap]=null;if(board[m.to]===1&&Math.floor(m.to/8)===0)board[m.to]=3;if(board[m.to]===2&&Math.floor(m.to/8)===7)board[m.to]=4;}
+  function checkOver(){var hp=board.some(function(v){return v===1||v===3;}),ha=board.some(function(v){return v===2||v===4;});if(!ha){over=true;msg='🎉 You Win!';}if(!hp){over=true;msg='🤖 AI Wins!';}if(!allMoves(false).length&&!over){over=true;msg='🤖 AI Wins (no moves)!';}if(!allMoves(true).length&&!over){over=true;msg='🎉 You Win (AI stuck)!';}}
+  function aiMove(){var ms=allMoves(true);if(!ms.length){checkOver();render();return;}var caps=ms.filter(function(m){return m.cap>=0;});var m=caps.length?caps[Math.floor(Math.random()*caps.length)]:ms[Math.floor(Math.random()*ms.length)];doMove(m);checkOver();turn='you';msg='Your turn';render();}
+  function handleClick(idx){if(turn!=='you'||over)return;var v=board[idx];if(sel>=0){var ms=moves(sel,board,board[sel]),m=ms.find(function(mv){return mv.to===idx;});if(m){doMove(m);checkOver();sel=-1;if(!over){turn='ai';msg='AI thinking...';render();setTimeout(aiMove,600);}}else if(v===1||v===3){sel=idx;msg='Tap destination';}else{sel=-1;msg='Your turn';}}else if(v===1||v===3){sel=idx;msg='Tap destination';}render();}
+  function render(){var cv=document.getElementById('chk-cv');if(!cv)return;var ctx=cv.getContext('2d');var ms=sel>=0?moves(sel,board,board[sel]):[];var vt=ms.map(function(m){return m.to;});for(var r=0;r<8;r++)for(var c=0;c<8;c++){var idx=r*8+c,dark=(r+c)%2===1;ctx.fillStyle=dark?'#4a3728':'#c8a87a';ctx.fillRect(c*CS,r*CS,CS,CS);if(idx===sel){ctx.fillStyle='rgba(61,232,160,0.3)';ctx.fillRect(c*CS,r*CS,CS,CS);}if(vt.includes(idx)){ctx.fillStyle='rgba(61,232,160,0.5)';ctx.beginPath();ctx.arc(c*CS+CS/2,r*CS+CS/2,CS*0.2,0,Math.PI*2);ctx.fill();}var vv=board[idx];if(vv){var king=vv>=3;ctx.fillStyle=(vv===1||vv===3)?'#ff5c5c':'#222';ctx.shadowColor=(vv===1||vv===3)?'#ff8888':'#888';ctx.shadowBlur=6;ctx.beginPath();ctx.arc(c*CS+CS/2,r*CS+CS/2,CS*0.38,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;if(king){ctx.fillStyle='#ffd460';ctx.font='bold '+(CS*0.35)+'px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('♛',c*CS+CS/2,r*CS+CS/2);}}}var me=document.getElementById('chk-msg');if(me)me.textContent=msg;}
+  body.innerHTML='<div class="snake-wrap" style="gap:8px;"><div id="chk-msg" style="font-family:var(--mono);font-size:12px;color:var(--accent);text-align:center;">Your turn</div><canvas id="chk-cv" width="320" height="320" style="border-radius:8px;border:1px solid var(--border);max-width:100%;cursor:pointer;"></canvas><button id="chk-restart" style="display:none;background:var(--accent);color:#000;border:none;border-radius:10px;padding:8px 24px;font-weight:700;cursor:pointer;" onclick="gLaunchSP(\'checkers\')">🔄 Play Again</button><div style="font-size:10px;color:var(--text3);font-family:var(--mono);">🔴 = You &nbsp; ⚫ = AI &nbsp; ♛ = King</div></div>';
+  var cv=document.getElementById('chk-cv');
+  if(cv){cv.addEventListener('click',function(e){var rect=cv.getBoundingClientRect(),c=Math.floor((e.clientX-rect.left)/(rect.width/8)),r=Math.floor((e.clientY-rect.top)/(rect.height/8));handleClick(r*8+c);if(over){var btn=document.getElementById('chk-restart');if(btn)btn.style.display='block';}});}
+  render();
+}
+
+// ── Minesweeper ────────────────────────────────────────────
+function gLaunchMinesweeper(body) {
+  var R=9,C=9,MINES=10,cells=Array(R*C).fill(0),rev=Array(R*C).fill(false),flag=Array(R*C).fill(false),over=false,won=false,first=true,t0=0,timer=0;
+  function initBoard(safe){cells=Array(R*C).fill(0);var placed=0;while(placed<MINES){var i=Math.floor(Math.random()*R*C);if(i!==safe&&cells[i]!==-1){cells[i]=-1;placed++;}}for(var i=0;i<R*C;i++){if(cells[i]===-1)continue;var r=Math.floor(i/C),cnt=0;for(var dr=-1;dr<=1;dr++)for(var dc=-1;dc<=1;dc++){var nr=r+dr,nc=(i%C)+dc;if(nr>=0&&nr<R&&nc>=0&&nc<C&&cells[nr*C+nc]===-1)cnt++;}cells[i]=cnt;}}
+  function reveal(i){if(rev[i]||flag[i])return;rev[i]=true;if(cells[i]===0){var r=Math.floor(i/C);for(var dr=-1;dr<=1;dr++)for(var dc=-1;dc<=1;dc++){var nr=r+dr,nc=(i%C)+dc;if(nr>=0&&nr<R&&nc>=0&&nc<C)reveal(nr*C+nc);}}}
+  var NC=['','#4fa3ff','#3de8a0','#ff5c5c','#9b59b6','#e74c3c','#1abc9c','#000','#888'];
+  function render(){var g=document.getElementById('ms-grid');if(!g)return;timer=over?timer:Math.floor((Date.now()-t0)/1000);var ti=document.getElementById('ms-ti');if(ti)ti.textContent=timer+'s';var fi=document.getElementById('ms-fl');if(fi)fi.textContent='🚩'+flag.filter(Boolean).length+'/'+MINES;g.innerHTML='';g.style.gridTemplateColumns='repeat('+C+',1fr)';cells.forEach(function(v,i){var btn=document.createElement('div');btn.style.cssText='aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;border-radius:4px;cursor:pointer;font-family:var(--mono);user-select:none;';if(rev[i]){btn.style.background='var(--card2)';btn.style.border='1px solid var(--border)';if(v===-1){btn.textContent='💥';btn.style.background='#ff5c5c44';}else if(v>0){btn.textContent=v;btn.style.color=NC[v];}}else if(flag[i]){btn.style.background='var(--card)';btn.style.border='1px solid rgba(255,92,92,0.5)';btn.textContent='🚩';}else{btn.style.background='var(--card)';btn.style.border='1px solid var(--border2)';if(over&&v===-1)btn.textContent='💣';}btn.addEventListener('click',function(){if(over||rev[i])return;if(flag[i])return;if(first){first=false;initBoard(i);t0=Date.now();}if(cells[i]===-1){reveal(i);over=true;cells.forEach(function(_,j){if(cells[j]===-1)rev[j]=true;});}else{reveal(i);if(cells.filter(function(_,j){return!rev[j];}).length===MINES){won=true;over=true;}}render();});btn.addEventListener('contextmenu',function(e){e.preventDefault();if(!rev[i]&&!over){flag[i]=!flag[i];render();}});g.appendChild(btn);});var ov=document.getElementById('ms-ov');if(ov){if(over){ov.style.display='flex';ov.innerHTML='<div style="font-size:28px;">'+(won?'🎉':'💥')+'</div><div style="font-size:16px;font-weight:700;color:var(--accent);">'+(won?'Cleared!':'BOOM!')+'</div><div style="font-size:12px;color:var(--text2);font-family:var(--mono);">Time: '+timer+'s</div><button onclick="gLaunchSP(\'minesweeper\')" style="background:var(--accent);color:#000;border:none;border-radius:10px;padding:8px 20px;font-weight:700;cursor:pointer;margin-top:4px;">🔄 New</button>';}else{ov.style.display='none';}}}
+  body.innerHTML='<div class="snake-wrap" style="gap:10px;"><div style="display:flex;justify-content:space-between;width:100%;max-width:300px;font-family:var(--mono);font-size:12px;color:var(--text2);"><span id="ms-fl">🚩0/'+MINES+'</span><span style="color:var(--accent);">MINESWEEPER</span><span id="ms-ti">0s</span></div><div style="position:relative;width:100%;max-width:300px;"><div id="ms-grid" style="display:grid;gap:3px;"></div><div id="ms-ov" style="display:none;position:absolute;inset:0;background:rgba(5,7,10,0.9);border-radius:8px;flex-direction:column;align-items:center;justify-content:center;gap:8px;"></div></div><div style="font-size:10px;color:var(--text3);font-family:var(--mono);">Tap=reveal • Long press/Right click=🚩</div></div>';
+  var lpT;document.getElementById('ms-grid')&&document.getElementById('ms-grid').addEventListener('touchstart',function(e){var t=e.target,i=Array.from(document.getElementById('ms-grid').children).indexOf(t);if(i>=0)lpT=setTimeout(function(){if(!rev[i]&&!over){flag[i]=!flag[i];render();}},500);});document.getElementById('ms-grid')&&document.getElementById('ms-grid').addEventListener('touchend',function(){clearTimeout(lpT);});
+  render();
+  if(!over)setInterval(function(){var ti=document.getElementById('ms-ti');if(ti&&!over&&!first)ti.textContent=Math.floor((Date.now()-t0)/1000)+'s';},1000);
+}
+
+// ── Flappy Bird ────────────────────────────────────────────
+function gLaunchFlappy(body) {
+  var W=320,H=480,bird={x:70,y:H/2,vy:0,r:16},pipes=[],score=0,best=parseInt(localStorage.getItem('sl_flappy_best')||'0'),state='idle',frame=0;
+  function jump(){if(state==='idle'){state='playing';return;}if(state==='dead'){state='playing';bird.y=H/2;bird.vy=0;pipes=[];score=0;frame=0;}bird.vy=-7.5;}
+  body.innerHTML='<div class="snake-wrap" style="gap:8px;"><canvas id="fl-cv" width="320" height="480" style="border-radius:12px;border:1px solid var(--border2);max-width:100%;cursor:pointer;touch-action:none;"></canvas><div style="font-size:10px;color:var(--text3);font-family:var(--mono);text-align:center;">Tap / Space to flap</div></div>';
+  var cv=document.getElementById('fl-cv'),ctx=cv.getContext('2d');
+  cv.addEventListener('click',jump);
+  cv.addEventListener('touchstart',function(e){jump();e.preventDefault();},{passive:false});
+  document.addEventListener('keydown',function flK(e){if(_gType!=='flappy')return document.removeEventListener('keydown',flK);if(e.code==='Space'||e.key===' '){jump();e.preventDefault();}});
+  function loop(){if(!document.getElementById('fl-cv')){_flappyRaf=null;return;}_flappyRaf=requestAnimationFrame(loop);
+  if(state==='playing'){bird.vy+=0.35;bird.y+=bird.vy;frame++;if(frame%90===0){var gy=80+Math.random()*(H-200);pipes.push({x:W,top:gy-60,bot:gy+60,ok:false});}pipes.forEach(function(p){p.x-=2.2;});pipes=pipes.filter(function(p){return p.x>-52;});pipes.forEach(function(p){if(!p.ok&&p.x+52<bird.x){p.ok=true;score++;if(score>best){best=score;localStorage.setItem('sl_flappy_best',best);}}});if(bird.y+bird.r>H-40||bird.y-bird.r<0)state='dead';pipes.forEach(function(p){if(bird.x+bird.r>p.x&&bird.x-bird.r<p.x+52){if(bird.y-bird.r<p.top||bird.y+bird.r>p.bot)state='dead';}});}
+  var g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#1a2a4a');g.addColorStop(1,'#0a1020');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  pipes.forEach(function(p){var pg=ctx.createLinearGradient(p.x,0,p.x+52,0);pg.addColorStop(0,'#2d8a2d');pg.addColorStop(0.5,'#4ab44a');pg.addColorStop(1,'#1d6a1d');ctx.fillStyle=pg;ctx.fillRect(p.x,0,52,p.top);ctx.fillRect(p.x-4,p.top-18,60,18);ctx.fillRect(p.x,p.bot,52,H-p.bot-40);ctx.fillRect(p.x-4,p.bot,60,18);});
+  ctx.fillStyle='#2a3a1a';ctx.fillRect(0,H-40,W,40);ctx.fillStyle='#3a5a2a';ctx.fillRect(0,H-40,W,8);
+  ctx.save();ctx.translate(bird.x,bird.y);ctx.rotate(Math.min(Math.max(bird.vy*3,-30),60)*Math.PI/180);ctx.fillStyle='#ffd460';ctx.beginPath();ctx.ellipse(0,0,bird.r,bird.r*0.85,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#f4a020';ctx.beginPath();ctx.ellipse(-4,4+Math.sin(frame*0.2)*3,8,5,0.3,0,Math.PI*2);ctx.fill();ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(7,-3,5,0,Math.PI*2);ctx.fill();ctx.fillStyle='#333';ctx.beginPath();ctx.arc(8.5,-3,2.5,0,Math.PI*2);ctx.fill();ctx.fillStyle='#e06020';ctx.beginPath();ctx.moveTo(14,-1);ctx.lineTo(20,2);ctx.lineTo(14,5);ctx.closePath();ctx.fill();ctx.restore();
+  ctx.fillStyle='rgba(0,0,0,0.5)';ctx.fillRect(W/2-40,8,80,32);ctx.fillStyle='#fff';ctx.font='bold 20px monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(score,W/2,24);ctx.font='10px monospace';ctx.fillStyle='rgba(255,255,255,0.5)';ctx.fillText('BEST '+best,W/2,50);
+  if(state!=='playing'){ctx.fillStyle='rgba(5,7,10,0.75)';ctx.fillRect(0,0,W,H);ctx.fillStyle=state==='dead'?'#ff5c5c':'#ffd460';ctx.font='bold 24px monospace';ctx.textAlign='center';ctx.fillText(state==='idle'?'🐦 FLAPPY BIRD':'GAME OVER',W/2,H/2-30);ctx.fillStyle='#fff';ctx.font='16px monospace';if(state==='dead')ctx.fillText('Score: '+score,W/2,H/2+5);ctx.fillStyle='rgba(255,255,255,0.6)';ctx.font='13px monospace';ctx.fillText(state==='idle'?'Tap to start':'Tap to try again',W/2,H/2+35);}
+  }
+  loop();
+}
+
+// ── Helpers ────────────────────────────────────────────────
+function gName(t){return{ttt:'Tic-Tac-Toe',rps:'Rock Paper Scissors',c4:'Connect Four',wg:'Word Guess',snake:'Snake',memory:'Memory',g2048:'2048',ludo:'Ludo',carrom:'Carrom',checkers:'Checkers',minesweeper:'Minesweeper',flappy:'Flappy Bird'}[t]||t;}
+function gIcon(t){return{ttt:'⭕',rps:'✊',c4:'🔴',wg:'📝',snake:'🐍',memory:'🃏',g2048:'🔢',ludo:'🎲',carrom:'🎯',checkers:'♟️',minesweeper:'💣',flappy:'🐦'}[t]||'🎮';}
+
+// ── Online Users Panel ─────────────────────────────────────
+window.openOnlinePanel = function() {
+  var p=document.getElementById('online-users-panel');
+  if(p)p.classList.add('open');
+  gInit();
+  gListenPresence();
+  setTimeout(function(){
+    var list=document.getElementById('ou-user-list');
+    var badge=document.getElementById('ou-count-badge');
+    var presence=window._lobbyPresenceData||{};
+    var myId=_gMyId||window._socUserId||window.socUserId||'';
+    var others=Object.entries(presence).filter(function(e){return e[0]!==myId;});
+    if(badge)badge.textContent=others.length+' online';
+    if(!list)return;
+    if(!others.length){list.innerHTML='<div style="color:var(--text3);font-size:12px;font-family:var(--mono);text-align:center;padding:20px;">No users online</div>';return;}
+    list.innerHTML=others.map(function(e){var uid=e[0],u=e[1];var av=u.photo?'<img src="'+u.photo+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">':(u.name||'?').slice(0,2).toUpperCase();return'<div class="ou-user-row" onclick="if(window.socShowProfile)socShowProfile(Object.assign({uid:\''+uid+'\'},'+JSON.stringify(u)+')); closeOnlinePanel();">'+'<div class="ou-av" style="color:'+(u.color||'#3de8a0')+';">'+av+'<div class="ou-av-dot"></div></div>'+'<div class="ou-info"><div class="ou-name">'+escHtml(u.name||'User')+'</div><div class="ou-bio">'+(u.bio||'Online')+'</div></div>'+'<div class="ou-actions" onclick="event.stopPropagation();">'+'<button class="ou-game-btn" onclick="openGamePickerForUser(\''+uid+'\',\''+escAttr(u.name||'User')+'\',\''+escAttr(u.photo||'')+'\',\''+escAttr(u.color||'#3de8a0')+'\')">🎮</button>'+'</div></div>';}).join('');
+  },100);
+};
+window.closeOnlinePanel = function() {
+  var p=document.getElementById('online-users-panel');
+  if(p)p.classList.remove('open');
+};
+
+// ── Hook: patch socRenderUsers to update badge ─────────────
+(function(){
+  var origRU = window.socRenderUsers;
+  window.socRenderUsers = function(data) {
+    window._lobbyPresenceData = data || {};
+    if (origRU) origRU(data);
+    var cnt = Object.keys(data||{}).length;
+    var badge = document.getElementById('soc-online-badge');
+    if (badge) { badge.style.display=cnt>0?'flex':'none'; badge.textContent=cnt; }
+    var gPanel = document.getElementById('games-panel');
+    if (gPanel && gPanel.classList.contains('open')) gRefreshOnlineList();
+  };
 })();
 
-</script>
+// ── Start invite listener when lobby opens ─────────────────
+(function(){
+  var origOSA = window.openSocialArea;
+  window.openSocialArea = function() {
+    if (origOSA) origOSA();
+    setTimeout(function(){ gInit(); if(_gMyId) gListenInvites(); gListenPresence(); }, 800);
+  };
+})();
 
-<!-- Games function stubs — real implementations loaded below by IIFE scripts -->
-<script>
-// Stubs ensure onclick handlers work even before IIFE scripts execute
-// Real implementations override these when scripts load
-// These will be overridden by IIFE scripts — just silent fallbacks
-window.openSinglePlayer = window.openSinglePlayer || function(t){ console.log('openSinglePlayer loading...'); };
-window.launchGame       = window.launchGame       || function(t){ console.log('launchGame loading...'); };
-window.openGamesPanel   = window.openGamesPanel   || function(){ };
-window.closeGamesPanel  = window.closeGamesPanel  || function(){ var p=document.getElementById('games-panel'); if(p) p.classList.remove('open'); };
-window.closeGameOverlay = window.closeGameOverlay || function(){ var o=document.getElementById('game-overlay'); if(o) o.classList.remove('open'); };
+console.log('%c 🎮 SecretLine Games — Clean Build ✓', 'color:#3de8a0;font-weight:bold;background:#0b0f14;padding:4px 8px;border-radius:4px;');
+
 </script>
 
 <!-- ═══════════════════════════════════════════
