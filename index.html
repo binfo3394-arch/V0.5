@@ -7172,9 +7172,13 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
 
 <!-- Firebase SDK -->
 <script type="module">
-import { initializeApp }           from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, push, onValue, onChildAdded, onChildChanged, onChildRemoved, set, remove, serverTimestamp, onDisconnect, get }
-                                   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { initializeApp }           from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
+import { getDatabase, ref, push, onValue, onChildAdded, onChildChanged, onChildRemoved, set, remove, serverTimestamp, onDisconnect, get,
+         query, limitToLast, orderByKey, endBefore }
+                                   from "https://www.gstatic.com/firebasejs/11.4.0/firebase-database.js";
+import { getStorage, ref as sRef, uploadBytesResumable, getDownloadURL }
+                                   from "https://www.gstatic.com/firebasejs/11.4.0/firebase-storage.js";
+import { getMessaging, onMessage } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-messaging.js";
 
 // ─── Expose to global ───
 window._fb = { initializeApp, getDatabase, ref, push, onValue, set, remove, serverTimestamp, onDisconnect, get };
@@ -7192,6 +7196,9 @@ const FIREBASE_CONFIG = {
 
 // ─── State ───
 let db, app;
+let storage = null, messaging = null;
+let _roomCryptoKey = null;
+let _oldestMsgKey = null, _allLoaded = false, _firstLoadDone = false;
 let roomCode = '', myName = '', myColor = 'green', myPass = '';
 let myPhoto = '', myEmail = '';
 let myId = 'u_' + Math.random().toString(36).slice(2,9);
@@ -7210,6 +7217,105 @@ function getAudioCtx() {
 
 // Color map
 const COLORS = { green:'#3de8a0', blue:'#4fa3ff', pink:'#ff7eb3', orange:'#ffb347', purple:'#c084fc', red:'#f87171' };
+
+/* ══════════════════════════════
+   UPGRADE 2: AES-GCM E2E ENCRYPTION
+   Key derived from roomCode + passcode via PBKDF2
+══════════════════════════════ */
+async function deriveRoomKey(room, pass) {
+  const material = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(room + ':' + (pass || 'secretline_open')),
+    'PBKDF2', false, ['deriveKey']
+  );
+  return crypto.subtle.deriveKey(
+    { name:'PBKDF2', salt: new TextEncoder().encode('SLv6_' + room), iterations:100000, hash:'SHA-256' },
+    material,
+    { name:'AES-GCM', length:256 },
+    false, ['encrypt','decrypt']
+  );
+}
+
+async function encryptText(text) {
+  if (!_roomCryptoKey || !text) return text;
+  try {
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const enc = await crypto.subtle.encrypt({ name:'AES-GCM', iv }, _roomCryptoKey, new TextEncoder().encode(text));
+    const combined = new Uint8Array(iv.byteLength + enc.byteLength);
+    combined.set(iv, 0); combined.set(new Uint8Array(enc), iv.byteLength);
+    return btoa(String.fromCharCode(...combined));
+  } catch(e) { return text; }
+}
+
+async function decryptText(enc) {
+  if (!_roomCryptoKey || !enc) return enc || '';
+  try {
+    const bytes = Uint8Array.from(atob(enc), c => c.charCodeAt(0));
+    const iv   = bytes.slice(0, 12);
+    const data = bytes.slice(12);
+    const dec = await crypto.subtle.decrypt({ name:'AES-GCM', iv }, _roomCryptoKey, data);
+    return new TextDecoder().decode(dec);
+  } catch(e) { return enc; }  // fallback: show raw (old unencrypted or wrong room key)
+}
+
+/* ══════════════════════════════
+   UPGRADE 5: FCM PUSH NOTIFICATIONS
+══════════════════════════════ */
+// Replace with your own VAPID key: Firebase Console → Project Settings → Cloud Messaging → Web Push
+const VAPID_KEY = 'BEl62iUYgUivxIkv69yViEuiBIa40HI80NM9N5KTHn8z5R5R5DLemwbvJOSiudcaA51HlaROBq4XKxk5Sc-wng';
+
+async function initFCM(safeRoom) {
+  if (!('Notification' in window)) return;
+  try {
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') return;
+
+    if (messaging) {
+      onMessage(messaging, payload => {
+        if (document.visibilityState === 'hidden' || !document.hasFocus()) {
+          const n = payload.notification || {};
+          try { new Notification(n.title || 'SecretLine', { body: n.body || 'New message', tag:'sl-msg' }); } catch(_) {}
+        }
+      });
+      // Try to register blob SW + get FCM token
+      try {
+        const swSrc = [
+          `importScripts('https://www.gstatic.com/firebasejs/11.4.0/firebase-app-compat.js');`,
+          `importScripts('https://www.gstatic.com/firebasejs/11.4.0/firebase-messaging-compat.js');`,
+          `firebase.initializeApp(${JSON.stringify(FIREBASE_CONFIG)});`,
+          `firebase.messaging().onBackgroundMessage(p=>{`,
+          `  const n=p.notification||{};`,
+          `  self.registration.showNotification(n.title||'SecretLine',{body:n.body||'New message',tag:'sl-bg'});`,
+          `});`,
+        ].join('\n');
+        const swReg = await navigator.serviceWorker.register(
+          URL.createObjectURL(new Blob([swSrc], { type:'application/javascript' }))
+        );
+        const { getToken } = await import('https://www.gstatic.com/firebasejs/11.4.0/firebase-messaging.js');
+        const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
+        if (token && db && safeRoom) await set(ref(db, `rooms/${safeRoom}/fcmTokens/${myId}`), token);
+      } catch(_) { /* needs valid VAPID key for background push — foreground notifications work */ }
+    }
+    showToast('🔔 Notifications enabled');
+  } catch(e) { console.warn('FCM:', e); }
+}
+
+// Show a browser Notification for incoming messages when tab is not focused
+async function showMsgNotif(msg) {
+  if (Notification.permission !== 'granted') return;
+  if (document.visibilityState === 'visible' && document.hasFocus()) return;
+  if (msg.senderId === myId) return;
+  try {
+    const rawText = msg.encrypted ? await decryptText(msg.text) : (msg.text || '');
+    const body = msg.type === 'text' ? rawText.slice(0, 100)
+               : msg.mediaType === 'voice' ? '🎙️ Voice message' : '📷 Media';
+    new Notification((msg.name || 'SecretLine') + ' · #' + roomCode, {
+      body, tag: 'sl-' + msg.senderId, silent: true,
+      icon: msg.photo || undefined,
+    });
+  } catch(_) {}
+}
+
 
 /* ══════════════════════════════
    GOOGLE SIGN-IN
@@ -7403,7 +7509,10 @@ const MAX_SIZE = 100 * 1024 * 1024;
 try {
   app = initializeApp(FIREBASE_CONFIG);
   db  = getDatabase(app);
-  window.__db  = db;
+  storage = getStorage(app);
+  try { messaging = getMessaging(app); } catch(_) { console.warn('FCM not available'); }
+  window.__db      = db;
+  window.__storage = storage;
   window.__fbx = { ref, push, onValue, onChildAdded, onChildChanged, onChildRemoved, set, remove, onDisconnect, serverTimestamp, get };
 } catch(e) { console.error('Firebase init:', e); }
 
