@@ -3908,6 +3908,288 @@ button, .attach-btn, .call-btn, .c-dot, .ap-item {
   .lobby-ftab { padding: 5px 9px; font-size: 11px; }
 }
 
+/* ══════════════════════════════════════
+   GROUPS SYSTEM
+══════════════════════════════════════ */
+
+/* Groups Tab Panel */
+#groups-panel {
+  display: none; flex-direction: column; gap: 14px;
+  padding: 0 0 20px; max-width: 680px; margin: 0 auto; width: 100%;
+}
+#groups-panel.active { display: flex; }
+
+/* Group post badge on feed */
+.soc-post-group-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: var(--accent-dim); border: 1px solid rgba(61,232,160,0.2);
+  border-radius: 12px; padding: 2px 8px;
+  font-size: 10px; font-family: var(--mono); color: var(--accent);
+  cursor: pointer; margin-left: 6px; vertical-align: middle;
+  transition: background 0.15s;
+}
+.soc-post-group-badge:hover { background: rgba(61,232,160,0.18); }
+
+/* Groups top bar */
+.groups-topbar {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.groups-topbar-title {
+  font-size: 15px; font-weight: 700; flex: 1;
+}
+.groups-create-btn {
+  padding: 7px 16px;
+  background: var(--accent); color: #000;
+  border: none; border-radius: 20px;
+  font-family: var(--sans); font-size: 12px; font-weight: 700;
+  cursor: pointer; transition: transform 0.15s, box-shadow 0.2s;
+  flex-shrink: 0;
+}
+.groups-create-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(61,232,160,0.3); }
+
+.groups-search-wrap {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 20px; padding: 7px 12px; width: 100%;
+}
+.groups-search-input {
+  flex: 1; background: none; border: none; outline: none;
+  color: var(--text); font-family: var(--sans); font-size: 13px;
+}
+.groups-search-input::placeholder { color: var(--text3); }
+
+.groups-tabs {
+  display: flex; gap: 4px;
+  background: var(--card); border-radius: 10px; padding: 4px;
+}
+.groups-tab {
+  flex: 1; padding: 7px 8px; border: none; border-radius: 7px;
+  background: transparent; color: var(--text2);
+  font-family: var(--sans); font-size: 12px; font-weight: 500;
+  cursor: pointer; transition: all 0.15s; white-space: nowrap;
+}
+.groups-tab.active {
+  background: var(--card2); color: var(--text);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.groups-list { display: flex; flex-direction: column; gap: 10px; }
+
+/* Group card */
+.group-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--r); overflow: hidden;
+  transition: border-color 0.15s, background 0.15s;
+}
+.group-card:hover { border-color: var(--border2); }
+
+.group-card-banner {
+  height: 72px; background: linear-gradient(135deg, var(--accent-dim), rgba(79,163,255,0.08));
+  position: relative; display: flex; align-items: flex-end; padding: 8px 14px;
+}
+.group-card-icon {
+  width: 48px; height: 48px; border-radius: 14px;
+  background: var(--card2); border: 2px solid var(--border2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; flex-shrink: 0; position: relative; bottom: -16px;
+}
+.group-card-body { padding: 22px 14px 14px; }
+.group-card-name {
+  font-size: 14px; font-weight: 700; margin-bottom: 2px;
+  display: flex; align-items: center; gap: 6px;
+}
+.group-card-private-badge {
+  font-size: 9px; font-family: var(--mono); letter-spacing: 1px;
+  background: rgba(255,212,96,0.12); border: 1px solid rgba(255,212,96,0.3);
+  color: var(--yellow); border-radius: 8px; padding: 1px 6px;
+}
+.group-card-public-badge {
+  font-size: 9px; font-family: var(--mono); letter-spacing: 1px;
+  background: var(--accent-dim); border: 1px solid rgba(61,232,160,0.2);
+  color: var(--accent); border-radius: 8px; padding: 1px 6px;
+}
+.group-card-desc {
+  font-size: 12px; color: var(--text2); line-height: 1.5;
+  margin-bottom: 10px; display: -webkit-box;
+  -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.group-card-footer {
+  display: flex; align-items: center; gap: 8px;
+}
+.group-card-members {
+  font-size: 11px; color: var(--text3); font-family: var(--mono); flex: 1;
+}
+.group-card-join-btn {
+  padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s; border: none; font-family: var(--sans);
+}
+.group-card-join-btn.join {
+  background: var(--accent); color: #000;
+}
+.group-card-join-btn.join:hover { box-shadow: 0 3px 10px rgba(61,232,160,0.3); transform: translateY(-1px); }
+.group-card-join-btn.leave {
+  background: var(--card2); border: 1px solid var(--border2); color: var(--text2);
+}
+.group-card-join-btn.leave:hover { border-color: rgba(255,92,92,0.4); color: var(--red); }
+.group-card-join-btn.open {
+  background: var(--card2); border: 1px solid var(--border2); color: var(--text);
+}
+.group-card-join-btn.open:hover { border-color: rgba(61,232,160,0.3); color: var(--accent); }
+
+/* Group detail view */
+#group-detail-view {
+  display: none; flex-direction: column; gap: 12px;
+}
+#group-detail-view.active { display: flex; }
+.group-detail-header {
+  display: flex; align-items: center; gap: 10px;
+}
+.group-detail-back {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 6px 12px; font-size: 13px;
+  color: var(--text2); cursor: pointer;
+  transition: background 0.15s;
+}
+.group-detail-back:hover { background: var(--card2); color: var(--text); }
+.group-detail-name { font-size: 16px; font-weight: 700; flex: 1; }
+
+.group-detail-banner {
+  border-radius: var(--r); height: 100px;
+  background: linear-gradient(135deg, var(--accent-dim), rgba(79,163,255,0.08));
+  display: flex; align-items: center; padding: 0 18px; gap: 14px;
+}
+.group-detail-icon {
+  width: 60px; height: 60px; border-radius: 16px;
+  background: var(--card2); border: 2px solid var(--border2);
+  display: flex; align-items: center; justify-content: center; font-size: 28px;
+}
+.group-detail-info-name { font-size: 18px; font-weight: 700; }
+.group-detail-info-meta { font-size: 11px; color: var(--text2); font-family: var(--mono); margin-top: 3px; }
+
+.group-detail-stats {
+  display: flex; gap: 8px;
+}
+.group-stat-box {
+  flex: 1; background: var(--card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 10px; text-align: center;
+}
+.group-stat-num { font-size: 18px; font-weight: 700; color: var(--accent); font-family: var(--mono); }
+.group-stat-label { font-size: 10px; color: var(--text3); font-family: var(--mono); letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
+
+.group-detail-desc-box {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 12px 14px;
+  font-size: 13px; color: var(--text2); line-height: 1.6;
+}
+
+.group-detail-actions { display: flex; gap: 8px; }
+.group-detail-actions button {
+  flex: 1; padding: 10px; border-radius: 8px;
+  font-family: var(--sans); font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s; border: none;
+}
+.gd-post-btn { background: var(--accent); color: #000; }
+.gd-post-btn:hover { box-shadow: 0 4px 14px rgba(61,232,160,0.3); transform: translateY(-1px); }
+.gd-leave-btn { background: var(--card2); border: 1px solid var(--border2) !important; color: var(--text2); }
+.gd-leave-btn:hover { border-color: rgba(255,92,92,0.4) !important; color: var(--red); }
+
+.group-detail-posts { display: flex; flex-direction: column; gap: 10px; }
+.group-detail-posts-label {
+  font-size: 10px; font-family: var(--mono); letter-spacing: 2px;
+  text-transform: uppercase; color: var(--text3);
+  display: flex; align-items: center; gap: 8px;
+}
+.group-detail-posts-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+.group-empty-msg {
+  text-align: center; padding: 30px 20px;
+  font-size: 12px; color: var(--text3); font-family: var(--mono);
+}
+
+/* Create group modal */
+.create-group-overlay {
+  position: fixed; inset: 0; z-index: 9600;
+  background: rgba(5,7,10,0.88); backdrop-filter: blur(18px);
+  display: none; align-items: center; justify-content: center; padding: 20px;
+}
+.create-group-overlay.show { display: flex; }
+.create-group-card {
+  background: var(--panel); border: 1px solid var(--border2);
+  border-radius: 18px; padding: 26px 24px;
+  width: 100%; max-width: 420px;
+  box-shadow: 0 0 60px rgba(0,0,0,0.6);
+  animation: slideUp 0.3s cubic-bezier(0.16,1,0.3,1);
+  max-height: 90vh; overflow-y: auto;
+}
+.cg-header {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;
+}
+.cg-title { font-size: 15px; font-weight: 700; }
+.cg-close {
+  background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+  width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 14px; color: var(--text2);
+}
+.cg-close:hover { color: var(--red); }
+.cg-emoji-row {
+  display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;
+}
+.cg-emoji-btn {
+  width: 40px; height: 40px; border-radius: 10px;
+  background: var(--card); border: 1px solid var(--border);
+  font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: border-color 0.15s, background 0.15s;
+}
+.cg-emoji-btn.selected { border-color: rgba(61,232,160,0.5); background: var(--accent-dim); }
+.cg-field { margin-bottom: 12px; }
+.cg-field label {
+  display: block; font-size: 10px; font-family: var(--mono);
+  letter-spacing: 1.5px; text-transform: uppercase; color: var(--text2); margin-bottom: 5px;
+}
+.cg-field input, .cg-field textarea {
+  width: 100%; background: var(--card); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 12px; color: var(--text);
+  font-family: var(--sans); font-size: 13px; outline: none;
+  transition: border-color 0.2s;
+}
+.cg-field input:focus, .cg-field textarea:focus { border-color: rgba(61,232,160,0.4); }
+.cg-field input::placeholder, .cg-field textarea::placeholder { color: var(--text3); }
+.cg-field textarea { min-height: 70px; resize: vertical; }
+.cg-privacy-row {
+  display: flex; gap: 8px; margin-bottom: 14px;
+}
+.cg-privacy-btn {
+  flex: 1; padding: 9px; border-radius: 8px;
+  background: var(--card); border: 1px solid var(--border);
+  color: var(--text2); font-family: var(--sans); font-size: 12px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s;
+}
+.cg-privacy-btn.selected {
+  background: var(--accent-dim); border-color: rgba(61,232,160,0.4); color: var(--accent);
+}
+.cg-submit-btn {
+  width: 100%; padding: 12px; background: var(--accent); color: #000;
+  border: none; border-radius: 8px; font-family: var(--display);
+  font-size: 14px; font-weight: 700; cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.2s; margin-top: 4px;
+}
+.cg-submit-btn:hover { transform: translateY(-1px); box-shadow: 0 5px 18px rgba(61,232,160,0.3); }
+
+/* Post to group selector in compose */
+.post-group-select-wrap {
+  display: flex; align-items: center; gap: 8px;
+  margin-top: 8px; flex-wrap: wrap;
+}
+.post-group-label {
+  font-size: 11px; color: var(--text2); font-family: var(--mono); flex-shrink: 0;
+}
+.post-group-select {
+  flex: 1; background: var(--card); border: 1px solid var(--border);
+  border-radius: 6px; padding: 5px 10px; color: var(--text);
+  font-family: var(--sans); font-size: 12px; outline: none; min-width: 0;
+  cursor: pointer;
+}
+
 /* ── User search in sidebar ── */
 .lobby-user-search-wrap {
   display: flex; align-items: center; gap: 6px;
@@ -4077,6 +4359,96 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
 .recent-room-time { font-size: 10px; color: var(--text3); font-family: var(--mono); flex-shrink: 0; }
 .recent-room-del { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 13px; padding: 2px 5px; flex-shrink: 0; }
 .recent-room-del:hover { color: var(--red); }
+
+/* ════ ROOM DETAILS MODAL ════ */
+.room-detail-overlay {
+  position: fixed; inset: 0; z-index: 9500;
+  background: rgba(5,7,10,0.88); backdrop-filter: blur(18px);
+  display: none; align-items: center; justify-content: center; padding: 20px;
+}
+.room-detail-overlay.show { display: flex; }
+.room-detail-card {
+  background: var(--panel);
+  border: 1px solid var(--border2);
+  border-radius: 18px;
+  padding: 28px 26px;
+  width: 100%; max-width: 340px;
+  box-shadow: 0 0 60px rgba(0,0,0,0.6), 0 0 30px rgba(61,232,160,0.06);
+  animation: slideUp 0.3s cubic-bezier(0.16,1,0.3,1);
+}
+.room-detail-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 20px;
+}
+.room-detail-title {
+  font-size: 13px; font-family: var(--mono); letter-spacing: 2px;
+  text-transform: uppercase; color: var(--text2);
+}
+.room-detail-close {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 8px; width: 30px; height: 30px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 14px; color: var(--text2);
+  transition: background 0.15s, color 0.15s;
+}
+.room-detail-close:hover { background: var(--card2); color: var(--red); }
+.room-detail-icon-wrap {
+  display: flex; align-items: center; justify-content: center;
+  width: 64px; height: 64px;
+  background: var(--accent-dim);
+  border: 1px solid rgba(61,232,160,0.25);
+  border-radius: 18px;
+  font-size: 28px;
+  margin: 0 auto 18px;
+  box-shadow: 0 0 28px var(--accent-glow);
+}
+.room-detail-code {
+  text-align: center;
+  font-family: var(--mono); font-size: 22px; font-weight: 700;
+  color: var(--text); letter-spacing: 1px; margin-bottom: 4px;
+}
+.room-detail-badge {
+  display: flex; align-items: center; justify-content: center;
+  gap: 6px; margin-bottom: 22px;
+}
+.room-detail-badge span {
+  font-size: 10px; font-family: var(--mono); letter-spacing: 1.5px;
+  text-transform: uppercase; color: var(--accent);
+  background: var(--accent-dim); border: 1px solid rgba(61,232,160,0.2);
+  border-radius: 20px; padding: 3px 10px;
+}
+.room-detail-rows { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+.room-detail-row {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 11px 14px;
+}
+.room-detail-row-label {
+  font-size: 10px; font-family: var(--mono); letter-spacing: 1.5px;
+  text-transform: uppercase; color: var(--text3);
+}
+.room-detail-row-val {
+  font-size: 12px; font-family: var(--mono); color: var(--text); font-weight: 600;
+}
+.room-detail-actions { display: flex; gap: 8px; }
+.room-detail-btn-join {
+  flex: 1; padding: 11px;
+  background: var(--accent); color: #000;
+  border: none; border-radius: 8px;
+  font-family: var(--display); font-size: 14px; font-weight: 700;
+  cursor: pointer; transition: transform 0.15s, box-shadow 0.2s;
+}
+.room-detail-btn-join:hover {
+  transform: translateY(-1px); box-shadow: 0 6px 20px rgba(61,232,160,0.3);
+}
+.room-detail-btn-del {
+  padding: 11px 14px;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text3);
+  cursor: pointer; font-size: 14px;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.room-detail-btn-del:hover { background: rgba(255,92,92,0.1); border-color: rgba(255,92,92,0.3); color: var(--red); }
 
 /* ════ QR CODE MODAL ════ */
 .qr-modal {
@@ -5908,6 +6280,12 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
           <button class="soc-img-remove" onclick="socRemoveVid()" style="position:absolute;top:6px;right:6px;">&#x2715;</button>
         </div>
         <div class="soc-create-actions" style="margin-top:10px">
+          <div class="post-group-select-wrap">
+            <span class="post-group-label">&#x1F465; Post to:</span>
+            <select class="post-group-select" id="post-group-select">
+              <option value="">🌐 Public Lobby</option>
+            </select>
+          </div>
           <div class="soc-create-tools">
             <button class="soc-tool-btn" onclick="document.getElementById('soc-img-input').click()">&#x1F4F7; Photo</button>
             <input type="file" id="soc-img-input" accept="image/*" style="display:none" onchange="socPickImg(this)">
@@ -5926,6 +6304,7 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
         <button class="lobby-ftab" id="ftab-mine" onclick="lobbySetFeedTab('mine',this)">&#x1F464; My Posts</button>
         <button class="lobby-ftab" id="ftab-media" onclick="lobbySetFeedTab('media',this)">&#x1F4F7; Media</button>
         <button class="lobby-ftab" id="ftab-trending" onclick="lobbySetFeedTab('trending',this)">&#x1F525; Trending</button>
+        <button class="lobby-ftab" id="ftab-groups" onclick="lobbySetFeedTab('groups',this)">&#x1F465; Groups</button>
       </div>
 
       <!-- Posts feed -->
@@ -5934,6 +6313,57 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
       </div>
       <div id="soc-feed-empty" style="text-align:center;padding:40px 20px;color:var(--text3);font-size:13px;font-family:var(--mono);">
         &#x1F4ED; Posts නැහැ. First post කරන්න!
+      </div>
+
+      <!-- Groups Panel -->
+      <div id="groups-panel">
+        <!-- Groups list view -->
+        <div id="groups-list-view">
+          <div class="groups-topbar">
+            <span class="groups-topbar-title">&#x1F465; Groups</span>
+            <button class="groups-create-btn" onclick="openCreateGroup()">+ Create Group</button>
+          </div>
+          <div class="groups-search-wrap">
+            <span style="font-size:12px;color:var(--text3)">&#x1F50D;</span>
+            <input class="groups-search-input" id="groups-search-input" placeholder="Search groups..." oninput="filterGroups(this.value)" autocomplete="off">
+          </div>
+          <div class="groups-tabs">
+            <button class="groups-tab active" id="gtab-all" onclick="switchGroupTab('all',this)">&#x1F310; All Groups</button>
+            <button class="groups-tab" id="gtab-mine" onclick="switchGroupTab('mine',this)">&#x1F9E9; My Groups</button>
+          </div>
+          <div class="groups-list" id="groups-list">
+            <div class="group-empty-msg" id="groups-empty-msg">&#x1F465; Groups load වෙනවා...</div>
+          </div>
+        </div>
+        <!-- Group detail view (hidden initially) -->
+        <div id="group-detail-view">
+          <div class="group-detail-header">
+            <button class="group-detail-back" onclick="closeGroupDetail()">&#x2039; Back</button>
+            <span class="group-detail-name" id="gd-name">Group</span>
+          </div>
+          <div class="group-detail-banner">
+            <div class="group-detail-icon" id="gd-icon">&#x1F465;</div>
+            <div>
+              <div class="group-detail-info-name" id="gd-info-name">Group</div>
+              <div class="group-detail-info-meta" id="gd-info-meta">0 members · Public</div>
+            </div>
+          </div>
+          <div class="group-detail-stats">
+            <div class="group-stat-box"><div class="group-stat-num" id="gd-stat-members">0</div><div class="group-stat-label">Members</div></div>
+            <div class="group-stat-box"><div class="group-stat-num" id="gd-stat-posts">0</div><div class="group-stat-label">Posts</div></div>
+            <div class="group-stat-box"><div class="group-stat-num" id="gd-stat-online">0</div><div class="group-stat-label">Online</div></div>
+          </div>
+          <div class="group-detail-desc-box" id="gd-desc">No description.</div>
+          <div class="group-detail-actions">
+            <button class="gd-post-btn" id="gd-post-btn" onclick="postToCurrentGroup()">&#x270F;&#xFE0F; Post to Group</button>
+            <button class="gd-leave-btn" id="gd-leave-btn" onclick="leaveOrJoinCurrentGroup()">Leave</button>
+          </div>
+          <div class="group-detail-posts">
+            <div class="group-detail-posts-label">Recent Posts</div>
+            <div id="gd-posts-list"></div>
+            <div class="group-empty-msg" id="gd-posts-empty" style="display:none">No posts in this group yet. Be first!</div>
+          </div>
+        </div>
       </div>
 
     </div>
@@ -6735,6 +7165,78 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
 </div>
 
 <!-- ════ PRIVACY SHIELD (screen blackout) ════ -->
+<!-- Create Group Modal -->
+<div id="create-group-overlay" class="create-group-overlay" onclick="if(event.target===this)closeCreateGroup()">
+  <div class="create-group-card">
+    <div class="cg-header">
+      <span class="cg-title">&#x1F465; Create Group</span>
+      <button class="cg-close" onclick="closeCreateGroup()">✕</button>
+    </div>
+    <div class="cg-field">
+      <label>Group Icon</label>
+      <div class="cg-emoji-row" id="cg-emoji-row">
+        <button class="cg-emoji-btn selected" data-emoji="👥" onclick="selectGroupEmoji(this)">👥</button>
+        <button class="cg-emoji-btn" data-emoji="🎮" onclick="selectGroupEmoji(this)">🎮</button>
+        <button class="cg-emoji-btn" data-emoji="🎨" onclick="selectGroupEmoji(this)">🎨</button>
+        <button class="cg-emoji-btn" data-emoji="🎵" onclick="selectGroupEmoji(this)">🎵</button>
+        <button class="cg-emoji-btn" data-emoji="📚" onclick="selectGroupEmoji(this)">📚</button>
+        <button class="cg-emoji-btn" data-emoji="💻" onclick="selectGroupEmoji(this)">💻</button>
+        <button class="cg-emoji-btn" data-emoji="🌍" onclick="selectGroupEmoji(this)">🌍</button>
+        <button class="cg-emoji-btn" data-emoji="🏆" onclick="selectGroupEmoji(this)">🏆</button>
+        <button class="cg-emoji-btn" data-emoji="🔥" onclick="selectGroupEmoji(this)">🔥</button>
+        <button class="cg-emoji-btn" data-emoji="⚡" onclick="selectGroupEmoji(this)">⚡</button>
+      </div>
+    </div>
+    <div class="cg-field">
+      <label>Group Name *</label>
+      <input id="cg-name-input" placeholder="e.g. Gaming Squad, Study Group..." maxlength="40">
+    </div>
+    <div class="cg-field">
+      <label>Description</label>
+      <textarea id="cg-desc-input" placeholder="What is this group about?" maxlength="200"></textarea>
+    </div>
+    <div class="cg-field">
+      <label>Privacy</label>
+      <div class="cg-privacy-row">
+        <button class="cg-privacy-btn selected" id="cg-pub-btn" onclick="selectGroupPrivacy('public')">🌐 Public</button>
+        <button class="cg-privacy-btn" id="cg-priv-btn" onclick="selectGroupPrivacy('private')">🔒 Private</button>
+      </div>
+    </div>
+    <button class="cg-submit-btn" onclick="submitCreateGroup()">Create Group 🚀</button>
+  </div>
+</div>
+
+<!-- Room Details Modal -->
+<div id="room-detail-overlay" class="room-detail-overlay" onclick="if(event.target===this)closeRoomDetail()">
+  <div class="room-detail-card">
+    <div class="room-detail-header">
+      <span class="room-detail-title">Room Details</span>
+      <button class="room-detail-close" onclick="closeRoomDetail()">✕</button>
+    </div>
+    <div class="room-detail-icon-wrap">🔐</div>
+    <div class="room-detail-code" id="rdm-code">—</div>
+    <div class="room-detail-badge"><span>Encrypted Room</span></div>
+    <div class="room-detail-rows">
+      <div class="room-detail-row">
+        <span class="room-detail-row-label">Room Code</span>
+        <span class="room-detail-row-val" id="rdm-code-val">—</span>
+      </div>
+      <div class="room-detail-row">
+        <span class="room-detail-row-label">Last Visited</span>
+        <span class="room-detail-row-val" id="rdm-time-val">—</span>
+      </div>
+      <div class="room-detail-row">
+        <span class="room-detail-row-label">Visit Time</span>
+        <span class="room-detail-row-val" id="rdm-exact-val">—</span>
+      </div>
+    </div>
+    <div class="room-detail-actions">
+      <button class="room-detail-btn-join" onclick="joinRoomFromDetail()">Enter Room 🚀</button>
+      <button class="room-detail-btn-del" onclick="deleteRoomFromDetail()" title="Remove from history">🗑</button>
+    </div>
+  </div>
+</div>
+
 <div id="privacy-shield" onclick="deactivateShield()">
   <div class="ps-icon">🛡️</div>
   <div class="ps-text">Privacy Mode — Tap to unlock</div>
@@ -12252,12 +12754,46 @@ function renderRecentRooms(filter) {
       <span class="recent-room-time">${fmtRecentTime(r.ts)}</span>
       <button class="recent-room-del" onclick="event.stopPropagation();deleteRecentRoom('${r.code}')" title="Remove">&#x2715;</button>`;
     chip.onclick = () => {
-      const ri = document.getElementById('room-input');
-      if (ri) { ri.value = r.code; ri.focus(); }
+      openRoomDetail(r.code, r.ts);
     };
     list.appendChild(chip);
   });
 }
+
+/* ─── Room Detail Modal ─── */
+window._rdmCode = null;
+window.openRoomDetail = function(code, ts) {
+  window._rdmCode = code;
+  document.getElementById('rdm-code').textContent = code;
+  document.getElementById('rdm-code-val').textContent = code;
+  document.getElementById('rdm-time-val').textContent = fmtRecentTime(ts);
+  const d = new Date(ts);
+  const fmt = d.toLocaleDateString(undefined, { year:'numeric', month:'short', day:'numeric' })
+    + '  ' + d.toLocaleTimeString(undefined, { hour:'2-digit', minute:'2-digit' });
+  document.getElementById('rdm-exact-val').textContent = fmt;
+  document.getElementById('room-detail-overlay').classList.add('show');
+};
+window.closeRoomDetail = function() {
+  document.getElementById('room-detail-overlay').classList.remove('show');
+  window._rdmCode = null;
+};
+window.joinRoomFromDetail = function() {
+  const code = window._rdmCode;
+  if (!code) return;
+  closeRoomDetail();
+  const ri = document.getElementById('room-input');
+  if (ri) { ri.value = code; ri.focus(); }
+  setTimeout(() => {
+    const btn = document.getElementById('join-btn') || document.querySelector('.btn-primary[onclick*="join"], .btn-primary[onclick*="Join"]');
+    if (btn) btn.click();
+  }, 100);
+};
+window.deleteRoomFromDetail = function() {
+  const code = window._rdmCode;
+  if (!code) return;
+  closeRoomDetail();
+  deleteRecentRoom(code);
+};
 window.filterRecentRooms = function(val) { renderRecentRooms(val); };
 window.deleteRecentRoom = function(code) {
   const rooms = getRecentRooms().filter(r => r.code !== code);
@@ -18547,8 +19083,563 @@ console.log('%c Auth Gate v2 loaded \u2713', 'color:#3de8a0;font-weight:bold;fon
 
 
 
+<script>
+/* ══════════════════════════════════════════════════════
+   SECRETLINE GROUPS SYSTEM v1
+   - Create / Join / Leave groups
+   - Post to groups
+   - Group detail view with posts
+   - Firebase realtime sync
+══════════════════════════════════════════════════════ */
+(function() {
+  'use strict';
 
+  /* ── State ── */
+  var _groupsData      = {};      // { groupId: groupObj }
+  var _myGroups        = {};      // { groupId: true } — joined groups
+  var _groupsUnsub     = null;
+  var _groupTabMode    = 'all';   // 'all' | 'mine'
+  var _groupsFilter    = '';
+  var _currentGroupId  = null;
+  var _cgEmoji         = '👥';
+  var _cgPrivacy       = 'public';
+  var _gdPostsUnsub    = null;
 
+  var GROUP_ICONS = ['👥','🎮','🎨','🎵','📚','💻','🌍','🏆','🔥','⚡'];
+
+  /* ── Firebase helpers ── */
+  function getFB()  { return window.socGetFB  ? window.socGetFB()  : window.fb; }
+  function getDB()  { return window.socGetDB  ? window.socGetDB()  : window.db; }
+  function myUid()  { return window._socUserId || window.socUserId || ''; }
+  function myName() { return window._socName  || window.socName   || 'Someone'; }
+  function myColor(){ return window._socColor || window.socColor  || '#3de8a0'; }
+  function myPhoto(){ return window._socPhoto || window.socPhoto  || ''; }
+  function SOC()    { return window.SOC_PATH  || 'social'; }
+
+  function groupsRef(path) {
+    var fb = getFB(), db = getDB();
+    if (!fb || !db) return null;
+    return fb.ref(db, SOC() + '/groups' + (path ? '/' + path : ''));
+  }
+
+  /* ── Helpers ── */
+  function fmtTs(ts) {
+    if (!ts) return '';
+    var d = new Date(ts), now = Date.now(), diff = now - ts;
+    if (diff < 60000)   return 'just now';
+    if (diff < 3600000) return Math.floor(diff/60000) + 'm ago';
+    if (diff < 86400000)return Math.floor(diff/3600000) + 'h ago';
+    return d.toLocaleDateString(undefined, { month:'short', day:'numeric' });
+  }
+
+  function isMember(gid) {
+    var g = _groupsData[gid];
+    if (!g) return false;
+    return g.members && g.members[myUid()] ? true : false;
+  }
+
+  function isOwner(gid) {
+    var g = _groupsData[gid];
+    return g && g.ownerUid === myUid();
+  }
+
+  /* ══════════════════════
+     LOBBY SET FEED TAB — patch
+  ══════════════════════ */
+  var _origLobbySetFeedTab = window.lobbySetFeedTab;
+  window.lobbySetFeedTab = function(tab, btn) {
+    if (tab === 'groups') {
+      // Activate Groups panel, hide feed
+      document.querySelectorAll('.lobby-ftab').forEach(function(b) { b.classList.remove('active'); });
+      if (btn) btn.classList.add('active');
+      document.getElementById('soc-posts').style.display    = 'none';
+      document.getElementById('soc-feed-empty').style.display = 'none';
+      document.getElementById('soc-create-box') && (document.getElementById('soc-create-box').style.display = 'none');
+      var gp = document.getElementById('groups-panel');
+      if (gp) gp.classList.add('active');
+      initGroupsPanel();
+      return;
+    }
+    // Restore feed when leaving groups tab
+    document.getElementById('soc-posts').style.display = '';
+    document.getElementById('soc-feed-empty').style.display = '';
+    var cb = document.getElementById('soc-create-box');
+    if (cb) cb.style.display = '';
+    var gp = document.getElementById('groups-panel');
+    if (gp) gp.classList.remove('active');
+    if (_origLobbySetFeedTab) _origLobbySetFeedTab(tab, btn);
+  };
+
+  /* ══════════════════════
+     INIT GROUPS PANEL
+  ══════════════════════ */
+  function initGroupsPanel() {
+    showGroupsListView();
+    subscribeGroups();
+    populatePostGroupSelect();
+  }
+
+  function subscribeGroups() {
+    var fb = getFB(), db = getDB();
+    if (!fb || !db) {
+      document.getElementById('groups-empty-msg').textContent = '⚠️ Login කරලා groups බලන්න';
+      return;
+    }
+    if (_groupsUnsub) { try { _groupsUnsub(); } catch(e){} }
+    var ref = groupsRef();
+    if (!ref) return;
+    _groupsUnsub = fb.onValue(ref, function(snap) {
+      _groupsData = snap.val() || {};
+      renderGroupsList();
+      populatePostGroupSelect();
+    });
+  }
+
+  /* ══════════════════════
+     RENDER GROUPS LIST
+  ══════════════════════ */
+  function renderGroupsList() {
+    var list = document.getElementById('groups-list');
+    var emptyMsg = document.getElementById('groups-empty-msg');
+    if (!list) return;
+
+    var entries = Object.entries(_groupsData);
+
+    // Apply tab filter
+    if (_groupTabMode === 'mine') {
+      entries = entries.filter(function(e) { return isMember(e[0]); });
+    }
+
+    // Apply search filter
+    if (_groupsFilter) {
+      var q = _groupsFilter.toLowerCase();
+      entries = entries.filter(function(e) {
+        var g = e[1];
+        return (g.name||'').toLowerCase().includes(q) || (g.desc||'').toLowerCase().includes(q);
+      });
+    }
+
+    // Sort by member count desc
+    entries.sort(function(a, b) {
+      return Object.keys(b[1].members||{}).length - Object.keys(a[1].members||{}).length;
+    });
+
+    list.innerHTML = '';
+
+    if (entries.length === 0) {
+      emptyMsg.style.display = 'block';
+      emptyMsg.textContent = _groupTabMode === 'mine'
+        ? '🧩 You haven\'t joined any groups yet.'
+        : _groupsFilter
+          ? '🔍 No groups found.'
+          : '👥 No groups yet. Create the first one!';
+      return;
+    }
+    emptyMsg.style.display = 'none';
+
+    entries.forEach(function(entry) {
+      var gid = entry[0], g = entry[1];
+      var memberCount = Object.keys(g.members||{}).length;
+      var postCount   = Object.keys(g.posts||{}).length;
+      var joined = isMember(gid);
+
+      var card = document.createElement('div');
+      card.className = 'group-card';
+      card.innerHTML =
+        '<div class="group-card-banner">' +
+          '<div class="group-card-icon">' + (g.icon||'👥') + '</div>' +
+        '</div>' +
+        '<div class="group-card-body">' +
+          '<div class="group-card-name">' +
+            escHtml(g.name||'Unnamed') +
+            '<span class="' + (g.privacy==='private' ? 'group-card-private-badge' : 'group-card-public-badge') + '">' +
+              (g.privacy==='private' ? '🔒 Private' : '🌐 Public') +
+            '</span>' +
+          '</div>' +
+          '<div class="group-card-desc">' + escHtml(g.desc||'No description.') + '</div>' +
+          '<div class="group-card-footer">' +
+            '<span class="group-card-members">👤 ' + memberCount + ' member' + (memberCount!==1?'s':'') +
+              ' · 📝 ' + postCount + ' post' + (postCount!==1?'s':'') + '</span>' +
+            (joined
+              ? '<button class="group-card-join-btn open" onclick="event.stopPropagation();openGroupDetail(\''+gid+'\')">Open</button>'
+              : '<button class="group-card-join-btn join" onclick="event.stopPropagation();quickJoinGroup(\''+gid+'\')">Join</button>'
+            ) +
+          '</div>' +
+        '</div>';
+
+      card.onclick = function() { openGroupDetail(gid); };
+      list.appendChild(card);
+    });
+  }
+
+  /* ══════════════════════
+     GROUP DETAIL VIEW
+  ══════════════════════ */
+  window.openGroupDetail = function(gid) {
+    _currentGroupId = gid;
+    var g = _groupsData[gid];
+    if (!g) return;
+    var memberCount = Object.keys(g.members||{}).length;
+    var postCount   = Object.keys(g.posts||{}).length;
+    var joined = isMember(gid);
+
+    document.getElementById('gd-name').textContent       = g.name || 'Group';
+    document.getElementById('gd-icon').textContent       = g.icon || '👥';
+    document.getElementById('gd-info-name').textContent  = g.name || 'Group';
+    document.getElementById('gd-info-meta').textContent  =
+      memberCount + ' member' + (memberCount!==1?'s':'') +
+      ' · ' + (g.privacy==='private' ? '🔒 Private' : '🌐 Public');
+    document.getElementById('gd-stat-members').textContent = memberCount;
+    document.getElementById('gd-stat-posts').textContent   = postCount;
+    document.getElementById('gd-desc').textContent         = g.desc || 'No description.';
+
+    // Count online members
+    var presence = window._lobbyPresenceData || {};
+    var onlineCount = Object.keys(g.members||{}).filter(function(uid) {
+      return presence[uid] && presence[uid].online;
+    }).length;
+    document.getElementById('gd-stat-online').textContent = onlineCount;
+
+    // Join/Leave button
+    var leaveBtn = document.getElementById('gd-leave-btn');
+    if (leaveBtn) {
+      if (isOwner(gid)) {
+        leaveBtn.textContent = '🗑 Delete';
+        leaveBtn.onclick = function() { deleteGroup(gid); };
+      } else if (joined) {
+        leaveBtn.textContent = 'Leave';
+        leaveBtn.onclick = function() { leaveOrJoinCurrentGroup(); };
+      } else {
+        leaveBtn.textContent = 'Join Group';
+        leaveBtn.style.background = 'var(--accent)';
+        leaveBtn.style.color = '#000';
+        leaveBtn.onclick = function() { leaveOrJoinCurrentGroup(); };
+      }
+    }
+
+    // Post button visibility
+    var postBtn = document.getElementById('gd-post-btn');
+    if (postBtn) postBtn.style.display = joined ? '' : 'none';
+
+    // Show detail view
+    document.getElementById('groups-list-view').style.display  = 'none';
+    document.getElementById('group-detail-view').classList.add('active');
+
+    // Load posts
+    loadGroupPosts(gid);
+  };
+
+  window.closeGroupDetail = function() {
+    _currentGroupId = null;
+    if (_gdPostsUnsub) { try { _gdPostsUnsub(); } catch(e){} _gdPostsUnsub = null; }
+    document.getElementById('group-detail-view').classList.remove('active');
+    document.getElementById('groups-list-view').style.display = '';
+  };
+
+  function showGroupsListView() {
+    document.getElementById('group-detail-view').classList.remove('active');
+    document.getElementById('groups-list-view').style.display = '';
+  }
+
+  function loadGroupPosts(gid) {
+    var postsEl   = document.getElementById('gd-posts-list');
+    var emptyEl   = document.getElementById('gd-posts-empty');
+    if (!postsEl) return;
+    postsEl.innerHTML = '<div class="group-empty-msg">Loading...</div>';
+
+    var fb = getFB(), db = getDB();
+    if (!fb || !db) { postsEl.innerHTML = ''; emptyEl.style.display='block'; return; }
+
+    if (_gdPostsUnsub) { try { _gdPostsUnsub(); } catch(e){} }
+
+    var ref = groupsRef(gid + '/posts');
+    if (!ref) return;
+
+    _gdPostsUnsub = fb.onValue(ref, function(snap) {
+      var posts = snap.val() || {};
+      postsEl.innerHTML = '';
+      var entries = Object.entries(posts).sort(function(a,b){ return b[1].ts - a[1].ts; }).slice(0, 20);
+
+      if (entries.length === 0) {
+        emptyEl.style.display = 'block';
+        return;
+      }
+      emptyEl.style.display = 'none';
+
+      entries.forEach(function(e) {
+        var pid = e[0], p = e[1];
+        var item = document.createElement('div');
+        item.style.cssText = 'background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;';
+        item.innerHTML =
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">' +
+            '<div style="width:30px;height:30px;border-radius:50%;background:var(--card2);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:'+(p.color||'#3de8a0')+';flex-shrink:0;">' +
+              (p.photo ? '<img src="'+escHtml(p.photo)+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">' : escHtml(socIni(p.name||'?'))) +
+            '</div>' +
+            '<div style="flex:1;min-width:0;">' +
+              '<div style="font-size:12px;font-weight:700;color:'+(p.color||'#3de8a0')+';">' + escHtml(p.name||'Someone') + '</div>' +
+              '<div style="font-size:10px;color:var(--text3);font-family:var(--mono);">' + fmtTs(p.ts) + '</div>' +
+            '</div>' +
+            (p.uid === myUid() ? '<button onclick="deleteGroupPost(\''+gid+'\',\''+pid+'\')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:2px 6px;" title="Delete">✕</button>' : '') +
+          '</div>' +
+          '<div style="font-size:13px;color:var(--text);line-height:1.5;">' + escHtml(p.text||'') + '</div>' +
+          (p.image ? '<img src="'+p.image+'" style="max-width:100%;border-radius:8px;margin-top:8px;display:block;">' : '');
+        postsEl.appendChild(item);
+      });
+    });
+  }
+
+  window.postToCurrentGroup = function() {
+    var gid = _currentGroupId;
+    if (!gid) return;
+    // Open compose with group pre-selected
+    closeGroupDetail();
+    // Switch back to feed view, select group
+    window.lobbySetFeedTab('all', document.getElementById('ftab-all'));
+    setTimeout(function() {
+      var sel = document.getElementById('post-group-select');
+      if (sel) sel.value = gid;
+      var ta = document.getElementById('soc-post-text');
+      if (ta) ta.focus();
+    }, 200);
+  };
+
+  window.deleteGroupPost = function(gid, pid) {
+    var fb = getFB(), db = getDB();
+    if (!fb || !db) return;
+    fb.remove(fb.ref(db, SOC() + '/groups/' + gid + '/posts/' + pid));
+    if (window.showToast) showToast('🗑 Post deleted');
+  };
+
+  /* ══════════════════════
+     JOIN / LEAVE
+  ══════════════════════ */
+  window.quickJoinGroup = function(gid) {
+    joinGroup(gid, function() {
+      renderGroupsList();
+      if (window.showToast) showToast('✅ Group joined!');
+    });
+  };
+
+  window.leaveOrJoinCurrentGroup = function() {
+    var gid = _currentGroupId;
+    if (!gid) return;
+    if (isMember(gid)) {
+      leaveGroup(gid, function() {
+        closeGroupDetail();
+        renderGroupsList();
+        populatePostGroupSelect();
+        if (window.showToast) showToast('👋 Left group');
+      });
+    } else {
+      joinGroup(gid, function() {
+        openGroupDetail(gid);
+        renderGroupsList();
+        populatePostGroupSelect();
+        if (window.showToast) showToast('✅ Joined group!');
+      });
+    }
+  };
+
+  function joinGroup(gid, cb) {
+    var uid = myUid();
+    if (!uid) { if (window.showToast) showToast('🔒 Login required'); return; }
+    var fb = getFB(), db = getDB();
+    if (!fb || !db) return;
+    fb.set(fb.ref(db, SOC() + '/groups/' + gid + '/members/' + uid), true)
+      .then(function() { if (cb) cb(); })
+      .catch(function(e) { if (window.showToast) showToast('❌ Error: ' + e.message); });
+  }
+
+  function leaveGroup(gid, cb) {
+    var uid = myUid();
+    if (!uid) return;
+    var fb = getFB(), db = getDB();
+    if (!fb || !db) return;
+    fb.remove(fb.ref(db, SOC() + '/groups/' + gid + '/members/' + uid))
+      .then(function() { if (cb) cb(); })
+      .catch(function(e) { if (window.showToast) showToast('❌ Error: ' + e.message); });
+  }
+
+  window.deleteGroup = function(gid) {
+    if (!confirm('Delete this group? This cannot be undone.')) return;
+    var fb = getFB(), db = getDB();
+    if (!fb || !db) return;
+    fb.remove(fb.ref(db, SOC() + '/groups/' + gid))
+      .then(function() {
+        closeGroupDetail();
+        renderGroupsList();
+        populatePostGroupSelect();
+        if (window.showToast) showToast('🗑 Group deleted');
+      });
+  };
+
+  /* ══════════════════════
+     CREATE GROUP
+  ══════════════════════ */
+  window.openCreateGroup = function() {
+    var uid = myUid();
+    if (!uid) { if (window.showToast) showToast('🔒 Login කරලා groups හදන්න'); return; }
+    document.getElementById('cg-name-input').value = '';
+    document.getElementById('cg-desc-input').value = '';
+    _cgEmoji = '👥'; _cgPrivacy = 'public';
+    document.querySelectorAll('.cg-emoji-btn').forEach(function(b) {
+      b.classList.toggle('selected', b.dataset.emoji === '👥');
+    });
+    document.getElementById('cg-pub-btn').classList.add('selected');
+    document.getElementById('cg-priv-btn').classList.remove('selected');
+    document.getElementById('create-group-overlay').classList.add('show');
+  };
+
+  window.closeCreateGroup = function() {
+    document.getElementById('create-group-overlay').classList.remove('show');
+  };
+
+  window.selectGroupEmoji = function(btn) {
+    _cgEmoji = btn.dataset.emoji;
+    document.querySelectorAll('.cg-emoji-btn').forEach(function(b) { b.classList.remove('selected'); });
+    btn.classList.add('selected');
+  };
+
+  window.selectGroupPrivacy = function(val) {
+    _cgPrivacy = val;
+    document.getElementById('cg-pub-btn').classList.toggle('selected',  val === 'public');
+    document.getElementById('cg-priv-btn').classList.toggle('selected', val === 'private');
+  };
+
+  window.submitCreateGroup = function() {
+    var name = (document.getElementById('cg-name-input').value || '').trim();
+    var desc = (document.getElementById('cg-desc-input').value || '').trim();
+    var uid  = myUid();
+    if (!name) { if (window.showToast) showToast('⚠️ Group name ඕනේ'); return; }
+    if (!uid)  { if (window.showToast) showToast('🔒 Login required');   return; }
+
+    var fb = getFB(), db = getDB();
+    if (!fb || !db) { if (window.showToast) showToast('❌ Firebase not ready'); return; }
+
+    var groupData = {
+      name: name,
+      desc: desc,
+      icon: _cgEmoji,
+      privacy: _cgPrivacy,
+      ownerUid: uid,
+      ownerName: myName(),
+      ts: Date.now(),
+      members: {}
+    };
+    groupData.members[uid] = true;
+
+    fb.push(fb.ref(db, SOC() + '/groups'), groupData)
+      .then(function(ref2) {
+        closeCreateGroup();
+        if (window.showToast) showToast('🎉 Group created: ' + name);
+        renderGroupsList();
+        populatePostGroupSelect();
+        // Open the new group
+        if (ref2 && ref2.key) {
+          setTimeout(function() { openGroupDetail(ref2.key); }, 400);
+        }
+      })
+      .catch(function(e) {
+        if (window.showToast) showToast('❌ Error: ' + e.message);
+      });
+  };
+
+  /* ══════════════════════
+     GROUP TAB SWITCH
+  ══════════════════════ */
+  window.switchGroupTab = function(tab, btn) {
+    _groupTabMode = tab;
+    document.querySelectorAll('.groups-tab').forEach(function(b) { b.classList.remove('active'); });
+    if (btn) btn.classList.add('active');
+    renderGroupsList();
+  };
+
+  window.filterGroups = function(val) {
+    _groupsFilter = val;
+    renderGroupsList();
+  };
+
+  /* ══════════════════════
+     POST TO GROUP
+  ══════════════════════ */
+  // Patch _doCreatePost to support group posting
+  var _origDoCreatePostGroups = window._doCreatePost;
+  window._doCreatePost = function(text, imgData, vidData) {
+    var sel = document.getElementById('post-group-select');
+    var gid = sel ? sel.value : '';
+
+    if (gid) {
+      // Post to group
+      var uid = myUid();
+      if (!uid) { if (window.showToast) showToast('🔒 Login required'); return; }
+      if (!isMember(gid)) { if (window.showToast) showToast('⚠️ Group eke member වෙලා post කරන්න'); return; }
+      text = (text||'').trim();
+      if (!text && !imgData && !vidData) { if (window.showToast) showToast('⚠️ Post text add කරන්න'); return; }
+
+      var fb = getFB(), db = getDB();
+      if (!fb || !db) return;
+      fb.push(fb.ref(db, SOC() + '/groups/' + gid + '/posts'), {
+        name: myName(), photo: myPhoto(), color: myColor(),
+        uid: uid, text: text||'', image: imgData||'', video: vidData||'', ts: Date.now()
+      }).then(function() {
+        if (window.showToast) {
+          var g = _groupsData[gid];
+          showToast('✅ Posted to ' + (g ? g.name : 'group') + '!');
+        }
+        if (sel) sel.value = '';
+      }).catch(function(e) {
+        if (window.showToast) showToast('❌ ' + e.message);
+      });
+      return;
+    }
+
+    // Normal lobby post
+    if (_origDoCreatePostGroups) _origDoCreatePostGroups(text, imgData, vidData);
+  };
+
+  /* ══════════════════════
+     POST GROUP SELECT POPULATE
+  ══════════════════════ */
+  function populatePostGroupSelect() {
+    var sel = document.getElementById('post-group-select');
+    if (!sel) return;
+    var cur = sel.value;
+    sel.innerHTML = '<option value="">🌐 Public Lobby</option>';
+    // Only show joined groups
+    Object.entries(_groupsData).forEach(function(e) {
+      var gid = e[0], g = e[1];
+      if (!isMember(gid)) return;
+      var opt = document.createElement('option');
+      opt.value = gid;
+      opt.textContent = (g.icon||'👥') + ' ' + (g.name||'Group');
+      sel.appendChild(opt);
+    });
+    if (cur) sel.value = cur;
+  }
+
+  /* ══════════════════════
+     UTILS
+  ══════════════════════ */
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function socIni(name) {
+    if (window.socIni) return window.socIni(name);
+    return (name||'?').charAt(0).toUpperCase();
+  }
+
+  /* ── Re-populate group select when social area opens ── */
+  var _origOSA2 = window.openSocialArea;
+  window.openSocialArea = function() {
+    if (_origOSA2) _origOSA2.apply(this, arguments);
+    setTimeout(populatePostGroupSelect, 1500);
+  };
+
+  console.log('%c SecretLine Groups v1 loaded ✓', 'color:#3de8a0;font-weight:bold;font-size:13px');
+
+})();
+</script>
 
 </body>
 </html>
