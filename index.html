@@ -6279,14 +6279,14 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
           <video id="soc-vid-preview" style="max-width:100%;max-height:180px;border-radius:10px;display:block;" controls></video>
           <button class="soc-img-remove" onclick="socRemoveVid()" style="position:absolute;top:6px;right:6px;">&#x2715;</button>
         </div>
-        <div class="soc-create-actions" style="margin-top:10px">
+        <div class="soc-create-actions" style="margin-top:10px;flex-direction:column;gap:8px;">
           <div class="post-group-select-wrap">
             <span class="post-group-label">&#x1F465; Post to:</span>
             <select class="post-group-select" id="post-group-select">
               <option value="">🌐 Public Lobby</option>
             </select>
           </div>
-          <div class="soc-create-tools">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;">
             <button class="soc-tool-btn" onclick="document.getElementById('soc-img-input').click()">&#x1F4F7; Photo</button>
             <input type="file" id="soc-img-input" accept="image/*" style="display:none" onchange="socPickImg(this)">
             <button class="soc-tool-btn" onclick="document.getElementById('soc-vid-input').click()">&#x1F3AC; Video</button>
@@ -6515,6 +6515,12 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
         <input type="file" id="soc-mob-vid-input" accept="video/*" style="display:none" onchange="socPickMobVid(this)">
       </div>
       <button class="soc-post-btn" onclick="socCreatePostMob()">Post කරන්න</button>
+    </div>
+    <div class="post-group-select-wrap" style="margin-top:8px;">
+      <span class="post-group-label">&#x1F465; Post to:</span>
+      <select class="post-group-select" id="post-group-select-mob" onchange="document.getElementById('post-group-select').value=this.value">
+        <option value="">🌐 Public Lobby</option>
+      </select>
     </div>
   </div>
 </div>
@@ -19085,96 +19091,94 @@ console.log('%c Auth Gate v2 loaded \u2713', 'color:#3de8a0;font-weight:bold;fon
 
 <script>
 /* ══════════════════════════════════════════════════════
-   SECRETLINE GROUPS SYSTEM v1
-   - Create / Join / Leave groups
-   - Post to groups
-   - Group detail view with posts
-   - Firebase realtime sync
+   SECRETLINE GROUPS SYSTEM v2 (bug-fixed)
 ══════════════════════════════════════════════════════ */
 (function() {
   'use strict';
 
-  /* ── State ── */
-  var _groupsData      = {};      // { groupId: groupObj }
-  var _myGroups        = {};      // { groupId: true } — joined groups
-  var _groupsUnsub     = null;
-  var _groupTabMode    = 'all';   // 'all' | 'mine'
-  var _groupsFilter    = '';
-  var _currentGroupId  = null;
-  var _cgEmoji         = '👥';
-  var _cgPrivacy       = 'public';
-  var _gdPostsUnsub    = null;
+  var _groupsData     = {};
+  var _groupsUnsub    = null;
+  var _groupTabMode   = 'all';
+  var _groupsFilter   = '';
+  var _currentGroupId = null;
+  var _cgEmoji        = '👥';
+  var _cgPrivacy      = 'public';
+  var _gdPostsUnsub   = null;
 
-  var GROUP_ICONS = ['👥','🎮','🎨','🎵','📚','💻','🌍','🏆','🔥','⚡'];
+  function getFB()   { return window.socGetFB ? window.socGetFB() : (window.__fbx || null); }
+  function getDB()   { return window.socGetDB ? window.socGetDB() : (window.__db  || null); }
+  function myUid()   { return window._socUserId || window.socUserId || ''; }
+  function myName()  { return window._socName   || window.socName  || 'Someone'; }
+  function myColor() { return window._socColor  || window.socColor || '#3de8a0'; }
+  function myPhoto() { return window._socPhoto  || window.socPhoto || ''; }
+  function SOC()     { return window.SOC_PATH   || 'social'; }
 
-  /* ── Firebase helpers ── */
-  function getFB()  { return window.socGetFB  ? window.socGetFB()  : window.fb; }
-  function getDB()  { return window.socGetDB  ? window.socGetDB()  : window.db; }
-  function myUid()  { return window._socUserId || window.socUserId || ''; }
-  function myName() { return window._socName  || window.socName   || 'Someone'; }
-  function myColor(){ return window._socColor || window.socColor  || '#3de8a0'; }
-  function myPhoto(){ return window._socPhoto || window.socPhoto  || ''; }
-  function SOC()    { return window.SOC_PATH  || 'social'; }
-
-  function groupsRef(path) {
+  function gRef(path) {
     var fb = getFB(), db = getDB();
     if (!fb || !db) return null;
     return fb.ref(db, SOC() + '/groups' + (path ? '/' + path : ''));
   }
 
-  /* ── Helpers ── */
   function fmtTs(ts) {
     if (!ts) return '';
-    var d = new Date(ts), now = Date.now(), diff = now - ts;
-    if (diff < 60000)   return 'just now';
-    if (diff < 3600000) return Math.floor(diff/60000) + 'm ago';
-    if (diff < 86400000)return Math.floor(diff/3600000) + 'h ago';
-    return d.toLocaleDateString(undefined, { month:'short', day:'numeric' });
+    var diff = Date.now() - ts;
+    if (diff < 60000)    return 'just now';
+    if (diff < 3600000)  return Math.floor(diff / 60000) + 'm ago';
+    if (diff < 86400000) return Math.floor(diff / 3600000) + 'h ago';
+    return new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  }
+
+  function esc(s) {
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function ini(name) {
+    return window.socIni ? window.socIni(name) : (name || '?').charAt(0).toUpperCase();
   }
 
   function isMember(gid) {
-    var g = _groupsData[gid];
-    if (!g) return false;
-    return g.members && g.members[myUid()] ? true : false;
+    var g = _groupsData[gid], uid = myUid();
+    return !!(g && uid && g.members && g.members[uid]);
   }
 
   function isOwner(gid) {
     var g = _groupsData[gid];
-    return g && g.ownerUid === myUid();
+    return !!(g && g.ownerUid && g.ownerUid === myUid());
   }
 
-  /* ══════════════════════
-     LOBBY SET FEED TAB — patch
-  ══════════════════════ */
-  var _origLobbySetFeedTab = window.lobbySetFeedTab;
+  /* ── patch lobbySetFeedTab ── */
+  var _origLobbyTab = window.lobbySetFeedTab;
   window.lobbySetFeedTab = function(tab, btn) {
+    var gp = document.getElementById('groups-panel');
+    var sp = document.getElementById('soc-posts');
+    var se = document.getElementById('soc-feed-empty');
+    var cb = document.getElementById('soc-create-box');
+
     if (tab === 'groups') {
-      // Activate Groups panel, hide feed
       document.querySelectorAll('.lobby-ftab').forEach(function(b) { b.classList.remove('active'); });
       if (btn) btn.classList.add('active');
-      document.getElementById('soc-posts').style.display    = 'none';
-      document.getElementById('soc-feed-empty').style.display = 'none';
-      document.getElementById('soc-create-box') && (document.getElementById('soc-create-box').style.display = 'none');
-      var gp = document.getElementById('groups-panel');
+      if (sp) sp.style.display = 'none';
+      if (se) se.style.display = 'none';
+      if (cb) cb.style.display = 'none';
       if (gp) gp.classList.add('active');
       initGroupsPanel();
       return;
     }
-    // Restore feed when leaving groups tab
-    document.getElementById('soc-posts').style.display = '';
-    document.getElementById('soc-feed-empty').style.display = '';
-    var cb = document.getElementById('soc-create-box');
+    if (sp) sp.style.display = '';
+    if (se) se.style.display = '';
     if (cb) cb.style.display = '';
-    var gp = document.getElementById('groups-panel');
     if (gp) gp.classList.remove('active');
-    if (_origLobbySetFeedTab) _origLobbySetFeedTab(tab, btn);
+    if (window.lobbyFeedTab !== undefined) window.lobbyFeedTab = tab;
+    if (_origLobbyTab) _origLobbyTab(tab, btn);
   };
 
-  /* ══════════════════════
-     INIT GROUPS PANEL
-  ══════════════════════ */
   function initGroupsPanel() {
-    showGroupsListView();
+    var lv = document.getElementById('groups-list-view');
+    var dv = document.getElementById('group-detail-view');
+    if (lv) lv.style.display = '';
+    if (dv) dv.classList.remove('active');
+    _currentGroupId = null;
+    if (_gdPostsUnsub) { try { _gdPostsUnsub(); } catch(e){} _gdPostsUnsub = null; }
     subscribeGroups();
     populatePostGroupSelect();
   }
@@ -19182,35 +19186,28 @@ console.log('%c Auth Gate v2 loaded \u2713', 'color:#3de8a0;font-weight:bold;fon
   function subscribeGroups() {
     var fb = getFB(), db = getDB();
     if (!fb || !db) {
-      document.getElementById('groups-empty-msg').textContent = '⚠️ Login කරලා groups බලන්න';
+      var em = document.getElementById('groups-empty-msg');
+      if (em) em.textContent = '⚠️ Lobby Login කරලා groups බලන්න';
       return;
     }
-    if (_groupsUnsub) { try { _groupsUnsub(); } catch(e){} }
-    var ref = groupsRef();
+    if (_groupsUnsub) return;
+    var ref = gRef();
     if (!ref) return;
     _groupsUnsub = fb.onValue(ref, function(snap) {
       _groupsData = snap.val() || {};
       renderGroupsList();
       populatePostGroupSelect();
+      if (_currentGroupId && _groupsData[_currentGroupId]) refreshDetailStats(_currentGroupId);
     });
   }
 
-  /* ══════════════════════
-     RENDER GROUPS LIST
-  ══════════════════════ */
   function renderGroupsList() {
     var list = document.getElementById('groups-list');
-    var emptyMsg = document.getElementById('groups-empty-msg');
+    var em   = document.getElementById('groups-empty-msg');
     if (!list) return;
 
     var entries = Object.entries(_groupsData);
-
-    // Apply tab filter
-    if (_groupTabMode === 'mine') {
-      entries = entries.filter(function(e) { return isMember(e[0]); });
-    }
-
-    // Apply search filter
+    if (_groupTabMode === 'mine') entries = entries.filter(function(e) { return isMember(e[0]); });
     if (_groupsFilter) {
       var q = _groupsFilter.toLowerCase();
       entries = entries.filter(function(e) {
@@ -19218,426 +19215,305 @@ console.log('%c Auth Gate v2 loaded \u2713', 'color:#3de8a0;font-weight:bold;fon
         return (g.name||'').toLowerCase().includes(q) || (g.desc||'').toLowerCase().includes(q);
       });
     }
-
-    // Sort by member count desc
     entries.sort(function(a, b) {
       return Object.keys(b[1].members||{}).length - Object.keys(a[1].members||{}).length;
     });
 
     list.innerHTML = '';
-
     if (entries.length === 0) {
-      emptyMsg.style.display = 'block';
-      emptyMsg.textContent = _groupTabMode === 'mine'
-        ? '🧩 You haven\'t joined any groups yet.'
-        : _groupsFilter
-          ? '🔍 No groups found.'
-          : '👥 No groups yet. Create the first one!';
+      if (em) {
+        em.style.display = 'block';
+        em.textContent = _groupTabMode === 'mine' ? '🧩 Joined groups නැහැ.'
+          : (_groupsFilter ? '🔍 Groups හොයාගත්නෑ.' : '👥 Groups නැහැ. First group එක හදන්න!');
+      }
       return;
     }
-    emptyMsg.style.display = 'none';
+    if (em) em.style.display = 'none';
 
     entries.forEach(function(entry) {
       var gid = entry[0], g = entry[1];
-      var memberCount = Object.keys(g.members||{}).length;
-      var postCount   = Object.keys(g.posts||{}).length;
+      var mc = Object.keys(g.members||{}).length;
+      var pc = Object.keys(g.posts||{}).length;
       var joined = isMember(gid);
-
       var card = document.createElement('div');
       card.className = 'group-card';
       card.innerHTML =
-        '<div class="group-card-banner">' +
-          '<div class="group-card-icon">' + (g.icon||'👥') + '</div>' +
-        '</div>' +
+        '<div class="group-card-banner"><div class="group-card-icon">' + esc(g.icon||'👥') + '</div></div>' +
         '<div class="group-card-body">' +
-          '<div class="group-card-name">' +
-            escHtml(g.name||'Unnamed') +
+          '<div class="group-card-name">' + esc(g.name||'Unnamed') +
             '<span class="' + (g.privacy==='private' ? 'group-card-private-badge' : 'group-card-public-badge') + '">' +
-              (g.privacy==='private' ? '🔒 Private' : '🌐 Public') +
-            '</span>' +
-          '</div>' +
-          '<div class="group-card-desc">' + escHtml(g.desc||'No description.') + '</div>' +
+              (g.privacy==='private' ? '🔒 Private' : '🌐 Public') + '</span></div>' +
+          '<div class="group-card-desc">' + esc(g.desc||'No description.') + '</div>' +
           '<div class="group-card-footer">' +
-            '<span class="group-card-members">👤 ' + memberCount + ' member' + (memberCount!==1?'s':'') +
-              ' · 📝 ' + postCount + ' post' + (postCount!==1?'s':'') + '</span>' +
+            '<span class="group-card-members">👤 ' + mc + ' member' + (mc!==1?'s':'') +
+              ' · 📝 ' + pc + ' post' + (pc!==1?'s':'') + '</span>' +
             (joined
               ? '<button class="group-card-join-btn open" onclick="event.stopPropagation();openGroupDetail(\''+gid+'\')">Open</button>'
-              : '<button class="group-card-join-btn join" onclick="event.stopPropagation();quickJoinGroup(\''+gid+'\')">Join</button>'
-            ) +
-          '</div>' +
-        '</div>';
-
+              : '<button class="group-card-join-btn join" onclick="event.stopPropagation();quickJoinGroup(\''+gid+'\')">Join</button>') +
+          '</div></div>';
       card.onclick = function() { openGroupDetail(gid); };
       list.appendChild(card);
     });
   }
 
-  /* ══════════════════════
-     GROUP DETAIL VIEW
-  ══════════════════════ */
   window.openGroupDetail = function(gid) {
-    _currentGroupId = gid;
     var g = _groupsData[gid];
-    if (!g) return;
-    var memberCount = Object.keys(g.members||{}).length;
-    var postCount   = Object.keys(g.posts||{}).length;
-    var joined = isMember(gid);
-
-    document.getElementById('gd-name').textContent       = g.name || 'Group';
-    document.getElementById('gd-icon').textContent       = g.icon || '👥';
-    document.getElementById('gd-info-name').textContent  = g.name || 'Group';
-    document.getElementById('gd-info-meta').textContent  =
-      memberCount + ' member' + (memberCount!==1?'s':'') +
-      ' · ' + (g.privacy==='private' ? '🔒 Private' : '🌐 Public');
-    document.getElementById('gd-stat-members').textContent = memberCount;
-    document.getElementById('gd-stat-posts').textContent   = postCount;
-    document.getElementById('gd-desc').textContent         = g.desc || 'No description.';
-
-    // Count online members
-    var presence = window._lobbyPresenceData || {};
-    var onlineCount = Object.keys(g.members||{}).filter(function(uid) {
-      return presence[uid] && presence[uid].online;
-    }).length;
-    document.getElementById('gd-stat-online').textContent = onlineCount;
-
-    // Join/Leave button
-    var leaveBtn = document.getElementById('gd-leave-btn');
-    if (leaveBtn) {
-      if (isOwner(gid)) {
-        leaveBtn.textContent = '🗑 Delete';
-        leaveBtn.onclick = function() { deleteGroup(gid); };
-      } else if (joined) {
-        leaveBtn.textContent = 'Leave';
-        leaveBtn.onclick = function() { leaveOrJoinCurrentGroup(); };
-      } else {
-        leaveBtn.textContent = 'Join Group';
-        leaveBtn.style.background = 'var(--accent)';
-        leaveBtn.style.color = '#000';
-        leaveBtn.onclick = function() { leaveOrJoinCurrentGroup(); };
-      }
-    }
-
-    // Post button visibility
-    var postBtn = document.getElementById('gd-post-btn');
-    if (postBtn) postBtn.style.display = joined ? '' : 'none';
-
-    // Show detail view
-    document.getElementById('groups-list-view').style.display  = 'none';
-    document.getElementById('group-detail-view').classList.add('active');
-
-    // Load posts
+    if (!g) { if (window.showToast) showToast('⚠️ Group data load වෙලා නෑ'); return; }
+    _currentGroupId = gid;
+    refreshDetailStats(gid);
+    var lv = document.getElementById('groups-list-view');
+    var dv = document.getElementById('group-detail-view');
+    if (lv) lv.style.display = 'none';
+    if (dv) dv.classList.add('active');
     loadGroupPosts(gid);
   };
+
+  function refreshDetailStats(gid) {
+    var g = _groupsData[gid]; if (!g) return;
+    var mc = Object.keys(g.members||{}).length;
+    var pc = Object.keys(g.posts||{}).length;
+    var joined = isMember(gid), owner = isOwner(gid);
+    var presence = window._lobbyPresenceData || {};
+    var online = Object.keys(g.members||{}).filter(function(u) { return presence[u] && presence[u].online; }).length;
+
+    function el(id) { return document.getElementById(id); }
+    if (el('gd-name'))         el('gd-name').textContent         = g.name||'Group';
+    if (el('gd-icon'))         el('gd-icon').textContent         = g.icon||'👥';
+    if (el('gd-info-name'))    el('gd-info-name').textContent    = g.name||'Group';
+    if (el('gd-info-meta'))    el('gd-info-meta').textContent    = mc+' member'+(mc!==1?'s':'')+' · '+(g.privacy==='private'?'🔒 Private':'🌐 Public');
+    if (el('gd-stat-members')) el('gd-stat-members').textContent = mc;
+    if (el('gd-stat-posts'))   el('gd-stat-posts').textContent   = pc;
+    if (el('gd-stat-online'))  el('gd-stat-online').textContent  = online;
+    if (el('gd-desc'))         el('gd-desc').textContent         = g.desc||'No description.';
+
+    var postBtn = el('gd-post-btn');
+    if (postBtn) postBtn.style.display = joined ? '' : 'none';
+
+    var leaveBtn = el('gd-leave-btn');
+    if (leaveBtn) {
+      leaveBtn.removeAttribute('style');
+      if (owner) {
+        leaveBtn.textContent = '🗑 Delete'; leaveBtn.className = 'gd-leave-btn';
+        leaveBtn.onclick = function() { deleteGroup(gid); };
+      } else if (joined) {
+        leaveBtn.textContent = 'Leave'; leaveBtn.className = 'gd-leave-btn';
+        leaveBtn.onclick = function() { toggleMembership(gid); };
+      } else {
+        leaveBtn.textContent = '✅ Join Group'; leaveBtn.className = 'gd-post-btn';
+        leaveBtn.onclick = function() { toggleMembership(gid); };
+      }
+    }
+  }
 
   window.closeGroupDetail = function() {
     _currentGroupId = null;
     if (_gdPostsUnsub) { try { _gdPostsUnsub(); } catch(e){} _gdPostsUnsub = null; }
-    document.getElementById('group-detail-view').classList.remove('active');
-    document.getElementById('groups-list-view').style.display = '';
+    var lv = document.getElementById('groups-list-view');
+    var dv = document.getElementById('group-detail-view');
+    if (dv) dv.classList.remove('active');
+    if (lv) lv.style.display = '';
   };
 
-  function showGroupsListView() {
-    document.getElementById('group-detail-view').classList.remove('active');
-    document.getElementById('groups-list-view').style.display = '';
-  }
-
   function loadGroupPosts(gid) {
-    var postsEl   = document.getElementById('gd-posts-list');
-    var emptyEl   = document.getElementById('gd-posts-empty');
+    var postsEl = document.getElementById('gd-posts-list');
+    var emptyEl = document.getElementById('gd-posts-empty');
     if (!postsEl) return;
-    postsEl.innerHTML = '<div class="group-empty-msg">Loading...</div>';
-
+    postsEl.innerHTML = '<div class="group-empty-msg">⏳ Loading...</div>';
+    if (emptyEl) emptyEl.style.display = 'none';
     var fb = getFB(), db = getDB();
-    if (!fb || !db) { postsEl.innerHTML = ''; emptyEl.style.display='block'; return; }
-
-    if (_gdPostsUnsub) { try { _gdPostsUnsub(); } catch(e){} }
-
-    var ref = groupsRef(gid + '/posts');
-    if (!ref) return;
-
+    if (!fb || !db) { postsEl.innerHTML = ''; if (emptyEl) emptyEl.style.display='block'; return; }
+    if (_gdPostsUnsub) { try { _gdPostsUnsub(); } catch(e){} _gdPostsUnsub = null; }
+    var ref = gRef(gid + '/posts'); if (!ref) return;
     _gdPostsUnsub = fb.onValue(ref, function(snap) {
       var posts = snap.val() || {};
       postsEl.innerHTML = '';
-      var entries = Object.entries(posts).sort(function(a,b){ return b[1].ts - a[1].ts; }).slice(0, 20);
-
-      if (entries.length === 0) {
-        emptyEl.style.display = 'block';
-        return;
-      }
-      emptyEl.style.display = 'none';
-
+      var entries = Object.entries(posts).sort(function(a,b){return b[1].ts-a[1].ts;}).slice(0,30);
+      if (entries.length === 0) { if (emptyEl) emptyEl.style.display='block'; return; }
+      if (emptyEl) emptyEl.style.display = 'none';
       entries.forEach(function(e) {
-        var pid = e[0], p = e[1];
-        var item = document.createElement('div');
-        item.style.cssText = 'background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;';
-        item.innerHTML =
+        var pid=e[0], p=e[1], isMe=p.uid&&p.uid===myUid();
+        var item=document.createElement('div');
+        item.style.cssText='background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;';
+        item.innerHTML=
           '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">' +
-            '<div style="width:30px;height:30px;border-radius:50%;background:var(--card2);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:'+(p.color||'#3de8a0')+';flex-shrink:0;">' +
-              (p.photo ? '<img src="'+escHtml(p.photo)+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">' : escHtml(socIni(p.name||'?'))) +
+            '<div style="width:32px;height:32px;border-radius:50%;background:var(--card2);border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:'+esc(p.color||'#3de8a0')+';flex-shrink:0;overflow:hidden;">' +
+              (p.photo?'<img src="'+esc(p.photo)+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">':esc(ini(p.name||'?')))+
             '</div>' +
             '<div style="flex:1;min-width:0;">' +
-              '<div style="font-size:12px;font-weight:700;color:'+(p.color||'#3de8a0')+';">' + escHtml(p.name||'Someone') + '</div>' +
-              '<div style="font-size:10px;color:var(--text3);font-family:var(--mono);">' + fmtTs(p.ts) + '</div>' +
+              '<div style="font-size:12px;font-weight:700;color:'+esc(p.color||'#3de8a0')+';">'+esc(p.name||'Someone')+'</div>' +
+              '<div style="font-size:10px;color:var(--text3);font-family:var(--mono);">'+fmtTs(p.ts)+'</div>' +
             '</div>' +
-            (p.uid === myUid() ? '<button onclick="deleteGroupPost(\''+gid+'\',\''+pid+'\')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:2px 6px;" title="Delete">✕</button>' : '') +
+            (isMe?'<button onclick="deleteGroupPost(\''+gid+'\',\''+pid+'\')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:2px 6px;border-radius:6px;" title="Delete">✕</button>':'')+
           '</div>' +
-          '<div style="font-size:13px;color:var(--text);line-height:1.5;">' + escHtml(p.text||'') + '</div>' +
-          (p.image ? '<img src="'+p.image+'" style="max-width:100%;border-radius:8px;margin-top:8px;display:block;">' : '');
+          (p.text?'<div style="font-size:13px;color:var(--text);line-height:1.55;word-break:break-word;">'+esc(p.text)+'</div>':'')+
+          (p.image?'<img src="'+esc(p.image)+'" style="max-width:100%;border-radius:8px;margin-top:8px;display:block;">':'');
         postsEl.appendChild(item);
       });
     });
   }
 
   window.postToCurrentGroup = function() {
-    var gid = _currentGroupId;
+    var gid = _currentGroupId; // save BEFORE closeGroupDetail clears it
     if (!gid) return;
-    // Open compose with group pre-selected
     closeGroupDetail();
-    // Switch back to feed view, select group
     window.lobbySetFeedTab('all', document.getElementById('ftab-all'));
     setTimeout(function() {
       var sel = document.getElementById('post-group-select');
       if (sel) sel.value = gid;
       var ta = document.getElementById('soc-post-text');
-      if (ta) ta.focus();
-    }, 200);
+      if (ta) { ta.focus(); ta.scrollIntoView({behavior:'smooth',block:'center'}); }
+    }, 250);
   };
 
   window.deleteGroupPost = function(gid, pid) {
-    var fb = getFB(), db = getDB();
-    if (!fb || !db) return;
-    fb.remove(fb.ref(db, SOC() + '/groups/' + gid + '/posts/' + pid));
-    if (window.showToast) showToast('🗑 Post deleted');
+    var fb=getFB(), db=getDB(); if (!fb||!db) return;
+    fb.remove(fb.ref(db, SOC()+'/groups/'+gid+'/posts/'+pid))
+      .then(function(){ if(window.showToast) showToast('🗑 Post deleted'); })
+      .catch(function(e){ if(window.showToast) showToast('❌ '+e.message); });
   };
 
-  /* ══════════════════════
-     JOIN / LEAVE
-  ══════════════════════ */
   window.quickJoinGroup = function(gid) {
     joinGroup(gid, function() {
-      renderGroupsList();
+      renderGroupsList(); populatePostGroupSelect();
       if (window.showToast) showToast('✅ Group joined!');
     });
   };
 
-  window.leaveOrJoinCurrentGroup = function() {
-    var gid = _currentGroupId;
-    if (!gid) return;
+  function toggleMembership(gid) {
     if (isMember(gid)) {
       leaveGroup(gid, function() {
-        closeGroupDetail();
-        renderGroupsList();
-        populatePostGroupSelect();
+        _currentGroupId = null;
+        closeGroupDetail(); renderGroupsList(); populatePostGroupSelect();
         if (window.showToast) showToast('👋 Left group');
       });
     } else {
       joinGroup(gid, function() {
-        openGroupDetail(gid);
-        renderGroupsList();
-        populatePostGroupSelect();
-        if (window.showToast) showToast('✅ Joined group!');
+        if (window.showToast) showToast('✅ Joined!');
       });
     }
-  };
+  }
+  window.leaveOrJoinCurrentGroup = function() { if (_currentGroupId) toggleMembership(_currentGroupId); };
 
   function joinGroup(gid, cb) {
-    var uid = myUid();
-    if (!uid) { if (window.showToast) showToast('🔒 Login required'); return; }
-    var fb = getFB(), db = getDB();
-    if (!fb || !db) return;
-    fb.set(fb.ref(db, SOC() + '/groups/' + gid + '/members/' + uid), true)
-      .then(function() { if (cb) cb(); })
-      .catch(function(e) { if (window.showToast) showToast('❌ Error: ' + e.message); });
+    var uid=myUid(); if (!uid){if(window.showToast)showToast('🔒 Lobby login required');return;}
+    var fb=getFB(),db=getDB(); if(!fb||!db){if(window.showToast)showToast('❌ Firebase not ready');return;}
+    fb.set(fb.ref(db,SOC()+'/groups/'+gid+'/members/'+uid),true)
+      .then(function(){if(cb)cb();}).catch(function(e){if(window.showToast)showToast('❌ '+e.message);});
   }
 
   function leaveGroup(gid, cb) {
-    var uid = myUid();
-    if (!uid) return;
-    var fb = getFB(), db = getDB();
-    if (!fb || !db) return;
-    fb.remove(fb.ref(db, SOC() + '/groups/' + gid + '/members/' + uid))
-      .then(function() { if (cb) cb(); })
-      .catch(function(e) { if (window.showToast) showToast('❌ Error: ' + e.message); });
+    var uid=myUid(); if(!uid) return;
+    var fb=getFB(),db=getDB(); if(!fb||!db) return;
+    fb.remove(fb.ref(db,SOC()+'/groups/'+gid+'/members/'+uid))
+      .then(function(){if(cb)cb();}).catch(function(e){if(window.showToast)showToast('❌ '+e.message);});
   }
 
   window.deleteGroup = function(gid) {
     if (!confirm('Delete this group? This cannot be undone.')) return;
-    var fb = getFB(), db = getDB();
-    if (!fb || !db) return;
-    fb.remove(fb.ref(db, SOC() + '/groups/' + gid))
-      .then(function() {
-        closeGroupDetail();
-        renderGroupsList();
-        populatePostGroupSelect();
-        if (window.showToast) showToast('🗑 Group deleted');
-      });
+    var fb=getFB(),db=getDB(); if(!fb||!db) return;
+    fb.remove(fb.ref(db,SOC()+'/groups/'+gid))
+      .then(function(){ closeGroupDetail(); renderGroupsList(); populatePostGroupSelect(); if(window.showToast)showToast('🗑 Group deleted'); })
+      .catch(function(e){if(window.showToast)showToast('❌ '+e.message);});
   };
 
-  /* ══════════════════════
-     CREATE GROUP
-  ══════════════════════ */
   window.openCreateGroup = function() {
-    var uid = myUid();
-    if (!uid) { if (window.showToast) showToast('🔒 Login කරලා groups හදන්න'); return; }
-    document.getElementById('cg-name-input').value = '';
-    document.getElementById('cg-desc-input').value = '';
-    _cgEmoji = '👥'; _cgPrivacy = 'public';
-    document.querySelectorAll('.cg-emoji-btn').forEach(function(b) {
-      b.classList.toggle('selected', b.dataset.emoji === '👥');
-    });
+    if (!myUid()){if(window.showToast)showToast('🔒 Lobby login කරලා groups හදන්න');return;}
+    document.getElementById('cg-name-input').value='';
+    document.getElementById('cg-desc-input').value='';
+    _cgEmoji='👥'; _cgPrivacy='public';
+    document.querySelectorAll('.cg-emoji-btn').forEach(function(b){b.classList.toggle('selected',b.dataset.emoji==='👥');});
     document.getElementById('cg-pub-btn').classList.add('selected');
     document.getElementById('cg-priv-btn').classList.remove('selected');
     document.getElementById('create-group-overlay').classList.add('show');
   };
 
-  window.closeCreateGroup = function() {
-    document.getElementById('create-group-overlay').classList.remove('show');
-  };
+  window.closeCreateGroup = function() { document.getElementById('create-group-overlay').classList.remove('show'); };
 
   window.selectGroupEmoji = function(btn) {
-    _cgEmoji = btn.dataset.emoji;
-    document.querySelectorAll('.cg-emoji-btn').forEach(function(b) { b.classList.remove('selected'); });
+    _cgEmoji = btn.dataset.emoji||'👥';
+    document.querySelectorAll('.cg-emoji-btn').forEach(function(b){b.classList.remove('selected');});
     btn.classList.add('selected');
   };
 
   window.selectGroupPrivacy = function(val) {
-    _cgPrivacy = val;
-    document.getElementById('cg-pub-btn').classList.toggle('selected',  val === 'public');
-    document.getElementById('cg-priv-btn').classList.toggle('selected', val === 'private');
+    _cgPrivacy=val;
+    document.getElementById('cg-pub-btn').classList.toggle('selected', val==='public');
+    document.getElementById('cg-priv-btn').classList.toggle('selected', val==='private');
   };
 
   window.submitCreateGroup = function() {
-    var name = (document.getElementById('cg-name-input').value || '').trim();
-    var desc = (document.getElementById('cg-desc-input').value || '').trim();
-    var uid  = myUid();
-    if (!name) { if (window.showToast) showToast('⚠️ Group name ඕනේ'); return; }
-    if (!uid)  { if (window.showToast) showToast('🔒 Login required');   return; }
-
-    var fb = getFB(), db = getDB();
-    if (!fb || !db) { if (window.showToast) showToast('❌ Firebase not ready'); return; }
-
-    var groupData = {
-      name: name,
-      desc: desc,
-      icon: _cgEmoji,
-      privacy: _cgPrivacy,
-      ownerUid: uid,
-      ownerName: myName(),
-      ts: Date.now(),
-      members: {}
-    };
-    groupData.members[uid] = true;
-
-    fb.push(fb.ref(db, SOC() + '/groups'), groupData)
-      .then(function(ref2) {
+    var name=(document.getElementById('cg-name-input').value||'').trim();
+    var desc=(document.getElementById('cg-desc-input').value||'').trim();
+    var uid=myUid();
+    if(!name){if(window.showToast)showToast('⚠️ Group name ඕනේ');return;}
+    if(!uid) {if(window.showToast)showToast('🔒 Login required');return;}
+    var fb=getFB(),db=getDB();
+    if(!fb||!db){if(window.showToast)showToast('❌ Firebase not ready');return;}
+    var btn=document.querySelector('.cg-submit-btn');
+    if(btn){btn.disabled=true;btn.textContent='Creating...';}
+    var gData={name:name,desc:desc,icon:_cgEmoji,privacy:_cgPrivacy,ownerUid:uid,ownerName:myName(),ts:Date.now(),members:{}};
+    gData.members[uid]=true;
+    fb.push(fb.ref(db,SOC()+'/groups'),gData)
+      .then(function(ref2){
         closeCreateGroup();
-        if (window.showToast) showToast('🎉 Group created: ' + name);
-        renderGroupsList();
-        populatePostGroupSelect();
-        // Open the new group
-        if (ref2 && ref2.key) {
-          setTimeout(function() { openGroupDetail(ref2.key); }, 400);
-        }
+        if(window.showToast)showToast('🎉 Group created: '+name);
+        if(ref2&&ref2.key){var nk=ref2.key;setTimeout(function(){if(_groupsData[nk])openGroupDetail(nk);},700);}
       })
-      .catch(function(e) {
-        if (window.showToast) showToast('❌ Error: ' + e.message);
-      });
+      .catch(function(e){if(window.showToast)showToast('❌ '+e.message);})
+      .finally(function(){if(btn){btn.disabled=false;btn.textContent='Create Group 🚀';}});
   };
 
-  /* ══════════════════════
-     GROUP TAB SWITCH
-  ══════════════════════ */
   window.switchGroupTab = function(tab, btn) {
-    _groupTabMode = tab;
-    document.querySelectorAll('.groups-tab').forEach(function(b) { b.classList.remove('active'); });
-    if (btn) btn.classList.add('active');
+    _groupTabMode=tab;
+    document.querySelectorAll('.groups-tab').forEach(function(b){b.classList.remove('active');});
+    if(btn)btn.classList.add('active');
     renderGroupsList();
   };
 
-  window.filterGroups = function(val) {
-    _groupsFilter = val;
-    renderGroupsList();
-  };
+  window.filterGroups = function(val) { _groupsFilter=val; renderGroupsList(); };
 
-  /* ══════════════════════
-     POST TO GROUP
-  ══════════════════════ */
-  // Patch _doCreatePost to support group posting
-  var _origDoCreatePostGroups = window._doCreatePost;
+  /* ── patch _doCreatePost for group posting ── */
+  var _origDCP = window._doCreatePost;
   window._doCreatePost = function(text, imgData, vidData) {
     var sel = document.getElementById('post-group-select');
-    var gid = sel ? sel.value : '';
-
-    if (gid) {
-      // Post to group
-      var uid = myUid();
-      if (!uid) { if (window.showToast) showToast('🔒 Login required'); return; }
-      if (!isMember(gid)) { if (window.showToast) showToast('⚠️ Group eke member වෙලා post කරන්න'); return; }
-      text = (text||'').trim();
-      if (!text && !imgData && !vidData) { if (window.showToast) showToast('⚠️ Post text add කරන්න'); return; }
-
-      var fb = getFB(), db = getDB();
-      if (!fb || !db) return;
-      fb.push(fb.ref(db, SOC() + '/groups/' + gid + '/posts'), {
-        name: myName(), photo: myPhoto(), color: myColor(),
-        uid: uid, text: text||'', image: imgData||'', video: vidData||'', ts: Date.now()
-      }).then(function() {
-        if (window.showToast) {
-          var g = _groupsData[gid];
-          showToast('✅ Posted to ' + (g ? g.name : 'group') + '!');
-        }
-        if (sel) sel.value = '';
-      }).catch(function(e) {
-        if (window.showToast) showToast('❌ ' + e.message);
-      });
-      return;
-    }
-
-    // Normal lobby post
-    if (_origDoCreatePostGroups) _origDoCreatePostGroups(text, imgData, vidData);
+    var gid = sel ? sel.value.trim() : '';
+    if (!gid) { if (_origDCP) _origDCP(text, imgData, vidData); return; }
+    var uid=myUid();
+    if(!uid){if(window.showToast)showToast('🔒 Login required');return;}
+    if(!isMember(gid)){if(window.showToast)showToast('⚠️ Group eke member වෙලා post කරන්න');return;}
+    text=(text||'').trim();
+    if(!text&&!imgData&&!vidData){if(window.showToast)showToast('⚠️ Post text හෝ image add කරන්න');return;}
+    var fb=getFB(),db=getDB(); if(!fb||!db){if(window.showToast)showToast('❌ Firebase not ready');return;}
+    fb.push(fb.ref(db,SOC()+'/groups/'+gid+'/posts'),{
+      name:myName(),photo:myPhoto(),color:myColor(),uid:uid,text:text,image:imgData||'',video:vidData||'',ts:Date.now()
+    }).then(function(){
+      if(window.showToast){var g=_groupsData[gid];showToast('✅ Posted to '+(g?g.name:'group')+'!');}
+      if(sel)sel.value='';
+    }).catch(function(e){if(window.showToast)showToast('❌ '+e.message);});
   };
 
-  /* ══════════════════════
-     POST GROUP SELECT POPULATE
-  ══════════════════════ */
   function populatePostGroupSelect() {
-    var sel = document.getElementById('post-group-select');
-    if (!sel) return;
-    var cur = sel.value;
-    sel.innerHTML = '<option value="">🌐 Public Lobby</option>';
-    // Only show joined groups
-    Object.entries(_groupsData).forEach(function(e) {
-      var gid = e[0], g = e[1];
-      if (!isMember(gid)) return;
-      var opt = document.createElement('option');
-      opt.value = gid;
-      opt.textContent = (g.icon||'👥') + ' ' + (g.name||'Group');
-      sel.appendChild(opt);
+    ['post-group-select','post-group-select-mob'].forEach(function(id){
+      var sel=document.getElementById(id); if(!sel) return;
+      var cur=sel.value;
+      sel.innerHTML='<option value="">🌐 Public Lobby</option>';
+      Object.entries(_groupsData).forEach(function(e){
+        var gid=e[0],g=e[1]; if(!isMember(gid)) return;
+        var opt=document.createElement('option');
+        opt.value=gid; opt.textContent=(g.icon||'👥')+' '+(g.name||'Group');
+        sel.appendChild(opt);
+      });
+      if(cur&&sel.querySelector('option[value="'+cur+'"]'))sel.value=cur;
     });
-    if (cur) sel.value = cur;
   }
 
-  /* ══════════════════════
-     UTILS
-  ══════════════════════ */
-  function escHtml(s) {
-    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
-
-  function socIni(name) {
-    if (window.socIni) return window.socIni(name);
-    return (name||'?').charAt(0).toUpperCase();
-  }
-
-  /* ── Re-populate group select when social area opens ── */
-  var _origOSA2 = window.openSocialArea;
+  var _origOSA = window.openSocialArea;
   window.openSocialArea = function() {
-    if (_origOSA2) _origOSA2.apply(this, arguments);
-    setTimeout(populatePostGroupSelect, 1500);
+    if (_origOSA) _origOSA.apply(this, arguments);
+    setTimeout(function(){ if(!_groupsUnsub)subscribeGroups(); else populatePostGroupSelect(); }, 1200);
   };
 
-  console.log('%c SecretLine Groups v1 loaded ✓', 'color:#3de8a0;font-weight:bold;font-size:13px');
-
+  console.log('%c SecretLine Groups v2 loaded ✓', 'color:#3de8a0;font-weight:bold;font-size:13px');
 })();
 </script>
 
