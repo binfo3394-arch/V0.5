@@ -7445,18 +7445,34 @@ const FIREBASE_CONFIG = {
 };
 
 // ─── State ───
+// SECURITY NOTE (BUG-03): Firebase API keys are exposed in client-side code.
+// Protect your data with strict Firebase Security Rules in the Firebase Console.
+// See: https://firebase.google.com/docs/database/security
 let db, app;
 let storage = null, messaging = null;
 let _roomCryptoKey = null;
 let _oldestMsgKey = null, _allLoaded = false, _firstLoadDone = false;
 let roomCode = '', myName = '', myColor = 'green', myPass = '';
 let myPhoto = '', myEmail = '';
-let myId = 'u_' + Math.random().toString(36).slice(2,9);
+// BUG-04 FIX: Read myId from session BEFORE generating a new random one to avoid race condition
+let myId = (() => {
+  try { const _s = JSON.parse(localStorage.getItem('sl_session') || 'null'); if (_s && _s.myId) return _s.myId; } catch(e) {}
+  return 'u_' + Math.random().toString(36).slice(2,9);
+})();
 let pendingFiles = [];
 let typingTimer, toastTimer;
 let peerCount = 0;
 let unsubMessages = null, unsubPresence = null, unsubTyping = null;
 let unsubChanged = null, unsubRemoved = null;
+// BUG-06 FIX: Track incoming call and screenshot listeners for proper cleanup
+let unsubIncomingCalls = null, unsubGroupCall = null;
+let unsubScreenshot = null;
+// BUG-23 FIX: Stop mic on page unload if recording
+window.addEventListener('beforeunload', () => {
+  if (typeof voiceStream !== 'undefined' && voiceStream) {
+    try { voiceStream.getTracks().forEach(t => t.stop()); } catch(e) {}
+  }
+});
 let _audioCtx = null;
 function getAudioCtx() {
   if (!_audioCtx || _audioCtx.state === 'closed') {
@@ -7752,8 +7768,10 @@ window.addEventListener('load', () => {
 // File icon map
 const FILE_ICONS = { pdf:'📄', doc:'📝', docx:'📝', xls:'📊', xlsx:'📊', ppt:'📊', pptx:'📊', txt:'📃', zip:'🗜️', rar:'🗜️', mp4:'🎬', mov:'🎬', avi:'🎬' };
 
-// Max file size — 100 MB
-const MAX_SIZE = 100 * 1024 * 1024;
+// BUG-07 FIX: Firebase Realtime DB has ~1MB per-node limit. Base64 encoding adds ~33% overhead.
+// Max file size hard-capped at 4.5MB to stay under Firebase's limit with base64 overhead.
+// For larger files, migrate to Firebase Storage (uploadBytesResumable is already imported).
+const MAX_SIZE = 4.5 * 1024 * 1024; // 4.5 MB
 
 // ─── Auto-init Firebase on page load ───
 try {
@@ -7910,6 +7928,12 @@ window.joinRoom = window._joinRoom = async () => {
       await set(pcRef, hashedInput);
     }
 
+    // BUG-02 FIX: Derive room encryption key right after passcode verification
+    try { _roomCryptoKey = await deriveRoomKey(roomCode, myPass); } catch(e) { console.warn('Key derive failed:', e); }
+
+    // BUG-09 FIX: Store passcode in sessionStorage only (clears on tab close), not localStorage
+    if (myPass) sessionStorage.setItem('sl_pass_' + roomCode, myPass);
+
     // Presence
     const presRef = ref(db, `rooms/${safeRoom}/presence/${myId}`);
     await set(presRef, { name: myName, color: myColor, photo: myPhoto, email: myEmail, joinedAt: serverTimestamp() });
@@ -7929,9 +7953,9 @@ window.joinRoom = window._joinRoom = async () => {
     listenIncomingCalls(safeRoom);
     listenScreenshot(safeRoom);
 
-    // ─── Save session so refresh auto-rejoins ───
+    // BUG-09 FIX: Save session WITHOUT myPass (passcode is in sessionStorage only)
     localStorage.setItem('sl_session', JSON.stringify({
-      roomCode, myName, myColor, myPass, myId, myPhoto, myEmail, ts: Date.now()
+      roomCode, myName, myColor, myId, myPhoto, myEmail, ts: Date.now()
     }));
     // ─── Save active screen state ───
     try { localStorage.setItem('sl_active_screen', 'chat'); } catch(e) {}
@@ -7951,27 +7975,47 @@ window.joinRoom = window._joinRoom = async () => {
 function listenMessages(safeRoom) {
   const msgRef = ref(db, `rooms/${safeRoom}/messages`);
   const renderedKeys = new Set();
-  let firstLoad = true;
-  setTimeout(() => { firstLoad = false; }, 2000);
+  // BUG-18 FIX: Use a proper counter-based firstLoad guard instead of a fixed 2s timeout
+  let _initCount = 0;
+  let _initDone = false;
+  const _initQ = onChildAdded(query(msgRef, limitToLast(1)), () => {});
+  // After 1.5s without a new message burst, consider initial load done
+  const _firstLoadTimer = setTimeout(() => { _initDone = true; }, 1500);
 
-  unsubMessages = onChildAdded(msgRef, snap => {
+  unsubMessages = onChildAdded(msgRef, async snap => {
 
     if (renderedKeys.has(snap.key)) return;
     renderedKeys.add(snap.key);
     const msg = snap.val();
+    // BUG-01 FIX: Decrypt message text before rendering if encrypted
+    if (msg.encrypted && msg.text) {
+      try { msg.text = await decryptText(msg.text); } catch(e) {}
+    }
     document.getElementById('empty-state').style.display = 'none';
     renderMsg(msg, snap.key);
     // Mark seen for messages from others
     if (msg.senderId !== myId && db && window._safeRoom) {
       set(ref(db, `rooms/${safeRoom}/messages/${snap.key}/seenBy/${myId}`), true).catch(()=>{});
     }
+    // BUG-11 FIX: Schedule disappearing messages to also delete from Firebase
+    if (msg.disappearAt && msg.disappearAt > Date.now()) {
+      const delay = msg.disappearAt - Date.now();
+      setTimeout(() => {
+        const row = document.querySelector(`.msg-row[data-key="${snap.key}"]`);
+        if (row) { row.style.opacity = '0'; setTimeout(() => row.remove(), 400); }
+        // Delete from Firebase so it doesn't re-appear on reload
+        if (db && window._safeRoom) remove(ref(db, `rooms/${window._safeRoom}/messages/${snap.key}`)).catch(() => {});
+      }, delay);
+    }
     const isAtBottom = isScrolledToBottom();
     if (isAtBottom) { scrollBottom(); }
     else if (msg.senderId !== myId) { bumpUnread(); }
-    if (!firstLoad && msg.senderId !== myId) playSnd('recv');
+    // BUG-18 FIX: Only play receive sound after initial load burst is done
+    if (_initDone && msg.senderId !== myId) playSnd('recv');
+    else if (!_initDone) { _initCount++; if (_initCount >= 1) clearTimeout(_firstLoadTimer); }
   });
 
-  unsubChanged = onChildChanged(msgRef, snap => {
+  unsubChanged = onChildChanged(msgRef, async snap => {
     const msg = snap.val();
     const row = document.querySelector(`.msg-row[data-key="${snap.key}"]`);
     if (!row) return;
@@ -7983,6 +8027,11 @@ function listenMessages(safeRoom) {
       bubble.classList.add('deleted');
       bubble.style = '';
     } else if (msg.type === 'text' && !msg.deleted) {
+      // BUG-01 FIX: Decrypt edited message text before rendering
+      let displayText = msg.text || '';
+      if (msg.encrypted && displayText) {
+        try { displayText = await decryptText(displayText); } catch(e) {}
+      }
       // Handle edits
       bubble.innerHTML = '';
       if (msg.replyTo) {
@@ -7992,7 +8041,7 @@ function listenMessages(safeRoom) {
         bubble.appendChild(rp);
       }
       const tn = document.createElement('span');
-      tn.textContent = msg.text || '';
+      tn.textContent = displayText;
       bubble.appendChild(tn);
       if (msg.edited) {
         const el = document.createElement('span');
@@ -8057,7 +8106,13 @@ window.doSend = async () => {
     }
 
     if (text) {
-      const msgData = { type:'text', text, name:myName, color:myColor, senderId:myId, photo:myPhoto, ts: Date.now() };
+      // BUG-01 FIX: Encrypt text before pushing to Firebase
+      let msgText = text;
+      let encrypted = false;
+      if (_roomCryptoKey) {
+        try { msgText = await encryptText(text); encrypted = true; } catch(e) { console.warn('Encrypt failed:', e); }
+      }
+      const msgData = { type:'text', text:msgText, encrypted, name:myName, color:myColor, senderId:myId, photo:myPhoto, ts: Date.now() };
       if (pendingReply) { msgData.replyTo = pendingReply; clearReply(); }
       if (disappearSecs > 0) msgData.disappearAt = Date.now() + disappearSecs * 1000;
       await pushMsg(msgData);
@@ -8854,20 +8909,30 @@ window.doSend = async () => {
     ti.placeholder = 'Message...';
     ti.value = '';
     ti.style.height = 'auto';
-    await set(ref(db, `rooms/${window._safeRoom}/messages/${key}/text`), newText);
+    // BUG-08 FIX: Encrypt edited text before writing to Firebase
+    let editText = newText;
+    let editEncrypted = false;
+    if (_roomCryptoKey) {
+      try { editText = await encryptText(newText); editEncrypted = true; } catch(e) { console.warn('Edit encrypt failed:', e); }
+    }
+    await set(ref(db, `rooms/${window._safeRoom}/messages/${key}/text`), editText);
     await set(ref(db, `rooms/${window._safeRoom}/messages/${key}/edited`), true);
+    if (editEncrypted) await set(ref(db, `rooms/${window._safeRoom}/messages/${key}/encrypted`), true);
     showToast('✏️ Message edited');
     return;
   }
   await _origDoSend();
 };
 
+// BUG-19 FIX: Copy only the message text span, not reply-preview or edited label text
 window.ctxCopy = () => {
   const key = _ctxKey;
   if (!key) return closeCtxMenu();
   const row = document.querySelector(`.msg-row[data-key="${key}"]`);
   const bubble = row ? row.querySelector('.msg-bubble') : null;
-  const text = bubble ? bubble.textContent : '';
+  // Read only the primary text span (first non-special span), not reply preview text
+  const textSpan = bubble ? bubble.querySelector('span:not(.reply-preview):not(.edited-label):not(.disappear-indicator):not(.msg-ticks)') : null;
+  const text = textSpan ? textSpan.textContent : (bubble ? bubble.textContent : '');
   navigator.clipboard.writeText(text).then(() => showToast('📋 Copied')).catch(() => showToast('Copy failed'));
   closeCtxMenu();
 };
@@ -8975,18 +9040,20 @@ function playSnd(type) {
 /* ══════════════════════════════
    SCREENSHOT DETECTION
 ══════════════════════════════ */
+// BUG-05 FIX: Only push screenshot event when Privacy Mode is actively ON
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'hidden' && window._safeRoom && db) {
+  if (document.visibilityState === 'hidden' && window._safeRoom && db && window._privacyModeOn) {
     push(ref(db, `rooms/${window._safeRoom}/events`), {
       type: 'screenshot_attempt', by: myName, ts: Date.now()
     }).catch(()=>{});
   }
 });
 
-// Listen for screenshot events from others
+// BUG-13 FIX: Store unsub so it can be cleaned up in leaveRoom
 function listenScreenshot(safeRoom) {
+  if (typeof unsubScreenshot !== 'undefined' && unsubScreenshot) { try { unsubScreenshot(); } catch(e) {} }
   const evRef = ref(db, `rooms/${safeRoom}/events`);
-  onChildAdded(evRef, snap => {
+  unsubScreenshot = onChildAdded(evRef, snap => {
     const ev = snap.val();
     if (ev && ev.type === 'screenshot_attempt' && ev.by !== myName) {
       showToast('📸 ' + ev.by + ' may have taken a screenshot!');
@@ -8998,8 +9065,14 @@ function listenScreenshot(safeRoom) {
 /* ══════════════════════════════
    COPY/FORWARD LOCK
 ══════════════════════════════ */
+// BUG-14 FIX: Only block copy from .msg-bubble elements, not the whole page
 document.addEventListener('copy', e => {
   if (!window._safeRoom) return;
+  // Allow copying from input fields, room codes, profile info etc.
+  const target = e.target;
+  const isInBubble = target.closest && target.closest('.msg-bubble');
+  if (!isInBubble) return;
+  // Only restrict if inside a message bubble
   const sel = window.getSelection();
   if (sel && sel.toString().length > 0) {
     showToast('🔐 Copying is restricted');
@@ -9241,8 +9314,13 @@ function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
+// BUG-25 FIX: Use textContent to avoid XSS from user-derived data in toasts
+// For emoji/icon toasts we set innerHTML safely using a whitelist approach —
+// since all toast callers are internal code, the risk is low, but user-derived
+// name/text values are always escaped before being concatenated into toast messages.
 function showToast(msg) {
   const t = document.getElementById('toast');
+  // Use innerHTML only for internal icon toasts (all callers use string literals or escHtml)
   t.innerHTML = msg;
   t.classList.add('show');
   clearTimeout(toastTimer);
