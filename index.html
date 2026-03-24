@@ -9874,7 +9874,7 @@ function applyScreenshotCSS(enable) {
 // Wire up applyScreenshotCSS to privacyModeOn changes
 const _origToggle = window.togglePrivacyMode;
 window.togglePrivacyMode = function() {
-  _origToggle();
+  if (_origToggle) _origToggle();
   applyScreenshotCSS(privacyModeOn);
 };
 
@@ -11856,7 +11856,7 @@ function doLobbySearch(q) {
     matchedPosts.slice(0, 15).forEach(([pid, p]) => {
       if (!p.text) return;
       const hl = escHtml(p.text.slice(0, 120)).replace(
-        new RegExp(escHtml(q).replace(/[\\^$.|?*+()[\]{]/g,'\\$&'),'gi'),
+        new RegExp(escHtml(q).replace(/[\\^$.|?*+()[\]{}]/g,'\\$&'),'gi'),
         m => `<mark>${m}</mark>`
       );
       const chip = document.createElement('div');
@@ -11905,7 +11905,7 @@ const _origSocRenderUsers = window.socRenderUsers;
 window.socRenderUsers = function(data) {
   allLobbyUsers = data || {};
   window._lobbyPresenceData = allLobbyUsers;
-  _origSocRenderUsers(data);
+  if (_origSocRenderUsers) _origSocRenderUsers(data);
   // Refresh online chips bar (mobile)
   buildOnlineChips(data);
   // Update online count badge in nav
@@ -12269,7 +12269,6 @@ window.deleteRecentRoom = function(code) {
 document.addEventListener('DOMContentLoaded', () => renderRecentRooms());
 
 // Patch joinRoom to save recent rooms
-const _origJoinRoomFull = window._joinRoom;
 setTimeout(() => {
   const orig = window._joinRoom || window.joinRoom;
   if (orig) {
@@ -12702,12 +12701,23 @@ ${'─'.repeat(40)}
   .dm-nt-time { font-size: 9px !important; }
 }
 
-</style>
+</style></body></html>`], { type: 'text/html' });
+    filename = `secretline-${roomCode}-${now}.html`;
+    mime = 'text/html';
+  }
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('💾 Exported: ' + filename);
+};
+
+</script>
 
 <script>
-// ══════════════════════════════════════════
-//  NEW LOBBY FEATURES v1
-// ══════════════════════════════════════════
 
 // ── 1. ANIMATED LIKE BUTTON ──────────────
 (function() {
@@ -13966,7 +13976,7 @@ window.dmCtxDeleteAll=function(){
   var key=row.dataset.msgKey; dmCloseCtx();
   if(!key||!window.__db||!window.__fbx){if(window.showToast)showToast('Cannot delete');return;}
   if(!confirm('Delete for everyone? Cannot undo.'))return;
-  window.__fbx.remove(window.__fbx.ref(window.__db,'social/dm/'+dmRoomId+'/messages/'+key))
+  window.__fbx.remove(window.__fbx.ref(window.__db,'social/dm/'+window.dmRoomId+'/messages/'+key))
     .then(function(){row.style.cssText+='transition:opacity .25s;opacity:0;';setTimeout(function(){row.remove();},260);if(window.showToast)showToast('\uD83D\uDDD1 Deleted for everyone');})
     .catch(function(){if(window.showToast)showToast('Delete failed');});
 };
@@ -14042,21 +14052,6 @@ document.addEventListener('scroll', function(){ window.msgHideChatDeleteBtn(null
   </div>
 </div>
 
-</body></html>`], { type: 'text/html' });
-    filename = `secretline-${roomCode}-${now}.html`;
-    mime = 'text/html';
-  }
-
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = filename;
-  document.body.appendChild(a); a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  showToast('&#x1F4BE; Exported: ' + filename);
-};
-
-/* ─── Keyboard Shortcuts Panel ─── */
 window.openShortcuts  = function() { document.getElementById('shortcuts-modal').classList.add('open'); };
 window.closeShortcuts = function() { document.getElementById('shortcuts-modal').classList.remove('open'); };
 
@@ -14125,7 +14120,7 @@ window.showCtxMenu = function(x, y, key, senderId) {
 /* ─── Initial render of recent rooms on page load ─── */
 setTimeout(() => renderRecentRooms(), 300);
 
-console.log('%c SecretLine Full Build loaded &#x2713;', 'color:#3de8a0;font-weight:bold;font-size:14px');
+console.log('%c SecretLine Full Build loaded \u2713', 'color:#3de8a0;font-weight:bold;font-size:14px');
 </script>
 
 <!-- ════ DIRECT MESSAGE SCREEN ════ -->
@@ -14342,6 +14337,7 @@ window.openFriendsPanel = function() {
 /* ─── DIRECT MESSAGE SYSTEM ─── */
 let dmPeer        = null;   // { uid, name, photo, color }
 let dmRoomId      = null;   // deterministic room id
+Object.defineProperty(window, 'dmRoomId', { get: () => dmRoomId, set: v => { dmRoomId = v; }, configurable: true });
 let dmUnsub       = null;   // firebase listener
 let dmTypingUnsub = null;
 let dmTypingTimer = null;
@@ -14924,7 +14920,7 @@ document.addEventListener('keydown', e => {
   }
 });
 
-console.log('%c DM System loaded &#x2713;', 'color:#4fa3ff;font-weight:bold');
+console.log('%c DM System loaded \u2713', 'color:#4fa3ff;font-weight:bold');
 </script>
 
 <script>
@@ -15913,7 +15909,7 @@ window.sendStoryReply = function() {
   if (!db2) { showToast('Not connected'); return; }
   var msgText = '\uD83D\uDCF8 Story reply: ' + text;
   var myName=window._socName||'Someone', myPhoto=window._socPhoto||'', myUid=window._socUserId, now=Date.now();
-  fb.push(fb.ref(db2, 'social/dms/' + roomId + '/messages'), {
+  fb.push(fb.ref(db2, 'social/dm/' + roomId + '/messages'), {
     senderId: myUid, senderName: myName, senderPhoto: myPhoto,
     name: myName, photo: myPhoto, color: window._socColor||'#3de8a0',
     type: 'text', text: msgText, ts: now
@@ -16046,7 +16042,6 @@ let _lobbyPostLoading = false;
 let _lobbyAllPosts    = [];  // all post IDs sorted by ts desc
 
 // Patch socChildAdded to track all posts
-const _origSocPostsUnsub2 = null;
 function lobbyInfiniteScrollInit() {
   const sentinel = document.getElementById('soc-feed-sentinel');
   if (!sentinel || !window.IntersectionObserver) return;
@@ -16191,15 +16186,7 @@ window.openPrivProfile = function() {
 // Patch savePrivProfile to include new fields
 const _origSavePriv = window.savePrivProfile;
 window.savePrivProfile = function() {
-  // Add extra fields before saving
-  const extraFields = ['location','website','work','interests'];
-  extraFields.forEach(field => {
-    const el = document.getElementById(`priv-${field}-input`);
-    if (!el) return;
-    // Store in a temp place, orig save fn will pick it up via localStorage override below
-  });
-
-  // Actually we patch localStorage after orig saves
+  // Call original save first, then enhance with extra fields
   if (_origSavePriv) _origSavePriv.apply(this, arguments);
 
   // Enhance the saved profile with new fields
@@ -18482,7 +18469,7 @@ console.log('%c Auth Gate v2 loaded \u2713', 'color:#3de8a0;font-weight:bold;fon
       showOverlay(1000);
     }
     var newH = window.innerHeight;
-    if (Math.abs(newH - _lastH) > 0 && Math.abs(newH - _lastH) < 60) {
+    if (Math.abs(newH - _lastH) >= 10 && Math.abs(newH - _lastH) < 60) {
       showOverlay(800);
     }
     _lastH = newH;
