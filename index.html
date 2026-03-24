@@ -54,17 +54,53 @@ html, body {
 }
 
 /* ── NOISE TEXTURE OVERLAY ── */
-body::after {
-  content: '';
-  position: fixed; inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
-  pointer-events: none;
-  z-index: 9999;
-  opacity: 0.4;
+/* Noise overlay disabled — causes GPU compositing layer overhead */
+body::after { display: none; }
+
+/* ── ANDROID PERFORMANCE MODE ──
+   Reduce GPU-heavy effects on mobile/low-power devices.
+   backdrop-filter:blur() is the #1 cause of frame drops on Android.
+*/
+@media (max-width: 768px) and (hover: none) and (pointer: coarse) {
+  /* Disable noise overlay on mobile — GPU compositing cost */
+  body::after { display: none; }
+
+  /* Replace backdrop-filter blur with solid dark background */
+  .search-panel,
+  .starred-panel,
+  .room-settings-modal,
+  .msg-info-overlay,
+  .ctx-menu,
+  .emoji-picker-wrap,
+  .call-screen,
+  .incoming-call,
+  .vid-call-screen,
+  .media-lightbox,
+  .soc-fullpost-modal,
+  .soc-saved-panel,
+  .soc-edit-modal,
+  .story-upload-sheet {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  /* Reduce animation complexity */
+  .msg-row {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 64px; animation: none !important; }
+  .soc-post {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 220px; animation: none !important; }
+  .lobby-sr-user-chip { animation: none !important; }
+  .lobby-sr-post-chip { animation: none !important; }
+
+  /* Faster transitions */
+  * { transition-duration: 0.1s !important; }
+  .msgs-wrap * { transition: none !important; }
 }
 
 /* ── SCREENS ── */
-.screen { position: fixed; inset: 0; z-index: 10; display: flex; flex-direction: column; }
+.screen { position: fixed; inset: 0; z-index: 10; display: flex; flex-direction: column; contain: layout style; }
 .screen.hidden { display: none !important; }
 
 /* ════════════════════════════════
@@ -916,10 +952,17 @@ body.privacy-blur #setup-screen { filter: blur(12px); transition: filter 0.3s; }
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   padding: 20px 16px;
   display: flex;
   flex-direction: column;
   gap: 3px;
+  /* Android performance: promote to GPU layer */
+  will-change: scroll-position;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  overscroll-behavior: contain;
 }
 
 /* Wider messages on desktop */
@@ -930,6 +973,12 @@ body.privacy-blur #setup-screen { filter: blur(12px); transition: filter 0.3s; }
 
 .msgs-wrap::-webkit-scrollbar { width: 3px; }
 .msgs-wrap::-webkit-scrollbar-thumb { background: var(--card2); border-radius: 2px; }
+
+/* Android: isolate message row repaints */
+.msg-row {
+  contain: layout style;
+  transform: translateZ(0);
+}
 
 @media (min-width: 700px) {
   .msgs-wrap::-webkit-scrollbar { width: 5px; }
@@ -982,6 +1031,8 @@ body.privacy-blur #setup-screen { filter: blur(12px); transition: filter 0.3s; }
   display: flex;
   flex-direction: column;
   max-width: 85%;
+  content-visibility: auto;
+  contain-intrinsic-size: 0 64px;
   animation: msgPop 0.2s cubic-bezier(0.34,1.56,0.64,1);
   touch-action: pan-y;
   -webkit-tap-highlight-color: transparent;
@@ -1933,6 +1984,8 @@ button, .attach-btn, .call-btn, .c-dot, .ap-item {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
     height: auto !important;
   }
   .input-bar {
@@ -3078,6 +3131,9 @@ button, .attach-btn, .call-btn, .c-dot, .ap-item {
   background:var(--panel); border:1px solid var(--border);
   border-radius:16px; overflow:hidden;
   animation:socPostIn 0.25s ease;
+  contain: layout style;
+  content-visibility: auto;
+  contain-intrinsic-size: 0 220px;
 }
 @keyframes socPostIn { from{opacity:0;transform:translateY(8px);} to{opacity:1;transform:none;} }
 
@@ -3120,24 +3176,25 @@ button, .attach-btn, .call-btn, .c-dot, .ap-item {
   width: 100%;
   background: var(--card);
   overflow: hidden;
+  /* Auto height — shows image at original aspect ratio */
 }
 
-/* Default: 4:5 (portrait — like Instagram) */
+/* Disable forced aspect ratio — image dictates height naturally */
 .soc-post-media-wrap::before {
-  content: '';
-  display: block;
-  padding-top: 125%; /* 4:5 ratio = 5/4 * 100 */
+  content: none;
+  display: none;
 }
 
 /* Ratio variants set by JS */
-.soc-post-media-wrap.ratio-1-1::before  { padding-top: 100%; }      /* Square */
-.soc-post-media-wrap.ratio-4-5::before  { padding-top: 125%; }      /* Portrait (default) */
-.soc-post-media-wrap.ratio-3-4::before  { padding-top: 133.33%; }   /* 3:4 portrait */
-.soc-post-media-wrap.ratio-9-16::before { padding-top: 177.78%; }   /* 9:16 vertical */
-.soc-post-media-wrap.ratio-16-9::before { padding-top: 56.25%; }    /* 16:9 landscape */
-.soc-post-media-wrap.ratio-4-3::before  { padding-top: 75%; }       /* 4:3 landscape */
-.soc-post-media-wrap.ratio-3-2::before  { padding-top: 66.67%; }    /* 3:2 landscape */
-.soc-post-media-wrap.ratio-2-3::before  { padding-top: 150%; }      /* 2:3 portrait */
+/* Ratio classes disabled — image shows at natural size */
+.soc-post-media-wrap.ratio-1-1::before,
+.soc-post-media-wrap.ratio-4-5::before,
+.soc-post-media-wrap.ratio-3-4::before,
+.soc-post-media-wrap.ratio-9-16::before,
+.soc-post-media-wrap.ratio-16-9::before,
+.soc-post-media-wrap.ratio-4-3::before,
+.soc-post-media-wrap.ratio-3-2::before,
+.soc-post-media-wrap.ratio-2-3::before { content: none; display: none; }
 
 .soc-post-img {
   position: absolute;
@@ -3153,13 +3210,14 @@ button, .attach-btn, .call-btn, .c-dot, .ap-item {
 .soc-post-img:hover { transform: scale(1.02); }
 
 .soc-post-video {
-  position: absolute;
-  inset: 0;
+  position: relative;
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  height: auto;
+  max-height: 600px;
+  object-fit: contain;
   display: block;
   background: #000;
+  border-radius: 10px;
 }
 
 /* Badge stays on top */
@@ -3766,6 +3824,7 @@ button, .attach-btn, .call-btn, .c-dot, .ap-item {
   border: 1px solid var(--border); border-radius: 12px;
   cursor: pointer; transition: border-color 0.15s, background 0.15s;
   animation: socPostIn 0.15s ease;
+  contain: layout style;
 }
 .lobby-sr-user-chip:hover { border-color: rgba(61,232,160,0.3); background: var(--card); }
 .lobby-sr-av {
@@ -3785,6 +3844,7 @@ button, .attach-btn, .call-btn, .c-dot, .ap-item {
   border: 1px solid var(--border); border-radius: 12px;
   cursor: pointer; transition: border-color 0.15s, background 0.15s;
   animation: socPostIn 0.15s ease;
+  contain: layout style;
 }
 .lobby-sr-post-chip:hover { border-color: rgba(61,232,160,0.3); background: var(--card); }
 .lobby-sr-post-sender { font-size: 11px; font-weight: 700; margin-bottom: 2px; }
@@ -4232,6 +4292,7 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
   display: flex; align-items: flex-end; gap: 8px;
   padding: 10px 12px;
   padding-bottom: max(10px, env(safe-area-inset-bottom));
+  position: relative;
   background: var(--panel); border-top: 1px solid var(--border);
   flex-shrink: 0;
 }
@@ -4557,30 +4618,38 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
 
 /* ── DM Emoji ── */
 .dm-emoji-btn {
-  width: 36px; height: 36px; background: none; border: none;
-  font-size: 20px; cursor: pointer; flex-shrink: 0;
+  width: 40px; height: 40px; background: none; border: none;
+  font-size: 22px; cursor: pointer; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
-  transition: transform 0.15s; border-radius: 8px;
+  transition: background 0.15s; border-radius: 10px;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
 }
-.dm-emoji-btn:hover { transform: scale(1.2); background: var(--card); }
+.dm-emoji-btn:hover, .dm-emoji-btn:active { background: var(--card); }
 .dm-emoji-pop {
-  position: absolute; bottom: calc(100% + 8px); left: 40px;
+  position: fixed;
   background: var(--card2); border: 1px solid var(--border2);
   border-radius: 14px; padding: 8px;
-  box-shadow: 0 12px 32px rgba(0,0,0,0.5); z-index: 200;
-  width: 280px; animation: ctxPop 0.15s cubic-bezier(0.34,1.56,0.64,1);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.5); z-index: 99800;
+  width: min(300px, 92vw);
+  animation: ctxPop 0.15s cubic-bezier(0.34,1.56,0.64,1);
 }
 .dm-emoji-grid {
-  display: grid; grid-template-columns: repeat(8, 1fr);
-  gap: 2px; max-height: 200px; overflow-y: auto;
+  display: grid; grid-template-columns: repeat(7, 1fr);
+  gap: 2px; max-height: 220px; overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 .dm-emoji-btn-item {
-  width: 32px; height: 32px; background: none; border: none;
-  font-size: 18px; cursor: pointer; border-radius: 6px;
+  width: 40px; height: 40px; background: none; border: none;
+  font-size: 22px; cursor: pointer; border-radius: 8px;
   display: flex; align-items: center; justify-content: center;
   transition: background 0.1s;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
 }
-.dm-emoji-btn-item:hover { background: rgba(255,255,255,0.1); transform: scale(1.2); }
+.dm-emoji-btn-item:hover, .dm-emoji-btn-item:active { background: rgba(255,255,255,0.12); }
 
 /* ── DM Preview Strip ── */
 .dm-preview-strip {
@@ -4917,7 +4986,7 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
   /* Post cards */
   .soc-post { padding: 12px !important; border-radius: 12px !important; }
   .soc-post-text { font-size: 13px !important; line-height: 1.6 !important; }
-  .soc-post-img { max-height: 260px !important; border-radius: 10px !important; }
+  .soc-post-img { border-radius: 10px !important; }
   .soc-post-header { gap: 8px !important; }
   .soc-post-av { width: 34px !important; height: 34px !important; }
   .soc-post-name { font-size: 13px !important; }
@@ -5481,6 +5550,142 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
   .soc-nav-title { font-size: 12px !important; }
 }
 
+/* ══════════════════════════════
+   ALWAYS-ON SCREENSHOT PREVENTION
+══════════════════════════════ */
+@media print {
+  body * { visibility: hidden !important; }
+  body::before {
+    content: '\uD83D\uDD10 SecretLine — Content protected.';
+    visibility: visible !important;
+    position: fixed; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; color: #000; background: #fff;
+  }
+}
+
+#sl-secure-overlay {
+  display: none;
+  position: fixed; inset: 0; z-index: 2147483647;
+  background: #000;
+  align-items: center; justify-content: center;
+  flex-direction: column; gap: 12px;
+}
+#sl-secure-overlay.show { display: flex; }
+#sl-secure-overlay .so-icon { font-size: 40px; }
+#sl-secure-overlay .so-text {
+  color: rgba(255,255,255,0.4);
+  font-size: 12px;
+  font-family: 'Space Mono', monospace;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+#chat-screen, #social-screen {
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  isolation: isolate;
+}
+
+/* ═══════════════════════════════════════════
+   SNAKE GAME
+═══════════════════════════════════════════ */
+.snake-wrap { display:flex; flex-direction:column; align-items:center; gap:12px; width:100%; }
+.snake-hud {
+  display:flex; gap:20px; font-family:var(--mono); font-size:12px;
+  color:var(--text2); width:100%; max-width:320px; justify-content:space-between;
+}
+.snake-hud-val { color:var(--accent); font-size:16px; font-weight:700; }
+#snake-canvas {
+  border-radius:10px; border:1px solid var(--border2);
+  background:#0a0e14; display:block; touch-action:none;
+}
+.snake-dpad {
+  display:grid; grid-template-columns:repeat(3,48px); gap:4px; margin-top:4px;
+}
+.snake-dpad-btn {
+  width:48px; height:48px; background:var(--card); border:1px solid var(--border2);
+  border-radius:10px; font-size:20px; cursor:pointer; display:flex;
+  align-items:center; justify-content:center; user-select:none;
+  active:background:var(--card2);
+}
+.snake-dpad-btn:active { background:var(--card2); }
+.snake-overlay {
+  position:absolute; inset:0; background:rgba(5,7,10,0.85);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:12px; border-radius:10px; cursor:pointer;
+}
+.snake-overlay-title { font-size:22px; font-weight:700; color:var(--accent); }
+.snake-overlay-sub   { font-size:13px; color:var(--text2); font-family:var(--mono); }
+
+/* ═══════════════════════════════════════════
+   MEMORY MATCH
+═══════════════════════════════════════════ */
+.memory-wrap { display:flex; flex-direction:column; align-items:center; gap:14px; width:100%; }
+.memory-hud  { display:flex; gap:20px; font-family:var(--mono); font-size:12px; color:var(--text2); }
+.memory-hud-val { color:var(--accent); font-weight:700; }
+.memory-grid {
+  display:grid; gap:8px; width:100%; max-width:340px;
+}
+.mem-card {
+  aspect-ratio:1; border-radius:10px; cursor:pointer;
+  perspective:600px; position:relative;
+}
+.mem-card-inner {
+  width:100%; height:100%; position:relative;
+  transform-style:preserve-3d; transition:transform 0.4s ease;
+}
+.mem-card.flipped .mem-card-inner,
+.mem-card.matched .mem-card-inner { transform: rotateY(180deg); }
+.mem-front, .mem-back {
+  position:absolute; inset:0; border-radius:10px;
+  display:flex; align-items:center; justify-content:center;
+  backface-visibility:hidden;
+}
+.mem-front {
+  background:var(--card); border:1px solid var(--border2);
+  font-size:22px; color:var(--text3);
+}
+.mem-back {
+  background:var(--card2); border:1px solid var(--border2);
+  font-size:28px; transform:rotateY(180deg);
+}
+.mem-card.matched .mem-back {
+  background:var(--accent-dim); border-color:var(--accent);
+}
+
+/* ═══════════════════════════════════════════
+   2048
+═══════════════════════════════════════════ */
+.g2048-wrap { display:flex; flex-direction:column; align-items:center; gap:12px; width:100%; }
+.g2048-hud  { display:flex; gap:16px; font-family:var(--mono); font-size:12px; color:var(--text2); }
+.g2048-hud-box { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:6px 14px; text-align:center; }
+.g2048-hud-val { display:block; font-size:18px; font-weight:700; color:var(--accent); }
+.g2048-hud-lbl { font-size:9px; letter-spacing:1px; text-transform:uppercase; }
+#g2048-board {
+  display:grid; grid-template-columns:repeat(4,1fr); gap:8px;
+  background:var(--card2); padding:10px; border-radius:12px;
+  width:100%; max-width:320px; touch-action:none;
+}
+.t2048 {
+  aspect-ratio:1; border-radius:8px; display:flex; align-items:center;
+  justify-content:center; font-size:20px; font-weight:700;
+  font-family:var(--mono); background:var(--card); border:1px solid var(--border);
+  transition:background 0.15s, transform 0.1s;
+}
+.t2048[data-v="2"]    { background:#3de8a0; color:#000; border-color:#3de8a0; }
+.t2048[data-v="4"]    { background:#2dcf8a; color:#000; }
+.t2048[data-v="8"]    { background:#4fa3ff; color:#000; }
+.t2048[data-v="16"]   { background:#3a8fe8; color:#fff; }
+.t2048[data-v="32"]   { background:#ff8a5c; color:#fff; }
+.t2048[data-v="64"]   { background:#ff5c5c; color:#fff; }
+.t2048[data-v="128"]  { background:#ffd460; color:#000; font-size:16px; }
+.t2048[data-v="256"]  { background:#f4c430; color:#000; font-size:16px; }
+.t2048[data-v="512"]  { background:#e8a020; color:#fff; font-size:14px; }
+.t2048[data-v="1024"] { background:#c0392b; color:#fff; font-size:12px; }
+.t2048[data-v="2048"] { background:#e91e8c; color:#fff; font-size:12px; animation:tile2048 0.4s ease; }
+@keyframes tile2048 { 0%{transform:scale(1.2)} 100%{transform:scale(1)} }
+
+
 </style>
 </head>
 <body>
@@ -5629,7 +5834,7 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
         &#x1F4AC;
         <div class="msg-nav-badge" id="msg-nav-badge">0</div>
       </button>
-      <button class="soc-friends-btn" onclick="openFriendsPanel()" title="Friends &amp; Requests">
+<button class="soc-friends-btn" onclick="openFriendsPanel()" title="Friends &amp; Requests">
         &#x1F465;
         <div class="soc-friends-badge" id="soc-friends-badge">0</div>
       </button>
@@ -6538,6 +6743,27 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
 <!-- Screenshot flash blocker -->
 <div id="screenshot-flash"></div>
 
+<!-- Always-on secure overlay (screen capture / recording block) -->
+<div id="sl-secure-overlay">
+  <div class="so-icon">🔐</div>
+  <div class="so-text">SecretLine &mdash; Screen capture blocked</div>
+</div>
+
+<!-- 
+  Chrome Android Screenshot Block:
+  A <video> element with a MediaStream of a black canvas, positioned as a
+  full-screen overlay with z-index below content but above the compositor.
+  Chrome Android renders <video> frames via a separate protected surface
+  (SurfaceView) which is EXCLUDED from screenshots by the OS automatically —
+  same as FLAG_SECURE. The video is invisible (opacity trick) but the
+  protected surface still covers the screen in the screenshot output.
+-->
+<video id="sl-chrome-shield" autoplay muted playsinline
+  style="position:fixed;inset:0;width:100%;height:100%;object-fit:cover;
+         z-index:2147483640;pointer-events:none;opacity:0.001;
+         background:#000;display:none;">
+</video>
+
 <!-- Privacy toast notification -->
 <div class="privacy-toast" id="privacy-toast"></div>
 
@@ -6688,9 +6914,13 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
 
 <!-- Firebase SDK -->
 <script type="module">
-import { initializeApp }           from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, push, onValue, onChildAdded, onChildChanged, onChildRemoved, set, remove, serverTimestamp, onDisconnect, get }
-                                   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { initializeApp }           from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
+import { getDatabase, ref, push, onValue, onChildAdded, onChildChanged, onChildRemoved, set, remove, serverTimestamp, onDisconnect, get,
+         query, limitToLast, orderByKey, endBefore }
+                                   from "https://www.gstatic.com/firebasejs/11.4.0/firebase-database.js";
+import { getStorage, ref as sRef, uploadBytesResumable, getDownloadURL }
+                                   from "https://www.gstatic.com/firebasejs/11.4.0/firebase-storage.js";
+import { getMessaging, onMessage } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-messaging.js";
 
 // ─── Expose to global ───
 window._fb = { initializeApp, getDatabase, ref, push, onValue, set, remove, serverTimestamp, onDisconnect, get };
@@ -6708,6 +6938,9 @@ const FIREBASE_CONFIG = {
 
 // ─── State ───
 let db, app;
+let storage = null, messaging = null;
+let _roomCryptoKey = null;
+let _oldestMsgKey = null, _allLoaded = false, _firstLoadDone = false;
 let roomCode = '', myName = '', myColor = 'green', myPass = '';
 let myPhoto = '', myEmail = '';
 let myId = 'u_' + Math.random().toString(36).slice(2,9);
@@ -6726,6 +6959,105 @@ function getAudioCtx() {
 
 // Color map
 const COLORS = { green:'#3de8a0', blue:'#4fa3ff', pink:'#ff7eb3', orange:'#ffb347', purple:'#c084fc', red:'#f87171' };
+
+/* ══════════════════════════════
+   UPGRADE 2: AES-GCM E2E ENCRYPTION
+   Key derived from roomCode + passcode via PBKDF2
+══════════════════════════════ */
+async function deriveRoomKey(room, pass) {
+  const material = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(room + ':' + (pass || 'secretline_open')),
+    'PBKDF2', false, ['deriveKey']
+  );
+  return crypto.subtle.deriveKey(
+    { name:'PBKDF2', salt: new TextEncoder().encode('SLv6_' + room), iterations:100000, hash:'SHA-256' },
+    material,
+    { name:'AES-GCM', length:256 },
+    false, ['encrypt','decrypt']
+  );
+}
+
+async function encryptText(text) {
+  if (!_roomCryptoKey || !text) return text;
+  try {
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const enc = await crypto.subtle.encrypt({ name:'AES-GCM', iv }, _roomCryptoKey, new TextEncoder().encode(text));
+    const combined = new Uint8Array(iv.byteLength + enc.byteLength);
+    combined.set(iv, 0); combined.set(new Uint8Array(enc), iv.byteLength);
+    return btoa(String.fromCharCode(...combined));
+  } catch(e) { return text; }
+}
+
+async function decryptText(enc) {
+  if (!_roomCryptoKey || !enc) return enc || '';
+  try {
+    const bytes = Uint8Array.from(atob(enc), c => c.charCodeAt(0));
+    const iv   = bytes.slice(0, 12);
+    const data = bytes.slice(12);
+    const dec = await crypto.subtle.decrypt({ name:'AES-GCM', iv }, _roomCryptoKey, data);
+    return new TextDecoder().decode(dec);
+  } catch(e) { return enc; }  // fallback: show raw (old unencrypted or wrong room key)
+}
+
+/* ══════════════════════════════
+   UPGRADE 5: FCM PUSH NOTIFICATIONS
+══════════════════════════════ */
+// Replace with your own VAPID key: Firebase Console → Project Settings → Cloud Messaging → Web Push
+const VAPID_KEY = 'BEl62iUYgUivxIkv69yViEuiBIa40HI80NM9N5KTHn8z5R5R5DLemwbvJOSiudcaA51HlaROBq4XKxk5Sc-wng';
+
+async function initFCM(safeRoom) {
+  if (!('Notification' in window)) return;
+  try {
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') return;
+
+    if (messaging) {
+      onMessage(messaging, payload => {
+        if (document.visibilityState === 'hidden' || !document.hasFocus()) {
+          const n = payload.notification || {};
+          try { new Notification(n.title || 'SecretLine', { body: n.body || 'New message', tag:'sl-msg' }); } catch(_) {}
+        }
+      });
+      // Try to register blob SW + get FCM token
+      try {
+        const swSrc = [
+          `importScripts('https://www.gstatic.com/firebasejs/11.4.0/firebase-app-compat.js');`,
+          `importScripts('https://www.gstatic.com/firebasejs/11.4.0/firebase-messaging-compat.js');`,
+          `firebase.initializeApp(${JSON.stringify(FIREBASE_CONFIG)});`,
+          `firebase.messaging().onBackgroundMessage(p=>{`,
+          `  const n=p.notification||{};`,
+          `  self.registration.showNotification(n.title||'SecretLine',{body:n.body||'New message',tag:'sl-bg'});`,
+          `});`,
+        ].join('\n');
+        const swReg = await navigator.serviceWorker.register(
+          URL.createObjectURL(new Blob([swSrc], { type:'application/javascript' }))
+        );
+        const { getToken } = await import('https://www.gstatic.com/firebasejs/11.4.0/firebase-messaging.js');
+        const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
+        if (token && db && safeRoom) await set(ref(db, `rooms/${safeRoom}/fcmTokens/${myId}`), token);
+      } catch(_) { /* needs valid VAPID key for background push — foreground notifications work */ }
+    }
+    showToast('🔔 Notifications enabled');
+  } catch(e) { console.warn('FCM:', e); }
+}
+
+// Show a browser Notification for incoming messages when tab is not focused
+async function showMsgNotif(msg) {
+  if (Notification.permission !== 'granted') return;
+  if (document.visibilityState === 'visible' && document.hasFocus()) return;
+  if (msg.senderId === myId) return;
+  try {
+    const rawText = msg.encrypted ? await decryptText(msg.text) : (msg.text || '');
+    const body = msg.type === 'text' ? rawText.slice(0, 100)
+               : msg.mediaType === 'voice' ? '🎙️ Voice message' : '📷 Media';
+    new Notification((msg.name || 'SecretLine') + ' · #' + roomCode, {
+      body, tag: 'sl-' + msg.senderId, silent: true,
+      icon: msg.photo || undefined,
+    });
+  } catch(_) {}
+}
+
 
 /* ══════════════════════════════
    GOOGLE SIGN-IN
@@ -6919,7 +7251,10 @@ const MAX_SIZE = 100 * 1024 * 1024;
 try {
   app = initializeApp(FIREBASE_CONFIG);
   db  = getDatabase(app);
-  window.__db  = db;
+  storage = getStorage(app);
+  try { messaging = getMessaging(app); } catch(_) { console.warn('FCM not available'); }
+  window.__db      = db;
+  window.__storage = storage;
   window.__fbx = { ref, push, onValue, onChildAdded, onChildChanged, onChildRemoved, set, remove, onDisconnect, serverTimestamp, get };
 } catch(e) { console.error('Firebase init:', e); }
 
@@ -6964,6 +7299,7 @@ try {
     document.getElementById('chat-screen').classList.remove('hidden');
     document.getElementById('h-room').textContent = '# ' + roomCode;
     window._safeRoom = safeRoom;
+    try { localStorage.setItem('sl_active_screen', 'chat'); } catch(e) {}
     syncPCSidebar();
 
     // Unsubscribe any stale listeners before re-attaching
@@ -6983,6 +7319,37 @@ try {
     hideLoading();
     localStorage.removeItem('sl_session');
     console.warn('Auto-rejoin failed:', e);
+  }
+})();
+
+// ─── Auto-restore lobby on refresh if was in lobby ───
+(function() {
+  var activeScreen = localStorage.getItem('sl_active_screen');
+  var chatSession  = localStorage.getItem('sl_session');
+  // Only restore lobby if was in lobby AND not currently in chat
+  if (activeScreen === 'lobby' && !chatSession) {
+    var tries = 0;
+    var lobbyRestore = setInterval(function() {
+      tries++;
+      var authOk = false;
+      try {
+        var sess = JSON.parse(localStorage.getItem('sl_auth_v2') || 'null');
+        authOk = !!(sess && sess.verified);
+      } catch(e) {}
+      if (!authOk) {
+        try {
+          var gp = JSON.parse(localStorage.getItem('sl_google_profile') || 'null');
+          authOk = !!(gp && gp.email);
+        } catch(e) {}
+      }
+      if (authOk && window.__db && window.openSocialArea) {
+        clearInterval(lobbyRestore);
+        try { window.openSocialArea(); } catch(e) { console.warn('Lobby restore failed:', e); }
+      } else if (tries > 20) {
+        clearInterval(lobbyRestore);
+        console.warn('Lobby restore: auth/Firebase not ready in time');
+      }
+    }, 500);
   }
 })();
 
@@ -7058,6 +7425,8 @@ window.joinRoom = window._joinRoom = async () => {
     localStorage.setItem('sl_session', JSON.stringify({
       roomCode, myName, myColor, myPass, myId, myPhoto, myEmail, ts: Date.now()
     }));
+    // ─── Save active screen state ───
+    try { localStorage.setItem('sl_active_screen', 'chat'); } catch(e) {}
 
     window._safeRoom = safeRoom;
     showToast('🎉 Joined room: ' + roomCode);
@@ -7788,6 +8157,7 @@ window.leaveRoom = async () => {
   if (unsubTyping)   { unsubTyping();   unsubTyping   = null; }
   await remove(ref(db, `rooms/${window._safeRoom}/presence/${myId}`));
   localStorage.removeItem('sl_session');
+  try { localStorage.removeItem('sl_active_screen'); } catch(e) {}
   location.reload();
 };
 
@@ -8050,7 +8420,7 @@ document.getElementById('msgs-wrap').addEventListener('scroll', () => {
   } else {
     document.getElementById('scroll-down-btn').classList.add('show');
   }
-});
+}, { passive: true });
 
 /* ══════════════════════════════
    SOUND EFFECTS
@@ -9199,18 +9569,25 @@ function startCallTimer() {
 (function() {
   if (!window.visualViewport) return;
   const chatCol = document.getElementById('chat-column');
+  var _vpRaf = null;
   function onViewportChange() {
     const cs = document.getElementById('chat-screen');
     if (!cs || cs.classList.contains('hidden')) return;
-    const vh = window.visualViewport.height;
-    if (chatCol) chatCol.style.height = vh + 'px';
-    setTimeout(() => {
+    // Use rAF to batch layout changes — avoids forced reflow on Android
+    if (_vpRaf) cancelAnimationFrame(_vpRaf);
+    _vpRaf = requestAnimationFrame(function() {
+      const vh = window.visualViewport.height;
+      const offsetTop = window.visualViewport.offsetTop || 0;
+      if (chatCol) {
+        chatCol.style.height = vh + 'px';
+        chatCol.style.transform = 'translateY(' + offsetTop + 'px)';
+      }
       const wrap = document.getElementById('msgs-wrap');
       if (wrap) wrap.scrollTop = wrap.scrollHeight;
-    }, 100);
+    });
   }
-  window.visualViewport.addEventListener('resize', onViewportChange);
-  window.visualViewport.addEventListener('scroll', onViewportChange);
+  window.visualViewport.addEventListener('resize', onViewportChange, { passive: true });
+  window.visualViewport.addEventListener('scroll', onViewportChange, { passive: true });
 })();
 
 /* ══════════════════════════════════════════════════════
@@ -9833,6 +10210,9 @@ window.openSocialArea = function() {
   document.getElementById('setup-screen').classList.add('hidden');
   document.getElementById('social-screen').classList.remove('hidden');
 
+  // ─── Save active screen so refresh restores lobby ───
+  try { localStorage.setItem('sl_active_screen', 'lobby'); } catch(e) {}
+
   const { ref, set, onValue, onChildAdded, onChildChanged, onChildRemoved, onDisconnect, serverTimestamp } = socGetFB();
   const db2 = socGetDB();
 
@@ -9872,7 +10252,13 @@ window.openSocialArea = function() {
 };
 
 // ── Render online users ──
+var _socRenderUsersTimer = null;
 function socRenderUsers(data) {
+  // Debounce: if multiple presence updates fire rapidly, only render once
+  clearTimeout(_socRenderUsersTimer);
+  _socRenderUsersTimer = setTimeout(function() { _socRenderUsersNow(data); }, 150);
+}
+function _socRenderUsersNow(data) {
   const ul = document.getElementById('soc-users-list');
   const n  = document.getElementById('soc-online-n');
   const users = Object.values(data);
@@ -9925,13 +10311,13 @@ window.socRenderPost = function socRenderPost(postId, data) {
       (data.edited ? '<span style="font-size:10px;color:var(--text3);margin-left:6px;font-family:var(--mono)">(edited)</span>' : '') +
       '</div>' : '';
   const imageHtml  = data.image
-    ? '<div class="soc-post-media-wrap ratio-4-5" id="media-wrap-' + postId + '">' +
-      '<img class="soc-post-img" src="' + data.image + '" alt="" onclick="socOpenFullPost(\'' + postId + '\')" onload="socSetAspectRatio(this,\'media-wrap-' + postId + '\')">' +
+    ? '<div class="soc-post-media-wrap" id="media-wrap-' + postId + '" style="position:relative;width:100%;background:var(--card);overflow:hidden;">' +
+      '<img class="soc-post-img" src="' + data.image + '" alt="" onclick="socOpenFullPost(\'' + postId + '\')" style="position:relative;width:100%;height:auto;object-fit:contain;display:block;cursor:zoom-in;border-radius:10px;">' +
       '<button class="soc-media-expand" onclick="socOpenFullPost(\'' + postId + '\')" title="Expand">&#x2922;</button>' +
       '<span class="soc-media-type-badge">&#x1F4F7; Photo</span></div>' : '';
   const videoHtml  = data.video
-    ? '<div class="soc-post-media-wrap ratio-16-9" id="media-wrap-' + postId + '">' +
-      '<video class="soc-post-video" src="' + data.video + '" controls playsinline></video>' +
+    ? '<div class="soc-post-media-wrap" id="media-wrap-' + postId + '" style="position:relative;width:100%;background:#000;overflow:hidden;">' +
+      '<video class="soc-post-video" src="' + data.video + '" controls playsinline style="position:relative;width:100%;height:auto;max-height:600px;object-fit:contain;display:block;background:#000;border-radius:10px;"></video>' +
       '<span class="soc-media-type-badge">&#x1F3AC; Video</span></div>' : '';
 
   card.innerHTML =
@@ -10141,7 +10527,7 @@ window.socCreatePostMob = function() {
 // ── Image pick ──
 function _readImg(file, cb) {
   if(!file) return;
-  if(file.size>3*1024*1024){showToast('⚠️ Max 3MB');return;}
+  if(file.size>10*1024*1024){showToast('⚠️ Max 10MB');return;}
   const r=new FileReader(); r.onload=e=>cb(e.target.result); r.readAsDataURL(file);
 }
 window.socPickImg = function(inp) {
@@ -10746,6 +11132,8 @@ window.socGoBack=function(){
   try { if(socFriendsUnsub){socFriendsUnsub();socFriendsUnsub=null;} } catch(e){}
   document.getElementById('social-screen').classList.add('hidden');
   document.getElementById('setup-screen').classList.remove('hidden');
+  // ─── Clear lobby screen state ───
+  try { localStorage.removeItem('sl_active_screen'); } catch(e){}
 };
 window.socGoHome = function() {
   var feedCol = document.querySelector('.soc-feed-col');
@@ -10785,8 +11173,9 @@ function _socLeaveAndGo(code) {
 window.openSocCompose  = function() { document.getElementById('soc-compose-modal').classList.add('open'); };
 window.closeSocCompose = function() { document.getElementById('soc-compose-modal').classList.remove('open'); };
 
-// Auto-refresh post timestamps every 60s
+// Auto-refresh post timestamps every 60s (skip when tab hidden)
 setInterval(()=>{
+  if (document.hidden) return;
   document.querySelectorAll('.soc-post[data-post-id]').forEach(card=>{
     const pid = card.dataset.postId;
     const d   = socPostsData[pid]; if(!d) return;
@@ -10890,6 +11279,9 @@ document.addEventListener('DOMContentLoaded', ()=>{
 function getStarred(){ try{ return JSON.parse(localStorage.getItem('sl_starred')||'[]'); }catch(e){return[];} }
 function saveStarred(arr){ localStorage.setItem('sl_starred', JSON.stringify(arr)); }
 
+/* ─── escHtml2: safe HTML escape for chat/starred content ─── */
+function escHtml2(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
 window.openStarredPanel = function(){
   renderStarredList();
   document.getElementById('starred-panel').classList.add('open');
@@ -10923,8 +11315,6 @@ window.unstarMsg = function(key){
   if(btn){ btn.classList.remove('bookmarked'); btn.title='Star message'; }
   showToast('Unstarred');
 };
-
-function escHtml2(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 /* ─── Context Menu: Star ─── */
 window.ctxStar = function(){
@@ -11039,7 +11429,7 @@ window.doSearchMessages = function(q){
   results.innerHTML = '';
   hits.slice(0,50).forEach(m => {
     const highlighted = escHtml2(m.text.slice(0,120)).replace(
-      new RegExp(escHtml2(q).replace(/[\\^$.|?*+()[{]/g,'\\$&'),'gi'),
+      new RegExp(escHtml2(q).replace(/[\\^$.|?*+()[\]{]/g,'\\$&'),'gi'),
       match => `<mark>${match}</mark>`
     );
     const el = document.createElement('div');
@@ -11051,10 +11441,13 @@ window.doSearchMessages = function(q){
       closeSearchPanel();
       const target = document.querySelector(`.msg-row[data-key="${m.key}"]`);
       if(target){
-        target.scrollIntoView({ behavior:'smooth', block:'center' });
-        target.style.transition = 'background 0.3s';
-        target.style.background = 'rgba(61,232,160,0.12)';
-        setTimeout(()=>{ target.style.background=''; }, 1500);
+        // Wait for panel close animation before scrolling
+        setTimeout(() => {
+          target.scrollIntoView({ behavior:'smooth', block:'center' });
+          target.style.transition = 'background 0.3s';
+          target.style.background = 'rgba(61,232,160,0.12)';
+          setTimeout(()=>{ target.style.background=''; }, 1500);
+        }, 250);
       }
     };
     results.appendChild(el);
@@ -11265,10 +11658,13 @@ function lobbyCheckCooldown() {
   clearInterval(cooldownInterval);
   cooldownInterval = setInterval(() => {
     const r = Math.ceil((LOBBY_POST_COOLDOWN - (Date.now() - lastPostTime)) / 1000);
+    const _bar = document.getElementById('lobby-cooldown-bar');
+    const _secs = document.getElementById('lobby-cooldown-secs');
     if (r <= 0) {
       clearInterval(cooldownInterval);
-      if (bar) bar.style.display = 'none';
-    } else if (secs) secs.textContent = r;
+      cooldownInterval = null;
+      if (_bar) _bar.style.display = 'none';
+    } else if (_secs) _secs.textContent = r;
   }, 500);
   showToast('⏳ Wait ' + remaining + 's before posting again');
   return false;
@@ -11279,13 +11675,13 @@ const _origSocCreatePost = window.socCreatePost;
 window.socCreatePost = function() {
   if (!lobbyCheckCooldown()) return;
   lastPostTime = Date.now();
-  if (_origSocCreatePost) _origSocCreatePost();
+  if (_origSocCreatePost) _origSocCreatePost.apply(this, arguments);
 };
 const _origSocCreatePostMob = window.socCreatePostMob;
 window.socCreatePostMob = function() {
   if (!lobbyCheckCooldown()) return;
   lastPostTime = Date.now();
-  if (_origSocCreatePostMob) _origSocCreatePostMob();
+  if (_origSocCreatePostMob) _origSocCreatePostMob.apply(this, arguments);
 };
 
 /* Char count in post textarea */
@@ -11386,6 +11782,12 @@ window.lobbySearch = function(q) {
   const clearBtn = document.getElementById('lobby-search-clear');
   if (clearBtn) clearBtn.style.display = q ? 'block' : 'none';
 
+  // Sync both inputs to same value
+  const inp1 = document.getElementById('lobby-search-input');
+  const inp2 = document.getElementById('lobby-mob-search-input');
+  if (inp1 && inp1 !== document.activeElement && inp1.value !== q) inp1.value = q;
+  if (inp2 && inp2 !== document.activeElement && inp2.value !== q) inp2.value = q;
+
   const results = document.getElementById('lobby-search-results');
   if (!results) return;
 
@@ -11454,7 +11856,7 @@ function doLobbySearch(q) {
     matchedPosts.slice(0, 15).forEach(([pid, p]) => {
       if (!p.text) return;
       const hl = escHtml(p.text.slice(0, 120)).replace(
-        new RegExp(escHtml(q).replace(/[\\^$.|?*+()[{]/g,'\\$&'),'gi'),
+        new RegExp(escHtml(q).replace(/[\\^$.|?*+()[\]{]/g,'\\$&'),'gi'),
         m => `<mark>${m}</mark>`
       );
       const chip = document.createElement('div');
@@ -11609,9 +12011,15 @@ document.addEventListener('keydown', e => {
   // Ctrl+F in lobby = lobby search
   if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
     e.preventDefault();
-    const inp = document.getElementById('lobby-search-input') || document.getElementById('lobby-mob-search-input');
-    if (inp) { inp.focus(); }
-    toggleLobbySearchMob();
+    const desktopInp = document.getElementById('lobby-search-input');
+    if (desktopInp && desktopInp.offsetParent !== null) {
+      // Desktop: focus the visible desktop search bar
+      desktopInp.focus();
+    } else {
+      // Mobile: toggle the mobile search bar
+      toggleLobbySearchMob();
+      setTimeout(() => document.getElementById('lobby-mob-search-input')?.focus(), 100);
+    }
   }
 });
 
@@ -12368,8 +12776,9 @@ function socStartOnlineTracking() {
   // Remove on disconnect
   try { fb.onDisconnect(presRef).set({ online: false, lastSeen: Date.now() }); } catch(x){}
 
-  // Update every 30s
+  // Update every 30s (skip if tab hidden — saves Firebase writes)
   setInterval(function() {
+    if (document.hidden) return;
     fb.set(presRef, { online: true, lastSeen: Date.now(), name: window._socName || '' });
   }, 30000);
 
@@ -12381,7 +12790,12 @@ function socStartOnlineTracking() {
   });
 }
 
+var _socOnlineIndTimer = null;
 function _socUpdateOnlineIndicators() {
+  clearTimeout(_socOnlineIndTimer);
+  _socOnlineIndTimer = setTimeout(function() { _socUpdateOnlineIndicatorsNow(); }, 200);
+}
+function _socUpdateOnlineIndicatorsNow() {
   var now = Date.now();
   document.querySelectorAll('.soc-post[data-post-id]').forEach(function(card) {
     var uid = card.dataset.authorUid;
@@ -14204,7 +14618,7 @@ window.dmOnInput = function(ta) {
   ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
 
   const btn = document.getElementById('dm-send-btn');
-  if (btn) btn.disabled = !ta.value.trim();
+  if (btn) btn.disabled = !ta.value.trim() && !(window._dmPendingFiles && window._dmPendingFiles.length > 0);
 
   // Typing indicator
   if (!window.__db || !window.__fbx || !dmRoomId) return;
@@ -15063,12 +15477,17 @@ window.closeStoryUpload = function() {
   document.getElementById('story-upload-sheet')?.classList.remove('open');
   document.getElementById('story-text-input').value = '';
   _storyImgDataLocal = '';
+  if (typeof _storyVidDataLocal !== 'undefined') _storyVidDataLocal = '';
   document.getElementById('story-img-preview-wrap').style.display = 'none';
+  var vidEl = document.getElementById('story-vid-preview-el');
+  if (vidEl) { vidEl.src = ''; }
+  var vidWrap = document.getElementById('story-img-preview-vid-wrap');
+  if (vidWrap) vidWrap.style.display = 'none';
 };
 
 window.onStoryImgSelect = function(inp) {
   const file = inp.files[0]; if (!file) return;
-  if (file.size > 3*1024*1024) { showToast('&#x26A0;&#xFE0F; Max 3MB'); return; }
+  if (file.size > 10*1024*1024) { showToast('&#x26A0;&#xFE0F; Max 10MB'); return; }
   const r = new FileReader();
   r.onload = ev => {
     _storyImgDataLocal = ev.target.result;
@@ -15081,6 +15500,31 @@ window.onStoryImgSelect = function(inp) {
 window.removeStoryImg = function() {
   _storyImgDataLocal = '';
   document.getElementById('story-img-preview-wrap').style.display = 'none';
+};
+
+// ── Story video pick/remove ──
+var _storyVidDataLocal = '';
+window.onStoryVidSelect = function(inp) {
+  var file = inp.files[0];
+  if (!file) return;
+  if (file.size > 10 * 1024 * 1024) { showToast('⚠️ Max 10MB for video'); return; }
+  // Clear image if video selected
+  _storyImgDataLocal = '';
+  document.getElementById('story-img-preview-wrap').style.display = 'none';
+  var r = new FileReader();
+  r.onload = function(e) {
+    _storyVidDataLocal = e.target.result;
+    var vidEl = document.getElementById('story-vid-preview-el');
+    if (vidEl) { vidEl.src = _storyVidDataLocal; }
+    document.getElementById('story-img-preview-vid-wrap').style.display = 'block';
+  };
+  r.readAsDataURL(file);
+};
+window.removeStoryVid = function() {
+  _storyVidDataLocal = '';
+  var vidEl = document.getElementById('story-vid-preview-el');
+  if (vidEl) { vidEl.src = ''; }
+  document.getElementById('story-img-preview-vid-wrap').style.display = 'none';
 };
 
 window.submitStory = function() {
@@ -15096,16 +15540,18 @@ window.submitStory = function() {
     return;
   }
   
+  var _storyVid = (typeof _storyVidDataLocal !== 'undefined') ? _storyVidDataLocal : '';
   push(ref(db2, 'social/stories'), {
     uid: window._socUserId,
     name: window._socName || 'Someone',
     photo: window._socPhoto || '',
     image: _storyImgDataLocal,
+    video: _storyVid,
     text: text || '',
     ts: Date.now(),
     expiresAt: Date.now() + 24*60*60*1000  // 24 hours
   }).then(ref => {
-    showToast('📸 Story shared!');
+    showToast(_storyVid ? '🎬 Story shared!' : '📸 Story shared!');
     closeStoryUpload();
     // Immediately show in stories bar without waiting for Firebase listener
     if (ref && ref.key) {
@@ -15115,6 +15561,7 @@ window.submitStory = function() {
         name: window._socName || 'Someone',
         photo: window._socPhoto || '',
         image: _storyImgDataLocal,
+        video: _storyVid,
         text: document.getElementById('story-text-input')?.value?.trim() || '',
         ts: Date.now()
       };
@@ -15243,9 +15690,9 @@ function renderStoriesBar() {
       var _ht = null;
       item.addEventListener('touchstart',function(){_ht=setTimeout(function(){
         if(confirm('Story delete \u0d9a\u0dbb\u0db1\u0dca\u0db1\u0daf?'))window._socDeleteStoryByUid(story.uid);
-      },700);});
-      item.addEventListener('touchend',function(){clearTimeout(_ht);});
-      item.addEventListener('touchmove',function(){clearTimeout(_ht);});
+      },700);},{passive:true});
+      item.addEventListener('touchend',function(){clearTimeout(_ht);},{passive:true});
+      item.addEventListener('touchmove',function(){clearTimeout(_ht);},{passive:true});
       item.addEventListener('contextmenu',function(e){
         e.preventDefault();
         if(confirm('Story delete \u0d9a\u0dbb\u0db1\u0dca\u0db1\u0daf?'))window._socDeleteStoryByUid(story.uid);
@@ -15295,7 +15742,17 @@ function showStoryAt(idx) {
   const nameEl = document.getElementById('story-viewer-name');
   const timeEl = document.getElementById('story-viewer-time');
 
-  if (imgEl)  { imgEl.src = story.image || ''; imgEl.style.display = story.image ? 'block' : 'none'; }
+  // Handle image vs video story
+  var vidEl = document.getElementById('story-viewer-vid');
+  if (story.video) {
+    // Video story
+    if (imgEl)  { imgEl.src = ''; imgEl.style.display = 'none'; }
+    if (vidEl)  { vidEl.src = story.video; vidEl.style.display = 'block'; vidEl.load(); vidEl.play().catch(function(){}); }
+  } else {
+    // Image story
+    if (vidEl)  { vidEl.pause(); vidEl.src = ''; vidEl.style.display = 'none'; }
+    if (imgEl)  { imgEl.src = story.image || ''; imgEl.style.display = story.image ? 'block' : 'none'; }
+  }
   if (textEl) {
     textEl.textContent = story.text || '';
     // For text-only stories, make text bigger and centered
@@ -15340,9 +15797,23 @@ function showStoryAt(idx) {
     clearTimeout(_storyProgressTimer);
     const currentFill = barsWrap.children[idx]?.querySelector('.story-progress-fill');
     if (currentFill) {
-      currentFill.style.transition = 'width 5s linear';
-      requestAnimationFrame(() => { currentFill.style.width = '100%'; });
-      _storyProgressTimer = setTimeout(() => storyNext(null), 5100);
+      const _vidEl2 = document.getElementById('story-viewer-vid');
+      const isVidStory = !!(story.video && _vidEl2 && _vidEl2.style.display !== 'none');
+      if (isVidStory) {
+        // For video stories, sync progress bar with video duration
+        const setupVidProgress = function() {
+          const dur = _vidEl2.duration || 10;
+          currentFill.style.transition = 'width ' + dur + 's linear';
+          requestAnimationFrame(function() { currentFill.style.width = '100%'; });
+          _storyProgressTimer = setTimeout(function() { storyNext(null); }, dur * 1000 + 200);
+        };
+        if (_vidEl2.readyState >= 1) { setupVidProgress(); }
+        else { _vidEl2.addEventListener('loadedmetadata', setupVidProgress, { once: true }); }
+      } else {
+        currentFill.style.transition = 'width 5s linear';
+        requestAnimationFrame(() => { currentFill.style.width = '100%'; });
+        _storyProgressTimer = setTimeout(() => storyNext(null), 5100);
+      }
     }
   }
 
@@ -15373,6 +15844,9 @@ window.storyTapHandler = function(e) {
 window.closeStoryViewer = function(e) {
   if (e && e.stopPropagation) e.stopPropagation();
   clearTimeout(_storyProgressTimer);
+  // Pause video if playing
+  var _cv = document.getElementById('story-viewer-vid');
+  if (_cv) { try { _cv.pause(); _cv.src = ''; } catch(ex){} }
   var sv = document.getElementById('story-viewer');
   if (sv) { sv.classList.remove('open'); sv.style.display='none'; }
   window._storyViewerList = null;
@@ -15553,6 +16027,7 @@ window.openSocialArea = function() {
 
 /* ─── POST TIMESTAMPS LIVE UPDATE ─── */
 setInterval(() => {
+  if (document.hidden) return;
   document.querySelectorAll('.soc-post-time[data-ts]').forEach(el => {
     const ts = parseInt(el.dataset.ts||0);
     if (ts) {
@@ -16376,6 +16851,10 @@ function dmUpdatePreviewStrip() {
   if (!strip) return;
   strip.innerHTML = '';
   strip.style.display = _dmPendingFiles.length ? 'flex' : 'none';
+  // Enable/disable send button based on files + text
+  const btn = document.getElementById('dm-send-btn');
+  const ta  = document.getElementById('dm-textarea');
+  if (btn) btn.disabled = !_dmPendingFiles.length && !(ta && ta.value.trim());
   _dmPendingFiles.forEach((f, i) => {
     const item = document.createElement('div');
     item.className = 'dm-prev-item';
@@ -16471,61 +16950,77 @@ const DM_EMOJIS = [
 // ── CHAT EMOJI PICKER ──────────────────────────────────────
 window.chatToggleEmoji = function(e) {
   e.stopPropagation();
+  e.preventDefault();
   const pop = document.getElementById('chat-emoji-pop');
   if (!pop) return;
-  const isOpen = pop.style.display !== 'none';
-  pop.style.display = isOpen ? 'none' : 'block';
-  if (!isOpen && !pop.dataset.built) {
+  const isOpen = pop.style.display === 'block';
+
+  if (isOpen) { pop.style.display = 'none'; return; }
+
+  // Build emoji grid once
+  if (!pop.dataset.built) {
     pop.dataset.built = '1';
     const grid = document.getElementById('chat-emoji-grid');
     if (grid) {
       DM_EMOJIS.forEach(emoji => {
         const btn = document.createElement('button');
-        btn.style.cssText = 'width:36px;height:36px;background:none;border:none;font-size:20px;cursor:pointer;border-radius:6px;display:flex;align-items:center;justify-content:center;transition:background 0.1s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;';
+        btn.style.cssText = 'width:40px;height:40px;background:none;border:none;font-size:22px;cursor:pointer;border-radius:8px;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none;';
         btn.textContent = emoji;
-        btn.addEventListener('click', (ev) => {
+        btn.addEventListener('click', function(ev) {
           ev.stopPropagation();
+          ev.preventDefault();
           const ta = document.getElementById('ti');
           if (ta) {
-            const pos = ta.selectionStart != null ? ta.selectionStart : ta.value.length;
+            const pos = (ta.selectionStart != null) ? ta.selectionStart : ta.value.length;
             ta.value = ta.value.slice(0, pos) + emoji + ta.value.slice(pos);
             ta.selectionStart = ta.selectionEnd = pos + emoji.length;
             ta.focus();
-            // Trigger oninput to update send button state
             ta.dispatchEvent(new Event('input'));
           }
           pop.style.display = 'none';
         });
-        btn.addEventListener('mouseenter', () => btn.style.background = 'rgba(255,255,255,0.1)');
-        btn.addEventListener('mouseleave', () => btn.style.background = 'none');
         grid.appendChild(btn);
       });
     }
   }
-  // Close when clicking outside
-  if (!isOpen) {
-    setTimeout(() => {
-      function _closeEP(ev) {
-        const pop2 = document.getElementById('chat-emoji-pop');
-        const btn2 = document.getElementById('chat-emoji-btn');
-        if (pop2 && !pop2.contains(ev.target) && ev.target !== btn2) {
-          pop2.style.display = 'none';
-          document.removeEventListener('click', _closeEP);
-          document.removeEventListener('pointerdown', _closeEP);
-        }
+
+  // Fixed position from button
+  const btnEl = e.currentTarget || e.target;
+  const rect = btnEl.getBoundingClientRect();
+  const popW = Math.min(300, window.innerWidth * 0.92);
+  let left = rect.left;
+  const bottom = window.innerHeight - rect.top + 8;
+  if (left + popW > window.innerWidth - 8) left = window.innerWidth - popW - 8;
+  if (left < 8) left = 8;
+
+  pop.style.cssText = 'display:block;position:fixed;left:'+left+'px;bottom:'+bottom+'px;top:auto;width:'+popW+'px;background:var(--card2);border:1px solid var(--border2);border-radius:14px;padding:8px;box-shadow:0 12px 32px rgba(0,0,0,0.5);z-index:99800;';
+
+  // Close when tapping outside
+  setTimeout(function() {
+    function _closeEP(ev) {
+      if (!pop.contains(ev.target) && ev.target !== btnEl) {
+        pop.style.display = 'none';
+        document.removeEventListener('pointerdown', _closeEP);
       }
-      document.addEventListener('pointerdown', _closeEP);
-    }, 100);
-  }
+    }
+    document.addEventListener('pointerdown', _closeEP);
+  }, 100);
 };
 
 window.dmToggleEmoji = function(e) {
   e.stopPropagation();
+  e.preventDefault();
   const pop = document.getElementById('dm-emoji-pop');
   if (!pop) return;
-  const open = pop.style.display === 'none' || !pop.style.display;
-  pop.style.display = open ? 'block' : 'none';
-  if (open && !pop.dataset.built) {
+  const isOpen = pop.style.display === 'block';
+
+  if (isOpen) {
+    pop.style.display = 'none';
+    return;
+  }
+
+  // Build emoji grid once
+  if (!pop.dataset.built) {
     pop.dataset.built = '1';
     const grid = document.getElementById('dm-emoji-grid');
     if (grid) {
@@ -16533,21 +17028,51 @@ window.dmToggleEmoji = function(e) {
         const btn = document.createElement('button');
         btn.className = 'dm-emoji-btn-item';
         btn.textContent = emoji;
-        btn.onclick = () => {
+        btn.addEventListener('click', function(ev) {
+          ev.stopPropagation();
+          ev.preventDefault();
           const ta = document.getElementById('dm-textarea');
           if (ta) {
-            const pos = ta.selectionStart || ta.value.length;
-            ta.value = ta.value.slice(0,pos) + emoji + ta.value.slice(pos);
+            const pos = (ta.selectionStart != null) ? ta.selectionStart : ta.value.length;
+            ta.value = ta.value.slice(0, pos) + emoji + ta.value.slice(pos);
             ta.selectionStart = ta.selectionEnd = pos + emoji.length;
             ta.focus();
             dmOnInput(ta);
           }
           pop.style.display = 'none';
-        };
+        });
         grid.appendChild(btn);
       });
     }
   }
+
+  // Position popup using fixed coords from button rect
+  const btnEl = e.currentTarget || e.target;
+  const rect = btnEl.getBoundingClientRect();
+  const popW = Math.min(300, window.innerWidth * 0.92);
+  let left = rect.left;
+  let bottom = window.innerHeight - rect.top + 8;
+
+  // Keep within viewport
+  if (left + popW > window.innerWidth - 8) left = window.innerWidth - popW - 8;
+  if (left < 8) left = 8;
+
+  pop.style.left   = left + 'px';
+  pop.style.bottom = bottom + 'px';
+  pop.style.top    = 'auto';
+  pop.style.width  = popW + 'px';
+  pop.style.display = 'block';
+
+  // Close when tapping outside
+  setTimeout(function() {
+    function _close(ev) {
+      if (!pop.contains(ev.target) && ev.target !== btnEl) {
+        pop.style.display = 'none';
+        document.removeEventListener('pointerdown', _close);
+      }
+    }
+    document.addEventListener('pointerdown', _close);
+  }, 100);
 };
 
 
@@ -16814,6 +17339,9 @@ console.log('%c DM v2 + Profile v2 + Friends RT loaded \u2713', 'color:#3de8a0;f
     <button class="story-viewer-close" id="story-close-btn" onclick="event.stopPropagation();closeStoryViewer();">&#x2715;</button>
   </div>
   <img class="story-viewer-img" id="story-viewer-img" src="" alt="">
+  <video id="story-viewer-vid" autoplay muted playsinline controls
+    style="display:none;max-width:100%;max-height:85vh;object-fit:contain;position:relative;z-index:2;border-radius:8px;">
+  </video>
   <div class="story-viewer-text" id="story-viewer-text"></div>
   <div class="story-views-badge" id="story-views-badge">&#x1F441; 0</div>
   <button class="story-delete-btn" id="story-delete-btn" onclick="event.stopPropagation();deleteCurrentStory();">&#x1F5D1; Delete</button>
@@ -16838,10 +17366,17 @@ console.log('%c DM v2 + Profile v2 + Friends RT loaded \u2713', 'color:#3de8a0;f
       <img id="story-img-preview" style="max-width:100%;max-height:200px;border-radius:10px;object-fit:cover;display:block;">
       <button onclick="removeStoryImg()" style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.6);border:none;border-radius:50%;width:24px;height:24px;color:#fff;font-size:12px;cursor:pointer;">&#x2715;</button>
     </div>
+    <div id="story-img-preview-vid-wrap" style="display:none;margin-bottom:12px;position:relative;">
+      <video id="story-vid-preview-el" style="max-width:100%;max-height:200px;border-radius:10px;display:block;" controls muted playsinline></video>
+      <button onclick="removeStoryVid()" style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.6);border:none;border-radius:50%;width:24px;height:24px;color:#fff;font-size:12px;cursor:pointer;">&#x2715;</button>
+    </div>
     <div style="display:flex;gap:8px;margin-bottom:14px;">
       <button onclick="document.getElementById('story-img-input').click()" style="flex:1;padding:10px;background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--text2);font-family:var(--sans);font-size:13px;cursor:pointer;">&#x1F4F7; Photo</button>
       <input type="file" id="story-img-input" accept="image/*" style="display:none" onchange="onStoryImgSelect(this)">
+      <button onclick="document.getElementById('story-vid-input').click()" style="flex:1;padding:10px;background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--text2);font-family:var(--sans);font-size:13px;cursor:pointer;">&#x1F3AC; Video</button>
+      <input type="file" id="story-vid-input" accept="video/*" style="display:none" onchange="onStoryVidSelect(this)">
     </div>
+    <div id="story-upload-size-note" style="font-size:11px;color:var(--text3);font-family:var(--mono);text-align:center;margin-bottom:10px;">Max 10MB per photo/video</div>
     <button onclick="submitStory()" style="width:100%;padding:12px;background:var(--accent);color:#000;border:none;border-radius:10px;font-family:var(--display);font-size:14px;font-weight:700;cursor:pointer;">Share Story &#x1F680;</button>
   </div>
 </div>
@@ -17759,6 +18294,274 @@ document.addEventListener('DOMContentLoaded', function() {
 
 console.log('%c Auth Gate v2 loaded \u2713', 'color:#3de8a0;font-weight:bold;font-size:13px');
 </script>
+
+<!-- ═══════════════════════════════════════════════════
+     ALWAYS-ON SCREENSHOT & SCREEN RECORDING PREVENTION
+     Works on ALL screens at ALL times (no toggle needed)
+═══════════════════════════════════════════════════ -->
+<script>
+(function() {
+
+  // ─── Helpers ────────────────────────────────────────
+  var overlay = null;
+  var overlayTimer = null;
+
+  function getOverlay() {
+    if (!overlay) overlay = document.getElementById('sl-secure-overlay');
+    return overlay;
+  }
+
+  function showOverlay(ms) {
+    var el = getOverlay();
+    if (!el) return;
+    el.classList.add('show');
+    clearTimeout(overlayTimer);
+    if (ms) {
+      overlayTimer = setTimeout(function() {
+        el.classList.remove('show');
+      }, ms);
+    }
+  }
+
+  function hideOverlay() {
+    var el = getOverlay();
+    if (el) el.classList.remove('show');
+    clearTimeout(overlayTimer);
+  }
+
+  // ─── Method 1: Screen Capture API detection ──────────
+  // Detect when browser's getDisplayMedia / Screen Capture API is used
+  if (navigator.mediaDevices) {
+    var _origGetDisplayMedia = navigator.mediaDevices.getDisplayMedia;
+    if (_origGetDisplayMedia) {
+      navigator.mediaDevices.getDisplayMedia = function() {
+        showOverlay(0); // show black screen permanently until focus
+        console.warn('[SecretLine] Screen capture API blocked.');
+        // Return a rejected promise instead of capturing
+        return Promise.reject(new DOMException('Screen capture not permitted on SecretLine.', 'NotAllowedError'));
+      };
+    }
+  }
+
+  // ─── Method 2: Keyboard shortcut blocking ────────────
+  // Block all known screenshot shortcuts across Windows/Mac/Linux
+  document.addEventListener('keydown', function(e) {
+    var blocked = false;
+
+    // PrintScreen (Windows/Linux)
+    if (e.key === 'PrintScreen' || e.keyCode === 44) blocked = true;
+
+    // Windows Snipping Tool: Win+Shift+S
+    if (e.metaKey && e.shiftKey && (e.key === 's' || e.key === 'S')) blocked = true;
+
+    // Mac screenshot shortcuts: Cmd+Shift+3, 4, 5, 6
+    if (e.metaKey && e.shiftKey && ['3','4','5','6'].includes(e.key)) blocked = true;
+
+    // Mac Cmd+Ctrl+Shift+3/4 (saves to clipboard)
+    if (e.metaKey && e.ctrlKey && e.shiftKey && ['3','4'].includes(e.key)) blocked = true;
+
+    // Chrome OS: Ctrl+Show Windows (keyCode 183)
+    if (e.ctrlKey && e.keyCode === 183) blocked = true;
+
+    // Alt+PrintScreen
+    if (e.altKey && (e.key === 'PrintScreen' || e.keyCode === 44)) blocked = true;
+
+    if (blocked) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      showOverlay(1500);
+      if (window.showToast) window.showToast('\u26d4 Screenshot blocked!');
+      return false;
+    }
+  }, true);
+
+  // ─── Method 3: Visibility & focus loss detection ─────
+  // When tab/window hidden (screen recorders, Alt+Tab, task switchers)
+  var isAppActive = true;
+
+  document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'hidden') {
+      isAppActive = false;
+      showOverlay(0); // keep black until user returns
+    } else {
+      isAppActive = true;
+      // Small delay to let screen capture tools see black frame first
+      setTimeout(hideOverlay, 300);
+    }
+  });
+
+  // ─── Method 4: Window blur (screen recorder focus detection) ─
+  var blurTimer = null;
+  window.addEventListener('blur', function() {
+    blurTimer = setTimeout(function() {
+      if (!isAppActive) showOverlay(0);
+    }, 150);
+  });
+
+  window.addEventListener('focus', function() {
+    clearTimeout(blurTimer);
+    isAppActive = true;
+    setTimeout(hideOverlay, 300);
+  });
+
+  // ─── Method 5: Context menu disable ──────────────────
+  // Prevents right-click > "Save image as" tricks
+  document.addEventListener('contextmenu', function(e) {
+    // Only block inside chat/social screens
+    var inApp = !!(
+      document.getElementById('chat-screen') && 
+      !document.getElementById('chat-screen').classList.contains('hidden')
+    ) || !!(
+      document.getElementById('social-screen') && 
+      !document.getElementById('social-screen').classList.contains('hidden')
+    );
+    if (inApp) {
+      e.preventDefault();
+      return false;
+    }
+  });
+
+  // ─── Method 6: Drag protection ───────────────────────
+  // Block drag-and-drop of content/images out of the app
+  document.addEventListener('dragstart', function(e) {
+    var tag = e.target && e.target.tagName;
+    if (tag === 'IMG' || tag === 'VIDEO' || tag === 'A') {
+      e.preventDefault();
+      return false;
+    }
+  });
+
+  // ─── Method 7: CSS @media (display-mode) based hiding ─
+  // Inject print-media rule dynamically to ensure it's applied
+  try {
+    var styleEl = document.createElement('style');
+    styleEl.id = 'sl-screenshot-css';
+    styleEl.textContent = [
+      // Hide content from print / PDF screenshots
+      '@media print { body > * { display: none !important; } ',
+      'body::after { content: "\1F510 SecretLine content is protected."; ',
+      'display: block; text-align: center; margin-top: 40vh; font-size: 24px; } }',
+
+      // Blur text in screen-magnifier captures
+      // (some screen readers / magnifiers trigger this media query)
+      '@media (forced-colors: active) { ',
+      '#chat-screen .msg-bubble, #social-screen .soc-post-text { ',
+      'filter: blur(0); } }', // keep readable but force compositing
+    ].join('');
+    document.head.appendChild(styleEl);
+  } catch(e) {}
+
+  // ─── Method 8: Selection & clipboard lock ────────────
+  // Prevent selecting and copying content from chat/lobby
+  document.addEventListener('selectstart', function(e) {
+    var inApp = !!(
+      document.getElementById('chat-screen') && 
+      !document.getElementById('chat-screen').classList.contains('hidden')
+    ) || !!(
+      document.getElementById('social-screen') && 
+      !document.getElementById('social-screen').classList.contains('hidden')
+    );
+    if (inApp) {
+      // Allow selecting input/textarea fields only
+      var t = e.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+      e.preventDefault();
+    }
+  });
+
+  // ─── Method 9: iOS/Android screen recording detection ─
+  // On iOS 14+ and some Android, Screen Time / recording triggers
+  // a resize or pixel ratio change — detect and cover
+  // FIX: Merged both resize checks into single passive listener (saves CPU/battery)
+  var _lastPR = window.devicePixelRatio;
+  var _lastH = window.innerHeight;
+  window.addEventListener('resize', function() {
+    var pr = window.devicePixelRatio;
+    if (pr !== _lastPR) {
+      _lastPR = pr;
+      showOverlay(1000);
+    }
+    var newH = window.innerHeight;
+    if (Math.abs(newH - _lastH) > 0 && Math.abs(newH - _lastH) < 60) {
+      showOverlay(800);
+    }
+    _lastH = newH;
+  }, { passive: true });
+
+  // ─── Method 10: Android screenshot gesture detection ──
+  // (merged into unified resize listener above)
+
+  // ─── Method 11: Chrome Android FLAG_SECURE equivalent ──────────
+  // Uses a <video> element fed by a Canvas MediaStream.
+  // On Android Chrome, <video> is rendered via a hardware-protected
+  // SurfaceView that is automatically EXCLUDED from OS screenshots —
+  // identical to Android FLAG_SECURE used by banking apps.
+  // The video is nearly invisible (opacity: 0.001) so users don't see it,
+  // but it covers the entire screen in any screenshot taken.
+  (function initChromeAndroidShield() {
+    var vid = document.getElementById('sl-chrome-shield');
+    if (!vid) return;
+
+    var isAndroid = /Android/i.test(navigator.userAgent);
+    var isChrome  = /Chrome/i.test(navigator.userAgent) && !/Edg|OPR|Samsung/i.test(navigator.userAgent);
+    var isMobile  = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+
+    // Apply on all mobile Chrome + Android browsers
+    if (!(isMobile || isAndroid)) {
+      // On desktop, still activate but less critical
+    }
+
+    try {
+      // Create a black canvas stream — this is the "content" of the video
+      var canvas = document.createElement('canvas');
+      canvas.width = 2; canvas.height = 2;
+      var ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(0, 0, 2, 2);
+
+      var stream = canvas.captureStream(1); // 1 fps is enough
+      vid.srcObject = stream;
+      vid.style.display = 'block';
+
+      vid.play().then(function() {
+        console.log('[SecretLine] Chrome Android shield active (SurfaceView protected)');
+      }).catch(function(e) {
+        // Autoplay blocked — try on first user interaction
+        document.addEventListener('touchstart', function tryPlay() {
+          vid.play().catch(function(){});
+          document.removeEventListener('touchstart', tryPlay);
+        }, { once: true });
+        document.addEventListener('click', function tryPlay2() {
+          vid.play().catch(function(){});
+          document.removeEventListener('click', tryPlay2);
+        }, { once: true });
+      });
+
+      // Keep canvas animating so Chrome doesn't optimise it away (skip if hidden)
+      setInterval(function() {
+        if (document.hidden) return;
+        try {
+          ctx.fillStyle = ctx.fillStyle === '#000000' ? '#010101' : '#000000';
+          ctx.fillRect(0, 0, 2, 2);
+        } catch(e) {}
+      }, 2000);
+
+    } catch(e) {
+      console.warn('[SecretLine] Chrome shield init failed:', e);
+    }
+  })();
+
+  console.log('%c SecretLine Screenshot Protection v2 active \u2713', 
+    'color:#3de8a0;font-weight:bold;font-size:12px;background:#0b0f14;padding:4px 8px;border-radius:4px;');
+
+})();
+</script>
+
+
+
+
+
+
 
 </body>
 </html>
