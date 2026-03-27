@@ -11677,7 +11677,7 @@ function socListenFriendRequests(){
 
 function socRenderFriendRequests(reqs){
   const body=document.getElementById('soc-friends-body');if(!body)return;
-  if(!reqs){const {ref,get}=socGetFB();const db2=socGetDB();get(ref(db2,`social/friend_requests/${socUserId}`)).then(s=>socRenderFriendRequests(s.val()||{}));return;}
+  if(!reqs){const {ref,get}=socGetFB();const db2=socGetDB();var _rrUid=window._socUserId||socUserId||'';get(ref(db2,`social/friend_requests/${_rrUid}`)).then(s=>socRenderFriendRequests(s.val()||{}));return;}
   body.innerHTML='';
   const entries=Object.entries(reqs);
   if(!entries.length){const e=document.createElement('div');e.className='soc-friends-empty';e.textContent='No pending friend requests';body.appendChild(e);return;}
@@ -11719,10 +11719,13 @@ window.socAcceptFriend=function(fromUid,u){
   var _afUid=window._socUserId||socUserId||'';
   if(db2){set(ref(db2,`social/friends/${_afUid}/${fromUid}`),{name:u.name,photo:u.photo||'',ts:Date.now()});set(ref(db2,`social/friends/${fromUid}/${_afUid}`),{name:socName||window._socName,photo:socPhoto||window._socPhoto||'',ts:Date.now()});remove(ref(db2,`social/friend_requests/${_afUid}/${fromUid}`));}
   showToast('🎉 '+u.name+' is now your friend!');
+  // Re-render requests list immediately so accepted row disappears
+  setTimeout(function(){socRenderFriendRequests();},300);
 };
 window.socDeclineFriend=function(fromUid){
   const {ref,remove}=socGetFB();const db2=socGetDB();
-  if(db2)remove(ref(db2,`social/friend_requests/${socUserId}/${fromUid}`));
+  var _dUid=window._socUserId||socUserId||'';
+  if(db2&&_dUid)remove(ref(db2,`social/friend_requests/${_dUid}/${fromUid}`));
   showToast('Declined request');
 };
 
@@ -14243,7 +14246,7 @@ function msgUnfriend(uid, name) {
     }
     // Update profile modal button if open
     var afb = document.getElementById('soc-pf-addfriend-btn');
-    if (afb && afb.dataset.uid === uid) {
+    if (afb && (!afb.dataset.uid || afb.dataset.uid === uid)) {
       afb.textContent = '\uD83D\uDC65 Add Friend';
       afb.classList.remove('pending','friends');
     }
@@ -14972,9 +14975,13 @@ function socRenderFollowersList() {
 /* ─── Open Friends panel on Requests tab by default, showing count ─── */
 const _origOpenFriendsPanel = window.openFriendsPanel;
 window.openFriendsPanel = function() {
+  // Clean up any stale listener before re-opening
+  if(socFriendsUnsub){try{socFriendsUnsub();}catch(e){}socFriendsUnsub=null;}
   document.getElementById('soc-friends-panel').classList.add('open');
   switchFTab('requests');
   socListenFriendRequests();
+  // Start friends realtime if not already running
+  if(!_frRealtimeUnsub && window.socStartFriendsRealtime) socStartFriendsRealtime();
 };
 
 /* ─── DIRECT MESSAGE SYSTEM ─── */
@@ -17044,13 +17051,7 @@ function socRenderFriendsListRT(friendsData) {
   });
 }
 
-// Patch openFriendsPanel to use realtime render
-const _origOpenFriends = window.openFriendsPanel;
-window.openFriendsPanel = function() {
-  if (_origOpenFriends) _origOpenFriends.apply(this, arguments);
-  // Start realtime if not already running
-  if (!_frRealtimeUnsub) socStartFriendsRealtime();
-};
+// openFriendsPanel realtime already handled in the patch above
 
 // Patch switchFTab to use RT friends render
 const _origSwitchFTab = window.switchFTab;
