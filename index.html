@@ -5492,7 +5492,11 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
 
 /* Fix 100vh mobile browser address bar */
 @supports (height: 100dvh) {
-  #social-screen, #chat-screen, .screen {
+  #social-screen, #chat-screen {
+    height: 100dvh !important;
+  }
+  /* setup-screen uses cs-layout — height managed by #cs-body, don't override */
+  #setup-screen:not(.cs-layout) {
     height: 100dvh !important;
   }
 }
@@ -6085,7 +6089,6 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
   height: 56px;
   background: #131313;
   border-bottom: 1px solid rgba(255,83,87,0.1);
-  flex-shrink: 0;
 }
 #cs-topnav .cs-logo {
   font-family: var(--mono);
