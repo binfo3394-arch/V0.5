@@ -19597,7 +19597,9 @@ console.log('%c Auth Gate v2 loaded \u2713', 'color:#3de8a0;font-weight:bold;fon
 
     // Apply on all mobile Chrome + Android browsers
     if (!(isMobile || isAndroid)) {
-      // On desktop, still activate but less critical
+      // On desktop, do not activate to avoid layout issues (blank screen)
+      vid.style.display = 'none';
+      return;
     }
 
     try {
