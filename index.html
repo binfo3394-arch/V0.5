@@ -7423,7 +7423,7 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
 <!-- Firebase SDK -->
 <script type="module">
 import { initializeApp }           from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
-import { getDatabase, ref, push, onValue, onChildAdded, onChildChanged, onChildRemoved, set, remove, serverTimestamp, onDisconnect, get,
+import { getDatabase, ref, push, onValue, onChildAdded, onChildChanged, onChildRemoved, set, update, remove, serverTimestamp, onDisconnect, get,
          query, limitToLast, orderByKey, endBefore }
                                    from "https://www.gstatic.com/firebasejs/11.4.0/firebase-database.js";
 import { getStorage, ref as sRef, uploadBytesResumable, getDownloadURL }
@@ -7509,7 +7509,13 @@ async function encryptText(text) {
     const enc = await crypto.subtle.encrypt({ name:'AES-GCM', iv }, _roomCryptoKey, new TextEncoder().encode(text));
     const combined = new Uint8Array(iv.byteLength + enc.byteLength);
     combined.set(iv, 0); combined.set(new Uint8Array(enc), iv.byteLength);
-    return btoa(String.fromCharCode(...combined));
+    // BUG-FIX: Use chunked btoa to avoid stack overflow on large messages (spread can exceed call stack)
+    let binary = '';
+    const chunkSize = 8192;
+    for (let i = 0; i < combined.length; i += chunkSize) {
+      binary += String.fromCharCode(...combined.subarray(i, i + chunkSize));
+    }
+    return btoa(binary);
   } catch(e) { return text; }
 }
 
@@ -7781,7 +7787,7 @@ try {
   try { messaging = getMessaging(app); } catch(_) { console.warn('FCM not available'); }
   window.__db      = db;
   window.__storage = storage;
-  window.__fbx = { ref, push, onValue, onChildAdded, onChildChanged, onChildRemoved, set, remove, onDisconnect, serverTimestamp, get };
+  window.__fbx = { ref, push, onValue, onChildAdded, onChildChanged, onChildRemoved, set, update, remove, onDisconnect, serverTimestamp, get };
 } catch(e) { console.error('Firebase init:', e); }
 
 // ─── Auto-rejoin on refresh if session exists ───
@@ -7946,6 +7952,10 @@ window.joinRoom = window._joinRoom = async () => {
     document.getElementById('h-room').textContent = '# ' + roomCode;
     syncPCSidebar();
 
+    // BUG-FIX: Set window._safeRoom BEFORE calling listeners so seenBy marks and
+    // disappear timers work correctly during the initial message burst
+    window._safeRoom = safeRoom;
+
     // Listen
     listenPresence(safeRoom);
     listenMessages(safeRoom);
@@ -7960,7 +7970,6 @@ window.joinRoom = window._joinRoom = async () => {
     // ─── Save active screen state ───
     try { localStorage.setItem('sl_active_screen', 'chat'); } catch(e) {}
 
-    window._safeRoom = safeRoom;
     showToast('🎉 Joined room: ' + roomCode);
   } catch(e) {
     hideLoading();
@@ -7976,9 +7985,9 @@ function listenMessages(safeRoom) {
   const msgRef = ref(db, `rooms/${safeRoom}/messages`);
   const renderedKeys = new Set();
   // BUG-18 FIX: Use a proper counter-based firstLoad guard instead of a fixed 2s timeout
+  // BUG-FIX: Removed useless _initQ onChildAdded listener that was never unsubscribed (memory leak)
   let _initCount = 0;
   let _initDone = false;
-  const _initQ = onChildAdded(query(msgRef, limitToLast(1)), () => {});
   // After 1.5s without a new message burst, consider initial load done
   const _firstLoadTimer = setTimeout(() => { _initDone = true; }, 1500);
 
@@ -7997,12 +8006,11 @@ function listenMessages(safeRoom) {
     if (msg.senderId !== myId && db && window._safeRoom) {
       set(ref(db, `rooms/${safeRoom}/messages/${snap.key}/seenBy/${myId}`), true).catch(()=>{});
     }
-    // BUG-11 FIX: Schedule disappearing messages to also delete from Firebase
+    // BUG-FIX: renderMsg() already calls scheduleDisappear() for DOM removal.
+    // Only handle the Firebase delete here to avoid double-removing the element.
     if (msg.disappearAt && msg.disappearAt > Date.now()) {
       const delay = msg.disappearAt - Date.now();
       setTimeout(() => {
-        const row = document.querySelector(`.msg-row[data-key="${snap.key}"]`);
-        if (row) { row.style.opacity = '0'; setTimeout(() => row.remove(), 400); }
         // Delete from Firebase so it doesn't re-appear on reload
         if (db && window._safeRoom) remove(ref(db, `rooms/${window._safeRoom}/messages/${snap.key}`)).catch(() => {});
       }, delay);
@@ -8382,7 +8390,7 @@ window.pick = (type) => {
 
 window.onFiles = (input, type) => {
   Array.from(input.files || []).forEach(file => {
-    if (file.size > MAX_SIZE) { showToast('⚠️ Max 100MB per file: ' + file.name); return; }
+    if (file.size > MAX_SIZE) { showToast('⚠️ Max 4.5MB per file: ' + file.name); return; }
     const reader = new FileReader();
     reader.onload = e => {
       const mType = file.type.startsWith('image/') ? 'image' : file.type.startsWith('video/') ? 'video' : 'doc';
@@ -8617,6 +8625,7 @@ async function sendVoiceMsg(mimeType, duration) {
       name: myName,
       color: myColor,
       senderId: myId,
+      photo: myPhoto,   // BUG-FIX: was missing — avatar not shown for voice messages
       ts: Date.now()
     });
     setUploading(false);
@@ -8915,9 +8924,19 @@ window.doSend = async () => {
     if (_roomCryptoKey) {
       try { editText = await encryptText(newText); editEncrypted = true; } catch(e) { console.warn('Edit encrypt failed:', e); }
     }
-    await set(ref(db, `rooms/${window._safeRoom}/messages/${key}/text`), editText);
-    await set(ref(db, `rooms/${window._safeRoom}/messages/${key}/edited`), true);
-    if (editEncrypted) await set(ref(db, `rooms/${window._safeRoom}/messages/${key}/encrypted`), true);
+    // BUG-FIX: Replaced 3 separate set() calls with a single update() for atomicity.
+    // Previously, if one write failed mid-way the message could be in a corrupt state.
+    const { update: fbUpdate } = window.__fbx || {};
+    if (fbUpdate) {
+      const editPayload = { text: editText, edited: true };
+      if (editEncrypted) editPayload.encrypted = true;
+      await fbUpdate(ref(db, `rooms/${window._safeRoom}/messages/${key}`), editPayload);
+    } else {
+      // Fallback to sequential writes if update not available
+      await set(ref(db, `rooms/${window._safeRoom}/messages/${key}/text`), editText);
+      await set(ref(db, `rooms/${window._safeRoom}/messages/${key}/edited`), true);
+      if (editEncrypted) await set(ref(db, `rooms/${window._safeRoom}/messages/${key}/encrypted`), true);
+    }
     showToast('✏️ Message edited');
     return;
   }
@@ -9123,12 +9142,13 @@ function listenPresence(safeRoom) {
       }
     });
   });
-
-  // Update last seen when partner leaves
-  window.addEventListener('beforeunload', () => {
-    if (peerCount > 0) localStorage.setItem('sl_lastseen_' + safeRoom, Date.now());
-  });
 }
+
+// BUG-FIX: beforeunload must be outside listenPresence — was added anew on every join/rejoin,
+// accumulating duplicate listeners. A single module-level listener is correct.
+window.addEventListener('beforeunload', () => {
+  if (peerCount > 0 && window._safeRoom) localStorage.setItem('sl_lastseen_' + window._safeRoom, Date.now());
+});
 
 /* ══════════════════════════════
    PIN LOCK
