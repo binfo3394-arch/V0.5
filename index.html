@@ -5492,11 +5492,7 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
 
 /* Fix 100vh mobile browser address bar */
 @supports (height: 100dvh) {
-  #social-screen, #chat-screen {
-    height: 100dvh !important;
-  }
-  /* setup-screen uses cs-layout — height managed by #cs-body, don't override */
-  #setup-screen:not(.cs-layout) {
+  #social-screen, #chat-screen, .screen {
     height: 100dvh !important;
   }
 }
@@ -6076,564 +6072,121 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
 @keyframes tile2048 { 0%{transform:scale(1.2)} 100%{transform:scale(1)} }
 
 
-
-/* ════════════════════════════════
-   SETUP SCREEN — CRIMSON_SHADOW REDESIGN
-════════════════════════════════ */
-
-/* Top nav bar for setup screen */
-#cs-topnav {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 0 24px;
-  height: 56px;
-  background: #131313;
-  border-bottom: 1px solid rgba(255,83,87,0.1);
-}
-#cs-topnav .cs-logo {
-  font-family: var(--mono);
-  font-size: 15px;
-  font-weight: 700;
-  color: #ff3344;
-  letter-spacing: 3px;
-  text-transform: uppercase;
-}
-#cs-topnav .cs-nav-links {
-  display: flex; gap: 32px;
-  font-family: var(--mono); font-size: 11px;
-  letter-spacing: 2px; text-transform: uppercase;
-}
-#cs-topnav .cs-nav-links a {
-  color: rgba(229,226,225,0.5);
-  text-decoration: none; transition: color 0.2s;
-}
-#cs-topnav .cs-nav-links a.active { color: #ff3344; }
-#cs-topnav .cs-nav-links a:hover { color: rgba(229,226,225,0.9); }
-#cs-topnav .cs-nav-icons {
-  display: flex; gap: 16px; color: #ff3344;
-  font-size: 18px;
-}
-
-/* Outer layout */
-#setup-screen.cs-layout {
-  flex-direction: column !important;
-  align-items: stretch !important;
-  justify-content: flex-start !important;
-  background: #0e0e0e !important;
-  padding: 0 !important;
-  overflow: hidden !important;
-}
-
-#cs-body {
-  display: flex;
-  flex-direction: row;
-  width: 100%;
-  height: calc(100dvh - 56px - 28px);
-  margin-top: 56px;
-  overflow: hidden;
-}
-
-/* Left sidebar */
-#cs-sidebar {
-  width: 280px;
-  min-width: 280px;
-  background: #131313;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  padding: 28px 20px;
-  font-family: var(--mono);
-  border-right: 1px solid rgba(255,255,255,0.04);
-  overflow-y: auto;
-}
-
-.cs-operator {
-  margin-bottom: 28px;
-}
-.cs-operator-name {
-  display: flex; align-items: center; gap: 10px;
-  margin-bottom: 4px;
-}
-.cs-op-dot {
-  width: 10px; height: 10px; border-radius: 50%;
-  background: #ff3344;
-  box-shadow: 0 0 8px rgba(255,51,68,0.7);
-  flex-shrink: 0;
-  animation: pulseRed2 2s infinite;
-}
-@keyframes pulseRed2 {
-  0%,100% { box-shadow: 0 0 4px rgba(255,51,68,0.5); }
-  50%      { box-shadow: 0 0 14px rgba(255,51,68,0.9); }
-}
-.cs-op-label {
-  font-size: 16px; font-weight: 700;
-  color: #ff3344; letter-spacing: 2px; text-transform: uppercase;
-}
-.cs-clearance {
-  font-size: 9px; color: rgba(229,226,225,0.35);
-  letter-spacing: 2px; text-transform: uppercase; padding-left: 20px;
-}
-
-.cs-section-title {
-  font-size: 9px; color: rgba(229,226,225,0.45);
-  letter-spacing: 2.5px; text-transform: uppercase;
-  margin-bottom: 12px; margin-top: 4px;
-}
-
-/* Diagnostics */
-.cs-diag-item {
-  padding: 10px 12px;
-  background: rgba(255,255,255,0.04);
-  border-radius: 8px;
-  margin-bottom: 8px;
-}
-.cs-diag-row {
-  display: flex; justify-content: space-between; align-items: center;
-  margin-bottom: 4px;
-}
-.cs-diag-key { font-size: 9px; color: rgba(229,226,225,0.5); letter-spacing: 1px; }
-.cs-diag-val { font-size: 10px; color: #ff3344; font-weight: 700; letter-spacing: 1px; }
-.cs-diag-bar {
-  height: 3px; border-radius: 99px;
-  background: rgba(255,255,255,0.08); overflow: hidden;
-}
-.cs-diag-fill { height: 100%; background: #ff3344; border-radius: 99px; }
-
-.cs-diag-simple {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 10px 12px;
-  background: rgba(255,255,255,0.03);
-  border-radius: 8px; margin-bottom: 8px;
-}
-.cs-diag-simple.bordered { border-left: 2px solid #ff3344; }
-.cs-diag-simple-key { font-size: 9px; color: rgba(229,226,225,0.5); letter-spacing: 1px; }
-.cs-diag-simple-val { font-size: 11px; font-weight: 700; color: #ff3344; letter-spacing: 1px; }
-.cs-diag-simple-val.obf { font-size: 9px; }
-
-/* Clusters */
-.cs-cluster-item {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 12px; border-radius: 8px;
-  cursor: pointer; transition: background 0.15s;
-  margin-bottom: 2px;
-}
-.cs-cluster-item:hover { background: rgba(255,255,255,0.05); }
-.cs-cluster-dot {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: #ff3344; flex-shrink: 0;
-}
-.cs-cluster-name {
-  font-size: 10px; color: rgba(229,226,225,0.4);
-  letter-spacing: 1.5px; text-transform: uppercase;
-  transition: color 0.15s;
-}
-.cs-cluster-item:hover .cs-cluster-name { color: rgba(229,226,225,0.85); }
-
-/* Purge button */
-#cs-purge-btn {
-  margin-top: auto; padding-top: 20px;
-}
-#cs-purge-btn button {
-  width: 100%; padding: 12px;
-  background: #ff3344; color: #fff;
-  border: none; border-radius: 6px;
-  font-family: var(--mono); font-size: 10px;
-  font-weight: 700; letter-spacing: 3px;
-  text-transform: uppercase; cursor: pointer;
-  transition: opacity 0.2s;
-}
-#cs-purge-btn button:hover { opacity: 0.85; }
-
-/* Main workspace */
-#cs-workspace {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  background: #0e0e0e;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 32px 20px;
-}
-
-/* BG decoration */
-#cs-workspace::before {
-  content: '';
-  position: absolute;
-  top: 0; right: 0; width: 50%; height: 100%;
-  background: linear-gradient(135deg, transparent 0%, rgba(255,51,68,0.03) 100%);
-  pointer-events: none;
-}
-
-/* Decorative side panel text */
-.cs-deco-panel {
-  position: absolute; bottom: 40px; right: 32px;
-  font-family: var(--mono); opacity: 0.55;
-  display: none;
-}
-@media (min-width: 1200px) { .cs-deco-panel { display: block; } }
-.cs-deco-row {
-  padding: 6px 0 6px 12px; margin-bottom: 10px;
-  font-size: 9px; letter-spacing: 1.5px;
-}
-.cs-deco-row.active { border-left: 2px solid #ff3344; }
-.cs-deco-row.inactive { border-left: 2px solid rgba(255,255,255,0.1); }
-.cs-deco-key { color: #ff3344; display: block; margin-bottom: 2px; text-transform: uppercase; }
-.cs-deco-val { color: rgba(229,226,225,0.8); }
-
-/* Auth card */
-#cs-auth-card {
-  width: 100%;
-  max-width: 440px;
-  position: relative; z-index: 10;
-  background: rgba(53,53,52,0.5);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 14px;
-  padding: 32px 28px;
-  box-shadow: 0 0 40px rgba(0,0,0,0.6), 0 0 80px rgba(255,51,68,0.04);
-}
-
-.cs-card-title {
-  font-family: var(--mono);
-  font-size: 22px; font-weight: 700;
-  letter-spacing: 2px; text-transform: uppercase;
-  color: #e5e2e1; text-align: center;
-  margin-bottom: 6px;
-}
-.cs-card-sub {
-  font-family: var(--mono);
-  font-size: 9px; letter-spacing: 3px;
-  text-transform: uppercase; color: #ff3344;
-  text-align: center; margin-bottom: 24px;
-}
-
-/* Google / Continue button */
-.cs-google-btn {
-  width: 100%; display: flex; align-items: center; justify-content: center;
-  gap: 12px; padding: 14px;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 8px; cursor: pointer;
-  font-family: var(--mono); font-size: 12px;
-  color: #e5e2e1; letter-spacing: 1px;
-  transition: background 0.2s, border-color 0.2s;
-  margin-bottom: 20px;
-}
-.cs-google-btn:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.15); }
-
-/* Divider */
-.cs-divider {
-  display: flex; align-items: center; gap: 12px;
-  margin-bottom: 20px;
-}
-.cs-divider-line { flex: 1; height: 1px; background: rgba(255,255,255,0.06); }
-.cs-divider-text {
-  font-family: var(--mono); font-size: 8px;
-  color: rgba(229,226,225,0.3); letter-spacing: 2.5px; text-transform: uppercase;
-  white-space: nowrap;
-}
-
-/* Profile trigger in auth card */
-.cs-auth-profile {
-  width: 100%; display: flex; align-items: center; gap: 12px;
-  padding: 12px 14px;
-  background: rgba(255,51,68,0.06);
-  border: 1px solid rgba(255,51,68,0.18);
-  border-radius: 8px; cursor: pointer;
-  transition: border-color 0.2s, background 0.2s;
-  margin-bottom: 16px; text-align: left;
-}
-.cs-auth-profile:hover { border-color: rgba(255,51,68,0.35); background: rgba(255,51,68,0.1); }
-
-/* Fields */
-.cs-field { margin-bottom: 14px; }
-.cs-field label {
-  display: block; font-family: var(--mono);
-  font-size: 8px; letter-spacing: 2px; text-transform: uppercase;
-  color: rgba(229,226,225,0.35); margin-bottom: 6px;
-}
-.cs-field input {
-  width: 100%; padding: 12px 14px;
-  background: rgba(0,0,0,0.35);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 6px;
-  color: #e5e2e1; font-family: var(--mono);
-  font-size: 12px; letter-spacing: 1.5px; outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-.cs-field input:focus {
-  border-color: rgba(255,51,68,0.4);
-  box-shadow: 0 0 0 3px rgba(255,51,68,0.07);
-}
-.cs-field input::placeholder { color: rgba(229,226,225,0.2); }
-
-.cs-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-
-/* Recent rooms */
-.cs-recent-label {
-  font-family: var(--mono); font-size: 8px;
-  letter-spacing: 2.5px; text-transform: uppercase;
-  color: rgba(229,226,225,0.3); margin-bottom: 8px;
-  display: flex; align-items: center; gap: 8px;
-}
-.cs-recent-label::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.05); }
-
-/* Initialize button */
-.cs-init-btn {
-  width: 100%; padding: 16px;
-  background: #ff3344; color: #fff;
-  border: none; border-radius: 8px;
-  font-family: var(--mono); font-size: 12px;
-  font-weight: 700; letter-spacing: 3px;
-  text-transform: uppercase; cursor: pointer;
-  margin-top: 8px;
-  transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
-  box-shadow: 0 4px 20px rgba(255,51,68,0.35);
-}
-.cs-init-btn:hover {
-  opacity: 0.92; transform: translateY(-1px);
-  box-shadow: 0 8px 28px rgba(255,51,68,0.5);
-}
-.cs-init-btn:active { transform: translateY(0); }
-.cs-init-btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; box-shadow: none; }
-
-/* Public Hub button */
-.cs-hub-btn {
-  flex: 1; padding: 12px;
-  background: transparent;
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 8px; color: rgba(229,226,225,0.55);
-  font-family: var(--mono); font-size: 10px;
-  letter-spacing: 1.5px; text-transform: uppercase;
-  cursor: pointer; transition: border-color 0.2s, color 0.2s;
-}
-.cs-hub-btn:hover { border-color: rgba(255,255,255,0.18); color: #e5e2e1; }
-
-/* Bottom meta */
-.cs-card-meta {
-  display: flex; justify-content: space-between;
-  margin-top: 18px; padding-top: 14px;
-  border-top: 1px solid rgba(255,255,255,0.04);
-}
-.cs-card-meta span {
-  font-family: var(--mono); font-size: 8px;
-  color: rgba(229,226,225,0.2); letter-spacing: 1px;
-}
-
-/* Bottom status bar */
-#cs-statusbar {
-  position: fixed; bottom: 0; left: 0; right: 0; height: 28px;
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0 20px;
-  background: #0e0e0e;
-  border-top: 1px solid rgba(255,255,255,0.04);
-  z-index: 200;
-}
-.cs-status-left { display: flex; align-items: center; gap: 24px; }
-.cs-status-item { display: flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 8px; color: rgba(229,226,225,0.35); letter-spacing: 1.5px; text-transform: uppercase; }
-.cs-status-dot-green { width: 5px; height: 5px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 5px rgba(34,197,94,0.6); }
-.cs-status-right { font-family: var(--mono); font-size: 8px; color: rgba(229,226,225,0.15); letter-spacing: 1.5px; text-transform: uppercase; }
-
-/* Mobile overrides */
-@media (max-width: 768px) {
-  #cs-sidebar { display: none; }
-  #cs-topnav .cs-nav-links { display: none; }
-  #cs-workspace { padding: 16px 12px 44px; align-items: flex-start; overflow-y: auto; }
-  #cs-auth-card { padding: 24px 18px; border-radius: 12px; }
-  .cs-card-title { font-size: 16px; }
-  #cs-statusbar { display: none; }
-}
-
 </style>
 </head>
 <body>
 
 <!-- ════ SETUP SCREEN ════ -->
-<div id="setup-screen" class="screen cs-layout">
+<div id="setup-screen" class="screen">
 
-  <!-- Top Navigation -->
-  <header id="cs-topnav">
-    <div class="cs-logo">SecretLine</div>
-    <div class="cs-nav-links">
-      <a href="#" class="active">Terminal</a>
-      <a href="#">Vault</a>
-      <a href="#">Nodes</a>
+  <!-- Desktop hero (left column) -->
+  <div class="setup-hero">
+    <div class="hero-brand">
+      <div class="hero-icon">🔐</div>
+      <div>
+        <div class="hero-title">SecretLine</div>
+        <div class="hero-sub">Private · Encrypted · Live</div>
+      <div class="version-badge" style="margin-top:4px">v5</div>
+      </div>
     </div>
-    <div class="cs-nav-icons">
-      <span style="font-size:16px;cursor:pointer;">🛡️</span>
-      <span style="font-size:16px;cursor:pointer;">⬛</span>
+    <div class="hero-features">
+      <div class="hero-feat">
+        <span class="hero-feat-icon">🔒</span>
+        <div class="hero-feat-text">
+          <strong>End-to-end encrypted</strong>
+          Messages never stored on our servers
+        </div>
+      </div>
+      <div class="hero-feat">
+        <span class="hero-feat-icon">📹</span>
+        <div class="hero-feat-text">
+          <strong>Voice & video calls</strong>
+          Group calls up to 6 people
+        </div>
+      </div>
+      <div class="hero-feat">
+        <span class="hero-feat-icon">💨</span>
+        <div class="hero-feat-text">
+          <strong>Disappearing messages</strong>
+          Auto-delete after your chosen time
+        </div>
+      </div>
+      <div class="hero-feat">
+        <span class="hero-feat-icon">🔑</span>
+        <div class="hero-feat-text">
+          <strong>PIN lock</strong>
+          Local app lock for extra privacy
+        </div>
+      </div>
     </div>
-  </header>
+  </div>
 
-  <!-- Body: sidebar + workspace -->
-  <div id="cs-body">
-
-    <!-- Left Sidebar -->
-    <aside id="cs-sidebar">
-      <div class="cs-operator">
-        <div class="cs-operator-name">
-          <div class="cs-op-dot"></div>
-          <div class="cs-op-label" id="cs-op-name">OPERATOR_01</div>
-        </div>
-        <div class="cs-clearance">Level 4 Clearance Required</div>
+  <!-- Setup form (right column / full mobile) -->
+  <div class="setup-card">
+    <div class="brand">
+      <div class="brand-icon">🔐</div>
+      <div class="brand-text">
+        <h1>SecretLine</h1>
+        <p>Private · Encrypted · Live <span class="version-badge" style="font-size:9px;padding:2px 6px">v5</span></p>
       </div>
-
-      <div class="cs-section-title">Live Diagnostics</div>
-      <div class="cs-diag-item">
-        <div class="cs-diag-row">
-          <span class="cs-diag-key">Encryption Level</span>
-          <span class="cs-diag-val">AES-256-GCM</span>
-        </div>
-        <div class="cs-diag-bar"><div class="cs-diag-fill" style="width:94%"></div></div>
-      </div>
-      <div class="cs-diag-simple">
-        <span class="cs-diag-simple-key">Active Nodes</span>
-        <span class="cs-diag-simple-val">12 / 12</span>
-      </div>
-      <div class="cs-diag-simple bordered">
-        <span class="cs-diag-simple-key">Privacy Status</span>
-        <span class="cs-diag-simple-val obf">OBFUSCATED</span>
-      </div>
-
-      <div class="cs-section-title" style="margin-top:24px;">Secure Clusters</div>
-      <div class="cs-cluster-item">
-        <div class="cs-cluster-dot"></div>
-        <span class="cs-cluster-name">CLUSTER_SHADOW_01</span>
-      </div>
-      <div class="cs-cluster-item">
-        <div class="cs-cluster-dot"></div>
-        <span class="cs-cluster-name">NORTH_VAULT_B</span>
-      </div>
-      <div class="cs-cluster-item">
-        <div class="cs-cluster-dot"></div>
-        <span class="cs-cluster-name">GHOST_NODE_MAIN</span>
-      </div>
-
-      <div id="cs-purge-btn">
-        <button onclick="signOut && signOut()">PURGE_SESSION</button>
-      </div>
-    </aside>
-
-    <!-- Main Workspace -->
-    <div id="cs-workspace">
-
-      <!-- Decorative background text -->
-      <div class="cs-deco-panel">
-        <div class="cs-deco-row active">
-          <span class="cs-deco-key">ENCRYPTION_LAYER_STATUS</span>
-          <span class="cs-deco-val">HARDENED</span>
-        </div>
-        <div class="cs-deco-row inactive">
-          <span class="cs-deco-key">HANDSHAKE_PROTOCOL</span>
-          <span class="cs-deco-val">TLS_1.3_V4</span>
-        </div>
-      </div>
-
-      <!-- Auth Card -->
-      <div id="cs-auth-card">
-        <div class="cs-card-title">SYSTEM_SETUP</div>
-        <div class="cs-card-sub">Identity Verification Required</div>
-
-        <!-- Hidden Google wrapper -->
-        <div class="google-signin-wrap" id="google-signin-wrap" style="display:none !important;"></div>
-
-        <!-- Profile card (shown after sign-in) -->
-        <div class="profile-card hidden" id="profile-card">
-          <img class="profile-avatar" id="profile-photo" src="" alt="">
-          <div class="profile-info">
-            <div class="profile-name" id="profile-name-display"></div>
-            <div class="profile-email" id="profile-email-display"></div>
-          </div>
-          <div class="profile-badge">Google ✓</div>
-          <button class="profile-signout" onclick="signOut()" title="Sign out">✕</button>
-        </div>
-
-        <!-- Auth trigger -->
-        <button class="cs-auth-profile priv-profile-trigger" id="priv-profile-trigger" onclick="openAuthModal()">
-          <div class="ppt-av" id="ppt-av-display" style="font-size:18px;background:rgba(255,51,68,0.1);border:1.5px solid rgba(255,51,68,0.3);border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">👤</div>
-          <div class="ppt-info">
-            <div class="ppt-name" id="ppt-name-display" style="font-size:12px;font-weight:700;color:#e5e2e1;font-family:var(--mono);letter-spacing:1px;">Sign In / Register</div>
-            <div class="ppt-hint" id="ppt-hint-display" style="font-size:10px;color:rgba(229,226,225,0.4);font-family:var(--mono);">Verify identity to access encrypted rooms</div>
-          </div>
-          <span style="color:rgba(255,51,68,0.5);font-size:18px;">›</span>
-        </button>
-
-        <!-- Divider -->
-        <div class="cs-divider">
-          <div class="cs-divider-line"></div>
-          <span class="cs-divider-text">Session Parameters</span>
-          <div class="cs-divider-line"></div>
-        </div>
-
-        <!-- Recent rooms -->
-        <div class="recent-rooms-wrap" id="recent-rooms-wrap" style="display:none;margin-bottom:14px;">
-          <div class="cs-recent-label">Recent Secure Clusters</div>
-          <div id="recent-rooms-list"></div>
-        </div>
-
-        <!-- Room code field -->
-        <div class="cs-field">
-          <label>Room Access Code</label>
-          <input type="text" id="room-input" placeholder="e.g. sunset-42" oninput="filterRecentRooms(this.value)">
-        </div>
-
-        <!-- Name + Passcode row -->
-        <div class="cs-field-row">
-          <div class="cs-field">
-            <label>Agent Identifier</label>
-            <input type="text" id="name-input" placeholder="Your name...">
-          </div>
-          <div class="cs-field">
-            <label>Passcode Layer</label>
-            <input type="password" id="pass-input" placeholder="Optional...">
-          </div>
-        </div>
-
-        <!-- Initialize button -->
-        <button class="cs-init-btn btn-primary" id="join-btn" onclick="joinRoom()">
-          INITIALIZE_SESSION
-        </button>
-
-        <div class="error-msg" id="join-error"></div>
-
-        <!-- Bottom row -->
-        <div style="display:flex;gap:8px;margin-top:10px;">
-          <button class="cs-hub-btn soc-lobby-link" id="lobby-main-btn" onclick="openSocialArea()">
-            🌐 PUBLIC_HUB<span id="lobby-signin-hint" style="font-size:9px;opacity:0.4;margin-left:6px;">(sign in req.)</span>
-          </button>
-          <button onclick="openRoomsDirectory()" title="Discover rooms"
-            style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:0 14px;cursor:pointer;font-size:16px;color:rgba(229,226,225,0.4);transition:border-color 0.2s;flex-shrink:0;"
-            onmouseover="this.style.borderColor='rgba(255,51,68,0.35)'"
-            onmouseout="this.style.borderColor='rgba(255,255,255,0.08)'">🔍</button>
-        </div>
-
-        <!-- Meta footer -->
-        <div class="cs-card-meta">
-          <span id="cs-uid-display">UID: --</span>
-          <span>SERVER: OSLO_01</span>
-        </div>
-      </div>
-
-    </div><!-- #cs-workspace -->
-  </div><!-- #cs-body -->
-
-  <!-- Status bar -->
-  <footer id="cs-statusbar">
-    <div class="cs-status-left">
-      <div class="cs-status-item">
-        <div class="cs-status-dot-green"></div>
-        UPLINK_STABLE
-      </div>
-      <div class="cs-status-item">LATENCY: 12ms</div>
     </div>
-    <div class="cs-status-right">SECRETLINE_SYSTEMS // ALL_RIGHTS_RESERVED</div>
-  </footer>
 
+    <div class="section-label">Room & Profile</div>
+
+    <!-- Google sign-in button (hidden — auth handled via Sign In modal) -->
+    <div class="google-signin-wrap" id="google-signin-wrap" style="display:none !important;"></div>
+
+    <!-- Profile card (shown after Google sign-in) -->
+    <div class="profile-card hidden" id="profile-card">
+      <img class="profile-avatar" id="profile-photo" src="" alt="">
+      <div class="profile-info">
+        <div class="profile-name" id="profile-name-display"></div>
+        <div class="profile-email" id="profile-email-display"></div>
+      </div>
+      <div class="profile-badge">Google ✓</div>
+      <button class="profile-signout" onclick="signOut()" title="Sign out">✕</button>
+    </div>
+
+    <!-- Auth Trigger -->
+    <button class="priv-profile-trigger" id="priv-profile-trigger" onclick="openAuthModal()">
+      <div class="ppt-av" id="ppt-av-display" style="font-size:20px;">👤</div>
+      <div class="ppt-info">
+        <div class="ppt-name" id="ppt-name-display">Sign In / Register</div>
+        <div class="ppt-hint" id="ppt-hint-display">Create account or sign in</div>
+      </div>
+      <span class="ppt-arrow">›</span>
+    </button>
+
+    <!-- Recent Rooms -->
+    <div class="recent-rooms-wrap" id="recent-rooms-wrap" style="display:none">
+      <div class="recent-rooms-label">Recent Rooms</div>
+      <div id="recent-rooms-list"></div>
+    </div>
+
+    <div class="field">
+      <label>Room Code</label>
+      <input type="text" id="room-input" placeholder="e.g. sunset-42"
+        oninput="filterRecentRooms(this.value)">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Your Name</label>
+        <input type="text" id="name-input" placeholder="Name...">
+      </div>
+      <div class="field">
+        <label>Passcode (optional)</label>
+        <input type="password" id="pass-input" placeholder="Room password...">
+      </div>
+    </div>
+
+    <button class="btn-primary" id="join-btn" onclick="joinRoom()">Enter Room 🚀</button>
+    <div class="error-msg" id="join-error"></div>
+    <div style="display:flex;gap:8px;">
+      <button class="soc-lobby-link" id="lobby-main-btn" onclick="openSocialArea()" style="flex:1;">&#x1F310; Public Lobby<span id="lobby-signin-hint" style="font-size:10px;opacity:0.55;margin-left:5px;">(Sign in required)</span></button>
+      <button onclick="openRoomsDirectory()" title="Discover public rooms" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0 14px;cursor:pointer;font-size:18px;color:var(--text2);transition:border-color 0.2s,color 0.2s;flex-shrink:0;" onmouseover="this.style.borderColor='rgba(61,232,160,0.4)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">&#x1F50D;</button>
+    </div>
+  </div>
 </div>
-
 
 <!-- ════ SOCIAL PUBLIC AREA SCREEN ════ -->
 <div id="social-screen" class="screen hidden">
@@ -20082,38 +19635,5 @@ console.log('%c Auth Gate v2 loaded \u2713', 'color:#3de8a0;font-weight:bold;fon
 })();
 </script>
 
-
-<script>
-// Update CRIMSON_SHADOW sidebar operator name from profile
-(function() {
-  var observer = new MutationObserver(function() {
-    var nameEl = document.getElementById('ppt-name-display');
-    var opEl = document.getElementById('cs-op-name');
-    if (nameEl && opEl && nameEl.textContent && nameEl.textContent !== 'Sign In / Register') {
-      var name = nameEl.textContent.replace(/\s+/g,'_').toUpperCase().slice(0,16);
-      opEl.textContent = name || 'OPERATOR_01';
-    }
-    // UID display
-    var uidEl = document.getElementById('cs-uid-display');
-    var emailEl = document.getElementById('profile-email-display');
-    if (uidEl && emailEl && emailEl.textContent) {
-      var uid = emailEl.textContent.replace(/[^a-zA-Z0-9]/g,'').toUpperCase().slice(0,8);
-      if (uid) uidEl.textContent = 'UID: ' + uid;
-    }
-  });
-  observer.observe(document.body, {childList:true, subtree:true, characterData:true});
-})();
-</script>
-<style>
-/* ════ CRIMSON_SHADOW OVERRIDES — disable old setup screen rules ════ */
-#setup-screen.cs-layout .setup-hero { display: none !important; }
-#setup-screen.cs-layout .setup-card { display: none !important; }
-#setup-screen.cs-layout .brand { display: none !important; }
-
-/* Mobile: cs-body height without statusbar */
-@media (max-width: 768px) {
-  #cs-body { height: calc(100dvh - 56px); }
-}
-</style>
 </body>
 </html>
