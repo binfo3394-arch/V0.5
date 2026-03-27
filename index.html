@@ -4744,19 +4744,28 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
 ════════════════════════════════ */
 
 /* ── Stories Bar ── */
+/* Outer clip container — clips Y overflow cleanly */
 .soc-stories-bar {
-  display:flex;align-items:flex-start;gap:10px;padding:12px 12px 16px;
-  overflow-x:auto;overflow-y:hidden;flex-shrink:0;background:var(--panel);
-  border-bottom:1px solid var(--border);scrollbar-width:none;
+  overflow:hidden;flex-shrink:0;background:var(--panel);
+  border-bottom:1px solid var(--border);
   min-height:92px;
 }
+/* Inner scroll row */
+.soc-stories-inner {
+  display:flex;align-items:center;gap:10px;padding:10px 12px;
+  overflow-x:auto;overflow-y:hidden;
+  scrollbar-width:none;
+  height:92px;
+}
+.soc-stories-inner::-webkit-scrollbar{display:none;}
 .soc-stories-bar::-webkit-scrollbar{display:none;}
 .soc-story-item{display:flex;flex-direction:column;align-items:center;gap:5px;flex-shrink:0;cursor:pointer;-webkit-user-select:none;user-select:none;position:relative;}
 .soc-story-ring{width:54px;height:54px;border-radius:50%;padding:2px;background:linear-gradient(135deg,var(--accent),#4fa3ff);flex-shrink:0;}
 .soc-story-ring.seen{background:var(--card2);}
 .soc-story-ring-inner{width:100%;height:100%;border-radius:50%;border:2px solid var(--panel);background:var(--card);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;font-family:var(--mono);}
 .soc-story-ring-inner img{width:100%;height:100%;object-fit:cover;}
-.soc-story-ring.add-story .soc-story-ring-inner{background:var(--accent-dim);border:2px dashed rgba(61,232,160,0.4);color:var(--accent);font-size:18px;line-height:1;overflow:hidden;}
+.soc-story-ring.add-story .soc-story-ring-inner{background:var(--accent-dim);border:2px dashed rgba(61,232,160,0.4);color:transparent;font-size:0;overflow:hidden;position:relative;}
+.soc-story-ring.add-story .soc-story-ring-inner::before{content:'+';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:22px;line-height:1;color:var(--accent);font-family:var(--mono);font-weight:700;}
 .soc-story-name{font-size:10px;color:var(--text2);max-width:54px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:var(--mono);}
 
 /* ── Story Viewer ── */
@@ -5318,8 +5327,12 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
 
   /* Stories bar */
   .soc-stories-bar {
-    padding: 10px 10px 6px !important;
+    min-height: 88px !important;
+  }
+  .soc-stories-inner {
+    padding: 10px 10px 12px !important;
     gap: 10px !important;
+    min-height: 88px !important;
   }
   .soc-story-ring { width: 54px !important; height: 54px !important; }
   .soc-story-ring-inner { width: 46px !important; height: 46px !important; font-size: 16px !important; }
@@ -6242,14 +6255,16 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
 
   <!-- Stories Bar -->
   <div class="soc-stories-bar" id="soc-stories-bar">
+    <div class="soc-stories-inner" id="soc-stories-inner">
     <!-- Hard-coded Add Story button - always visible -->
     <div class="soc-story-item" id="soc-add-story-btn" onclick="openStoryUpload()" data-add="1">
       <div class="soc-story-ring add-story">
-        <div class="soc-story-ring-inner">+</div>
+        <div class="soc-story-ring-inner"></div>
       </div>
       <div class="soc-story-name">Add Story</div>
     </div>
     <!-- Other stories populated by renderStoriesBar() -->
+    </div>
   </div>
 
   <!-- Highlights bar -->
@@ -16250,7 +16265,8 @@ function socListenStories() {
 }
 
 function renderStoriesBar() {
-  const bar = document.getElementById('soc-stories-bar');
+  // Use inner scroll container so items render inside clip wrapper
+  const bar = document.getElementById('soc-stories-inner') || document.getElementById('soc-stories-bar');
   if (!bar) return;
 
   // Remove only story items (not the hard-coded add button)
@@ -16265,7 +16281,7 @@ function renderStoriesBar() {
     addItem.id = 'soc-add-story-btn';
     addItem.innerHTML =
       '<div class="soc-story-ring add-story">' +
-        '<div class="soc-story-ring-inner">+</div>' +
+        '<div class="soc-story-ring-inner"></div>' +
       '</div>' +
       '<div class="soc-story-name">Add Story</div>';
     addItem.onclick = openStoryUpload;
