@@ -20097,6 +20097,20 @@ console.log('%c Auth Gate v2 loaded \u2713', 'color:#3de8a0;font-weight:bold;fon
     }
   });
   observer.observe(document.body, {childList:true, subtree:true, characterData:true});
+
+  // Listen to manual Agent Identifier input
+  var nameInput = document.getElementById('name-input');
+  if (nameInput) {
+    nameInput.addEventListener('input', function() {
+      var nameEl = document.getElementById('ppt-name-display');
+      var opEl = document.getElementById('cs-op-name');
+      // Only update from input if not signed in
+      if (opEl && (!nameEl || !nameEl.textContent || nameEl.textContent === 'Sign In / Register')) {
+        var name = nameInput.value.trim().replace(/\s+/g,'_').toUpperCase().slice(0,16);
+        opEl.textContent = name || 'OPERATOR_01';
+      }
+    });
+  }
 })();
 </script>
 <style>
