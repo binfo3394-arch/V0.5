@@ -1265,6 +1265,8 @@ body.privacy-blur #setup-screen { filter: blur(12px); transition: filter 0.3s; }
   gap: 8px;
   flex-shrink: 0;
   position: relative;
+  /* Must sit above bottom nav bar */
+  z-index: 1100;
 }
 
 @media (min-width: 700px) {
@@ -1401,6 +1403,9 @@ body.privacy-blur #setup-screen { filter: blur(12px); transition: filter 0.3s; }
   display: flex; align-items: flex-end;
   padding: 4px 4px 4px 12px;
   transition: border-color 0.2s;
+  /* Ensure input area sits above nav bar overlay */
+  position: relative;
+  z-index: 5;
 }
 
 .ti-wrap:focus-within { border-color: rgba(61,232,160,0.35); }
@@ -1432,6 +1437,11 @@ body.privacy-blur #setup-screen { filter: blur(12px); transition: filter 0.3s; }
   margin: 2px;
   transition: opacity 0.15s, transform 0.15s;
   flex-shrink: 0;
+  /* Always above nav bar — never blocked */
+  position: relative;
+  z-index: 10;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 .send-btn:hover { opacity: 0.85; transform: scale(1.05); }
@@ -6908,9 +6918,10 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
 
 /* ── Adjust existing screen paddings to account for nav bar ── */
 @media (max-width: 699px) {
-  /* Chat screen: push input bar above nav */
+  /* Chat screen: push input bar above nav — use margin not padding */
   #chat-screen .input-bar {
-    padding-bottom: calc(max(10px, env(safe-area-inset-bottom)) + 58px) !important;
+    padding-bottom: max(10px, env(safe-area-inset-bottom, 10px)) !important;
+    margin-bottom: 58px !important;
   }
 
   /* Social feed: pad bottom */
@@ -19608,9 +19619,11 @@ body.pwa-visible #chat-screen .input-bar {
 /* Replace fixed px with CSS custom prop so keyboard fix can zero it */
 @media (max-width: 699px) {
   #chat-screen .input-bar {
-    padding-bottom: calc(10px + var(--nav-total)) !important;
+    /* Nav clearance via margin-bottom, NOT padding — keeps send btn in clickable zone */
+    padding-bottom: max(10px, env(safe-area-inset-bottom, 10px)) !important;
+    margin-bottom: var(--nav-h) !important;
     /* Smooth transition when nav slides away on keyboard open */
-    transition: padding-bottom 0.22s ease;
+    transition: padding-bottom 0.22s ease, margin-bottom 0.22s ease;
   }
 
   /* DM input bar same fix */
@@ -19685,6 +19698,7 @@ body.keyboard-open #chat-screen {
 
 body.keyboard-open #chat-screen .input-bar {
   padding-bottom: 10px !important;
+  margin-bottom: 0 !important;
 }
 
 body.keyboard-open #dm-input-bar,
