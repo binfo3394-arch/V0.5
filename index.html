@@ -5998,7 +5998,7 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
       </div>
 
       <!-- Social Feed Tabs (extended filter row, synced with lobby-feed-tabs) -->
-      <div class="soc-feed-tabs" id="soc-feed-tabs" style="display:none">
+      <div class="soc-feed-tabs" id="soc-feed-tabs">
         <button class="soc-feed-tab active" data-tab="all" onclick="socFeedTabSwitch('all',this)">
           &#x1F30D; All <span class="tab-count" id="sftab-count-all"></span>
         </button>
@@ -10689,6 +10689,7 @@ window.openSocialArea = function() {
   document.getElementById('setup-screen').classList.add('hidden');
     document.body.classList.remove('on-setup');
   document.getElementById('social-screen').classList.remove('hidden');
+  document.body.classList.add('on-social');
 
   const { ref, set, onValue, onChildAdded, onChildChanged, onChildRemoved, onDisconnect, serverTimestamp } = socGetFB();
   const db2 = socGetDB();
@@ -11602,6 +11603,7 @@ window.socGoBack=function(){
   try { if(socChangedUnsub){socChangedUnsub();socChangedUnsub=null;} } catch(e){}
   try { if(socFriendsUnsub){socFriendsUnsub();socFriendsUnsub=null;} } catch(e){}
   document.getElementById('social-screen').classList.add('hidden');
+  document.body.classList.remove('on-social');
   document.getElementById('setup-screen').classList.remove('hidden');
     document.body.classList.add('on-setup');
 };
@@ -11635,6 +11637,7 @@ function _socLeaveAndGo(code) {
   if(ri) ri.value=code;
   if(ni&&socName) ni.value=socName;
   document.getElementById('social-screen').classList.add('hidden');
+  document.body.classList.remove('on-social');
   document.getElementById('setup-screen').classList.remove('hidden');
     document.body.classList.add('on-setup');
   setTimeout(()=>window.joinRoom&&window.joinRoom(),150);
@@ -19532,12 +19535,49 @@ console.log('%c SecretLine v5 — All fixes loaded ✓ (PWA+SW, Feed Tabs, Push 
 
 
 /* ══ PWA BANNER: hidden on setup screen, shown only in chat/social ══ */
-body.on-setup .pwa-banner {
+body.on-setup .pwa-banner,
+body.on-social .pwa-banner {
   display: none !important;
 }
 /* Also: when banner IS showing in chat, push input bar up */
 body.pwa-visible #chat-screen .input-bar {
   padding-bottom: calc(max(10px, env(safe-area-inset-bottom)) + 58px + 72px) !important;
+}
+
+
+/* ══ FIX: Double tab row — hide old lobby-feed-tabs on mobile, soc-feed-tabs handles it ══ */
+@media (max-width: 699px) {
+  /* Hide the duplicate older tab row */
+  .lobby-feed-tabs {
+    display: none !important;
+  }
+  /* Show the extended soc-feed-tabs instead (JS controls display:none initially) */
+  .soc-feed-tabs {
+    display: flex !important;
+    padding: 6px 10px 4px !important;
+    gap: 5px !important;
+  }
+  /* Reduce tab padding on mobile */
+  .soc-feed-tab {
+    padding: 5px 10px !important;
+    font-size: 11px !important;
+    white-space: nowrap !important;
+  }
+}
+
+
+/* ══ FIX: Social top nav — minimal on mobile, bottom nav handles navigation ══ */
+@media (max-width: 699px) {
+  /* Hide redundant nav action buttons — bottom nav covers these */
+  .soc-nav-btn:not(.soc-notif-btn):not(.soc-profile-nav-btn) {
+    display: none !important;
+  }
+  /* Reduce nav height */
+  .soc-nav {
+    min-height: 48px !important;
+    max-height: 48px !important;
+    padding: 8px 12px !important;
+  }
 }
 
 /* ══ FIX 4: Social Screen — hide top nav on mobile, use bottom nav instead ══ */
