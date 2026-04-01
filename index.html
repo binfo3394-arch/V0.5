@@ -14,6 +14,141 @@
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 
+<!-- ════ PWA SERVICE WORKER ════ -->
+<script>
+(function() {
+  'use strict';
+
+  // ── Inline Service Worker via Blob ────────────────────────────
+  var SW_VERSION = 'sl-v5-cache-v1';
+  var STATIC_ASSETS = ['/'];
+
+  var swCode = `
+const CACHE_NAME = '${SW_VERSION}';
+const OFFLINE_URL = '/';
+
+self.addEventListener('install', function(e) {
+  console.log('[SW] Installing...');
+  e.waitUntil(
+    caches.open(CACHE_NAME).then(function(cache) {
+      return cache.addAll([OFFLINE_URL]).catch(function(err) {
+        console.warn('[SW] Cache addAll failed (expected in file://):', err);
+      });
+    }).then(function() {
+      return self.skipWaiting();
+    })
+  );
+});
+
+self.addEventListener('activate', function(e) {
+  console.log('[SW] Activating...');
+  e.waitUntil(
+    caches.keys().then(function(keys) {
+      return Promise.all(
+        keys.filter(function(k) { return k !== CACHE_NAME; })
+            .map(function(k) { return caches.delete(k); })
+      );
+    }).then(function() {
+      return self.clients.claim();
+    })
+  );
+});
+
+self.addEventListener('fetch', function(e) {
+  // Only cache GET requests, skip Firebase/API calls
+  if (e.request.method !== 'GET') return;
+  var url = e.request.url;
+  if (url.includes('firebaseio.com') || url.includes('googleapis.com') || url.includes('emailjs')) return;
+
+  e.respondWith(
+    fetch(e.request).then(function(response) {
+      if (response && response.status === 200 && response.type === 'basic') {
+        var clone = response.clone();
+        caches.open(CACHE_NAME).then(function(cache) { cache.put(e.request, clone); });
+      }
+      return response;
+    }).catch(function() {
+      return caches.match(e.request).then(function(cached) {
+        return cached || caches.match(OFFLINE_URL);
+      });
+    })
+  );
+});
+
+// ── Push Notifications ────────────────────────────────────────
+self.addEventListener('push', function(e) {
+  var data = {};
+  try { data = e.data ? e.data.json() : {}; } catch(err) {}
+  var title = data.title || 'SecretLine 🔐';
+  var opts = {
+    body: data.body || 'New message',
+    icon: data.icon || '/favicon.ico',
+    badge: data.badge || '',
+    tag: data.tag || 'sl-msg',
+    renotify: true,
+    vibrate: [200, 100, 200],
+    data: { url: data.url || '/' }
+  };
+  e.waitUntil(self.registration.showNotification(title, opts));
+});
+
+self.addEventListener('notificationclick', function(e) {
+  e.notification.close();
+  var target = (e.notification.data && e.notification.data.url) || '/';
+  e.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(all) {
+      for (var c of all) {
+        if (c.url === target && 'focus' in c) return c.focus();
+      }
+      if (clients.openWindow) return clients.openWindow(target);
+    })
+  );
+});
+`;
+
+  // Register SW via Blob URL (works in single-file HTML)
+  if ('serviceWorker' in navigator) {
+    try {
+      var blob = new Blob([swCode], { type: 'application/javascript' });
+      var swUrl = URL.createObjectURL(blob);
+      navigator.serviceWorker.register(swUrl, { scope: '/' })
+        .then(function(reg) {
+          console.log('%c [PWA] Service Worker registered ✓', 'color:#3de8a0;font-weight:bold');
+          window._swReg = reg;
+
+          // Check for updates periodically
+          setInterval(function() { reg.update(); }, 60 * 60 * 1000);
+        })
+        .catch(function(err) {
+          // Blob SW may be blocked in some browsers — log but don't break app
+          console.warn('[PWA] SW registration failed (blob scope limit):', err);
+        });
+
+      // Listen for SW messages
+      navigator.serviceWorker.addEventListener('message', function(e) {
+        if (e.data && e.data.type === 'SW_UPDATED') {
+          if (window.showToast) window.showToast('🔄 App updated! Refreshing...');
+          setTimeout(function() { location.reload(); }, 1500);
+        }
+      });
+    } catch(e) {
+      console.warn('[PWA] SW setup error:', e);
+    }
+  }
+
+  // ── PWA Online/Offline detection ─────────────────────────────
+  window.addEventListener('online', function() {
+    if (window.showToast) window.showToast('🌐 Back online!');
+    document.body.classList.remove('is-offline');
+  });
+
+  window.addEventListener('offline', function() {
+    if (window.showToast) window.showToast('📵 Offline mode — some features limited');
+    document.body.classList.add('is-offline');
+  });
+})();
+</script>
+
 
 <style>
 :root {
@@ -3848,6 +3983,38 @@ button, .attach-btn, .call-btn, .c-dot, .ap-item {
   .lobby-ftab { padding: 5px 9px; font-size: 11px; }
 }
 
+/* ── soc-feed-tabs (alias used in mobile responsive overrides) ── */
+.soc-feed-tabs {
+  display: flex; gap: 6px; padding: 0 0 10px;
+  overflow-x: auto; scrollbar-width: none; flex-shrink: 0;
+  -webkit-overflow-scrolling: touch;
+}
+.soc-feed-tabs::-webkit-scrollbar { display: none; }
+.soc-feed-tab {
+  padding: 6px 14px; background: var(--card); border: 1px solid var(--border);
+  border-radius: 20px; font-size: 12px; font-family: var(--sans);
+  color: var(--text2); cursor: pointer; white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  flex-shrink: 0; -webkit-user-select: none; user-select: none;
+  display: flex; align-items: center; gap: 5px;
+}
+.soc-feed-tab:hover { border-color: var(--border2); color: var(--text); background: var(--card2); }
+.soc-feed-tab.active {
+  background: var(--accent-dim); border-color: rgba(61,232,160,0.35);
+  color: var(--accent); font-weight: 600;
+}
+.soc-feed-tab .tab-count {
+  font-size: 10px; font-family: var(--mono);
+  background: rgba(255,255,255,0.08); border-radius: 20px;
+  padding: 1px 5px; min-width: 16px; text-align: center;
+}
+.soc-feed-tab.active .tab-count {
+  background: rgba(61,232,160,0.15);
+}
+@media(max-width:420px) {
+  .soc-feed-tab { padding: 5px 10px; font-size: 11px; }
+}
+
 /* ── User search in sidebar ── */
 .lobby-user-search-wrap {
   display: flex; align-items: center; gap: 6px;
@@ -5791,6 +5958,28 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
         <button class="lobby-ftab" id="ftab-trending" onclick="lobbySetFeedTab('trending',this)">&#x1F525; Trending</button>
       </div>
 
+      <!-- Social Feed Tabs (extended filter row, synced with lobby-feed-tabs) -->
+      <div class="soc-feed-tabs" id="soc-feed-tabs" style="display:none">
+        <button class="soc-feed-tab active" data-tab="all" onclick="socFeedTabSwitch('all',this)">
+          &#x1F30D; All <span class="tab-count" id="sftab-count-all"></span>
+        </button>
+        <button class="soc-feed-tab" data-tab="mine" onclick="socFeedTabSwitch('mine',this)">
+          &#x1F464; Mine <span class="tab-count" id="sftab-count-mine"></span>
+        </button>
+        <button class="soc-feed-tab" data-tab="following" onclick="socFeedTabSwitch('following',this)">
+          &#x1F49A; Following <span class="tab-count" id="sftab-count-following"></span>
+        </button>
+        <button class="soc-feed-tab" data-tab="media" onclick="socFeedTabSwitch('media',this)">
+          &#x1F4F7; Media <span class="tab-count" id="sftab-count-media"></span>
+        </button>
+        <button class="soc-feed-tab" data-tab="trending" onclick="socFeedTabSwitch('trending',this)">
+          &#x1F525; Trending <span class="tab-count" id="sftab-count-trending"></span>
+        </button>
+        <button class="soc-feed-tab" data-tab="polls" onclick="socFeedTabSwitch('polls',this)">
+          &#x1F4CA; Polls <span class="tab-count" id="sftab-count-polls"></span>
+        </button>
+      </div>
+
       <!-- Posts feed -->
       <div id="soc-posts">
         <div class="soc-scroll-sentinel" id="soc-feed-sentinel"></div>
@@ -7069,14 +7258,16 @@ document.querySelectorAll('.c-dot').forEach(d => {
    JOIN ROOM
 ══════════════════════════════ */
 window.joinRoom = window._joinRoom = async () => {
-  if (!db) { showErr('join-error','❌ Firebase connection failed. Reload the page.'); return; }
+  if (!db) { showErr('join-error','❌ Firebase connection failed. Reload the page.\n🔌 Firebase connection නැහැ. Page reload කරන්න.'); return; }
 
   roomCode = document.getElementById('room-input').value.trim();
   myName   = document.getElementById('name-input').value.trim();
   myPass   = document.getElementById('pass-input').value.trim();
 
-  if (!roomCode) { showErr('join-error','⚠️ Enter a room code'); return; }
-  if (!myName)   { showErr('join-error','⚠️ Enter your name'); return; }
+  if (!roomCode) { showErr('join-error','⚠️ Room code enter කරන්න — e.g. sunset-42'); return; }
+  if (!myName)   { showErr('join-error','⚠️ ඔබේ නම enter කරන්න — Enter your name'); return; }
+  if (myName.length < 2) { showErr('join-error','⚠️ නම අකුරු 2ක් වත් දාන්න — Name must be at least 2 characters'); return; }
+  if (roomCode.length < 2) { showErr('join-error','⚠️ Valid room code දාන්න — Enter a valid room code'); return; }
 
   const safeRoom = roomCode.replace(/[.#$[\]/]/g,'_');
 
@@ -7096,7 +7287,7 @@ window.joinRoom = window._joinRoom = async () => {
       const stored = pcSnap.val();
       // Support both legacy plaintext and new hashed passcodes
       const match = stored === hashedInput || stored === myPass;
-      if (!match) { hideLoading(); showErr('join-error','🔒 Wrong passcode!'); return; }
+      if (!match) { hideLoading(); showErr('join-error','🔒 Wrong passcode! — Passcode වැරදියි! Another try?'); return; }
       // Upgrade legacy plaintext to hash silently
       if (stored === myPass && myPass) await set(pcRef, hashedInput).catch(()=>{});
     } else if (myPass) {
@@ -7131,7 +7322,7 @@ window.joinRoom = window._joinRoom = async () => {
     showToast('🎉 Joined room: ' + roomCode);
   } catch(e) {
     hideLoading();
-    showErr('join-error','❌ Error: ' + e.message);
+    showErr('join-error','❌ Error joining room — Room join error: ' + e.message + '\n💡 Network check කරන්න හෝ reload කරන්න.');
   }
 };
 
@@ -17980,6 +18171,745 @@ window.setupCreateRoom = function() {
 })();
 
 console.log('%c Setup Tabs loaded \u2713', 'color:#3de8a0;font-weight:bold;font-size:13px');
+</script>
+
+<!-- ════ FIX PACK: Push Notifications + Performance + UI Polish + Social Feed Tabs Logic ════ -->
+<script>
+'use strict';
+
+/* ══════════════════════════════════════════════════════════
+   FIX 1 — PUSH NOTIFICATIONS (browser Web Push setup)
+══════════════════════════════════════════════════════════ */
+
+window.SLNotif = (function() {
+  var _granted = false;
+  var _vapidKey = ''; // Set your VAPID public key here if using a push server
+
+  // Check current permission state
+  function getState() {
+    if (!('Notification' in window)) return 'unsupported';
+    return Notification.permission; // 'default' | 'granted' | 'denied'
+  }
+
+  // Request permission (call from UI button)
+  async function requestPermission() {
+    if (!('Notification' in window)) {
+      if (window.showToast) window.showToast('❌ Browser notifications support නැහැ');
+      return false;
+    }
+    if (Notification.permission === 'granted') {
+      _granted = true;
+      return true;
+    }
+    if (Notification.permission === 'denied') {
+      if (window.showToast) window.showToast('🔕 Notifications blocked — Browser settings වලින් enable කරන්න');
+      return false;
+    }
+    try {
+      var result = await Notification.requestPermission();
+      _granted = (result === 'granted');
+      if (_granted) {
+        if (window.showToast) window.showToast('🔔 Notifications enabled! — දැනුම් දීම් සක්‍රිය කළා');
+        // Show a test notification
+        setTimeout(function() {
+          _show('SecretLine 🔐', 'Notifications සක්‍රිය! — You\'ll get notified of new messages.', '');
+        }, 500);
+      } else {
+        if (window.showToast) window.showToast('🔕 Notifications disabled — දැනුම් දීම් disable කළා');
+      }
+      return _granted;
+    } catch(e) {
+      console.warn('[Notif] Permission request failed:', e);
+      return false;
+    }
+  }
+
+  // Show a notification (internal)
+  function _show(title, body, icon) {
+    if (!_granted && Notification.permission !== 'granted') return;
+    try {
+      // Prefer SW notification if registered
+      if (window._swReg && window._swReg.active) {
+        window._swReg.showNotification(title, {
+          body: body,
+          icon: icon || '',
+          badge: '',
+          tag: 'sl-msg-' + Date.now(),
+          vibrate: [200, 100, 200],
+          renotify: true
+        });
+      } else {
+        new Notification(title, { body: body, icon: icon || '' });
+      }
+    } catch(e) {
+      console.warn('[Notif] Show failed:', e);
+    }
+  }
+
+  // Public: notify of a new chat message (call when tab is hidden)
+  function notifyMessage(senderName, text, photoUrl) {
+    if (document.visibilityState === 'visible') return; // App is in focus
+    if (!_granted && Notification.permission !== 'granted') return;
+    _show(
+      '💬 ' + (senderName || 'Someone') + ' — SecretLine',
+      text || 'New message',
+      photoUrl || ''
+    );
+  }
+
+  // Public: notify of DM
+  function notifyDM(senderName, text, photoUrl) {
+    if (document.visibilityState === 'visible') return;
+    if (!_granted && Notification.permission !== 'granted') return;
+    _show(
+      '📩 DM from ' + (senderName || 'Someone'),
+      text || 'New direct message',
+      photoUrl || ''
+    );
+  }
+
+  // Auto-check on load
+  (function init() {
+    if (Notification.permission === 'granted') _granted = true;
+    // Subtly request after user interaction (better UX — don't ask on load)
+    document.addEventListener('click', function _firstClick() {
+      document.removeEventListener('click', _firstClick);
+      if (Notification.permission === 'default') {
+        // Gentle auto-ask after first interaction
+        setTimeout(function() {
+          if (Notification.permission === 'default') requestPermission();
+        }, 8000);
+      }
+    }, { once: true });
+  })();
+
+  return { requestPermission, notifyMessage, notifyDM, getState };
+})();
+
+// Hook into existing showToast / message render to trigger notifications
+(function hookNotifications() {
+  // Patch existing message render (look for addMessage or renderMsg)
+  var _origRender = window.renderMsg || window.addMessage;
+  function _patchRender(fn) {
+    return function(msg) {
+      var result = fn.apply(this, arguments);
+      // If message is not mine and tab is hidden → notify
+      try {
+        var sess = JSON.parse(localStorage.getItem('sl_auth_v2_sess') || 'null');
+        var myId = sess && sess.uid;
+        if (msg && msg.uid && msg.uid !== myId && msg.sender && msg.text) {
+          window.SLNotif.notifyMessage(msg.sender, msg.text, msg.photo || '');
+        }
+      } catch(e) {}
+      return result;
+    };
+  }
+  if (window.renderMsg) window.renderMsg = _patchRender(window.renderMsg);
+  if (window.addMessage) window.addMessage = _patchRender(window.addMessage);
+
+  // Also add a notification enable button to the overflow menu
+  document.addEventListener('DOMContentLoaded', function() {
+    var panel = document.getElementById('h-overflow-panel');
+    if (panel) {
+      var sep = document.createElement('div');
+      sep.className = 'h-ov-sep';
+      var btn = document.createElement('button');
+      btn.className = 'h-ov-item';
+      btn.innerHTML = '🔔 Enable notifications';
+      btn.onclick = function() {
+        window.SLNotif.requestPermission();
+        if (window.closeOverflow) window.closeOverflow();
+      };
+      // Only show if not yet granted
+      if (Notification.permission !== 'granted') {
+        panel.appendChild(sep);
+        panel.appendChild(btn);
+      }
+    }
+  });
+})();
+
+
+/* ══════════════════════════════════════════════════════════
+   FIX 2 — PERFORMANCE: debounce, lazy images, memory leaks
+══════════════════════════════════════════════════════════ */
+
+// Universal debounce helper
+window.debounce = window.debounce || function(fn, delay) {
+  var t;
+  return function() {
+    var args = arguments, ctx = this;
+    clearTimeout(t);
+    t = setTimeout(function() { fn.apply(ctx, args); }, delay);
+  };
+};
+
+// Throttle helper
+window.throttle = window.throttle || function(fn, limit) {
+  var lastRun = 0;
+  return function() {
+    var now = Date.now();
+    if (now - lastRun >= limit) {
+      lastRun = now;
+      fn.apply(this, arguments);
+    }
+  };
+};
+
+// ── Lazy image loading (IntersectionObserver) ─────────────────
+(function initLazyImages() {
+  if (!('IntersectionObserver' in window)) return;
+
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        var img = entry.target;
+        if (img.dataset.src) {
+          img.src = img.dataset.src;
+          img.removeAttribute('data-src');
+          img.classList.remove('img-lazy');
+          img.classList.add('img-loaded');
+        }
+        observer.unobserve(img);
+      }
+    });
+  }, { rootMargin: '100px 0px', threshold: 0.01 });
+
+  window._lazyObserver = observer;
+
+  // Observe any existing lazy images
+  function observeAll() {
+    document.querySelectorAll('img[data-src]').forEach(function(img) {
+      img.classList.add('img-lazy');
+      observer.observe(img);
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', observeAll);
+
+  // MutationObserver to catch dynamically added images
+  var mutObs = new MutationObserver(window.debounce(function(mutations) {
+    mutations.forEach(function(m) {
+      m.addedNodes.forEach(function(node) {
+        if (node.nodeType !== 1) return;
+        if (node.tagName === 'IMG' && node.dataset.src) observer.observe(node);
+        node.querySelectorAll && node.querySelectorAll('img[data-src]').forEach(function(img) {
+          observer.observe(img);
+        });
+      });
+    });
+  }, 100));
+  mutObs.observe(document.body || document.documentElement, { childList: true, subtree: true });
+  window._lazyMutObs = mutObs;
+})();
+
+// ── Debounce search inputs ────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  // Lobby search
+  var lobbyInput = document.getElementById('lobby-search-input');
+  if (lobbyInput && window.lobbySearch) {
+    var _origLobbySearch = window.lobbySearch;
+    window.lobbySearch = window.debounce(_origLobbySearch, 280);
+    lobbyInput.oninput = function() { window.lobbySearch(this.value); };
+  }
+  var mobLobbyInput = document.getElementById('lobby-mob-search-input');
+  if (mobLobbyInput && window.lobbySearch) {
+    mobLobbyInput.oninput = function() { window.lobbySearch(this.value); };
+  }
+
+  // User search in sidebar
+  var userSearch = document.getElementById('lobby-user-search');
+  if (userSearch && window.lobbyFilterUsers) {
+    var _origFilterUsers = window.lobbyFilterUsers;
+    window.lobbyFilterUsers = window.debounce(_origFilterUsers, 250);
+    userSearch.oninput = function() { window.lobbyFilterUsers(this.value); };
+  }
+});
+
+// ── Firebase listener cleanup on room leave ───────────────────
+(function patchLeaveRoom() {
+  var _origLeave = window.leaveRoom;
+  if (!_origLeave) return;
+  window.leaveRoom = function() {
+    // Clean up lazy observer
+    if (window._lazyMutObs) { window._lazyMutObs.disconnect(); }
+    _origLeave.apply(this, arguments);
+  };
+})();
+
+// ── Message list virtual scroll guard ────────────────────────
+// Prevent unbounded DOM growth in long chat sessions
+(function guardMsgList() {
+  var MAX_VISIBLE_MSGS = 200;
+  var _originalAddMsg = window.addMessageDOM || window._addMsgDOM;
+
+  window._msgDOMCount = 0;
+  var _pruneScheduled = false;
+
+  function pruneOldMessages() {
+    if (_pruneScheduled) return;
+    _pruneScheduled = true;
+    requestAnimationFrame(function() {
+      _pruneScheduled = false;
+      var wrap = document.getElementById('msgs-wrap');
+      if (!wrap) return;
+      var rows = wrap.querySelectorAll('.msg-row, .sys-line');
+      if (rows.length > MAX_VISIBLE_MSGS) {
+        var toRemove = rows.length - MAX_VISIBLE_MSGS;
+        for (var i = 0; i < toRemove; i++) {
+          if (rows[i]) rows[i].remove();
+        }
+      }
+    });
+  }
+
+  // Patch the messages wrapper observer
+  var msgWrap = document.getElementById('msgs-wrap');
+  if (msgWrap && 'MutationObserver' in window) {
+    var msgMut = new MutationObserver(window.throttle(function() {
+      var rows = msgWrap.querySelectorAll('.msg-row');
+      if (rows.length > MAX_VISIBLE_MSGS + 20) pruneOldMessages();
+    }, 3000));
+    msgMut.observe(msgWrap, { childList: true });
+  }
+})();
+
+
+/* ══════════════════════════════════════════════════════════
+   FIX 3 — UI POLISH: animations, loading states, micro-interactions
+══════════════════════════════════════════════════════════ */
+
+// ── Button press ripple effect ────────────────────────────────
+(function initRipple() {
+  var style = document.createElement('style');
+  style.textContent = `
+    /* Ripple */
+    .ripple-host { position: relative; overflow: hidden; }
+    .ripple-wave {
+      position: absolute; border-radius: 50%;
+      transform: scale(0); animation: rippleAnim 0.55s linear;
+      background: rgba(255,255,255,0.18); pointer-events: none; z-index: 10;
+    }
+    @keyframes rippleAnim { to { transform: scale(4); opacity: 0; } }
+
+    /* Button loading state */
+    .btn-loading { position: relative; pointer-events: none; opacity: 0.75; }
+    .btn-loading::after {
+      content: '';
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%,-50%);
+      width: 16px; height: 16px;
+      border: 2px solid rgba(0,0,0,0.2);
+      border-top-color: #000;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
+    /* Image lazy load fade */
+    .img-lazy { opacity: 0; transition: opacity 0.3s ease; }
+    .img-loaded { opacity: 1; }
+
+    /* Input focus glow pulse */
+    .field input:focus, .field textarea:focus, .soc-create-input:focus {
+      animation: inputGlow 0.3s ease-out;
+    }
+    @keyframes inputGlow {
+      0%   { box-shadow: 0 0 0 0 rgba(61,232,160,0.4); }
+      100% { box-shadow: 0 0 0 4px rgba(61,232,160,0.08); }
+    }
+
+    /* Send button pulse on success */
+    .send-btn.sent {
+      animation: sendPop 0.4s cubic-bezier(0.34,1.56,0.64,1);
+      background: var(--accent-b) !important;
+    }
+    @keyframes sendPop {
+      0%   { transform: scale(1); }
+      40%  { transform: scale(1.22); }
+      100% { transform: scale(1); }
+    }
+
+    /* Tab switch slide animation */
+    .soc-feed-col > *:not(.soc-feed-tabs):not(.lobby-feed-tabs):not(.soc-create-box) {
+      animation: feedFadeIn 0.2s ease;
+    }
+    @keyframes feedFadeIn { from { opacity:0.4; transform:translateY(4px); } to { opacity:1; transform:none; } }
+
+    /* Toast improved */
+    .toast {
+      transition: opacity 0.3s cubic-bezier(0.16,1,0.3,1), transform 0.3s cubic-bezier(0.16,1,0.3,1) !important;
+    }
+
+    /* Offline banner */
+    .offline-banner {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 99999;
+      background: rgba(255,92,92,0.92); backdrop-filter: blur(8px);
+      color: #fff; font-size: 12px; font-family: var(--mono);
+      padding: 6px 16px; text-align: center; letter-spacing: 0.5px;
+      transform: translateY(-100%); transition: transform 0.3s ease;
+    }
+    body.is-offline .offline-banner { transform: translateY(0); }
+
+    /* Error message animated */
+    .error-msg.show {
+      animation: errShake 0.35s ease;
+    }
+    @keyframes errShake {
+      0%,100% { transform: translateX(0); }
+      20%     { transform: translateX(-4px); }
+      60%     { transform: translateX(4px); }
+      80%     { transform: translateX(-2px); }
+    }
+
+    /* Notification permission button styling */
+    .notif-enable-btn {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 14px; background: rgba(61,232,160,0.07);
+      border: 1px solid rgba(61,232,160,0.2); border-radius: 10px;
+      color: var(--accent); font-size: 12px; font-family: var(--mono);
+      cursor: pointer; margin: 8px 0; width: 100%;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .notif-enable-btn:hover { background: rgba(61,232,160,0.12); border-color: rgba(61,232,160,0.4); }
+
+    /* Micro: reaction pill pop */
+    .reaction-pill:active, .soc-react-chip:active {
+      transform: scale(0.9);
+      transition: transform 0.1s;
+    }
+
+    /* Msg bubble hover */
+    .msg-bubble {
+      transition: box-shadow 0.2s ease;
+    }
+    .msg-row.mine .msg-bubble:hover {
+      box-shadow: 0 4px 16px rgba(61,232,160,0.15);
+    }
+    .msg-row.theirs .msg-bubble:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    }
+
+    /* Loading skeleton pulse for posts */
+    .soc-post-skeleton {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 16px; overflow: hidden; padding: 14px;
+    }
+    .skeleton-line {
+      height: 12px; background: var(--card2); border-radius: 6px;
+      animation: skelPulse 1.4s ease-in-out infinite;
+    }
+    @keyframes skelPulse {
+      0%,100% { opacity: 0.5; }
+      50% { opacity: 1; }
+    }
+    .skeleton-av {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: var(--card2); flex-shrink: 0;
+      animation: skelPulse 1.4s ease-in-out infinite;
+    }
+  `;
+  document.head.appendChild(style);
+
+  // Add offline banner to DOM
+  var offlineBanner = document.createElement('div');
+  offlineBanner.className = 'offline-banner';
+  offlineBanner.textContent = '📵 Offline — Internet connection නැහැ. Some features may not work.';
+  document.body.insertBefore(offlineBanner, document.body.firstChild);
+})();
+
+// ── Ripple effect on primary buttons ─────────────────────────
+(function attachRipple() {
+  function addRipple(e) {
+    var btn = e.currentTarget;
+    btn.classList.add('ripple-host');
+    var rect = btn.getBoundingClientRect();
+    var size = Math.max(rect.width, rect.height) * 2;
+    var x = e.clientX - rect.left - size / 2;
+    var y = e.clientY - rect.top - size / 2;
+    var wave = document.createElement('span');
+    wave.className = 'ripple-wave';
+    wave.style.cssText = 'width:'+size+'px;height:'+size+'px;left:'+x+'px;top:'+y+'px';
+    btn.appendChild(wave);
+    wave.addEventListener('animationend', function() { wave.remove(); });
+  }
+  document.addEventListener('click', function(e) {
+    var btn = e.target.closest('.btn-primary, .soc-post-btn, .soc-rc-btn, .perm-try-btn');
+    if (btn) addRipple({ currentTarget: btn, clientX: e.clientX, clientY: e.clientY });
+  });
+})();
+
+// ── Send button success flash ─────────────────────────────────
+(function patchSendBtn() {
+  var _origSend = window.doSend;
+  if (!_origSend) return;
+  window.doSend = function() {
+    var btn = document.getElementById('send-btn');
+    _origSend.apply(this, arguments);
+    if (btn) {
+      btn.classList.add('sent');
+      setTimeout(function() { btn.classList.remove('sent'); }, 450);
+    }
+  };
+})();
+
+// ── Button loading state helpers ──────────────────────────────
+window.setBtnLoading = function(btnId, loading) {
+  var btn = document.getElementById(btnId);
+  if (!btn) return;
+  if (loading) {
+    btn.classList.add('btn-loading');
+    btn.disabled = true;
+    btn._origText = btn.innerHTML;
+  } else {
+    btn.classList.remove('btn-loading');
+    btn.disabled = false;
+    if (btn._origText) btn.innerHTML = btn._origText;
+  }
+};
+
+// Patch join button to show loading state
+(function patchJoinBtn() {
+  var joinBtn = document.getElementById('join-btn');
+  var createBtn = document.getElementById('create-btn');
+  function wrapBtn(btn, originalFn) {
+    if (!btn || !originalFn) return;
+    btn.addEventListener('click', function() {
+      btn.classList.add('btn-loading');
+      setTimeout(function() { btn.classList.remove('btn-loading'); }, 3000);
+    });
+  }
+  document.addEventListener('DOMContentLoaded', function() {
+    wrapBtn(document.getElementById('join-btn'), window.joinRoom);
+    wrapBtn(document.getElementById('create-btn'), window.setupCreateRoom);
+  });
+})();
+
+
+/* ══════════════════════════════════════════════════════════
+   FIX 4 — soc-feed-tabs JS LOGIC
+══════════════════════════════════════════════════════════ */
+
+window.socFeedTabSwitch = function(tab, btnEl) {
+  // Sync both tab bars
+  document.querySelectorAll('.soc-feed-tab').forEach(function(b) {
+    b.classList.toggle('active', b.dataset.tab === tab);
+  });
+
+  // Also sync lobby-feed-tabs if applicable
+  var tabMap = { all: 'ftab-all', mine: 'ftab-mine', media: 'ftab-media', trending: 'ftab-trending' };
+  Object.keys(tabMap).forEach(function(k) {
+    var el = document.getElementById(tabMap[k]);
+    if (el) el.classList.toggle('active', k === tab);
+  });
+
+  // Delegate to existing lobbySetFeedTab if available
+  if (window.lobbySetFeedTab) {
+    var mappedTab = (tab === 'following' || tab === 'polls') ? 'all' : tab;
+    window.lobbySetFeedTab(mappedTab, null);
+  }
+
+  // Store tab preference
+  try { localStorage.setItem('sl_feed_tab', tab); } catch(e) {}
+
+  // Filter posts in DOM
+  _filterPostsByTab(tab);
+};
+
+function _filterPostsByTab(tab) {
+  var posts = document.querySelectorAll('#soc-posts .soc-post');
+  var sess = null;
+  try { sess = JSON.parse(localStorage.getItem('sl_auth_v2_sess') || 'null'); } catch(e) {}
+  var myUid = sess && sess.uid;
+
+  posts.forEach(function(post) {
+    var show = true;
+    switch (tab) {
+      case 'mine':
+        show = myUid && (post.dataset.uid === myUid || post.dataset.author === myUid);
+        break;
+      case 'media':
+        show = !!post.querySelector('.soc-post-img, .soc-post-video, .soc-post-media-wrap img, .soc-post-media-wrap video');
+        break;
+      case 'trending':
+        // Show posts with >2 reactions or >1 comment
+        var reactions = post.querySelectorAll('.soc-react-chip').length;
+        var comments  = post.querySelectorAll('.soc-comment').length;
+        show = (reactions >= 2 || comments >= 1);
+        break;
+      case 'following':
+        // Show all if following data not available (fallback)
+        show = true;
+        break;
+      case 'polls':
+        show = !!post.querySelector('.soc-poll, [class*="poll"]');
+        break;
+      default: // 'all'
+        show = true;
+    }
+    post.style.display = show ? '' : 'none';
+  });
+
+  // Update empty state
+  var visibleCount = document.querySelectorAll('#soc-posts .soc-post:not([style*="display: none"])').length;
+  var emptyEl = document.getElementById('soc-feed-empty');
+  if (emptyEl) emptyEl.style.display = visibleCount === 0 ? 'block' : 'none';
+
+  // Update tab counts
+  _updateTabCounts();
+}
+
+function _updateTabCounts() {
+  var all     = document.querySelectorAll('#soc-posts .soc-post').length;
+  var media   = document.querySelectorAll('#soc-posts .soc-post:has(.soc-post-img), #soc-posts .soc-post:has(.soc-post-video)').length;
+  var polls   = document.querySelectorAll('#soc-posts .soc-post:has(.soc-poll)').length;
+
+  var counts = { all: all, media: media, polls: polls };
+  Object.keys(counts).forEach(function(k) {
+    var el = document.getElementById('sftab-count-' + k);
+    if (el) el.textContent = counts[k] > 0 ? counts[k] : '';
+  });
+}
+
+// Show soc-feed-tabs on mobile (supplement lobby-feed-tabs)
+(function initSocFeedTabs() {
+  document.addEventListener('DOMContentLoaded', function() {
+    var tabBar = document.getElementById('soc-feed-tabs');
+    if (!tabBar) return;
+
+    // Show the extended tab bar on screens > 480px where lobby-feed-tabs is visible
+    function syncVisibility() {
+      var width = window.innerWidth;
+      // Show soc-feed-tabs as replacement / supplement depending on screen
+      tabBar.style.display = width <= 480 ? '' : 'none';
+    }
+    syncVisibility();
+    window.addEventListener('resize', window.debounce(syncVisibility, 200));
+
+    // Restore last tab
+    try {
+      var saved = localStorage.getItem('sl_feed_tab');
+      if (saved) {
+        var el = tabBar.querySelector('[data-tab="' + saved + '"]');
+        if (el) { el.classList.add('active'); }
+      }
+    } catch(e) {}
+  });
+
+  // Watch for new posts and update counts
+  var postContainer = document.getElementById('soc-posts');
+  if (postContainer && 'MutationObserver' in window) {
+    var obs = new MutationObserver(window.debounce(_updateTabCounts, 500));
+    obs.observe(postContainer, { childList: true, subtree: true });
+  }
+})();
+
+
+/* ══════════════════════════════════════════════════════════
+   FIX 5 — BILINGUAL ERROR MESSAGES (global error helper upgrade)
+══════════════════════════════════════════════════════════ */
+
+// Bilingual message map (Sinhala + English)
+var SL_ERRORS = {
+  // Auth
+  'auth_required':      '🔐 Sign in කරන්න — Please sign in first',
+  'auth_failed':        '❌ Login failed — Login error. Try again / නැවත try කරන්න',
+  'email_invalid':      '📧 Valid email enter කරන්න — Enter a valid email address',
+  'otp_invalid':        '🔢 OTP code වැරදියි — Wrong OTP code. Check your email',
+  'otp_expired':        '⏱️ OTP expire වුණා — OTP expired. Resend කරන්න',
+  'name_short':         '👤 නම කෙටියි — Name too short (minimum 2 characters)',
+  'name_long':          '👤 නම දිගයි — Name too long (maximum 30 characters)',
+  // Room
+  'room_required':      '🏠 Room code enter කරන්න — Enter a room code',
+  'room_invalid':       '🏠 Room code invalid — Valid room code enter කරන්න',
+  'room_wrong_pass':    '🔒 Passcode වැරදියි — Wrong passcode!',
+  'room_join_fail':     '❌ Room join error — Check your connection / Network check කරන්න',
+  'room_firebase_fail': '🔌 Firebase connection error — Reload the page / Page reload කරන්න',
+  // Post
+  'post_empty':         '📝 Post text enter කරන්න — Write something first',
+  'post_too_long':      '📝 Post characters limit exceeded — Post text 2000 characters limit',
+  'post_cooldown':      '⏳ Spam cooldown — Wait a moment before posting again / ටිකක් wait කරන්න',
+  // Media
+  'file_too_large':     '📦 File too large — Max 100MB / File 100MB ට වඩා නැහැ',
+  'file_type_invalid':  '📎 File type not supported — Supported: Images, Videos, Documents',
+  // Network
+  'network_offline':    '📵 Offline — Internet connection නැහැ. Check your connection',
+  'network_timeout':    '⏱️ Connection timeout — Try again / නැවත try කරන්න',
+  // Generic
+  'unknown':            '❌ Something went wrong — Error occurred. Reload if problem persists / ගැටළු continue නම් reload කරන්න',
+};
+
+// Enhanced showErr that supports bilingual keys
+var _origShowErr = window.showErr;
+window.showErr = function(elId, msgOrKey) {
+  var msg = SL_ERRORS[msgOrKey] || msgOrKey || SL_ERRORS['unknown'];
+  // Call original if exists
+  if (_origShowErr) {
+    _origShowErr(elId, msg);
+  } else {
+    var el = document.getElementById(elId);
+    if (el) {
+      el.textContent = msg;
+      el.classList.add('show');
+      setTimeout(function() { el.classList.remove('show'); el.textContent = ''; }, 5000);
+    }
+  }
+};
+
+// Upgrade create room error messages
+window.setupCreateRoom = (function(_orig) {
+  if (!_orig) return window.setupCreateRoom;
+  return function() {
+    var code = (document.getElementById('create-room-input') &&
+                document.getElementById('create-room-input').value || '').trim();
+    var name = (document.getElementById('create-name-input') &&
+                document.getElementById('create-name-input').value || '').trim();
+
+    function showErr(msg) {
+      var el = document.getElementById('create-error');
+      if (el) { el.textContent = msg; el.classList.add('show'); }
+    }
+    if (!code) { showErr(SL_ERRORS['room_required'] || '⚠️ Room code enter කරන්න — Generate or type a room code'); return; }
+    if (!name) { showErr(SL_ERRORS['name_short'] || '⚠️ ඔබේ නම enter කරන්න — Enter your name'); return; }
+    if (name.length < 2) { showErr(SL_ERRORS['name_short']); return; }
+
+    _orig.apply(this, arguments);
+  };
+})(window.setupCreateRoom);
+
+
+/* ══════════════════════════════════════════════════════════
+   FIX 6 — POST LOADING SKELETON
+══════════════════════════════════════════════════════════ */
+
+window.showFeedSkeleton = function(count) {
+  var container = document.getElementById('soc-posts');
+  if (!container) return;
+  count = count || 3;
+  for (var i = 0; i < count; i++) {
+    var sk = document.createElement('div');
+    sk.className = 'soc-post-skeleton';
+    sk.innerHTML = '<div style="display:flex;gap:10px;margin-bottom:10px"><div class="skeleton-av"></div><div style="flex:1;display:flex;flex-direction:column;gap:6px"><div class="skeleton-line" style="width:40%"></div><div class="skeleton-line" style="width:25%;height:8px;opacity:0.6"></div></div></div><div class="skeleton-line" style="margin-bottom:6px"></div><div class="skeleton-line" style="width:75%;margin-bottom:6px"></div><div class="skeleton-line" style="width:55%;height:8px;opacity:0.5"></div>';
+    sk.id = 'sk-' + i;
+    container.insertBefore(sk, container.firstChild);
+  }
+};
+
+window.hideFeedSkeleton = function() {
+  document.querySelectorAll('.soc-post-skeleton').forEach(function(el) { el.remove(); });
+};
+
+// Auto show skeleton when social area opens
+(function patchOpenSocialArea() {
+  var _orig = window.openSocialArea;
+  if (!_orig) return;
+  window.openSocialArea = function() {
+    _orig.apply(this, arguments);
+    window.showFeedSkeleton(3);
+    setTimeout(window.hideFeedSkeleton, 1800);
+  };
+})();
+
+console.log('%c SecretLine v5 — All fixes loaded ✓ (PWA+SW, Feed Tabs, Push Notifications, Performance, Bilingual Errors, UI Polish)', 'color:#3de8a0;font-weight:bold;font-size:12px');
 </script>
 
 </body>
