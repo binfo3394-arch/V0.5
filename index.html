@@ -5403,12 +5403,17 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
     padding: 14px 12px;
     justify-content: flex-start;
     padding-top: 24px;
+    /* Ensure content is fully scrollable — not cut off */
+    padding-bottom: 80px;
+    overflow-y: auto;
   }
   .setup-card {
     padding: 20px 16px;
     border-radius: 16px;
     box-shadow: none;
     border: 1px solid var(--border);
+    /* Prevent card from being clipped at bottom */
+    margin-bottom: 16px;
   }
   .setup-hero { display: none !important; }
   .field-row {
@@ -7583,10 +7588,13 @@ function applyGoogleProfile(name, email, photo) {
   const nameInput = document.getElementById('name-input');
   if (nameInput) nameInput.value = name;
 
-  // Show profile card, hide sign-in button
+  // Show profile card, hide sign-in button, hide priv-profile-trigger
   document.getElementById('google-signin-wrap').style.display = 'none';
   const card = document.getElementById('profile-card');
   card.classList.remove('hidden');
+  // Hide the "Sign In / Register" auth trigger — Google card replaces it
+  const ppt = document.getElementById('priv-profile-trigger');
+  if (ppt) ppt.style.display = 'none';
 
   const photoEl = document.getElementById('profile-photo');
   if (photo) {
@@ -7659,6 +7667,9 @@ window.signOut = () => {
   document.getElementById('google-signin-wrap').style.display = 'flex';
   document.getElementById('profile-card').classList.add('hidden');
   document.getElementById('name-input').value = '';
+  // Restore the auth trigger button
+  const ppt = document.getElementById('priv-profile-trigger');
+  if (ppt) ppt.style.display = '';
 
   // Hide header avatar
   const avatarImg = document.getElementById('h-profile-avatar');
@@ -7780,6 +7791,7 @@ try {
 
     // Switch to chat
     document.getElementById('setup-screen').classList.add('hidden');
+    document.body.classList.remove('on-setup');
     document.getElementById('chat-screen').classList.remove('hidden');
     document.getElementById('h-room').textContent = '# ' + roomCode;
     window._safeRoom = safeRoom;
@@ -7866,6 +7878,7 @@ window.joinRoom = window._joinRoom = async () => {
     // UI switch
     hideLoading();
     document.getElementById('setup-screen').classList.add('hidden');
+    document.body.classList.remove('on-setup');
     document.getElementById('chat-screen').classList.remove('hidden');
     document.getElementById('h-room').textContent = '# ' + roomCode;
     // Populate empty state room code share + wait banner
@@ -10367,6 +10380,13 @@ function setActivePrivProfile(p) {
 }
 
 function refreshPrivTrigger() {
+  // If Google profile card is visible, priv trigger should stay hidden
+  const profileCard = document.getElementById('profile-card');
+  const ppt = document.getElementById('priv-profile-trigger');
+  if (profileCard && !profileCard.classList.contains('hidden') && ppt) {
+    ppt.style.display = 'none';
+    return;
+  }
   const active = getActivePrivProfile();
   const avEl   = document.getElementById('ppt-av-display');
   const nameEl = document.getElementById('ppt-name-display');
@@ -10656,6 +10676,7 @@ window.openSocialArea = function() {
   socRefreshNav();
 
   document.getElementById('setup-screen').classList.add('hidden');
+    document.body.classList.remove('on-setup');
   document.getElementById('social-screen').classList.remove('hidden');
 
   const { ref, set, onValue, onChildAdded, onChildChanged, onChildRemoved, onDisconnect, serverTimestamp } = socGetFB();
@@ -11571,6 +11592,7 @@ window.socGoBack=function(){
   try { if(socFriendsUnsub){socFriendsUnsub();socFriendsUnsub=null;} } catch(e){}
   document.getElementById('social-screen').classList.add('hidden');
   document.getElementById('setup-screen').classList.remove('hidden');
+    document.body.classList.add('on-setup');
 };
 window.socGoHome = function() {
   var feedCol = document.querySelector('.soc-feed-col');
@@ -11603,6 +11625,7 @@ function _socLeaveAndGo(code) {
   if(ni&&socName) ni.value=socName;
   document.getElementById('social-screen').classList.add('hidden');
   document.getElementById('setup-screen').classList.remove('hidden');
+    document.body.classList.add('on-setup');
   setTimeout(()=>window.joinRoom&&window.joinRoom(),150);
 }
 
@@ -12587,7 +12610,12 @@ window.addEventListener('beforeinstallprompt', e => {
   _pwaPrompt = e;
   const dismissed = localStorage.getItem('sl_pwa_dismissed');
   if (!dismissed) {
-    setTimeout(() => document.getElementById('pwa-banner')?.classList.add('show'), 3000);
+    setTimeout(() => {
+      // Only show PWA banner if user is in chat (not on setup screen)
+      const setupScreen = document.getElementById('setup-screen');
+      const isOnSetup = setupScreen && !setupScreen.classList.contains('hidden');
+      if (!isOnSetup) document.getElementById('pwa-banner')?.classList.add('show');
+    }, 3000);
   }
 });
 window.pwaInstall = async function() {
@@ -19491,6 +19519,16 @@ console.log('%c SecretLine v5 — All fixes loaded ✓ (PWA+SW, Feed Tabs, Push 
 <style>
 
 
+
+/* ══ PWA BANNER: hidden on setup screen, shown only in chat/social ══ */
+body.on-setup .pwa-banner {
+  display: none !important;
+}
+/* Also: when banner IS showing in chat, push input bar up */
+body.pwa-visible #chat-screen .input-bar {
+  padding-bottom: calc(max(10px, env(safe-area-inset-bottom)) + 58px + 72px) !important;
+}
+
 /* ══ FIX 4: Social Screen — hide top nav on mobile, use bottom nav instead ══ */
 @media (max-width: 699px) {
   /* Collapse the social top-nav height significantly */
@@ -19770,6 +19808,14 @@ body.keyboard-open .dm-input-bar {
 
 
 <script>
+/* ══ Setup screen initial state: add on-setup class ══ */
+(function() {
+  var setup = document.getElementById('setup-screen');
+  if (setup && !setup.classList.contains('hidden')) {
+    document.body.classList.add('on-setup');
+  }
+})();
+
 /* ══ FIX 1 — Hide onboarding hint after first visit ══ */
 (function() {
   try {
