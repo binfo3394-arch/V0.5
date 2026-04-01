@@ -5716,6 +5716,30 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
       </div>
     </div>
 
+    <!-- ══ ONBOARDING FLOW HINT (new users) ══ -->
+    <div id="setup-onboard-hint" style="
+      background: rgba(61,232,160,0.07);
+      border: 1px solid rgba(61,232,160,0.2);
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 12px;
+      color: var(--text2);
+      line-height: 1.55;
+    ">
+      <span style="font-size:20px;flex-shrink:0;margin-top:-1px;">👋</span>
+      <div>
+        <div style="color:var(--accent);font-weight:700;font-size:12px;margin-bottom:3px;letter-spacing:0.3px;">Getting started</div>
+        <span style="color:var(--text);">1.</span> Sign in below &nbsp;→&nbsp;
+        <span style="color:var(--text);">2.</span> Create or join a room &nbsp;→&nbsp;
+        <span style="color:var(--text);">3.</span> Share the room code
+        <button onclick="document.getElementById('setup-onboard-hint').style.display='none'" style="display:block;margin-top:6px;background:none;border:none;color:var(--text3);font-size:11px;cursor:pointer;padding:0;font-family:var(--mono);">Dismiss ✕</button>
+      </div>
+    </div>
+
     <!-- ══ SETUP TABS ══ -->
     <div class="tabs" id="setup-tabs">
       <button class="tab active" id="setup-tab-join" onclick="setupSwitchTab('join')">🔑 Join Room</button>
@@ -5723,7 +5747,7 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
     </div>
 
     <!-- ── Profile block (shared by both tabs) ── -->
-    <div class="section-label">Profile</div>
+    <div class="section-label">Step 1 — Sign In</div>
 
     <!-- Google sign-in button (hidden — auth handled via Sign In modal) -->
     <div class="google-signin-wrap" id="google-signin-wrap" style="display:none !important;"></div>
@@ -5751,7 +5775,7 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
 
     <!-- ══ JOIN ROOM PANE ══ -->
     <div id="setup-pane-join">
-      <div class="section-label" style="margin-top:18px;">Room</div>
+      <div class="section-label" style="margin-top:18px;">Step 2 — Enter Room Code</div>
 
       <!-- Recent Rooms -->
       <div class="recent-rooms-wrap" id="recent-rooms-wrap" style="display:none">
@@ -5785,7 +5809,7 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
 
     <!-- ══ CREATE ROOM PANE ══ -->
     <div id="setup-pane-create" style="display:none;">
-      <div class="section-label" style="margin-top:18px;">New Room</div>
+      <div class="section-label" style="margin-top:18px;">Step 2 — Create Your Room</div>
 
       <div class="field">
         <label>Room Code</label>
@@ -6473,14 +6497,29 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
     <!-- Mobile overflow menu button -->
     <button class="h-overflow-btn" onclick="toggleOverflow(event)" title="More">⋯</button>
 
+    <!-- Share room button (mobile only) -->
+    <button class="h-share-mobile h-action-btn" title="Share Room"
+      onclick="(function(){var rc=window.roomCode||'';if(!rc){window.showToast&&window.showToast('⚠️ Join a room first');return;}if(navigator.share){navigator.share({title:'Join me on SecretLine',text:'Room code: '+rc});}else{navigator.clipboard&&navigator.clipboard.writeText(rc).then(function(){window.showToast&&window.showToast('✅ Room code copied: '+rc);});}})()"
+      style="display:none;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🔗</button>
+
     <!-- Overflow dropdown -->
     <div class="h-overflow-panel" id="h-overflow-panel">
+      <!-- Calls section (mobile only — call buttons hidden on mobile) -->
+      <div class="h-ov-section-label" style="font-size:9px;font-family:var(--mono);letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);padding:6px 12px 2px;">Calls</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:0 6px 6px;">
+        <button class="h-ov-item" style="border-radius:8px;border:1px solid var(--border);text-align:center;justify-content:center;" onclick="startCall(false);closeOverflow()">📞 Voice</button>
+        <button class="h-ov-item" style="border-radius:8px;border:1px solid var(--border);text-align:center;justify-content:center;" onclick="startCall(true);closeOverflow()">📹 Video</button>
+        <button class="h-ov-item" style="border-radius:8px;border:1px solid var(--border);text-align:center;justify-content:center;" onclick="startGroupCall(false);closeOverflow()">👥📞 Group</button>
+        <button class="h-ov-item" style="border-radius:8px;border:1px solid var(--border);text-align:center;justify-content:center;" onclick="startGroupCall(true);closeOverflow()">👥📹 Group</button>
+      </div>
+      <div class="h-ov-sep"></div>
+      <button class="h-ov-item" onclick="(function(){var rc=window.roomCode||'';if(!rc)return;if(navigator.share){navigator.share({title:'Join me on SecretLine',text:'Room code: '+rc});}else{navigator.clipboard&&navigator.clipboard.writeText(rc).then(function(){window.showToast&&window.showToast('✅ Room code copied: '+rc);});}});closeOverflow()">🔗 Share Room Code</button>
       <button class="h-ov-item" onclick="openSearchPanel();closeOverflow()">🔍 Search messages</button>
-      <button class="h-ov-item" onclick="openStarredPanel();closeOverflow()">⭐ Starred messages</button>
+      <button class="h-ov-item" onclick="openStarredPanel();closeOverflow()">⭐ Starred</button>
       <button class="h-ov-item" onclick="openRoomSettings();closeOverflow()">⚙️ Room settings</button>
       <div class="h-ov-sep"></div>
       <button class="h-ov-item" onclick="toggleSound();closeOverflow()">🔊 <span id="h-ov-sound-label">Sound on</span></button>
-      <button class="h-ov-item" onclick="toggleDisappearRow();closeOverflow()">⏳ Disappearing messages</button>
+      <button class="h-ov-item" onclick="toggleDisappearRow();closeOverflow()">⏳ Disappearing</button>
       <button class="h-ov-item" onclick="showPinSetup();closeOverflow()">🔑 Lock chat</button>
       <button class="h-ov-item" id="h-ov-privacy" onclick="togglePrivacyMode();closeOverflow()">🛡️ Privacy mode</button>
       <div class="h-ov-sep"></div>
@@ -6491,7 +6530,7 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
 
   <!-- Waiting banner -->
   <div class="wait-banner" id="wait-banner">
-    <span class="wd">●</span> Waiting for partner to join with same room code...
+    <span class="wd">●</span> Waiting for someone to join — Share your room code: <strong id="wait-room-code" style="color:var(--accent);font-family:var(--mono);cursor:pointer;" onclick="(function(){var rc=window.roomCode||'';if(rc&&navigator.clipboard)navigator.clipboard.writeText(rc).then(function(){window.showToast&&window.showToast('✅ Room code copied: '+rc);});})()" title="Click to copy">—</strong>
   </div>
 
 
@@ -6516,9 +6555,25 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
 
   <!-- Messages -->
   <div class="msgs-wrap" id="msgs-wrap" style="position:relative">
-    <div class="empty-state" id="empty-state">
-      <div class="e-icon">💬</div>
-      <div>No messages yet.<br>Say hello!</div>
+    <div class="empty-state" id="empty-state" style="gap:16px;padding:30px 20px;">
+      <div class="e-icon" style="opacity:0.4;font-size:48px;">🔐</div>
+      <div style="font-size:15px;color:var(--text);font-family:var(--sans);font-weight:600;">Room ready!</div>
+      <div style="font-size:13px;color:var(--text2);font-family:var(--sans);text-align:center;line-height:1.6;">Share the room code below to invite someone into this chat.</div>
+      <!-- Room code share box -->
+      <div id="empty-room-share" style="width:100%;max-width:320px;background:var(--card);border:1px solid rgba(61,232,160,0.25);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;box-shadow:0 0 20px rgba(61,232,160,0.06);">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <span style="font-size:10px;font-family:var(--mono);letter-spacing:1.5px;text-transform:uppercase;color:var(--text2);">Room Code</span>
+          <span style="font-size:10px;color:var(--accent);font-family:var(--mono);">🔒 Encrypted</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div id="empty-room-code" style="flex:1;font-family:var(--mono);font-size:17px;font-weight:700;color:var(--accent);letter-spacing:1px;background:var(--card2);border-radius:8px;padding:10px 14px;">—</div>
+          <button onclick="(function(){var rc=document.getElementById('empty-room-code');if(!rc||rc.textContent==='—')return;navigator.clipboard&&navigator.clipboard.writeText(rc.textContent).then(function(){window.showToast&&window.showToast('✅ Room code copied!');});})();" style="background:var(--accent);color:#000;border:none;border-radius:8px;padding:10px 14px;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap;flex-shrink:0;font-family:var(--sans);transition:opacity 0.15s;">Copy 📋</button>
+        </div>
+        <button onclick="(function(){var rc=document.getElementById('empty-room-code');var code=rc&&rc.textContent!=='—'?rc.textContent:'';if(!code)return;if(navigator.share){navigator.share({title:'Join me on SecretLine',text:'Join my private room: '+code});}else{navigator.clipboard&&navigator.clipboard.writeText('Join my SecretLine room: '+code).then(function(){window.showToast&&window.showToast('✅ Invite text copied!');});}})();" style="width:100%;padding:10px;background:rgba(61,232,160,0.1);border:1px solid rgba(61,232,160,0.3);border-radius:8px;color:var(--accent);font-weight:600;font-size:13px;cursor:pointer;font-family:var(--sans);display:flex;align-items:center;justify-content:center;gap:6px;">
+          📤 Invite Someone
+        </button>
+      </div>
+      <div style="font-size:11px;color:var(--text3);font-family:var(--mono);">Also in header menu → Share 🔗</div>
     </div>
   </div>
 
@@ -7728,6 +7783,8 @@ try {
     document.getElementById('chat-screen').classList.remove('hidden');
     document.getElementById('h-room').textContent = '# ' + roomCode;
     window._safeRoom = safeRoom;
+    // Populate empty state room code share + wait banner
+    (function(){ var erc = document.getElementById('empty-room-code'); if(erc) erc.textContent = roomCode; var wrc = document.getElementById('wait-room-code'); if(wrc) wrc.textContent = roomCode; })();
     syncPCSidebar();
 
     // Unsubscribe any stale listeners before re-attaching
@@ -7811,6 +7868,8 @@ window.joinRoom = window._joinRoom = async () => {
     document.getElementById('setup-screen').classList.add('hidden');
     document.getElementById('chat-screen').classList.remove('hidden');
     document.getElementById('h-room').textContent = '# ' + roomCode;
+    // Populate empty state room code share + wait banner
+    (function(){ var erc = document.getElementById('empty-room-code'); if(erc) erc.textContent = roomCode; var wrc = document.getElementById('wait-room-code'); if(wrc) wrc.textContent = roomCode; })();
     syncPCSidebar();
 
     // Listen
@@ -19430,6 +19489,47 @@ console.log('%c SecretLine v5 — All fixes loaded ✓ (PWA+SW, Feed Tabs, Push 
        Bug 6  z-index — nav overlapping modals, menus, call overlay
 ════════════════════════════════════════════════════════════ -->
 <style>
+
+
+/* ══ FIX 4: Social Screen — hide top nav on mobile, use bottom nav instead ══ */
+@media (max-width: 699px) {
+  /* Collapse the social top-nav height significantly */
+  .soc-nav {
+    min-height: 44px !important;
+    max-height: 44px !important;
+    padding: 6px 10px !important;
+  }
+  /* Hide the tab strip inside soc-nav on mobile — bottom nav handles navigation */
+  .soc-tabs-nav {
+    display: none !important;
+  }
+  /* Hide back button on mobile (use bottom nav home instead) */
+  .soc-back-btn {
+    display: none !important;
+  }
+  /* Compress brand */
+  .soc-nav-brand {
+    font-size: 13px !important;
+  }
+  /* Give back content area the reclaimed space */
+  .soc-feed-col {
+    padding-top: 8px !important;
+  }
+}
+
+/* ══ FIX 3: Mobile Header Button Consolidation ══ */
+@media (max-width: 699px) {
+  /* Hide 4 call buttons — moved to overflow menu on mobile */
+  .h-call-group { display: none !important; }
+  /* Hide secondary action buttons — already in overflow */
+  .h-secondary  { display: none !important; }
+  /* Show share btn in header on mobile */
+  .h-share-mobile { display: flex !important; }
+}
+@media (min-width: 700px) {
+  .h-share-mobile { display: none !important; }
+}
+
 /* ── CSS Custom Properties for nav-aware layout ─────────────── */
 :root {
   --nav-h:      58px;
@@ -19665,6 +19765,54 @@ body.keyboard-open .dm-input-bar {
   } else {
     init();
   }
+})();
+</script>
+
+
+<script>
+/* ══ FIX 1 — Hide onboarding hint after first visit ══ */
+(function() {
+  try {
+    var hint = document.getElementById('setup-onboard-hint');
+    if (hint) {
+      // Hide if user has been here before (has any session data)
+      var hasSession = localStorage.getItem('sl_session') || localStorage.getItem('sl_active_profile');
+      if (hasSession) {
+        hint.style.display = 'none';
+      }
+    }
+  } catch(e) {}
+
+  /* Fix 1b — Setup tabs: add visual step numbers */
+  try {
+    var joinTab = document.getElementById('setup-tab-join');
+    var createTab = document.getElementById('setup-tab-create');
+    // Already labeled well with emoji, just ensure section labels read as steps
+    var sectionLabels = document.querySelectorAll('#setup-screen .section-label');
+    sectionLabels.forEach(function(el, i) {
+      // Already updated in HTML
+    });
+  } catch(e) {}
+
+  /* Fix 2 — also update the share button in overflow to use current roomCode */
+  document.addEventListener('DOMContentLoaded', function() {
+    // Patch overflow share button to always read window.roomCode at call time
+    var shareBtn = document.querySelector('.h-overflow-panel .h-ov-item[onclick*="Share Room Code"]');
+    if (shareBtn) {
+      shareBtn.onclick = function() {
+        var rc = window.roomCode || '';
+        if (!rc) { window.showToast && window.showToast('⚠️ Join a room first'); return; }
+        if (navigator.share) {
+          navigator.share({ title: 'Join me on SecretLine', text: 'Room code: ' + rc });
+        } else {
+          navigator.clipboard && navigator.clipboard.writeText(rc).then(function() {
+            window.showToast && window.showToast('✅ Room code copied: ' + rc);
+          });
+        }
+        window.closeOverflow && window.closeOverflow();
+      };
+    }
+  });
 })();
 </script>
 
