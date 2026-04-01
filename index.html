@@ -5549,7 +5549,14 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
       </div>
     </div>
 
-    <div class="section-label">Room & Profile</div>
+    <!-- ══ SETUP TABS ══ -->
+    <div class="tabs" id="setup-tabs">
+      <button class="tab active" id="setup-tab-join" onclick="setupSwitchTab('join')">🔑 Join Room</button>
+      <button class="tab" id="setup-tab-create" onclick="setupSwitchTab('create')">✨ Create Room</button>
+    </div>
+
+    <!-- ── Profile block (shared by both tabs) ── -->
+    <div class="section-label">Profile</div>
 
     <!-- Google sign-in button (hidden — auth handled via Sign In modal) -->
     <div class="google-signin-wrap" id="google-signin-wrap" style="display:none !important;"></div>
@@ -5575,34 +5582,86 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
       <span class="ppt-arrow">›</span>
     </button>
 
-    <!-- Recent Rooms -->
-    <div class="recent-rooms-wrap" id="recent-rooms-wrap" style="display:none">
-      <div class="recent-rooms-label">Recent Rooms</div>
-      <div id="recent-rooms-list"></div>
+    <!-- ══ JOIN ROOM PANE ══ -->
+    <div id="setup-pane-join">
+      <div class="section-label" style="margin-top:18px;">Room</div>
+
+      <!-- Recent Rooms -->
+      <div class="recent-rooms-wrap" id="recent-rooms-wrap" style="display:none">
+        <div class="recent-rooms-label">Recent Rooms</div>
+        <div id="recent-rooms-list"></div>
+      </div>
+
+      <div class="field">
+        <label>Room Code</label>
+        <input type="text" id="room-input" placeholder="e.g. sunset-42"
+          oninput="filterRecentRooms(this.value)">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Your Name</label>
+          <input type="text" id="name-input" placeholder="Name...">
+        </div>
+        <div class="field">
+          <label>Passcode (optional)</label>
+          <input type="password" id="pass-input" placeholder="Room password...">
+        </div>
+      </div>
+
+      <button class="btn-primary" id="join-btn" onclick="joinRoom()">Enter Room 🚀</button>
+      <div class="error-msg" id="join-error"></div>
+      <div style="display:flex;gap:8px;margin-top:10px;">
+        <button class="soc-lobby-link" id="lobby-main-btn" onclick="openSocialArea()" style="flex:1;">&#x1F310; Public Lobby<span id="lobby-signin-hint" style="font-size:10px;opacity:0.55;margin-left:5px;">(Sign in required)</span></button>
+        <button onclick="openRoomsDirectory()" title="Discover public rooms" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0 14px;cursor:pointer;font-size:18px;color:var(--text2);transition:border-color 0.2s,color 0.2s;flex-shrink:0;" onmouseover="this.style.borderColor='rgba(61,232,160,0.4)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">&#x1F50D;</button>
+      </div>
     </div>
 
-    <div class="field">
-      <label>Room Code</label>
-      <input type="text" id="room-input" placeholder="e.g. sunset-42"
-        oninput="filterRecentRooms(this.value)">
-    </div>
-    <div class="field-row">
+    <!-- ══ CREATE ROOM PANE ══ -->
+    <div id="setup-pane-create" style="display:none;">
+      <div class="section-label" style="margin-top:18px;">New Room</div>
+
       <div class="field">
-        <label>Your Name</label>
-        <input type="text" id="name-input" placeholder="Name...">
+        <label>Room Code</label>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="create-room-input" placeholder="Auto-generated or type your own" style="flex:1;">
+          <button onclick="setupGenCode()" title="Generate random code"
+            style="background:var(--card);border:1px solid var(--border2);border-radius:var(--r-sm);padding:0 14px;cursor:pointer;font-size:15px;color:var(--accent);transition:border-color 0.2s,background 0.2s;flex-shrink:0;"
+            onmouseover="this.style.borderColor='rgba(61,232,160,0.4)';this.style.background='var(--card2)'"
+            onmouseout="this.style.borderColor='var(--border2)';this.style.background='var(--card)'">🎲</button>
+        </div>
+        <div style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-top:5px;">Share this code with people you want to chat with</div>
       </div>
-      <div class="field">
-        <label>Passcode (optional)</label>
-        <input type="password" id="pass-input" placeholder="Room password...">
+
+      <div class="field-row">
+        <div class="field">
+          <label>Your Name</label>
+          <input type="text" id="create-name-input" placeholder="Name...">
+        </div>
+        <div class="field">
+          <label>Passcode (optional)</label>
+          <input type="password" id="create-pass-input" placeholder="Lock your room...">
+        </div>
       </div>
+
+      <div class="info-box" style="margin-bottom:14px;">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div>Room code share කරන්න — ඕනෑම කෙනෙකුට join කරන්න පුළුවන්</div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div>Passcode optional — set කළොත් join කරන්න password දාන්න ඕනෑ</div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div>End-to-end encrypted — messages server එකේ store වෙන්නේ නැහැ</div>
+        </div>
+      </div>
+
+      <button class="btn-primary" id="create-btn" onclick="setupCreateRoom()">Create &amp; Enter Room 🔐</button>
+      <div class="error-msg" id="create-error"></div>
     </div>
 
-    <button class="btn-primary" id="join-btn" onclick="joinRoom()">Enter Room 🚀</button>
-    <div class="error-msg" id="join-error"></div>
-    <div style="display:flex;gap:8px;">
-      <button class="soc-lobby-link" id="lobby-main-btn" onclick="openSocialArea()" style="flex:1;">&#x1F310; Public Lobby<span id="lobby-signin-hint" style="font-size:10px;opacity:0.55;margin-left:5px;">(Sign in required)</span></button>
-      <button onclick="openRoomsDirectory()" title="Discover public rooms" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0 14px;cursor:pointer;font-size:18px;color:var(--text2);transition:border-color 0.2s,color 0.2s;flex-shrink:0;" onmouseover="this.style.borderColor='rgba(61,232,160,0.4)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">&#x1F50D;</button>
-    </div>
   </div>
 </div>
 
@@ -17813,6 +17872,114 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 console.log('%c Auth Gate v2 loaded \u2713', 'color:#3de8a0;font-weight:bold;font-size:13px');
+</script>
+
+<!-- ════ SETUP TABS LOGIC ════ -->
+<script>
+// ── Setup screen tab switching ────────────────────────────────
+window.setupSwitchTab = function(tab) {
+  ['join','create'].forEach(function(t) {
+    var btn  = document.getElementById('setup-tab-' + t);
+    var pane = document.getElementById('setup-pane-' + t);
+    if (btn)  btn.classList.toggle('active', t === tab);
+    if (pane) pane.style.display = (t === tab) ? '' : 'none';
+  });
+  if (tab === 'create') {
+    var ci  = document.getElementById('create-room-input');
+    if (ci && !ci.value.trim()) setupGenCode();
+    var ni  = document.getElementById('name-input');
+    var cni = document.getElementById('create-name-input');
+    if (ni && cni && !cni.value.trim() && ni.value.trim()) cni.value = ni.value;
+  }
+  ['join-error','create-error'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) { el.classList.remove('show'); el.textContent = ''; }
+  });
+};
+
+// ── Random room code generator ────────────────────────────────
+window.setupGenCode = function() {
+  var adj  = ['cool','dark','bold','fast','calm','bright','quiet','sharp','fresh','deep',
+               'wild','clean','swift','glad','wise','warm','pure','safe','kind','brave'];
+  var noun = ['river','stone','echo','flame','wave','forest','cloud','moon','star','ridge',
+               'hawk','wolf','lake','peak','dawn','dusk','rain','sand','wind','glow'];
+  var code = adj[0|Math.random()*adj.length] + '-' + noun[0|Math.random()*noun.length]
+           + '-' + (10 + (0|Math.random()*89));
+  var inp = document.getElementById('create-room-input');
+  if (inp) {
+    inp.value = code;
+    inp.style.transition    = 'border-color 0.3s, box-shadow 0.3s';
+    inp.style.borderColor   = 'rgba(61,232,160,0.6)';
+    inp.style.boxShadow     = '0 0 0 3px rgba(61,232,160,0.12)';
+    setTimeout(function(){ inp.style.borderColor=''; inp.style.boxShadow=''; }, 700);
+  }
+};
+
+// ── Create Room: fills join form then delegates to joinRoom() ─
+window.setupCreateRoom = function() {
+  var code = (document.getElementById('create-room-input') &&
+              document.getElementById('create-room-input').value || '').trim();
+  var name = (document.getElementById('create-name-input') &&
+              document.getElementById('create-name-input').value || '').trim();
+  var pass = (document.getElementById('create-pass-input') &&
+              document.getElementById('create-pass-input').value || '').trim();
+
+  function showErr(msg) {
+    var el = document.getElementById('create-error');
+    if (el) { el.textContent = msg; el.classList.add('show'); }
+  }
+  if (!code) { showErr('\u26a0\ufe0f Room code enter \u0d9a\u0dbb\u0db1\u0dca\u0db1 \u0dc4\u0ddd \u1f3b2 generate \u0d9a\u0dbb\u0db1\u0dca\u0db1'); return; }
+  if (!name) { showErr('\u26a0\ufe0f \u0d94\u0db6\u0dda \u0db1\u0db8 enter \u0d9a\u0dbb\u0db1\u0dca\u0db1'); return; }
+
+  var ri = document.getElementById('room-input');
+  var ni = document.getElementById('name-input');
+  var pi = document.getElementById('pass-input');
+  if (ri) ri.value = code;
+  if (ni) ni.value = name;
+  if (pi) pi.value = pass;
+
+  if (typeof window.joinRoom === 'function')        window.joinRoom();
+  else if (typeof window._joinRoom === 'function')  window._joinRoom();
+
+  // Forward any error from join tab → create tab
+  setTimeout(function() {
+    var je = document.getElementById('join-error');
+    var ce = document.getElementById('create-error');
+    if (je && ce && je.classList.contains('show') && je.textContent) {
+      ce.textContent = je.textContent;
+      ce.classList.add('show');
+      je.classList.remove('show');
+    }
+  }, 300);
+};
+
+// ── Sync name & room code between tabs so user only types once ─
+(function initSetupTabSync() {
+  function ready(fn) {
+    if (document.readyState !== 'loading') fn();
+    else document.addEventListener('DOMContentLoaded', fn);
+  }
+  ready(function() {
+    var ni  = document.getElementById('name-input');
+    var cni = document.getElementById('create-name-input');
+    if (ni && cni) {
+      ni.addEventListener('input',  function() { if (!cni.value) cni.value = ni.value; });
+      cni.addEventListener('input', function() { if (!ni.value)  ni.value  = cni.value; });
+    }
+    var ri  = document.getElementById('room-input');
+    var cri = document.getElementById('create-room-input');
+    if (cri && ri) {
+      cri.addEventListener('input',   function()  { ri.value = cri.value; });
+      cri.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') { e.preventDefault(); window.setupCreateRoom(); }
+      });
+    }
+    // Pre-generate a code on load so Create tab is ready immediately
+    setupGenCode();
+  });
+})();
+
+console.log('%c Setup Tabs loaded \u2713', 'color:#3de8a0;font-weight:bold;font-size:13px');
 </script>
 
 </body>
