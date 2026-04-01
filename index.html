@@ -19916,5 +19916,437 @@ body.keyboard-open .dm-input-bar {
 })();
 </script>
 
+
+<script>
+/* ══════════════════════════════════════════════════════════
+   SECRETLINE v6 — COMPREHENSIVE CHAT ROOM BUG FIXES
+   Applied in one consolidated block to avoid chained-patch issues
+══════════════════════════════════════════════════════════ */
+(function() {
+  'use strict';
+
+  /* ─────────────────────────────────────────────────────────────
+     FIX 1 — window.roomCode never exposed
+     module-level `roomCode` is updated, but window.roomCode is never
+     set. All share/overlay buttons read window.roomCode → always ''.
+  ───────────────────────────────────────────────────────────── */
+  function syncWindowRoomCode() {
+    try {
+      // Read from DOM (most reliable — set right after join)
+      var hRoom = document.getElementById('h-room');
+      if (hRoom && hRoom.textContent && hRoom.textContent !== '—') {
+        window.roomCode = hRoom.textContent.replace(/^#\s*/, '').trim();
+        return;
+      }
+      // Fallback: read session
+      var s = localStorage.getItem('sl_session');
+      if (s) {
+        var parsed = JSON.parse(s);
+        if (parsed.roomCode) window.roomCode = parsed.roomCode;
+      }
+    } catch(e) {}
+  }
+
+  // Run on every load + periodically
+  syncWindowRoomCode();
+  setInterval(syncWindowRoomCode, 1500);
+
+  // Also sync whenever h-room text changes (covers join + reconnect)
+  document.addEventListener('DOMContentLoaded', function() {
+    var hRoom = document.getElementById('h-room');
+    if (hRoom) {
+      new MutationObserver(function() {
+        syncWindowRoomCode();
+      }).observe(hRoom, { childList: true, subtree: true, characterData: true });
+    }
+  });
+
+
+  /* ─────────────────────────────────────────────────────────────
+     FIX 2 — doSend send-button flash wrapper doesn't await
+     The flash wrapper calls _origSend without await, so async edit
+     saves (which are awaited inside doSend) get fire-and-forget.
+     Also the inline onclick on #send-btn fires a second time.
+     Fix: rewrite the send button listener cleanly.
+  ───────────────────────────────────────────────────────────── */
+  document.addEventListener('DOMContentLoaded', function() {
+    var sendBtn = document.getElementById('send-btn');
+    if (!sendBtn) return;
+    // Remove inline onclick so we control the flow
+    sendBtn.removeAttribute('onclick');
+    sendBtn.addEventListener('click', async function() {
+      if (sendBtn.disabled) return;
+      sendBtn.classList.add('sent');
+      setTimeout(function() { sendBtn.classList.remove('sent'); }, 450);
+      if (typeof window.doSend === 'function') {
+        try { await window.doSend(); } catch(e) { console.error('[SL] doSend error:', e); }
+      }
+    });
+  });
+
+
+  /* ─────────────────────────────────────────────────────────────
+     FIX 3 — scrollBottom fires before images/video load
+     Single requestAnimationFrame doesn't wait for media to expand.
+     Fix: double-rAF + 400ms fallback timer.
+  ───────────────────────────────────────────────────────────── */
+  window.scrollBottom = function() {
+    var w = document.getElementById('msgs-wrap');
+    if (!w) return;
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() { w.scrollTop = w.scrollHeight; });
+    });
+    // Fallback: catch slow-loading images
+    setTimeout(function() {
+      if (w) w.scrollTop = w.scrollHeight;
+    }, 420);
+  };
+
+
+  /* ─────────────────────────────────────────────────────────────
+     FIX 4 — isScrolledToBottom threshold too tight (80px)
+     Fast typers who send while images are still loading get stuck
+     above the latest message. Widen to 150px.
+  ───────────────────────────────────────────────────────────── */
+  window.isScrolledToBottom = function() {
+    var w = document.getElementById('msgs-wrap');
+    if (!w) return true;
+    return (w.scrollHeight - w.scrollTop - w.clientHeight) < 150;
+  };
+
+
+  /* ─────────────────────────────────────────────────────────────
+     FIX 5 — Auto-scroll when image/video inside a new message loads
+     New media messages: scrollBottom fires before src loads,
+     so the scroll stops above the image. 
+     Fix: attach onload listener to every img/video added to msgs-wrap.
+  ───────────────────────────────────────────────────────────── */
+  document.addEventListener('DOMContentLoaded', function() {
+    var wrap = document.getElementById('msgs-wrap');
+    if (!wrap) return;
+
+    new MutationObserver(function(mutations) {
+      mutations.forEach(function(m) {
+        m.addedNodes.forEach(function(node) {
+          if (node.nodeType !== 1) return;
+          (node.tagName === 'IMG' ? [node] : Array.from(node.querySelectorAll('img'))).forEach(function(img) {
+            if (!img.complete) {
+              img.addEventListener('load', function() {
+                if ((wrap.scrollHeight - wrap.scrollTop - wrap.clientHeight) < 250) {
+                  wrap.scrollTop = wrap.scrollHeight;
+                }
+              }, { once: true });
+            }
+          });
+          (node.tagName === 'VIDEO' ? [node] : Array.from(node.querySelectorAll('video'))).forEach(function(vid) {
+            vid.addEventListener('loadedmetadata', function() {
+              if ((wrap.scrollHeight - wrap.scrollTop - wrap.clientHeight) < 250) {
+                wrap.scrollTop = wrap.scrollHeight;
+              }
+            }, { once: true });
+          });
+        });
+      });
+    }).observe(wrap, { childList: true, subtree: false });
+  });
+
+
+  /* ─────────────────────────────────────────────────────────────
+     FIX 6 — Old messages visible when joining a different room
+     If someone joins Room A then leaves and joins Room B in the same
+     session (without page reload), msgs-wrap still shows Room A's msgs.
+     Fix: clear msgs-wrap DOM whenever _safeRoom changes.
+  ───────────────────────────────────────────────────────────── */
+  var _fixLastRoom = null;
+  setInterval(function() {
+    var current = window._safeRoom;
+    if (!current) return;
+    if (current !== _fixLastRoom) {
+      if (_fixLastRoom !== null) {
+        // Room changed — clear old message DOM
+        var wrap = document.getElementById('msgs-wrap');
+        if (wrap) {
+          Array.from(wrap.querySelectorAll('.msg-row, .sys-line')).forEach(function(el) { el.remove(); });
+          // Reset empty state
+          var es = document.getElementById('empty-state');
+          if (es) es.style.display = '';
+        }
+      }
+      _fixLastRoom = current;
+    }
+  }, 600);
+
+
+  /* ─────────────────────────────────────────────────────────────
+     FIX 7 — Media file size not checked against Firebase 10MB limit
+     Firebase RTDB has a 10MB per-write limit. A 7MB file becomes
+     ~9.5MB base64 and silently fails. Max raw size: ~6.5MB safe.
+     Fix: validate size in onFiles before queueing.
+  ───────────────────────────────────────────────────────────── */
+  var SL_FB_MAX = 6.5 * 1024 * 1024; // 6.5 MB raw → ~8.7 MB base64 (near limit)
+  var _origOnFiles = window.onFiles;
+  if (_origOnFiles) {
+    window.onFiles = function(input, type) {
+      var oversized = [];
+      Array.from(input.files || []).forEach(function(f) {
+        if (f.size > SL_FB_MAX) oversized.push(f.name);
+      });
+      if (oversized.length) {
+        if (window.showToast) {
+          window.showToast('⚠️ Files too large for chat (max 6.5 MB): ' + oversized.join(', '));
+        }
+        // Still call original — it has its own 100MB check; files > 100MB get toasted there.
+        // Files between 6.5MB–100MB: warn above but also block by temporarily patching MAX_SIZE.
+        // Simplest: filter files before passing.
+        var dt = new DataTransfer();
+        Array.from(input.files || []).forEach(function(f) {
+          if (f.size <= SL_FB_MAX) dt.items.add(f);
+        });
+        input.files = dt.files;
+      }
+      return _origOnFiles.apply(this, arguments);
+    };
+  }
+
+
+  /* ─────────────────────────────────────────────────────────────
+     FIX 8 — ctxDeleteAll leaves _ctxKey stale after delete
+     After successful "delete for everyone", closeCtxMenu() is called
+     but _clearCtxState() is NOT called inside ctxDeleteAll — it only
+     gets called on outside-click. If the deleted row is gone, the
+     outside-click's menu.contains(e.target) check fails silently,
+     so _ctxKey, _ctxSender stay set. Next long-press inherits them.
+     Fix: patch ctxDeleteAll to always clear state on success.
+  ───────────────────────────────────────────────────────────── */
+  var _origCtxDeleteAll = window.ctxDeleteAll;
+  if (_origCtxDeleteAll) {
+    window.ctxDeleteAll = async function() {
+      try {
+        await _origCtxDeleteAll.apply(this, arguments);
+      } finally {
+        // Force clear context state
+        window._ctxKey = null;
+        if (typeof _ctxKey !== 'undefined') {
+          try { eval('_ctxKey = null; _ctxSender = null;'); } catch(e) {}
+        }
+      }
+    };
+  }
+
+
+  /* ─────────────────────────────────────────────────────────────
+     FIX 9 — Typing indicator ghost entry left in Firebase on leaveRoom
+     leaveRoom removes presence but never calls stopTyping().
+     Firebase typing/${myId} stays set until the 2s debounce fires —
+     but that fires in the leaving tab which may already be unloading.
+     Fix: clear typing in Firebase synchronously before leave.
+  ───────────────────────────────────────────────────────────── */
+  var _origLeaveRoom = window.leaveRoom;
+  if (_origLeaveRoom) {
+    window.leaveRoom = async function() {
+      // Clear typing indicator in Firebase before anything else
+      try {
+        var db   = window.__db;
+        var fbx  = window.__fbx;
+        var safe = window._safeRoom;
+        // myId is module-scoped; try to get it from session
+        var mid = null;
+        try { mid = JSON.parse(localStorage.getItem('sl_session') || '{}').myId; } catch(e) {}
+        if (db && fbx && safe && mid) {
+          // Fire-and-forget OK here — we're about to reload anyway
+          fbx.set(fbx.ref(db, 'rooms/' + safe + '/typing/' + mid), null).catch(function(){});
+        }
+      } catch(e) {}
+      // Clear msgs-wrap DOM so re-joining is clean
+      var wrap = document.getElementById('msgs-wrap');
+      if (wrap) {
+        Array.from(wrap.querySelectorAll('.msg-row, .sys-line')).forEach(function(el) { el.remove(); });
+      }
+      return _origLeaveRoom.apply(this, arguments);
+    };
+  }
+
+
+  /* ─────────────────────────────────────────────────────────────
+     FIX 10 — renderReactions null-safety
+     onChildChanged can call renderReactions with a null reactRow
+     if the DOM was cleared between when the message was sent and
+     when Firebase fires the change event. This throws and breaks
+     the entire onChildChanged handler for subsequent messages.
+  ───────────────────────────────────────────────────────────── */
+  var _origRenderReactions = window.renderReactions;
+  if (_origRenderReactions) {
+    window.renderReactions = function(reactRow, reactions, key) {
+      if (!reactRow) return;
+      try { return _origRenderReactions.apply(this, arguments); }
+      catch(e) { console.warn('[SL] renderReactions error (non-fatal):', e); }
+    };
+  }
+
+
+  /* ─────────────────────────────────────────────────────────────
+     FIX 11 — PC sidebar status text goes stale after join
+     listenPresence updates #h-status text on every presence change,
+     but syncPCSidebar() is only called once (at join time).
+     The PC sidebar shows "Waiting for partner..." forever even after
+     partner joins, unless you manually trigger a sidebar sync.
+     Fix: MutationObserver on h-status to mirror updates to PC sidebar.
+  ───────────────────────────────────────────────────────────── */
+  document.addEventListener('DOMContentLoaded', function() {
+    var hStatus = document.getElementById('h-status');
+    var hLed    = document.getElementById('status-led');
+    if (!hStatus) return;
+
+    function mirrorStatus() {
+      var pcStatus = document.getElementById('pc-status-text');
+      var pcLed    = document.getElementById('pc-status-led');
+      if (pcStatus) pcStatus.textContent = hStatus.textContent;
+      if (pcLed && hLed) pcLed.className = hLed.className;
+    }
+
+    new MutationObserver(mirrorStatus)
+      .observe(hStatus, { childList: true, subtree: true, characterData: true });
+
+    // Also watch LED class changes
+    if (hLed) {
+      new MutationObserver(mirrorStatus)
+        .observe(hLed, { attributes: true, attributeFilter: ['class'] });
+    }
+  });
+
+
+  /* ─────────────────────────────────────────────────────────────
+     FIX 12 — Wait banner doesn't hide when partner already online
+     On reconnect, listenPresence fires correctly, but wait-banner
+     display:flex is set in CSS and sometimes overrides the JS hide.
+     Also: wait-banner shows even briefly on first load when peerCount
+     hasn't been evaluated yet.
+     Fix: ensure wait-banner logic is consistent; hide on room entry.
+  ───────────────────────────────────────────────────────────── */
+  document.addEventListener('DOMContentLoaded', function() {
+    // Patch: whenever chat-screen becomes visible, re-evaluate wait banner
+    var chatScreen = document.getElementById('chat-screen');
+    if (!chatScreen) return;
+    new MutationObserver(function(mutations) {
+      mutations.forEach(function(m) {
+        if (m.attributeName === 'class') {
+          var isVisible = !chatScreen.classList.contains('hidden');
+          if (isVisible) {
+            // Give presence listener 800ms to fire, then check
+            setTimeout(function() {
+              var wb = document.getElementById('wait-banner');
+              var stat = document.getElementById('h-status');
+              if (wb && stat && stat.textContent && stat.textContent.indexOf('online') !== -1) {
+                wb.style.display = 'none';
+              }
+            }, 800);
+          }
+        }
+      });
+    }).observe(chatScreen, { attributes: true, attributeFilter: ['class'] });
+  });
+
+
+  /* ─────────────────────────────────────────────────────────────
+     FIX 13 — Emoji picker stays open after send
+     Sending a message doesn't close the emoji picker panel.
+     Fix: close emoji picker on doSend.
+  ───────────────────────────────────────────────────────────── */
+  var _origDoSendFinal = window.doSend;
+  if (_origDoSendFinal) {
+    window.doSend = async function() {
+      // Close emoji picker if open
+      var ep = document.getElementById('chat-emoji-pop');
+      if (ep && ep.style.display !== 'none') ep.style.display = 'none';
+      return _origDoSendFinal.apply(this, arguments);
+    };
+  }
+
+
+  /* ─────────────────────────────────────────────────────────────
+     FIX 14 — Overflow panel share button uses stale closure
+     The inline onclick on the overflow share button captures the
+     roomCode at definition time (empty). Our window.roomCode fix
+     (Fix 1) partially helps, but the inline onclick string also
+     has a function wrapper issue (missing `()` at end on line 6531).
+     Fix: replace all share-room-code buttons with live-reading handlers.
+  ───────────────────────────────────────────────────────────── */
+  document.addEventListener('DOMContentLoaded', function() {
+    function shareRoomCode() {
+      syncWindowRoomCode();
+      var rc = window.roomCode || '';
+      if (!rc) { if (window.showToast) window.showToast('⚠️ Join a room first'); return; }
+      if (navigator.share) {
+        navigator.share({ title: 'Join me on SecretLine', text: 'Room code: ' + rc });
+      } else if (navigator.clipboard) {
+        navigator.clipboard.writeText(rc).then(function() {
+          if (window.showToast) window.showToast('✅ Room code copied: ' + rc);
+        });
+      }
+    }
+
+    // Fix all share-related buttons in overflow and header
+    document.querySelectorAll('.h-ov-item, .h-action-btn').forEach(function(btn) {
+      var txt = btn.textContent || '';
+      if (txt.indexOf('Share Room') !== -1) {
+        btn.onclick = function(e) {
+          e.stopPropagation();
+          shareRoomCode();
+          if (window.closeOverflow) window.closeOverflow();
+        };
+      }
+    });
+
+    // Fix header share button (mobile)
+    var hShareBtn = document.querySelector('.h-action-btn[title*="Share"], .h-action-btn[onclick*="roomCode"]');
+    if (hShareBtn) {
+      hShareBtn.onclick = function(e) { e.stopPropagation(); shareRoomCode(); };
+    }
+
+    // Fix wait-banner room code copy
+    var wrc = document.getElementById('wait-room-code');
+    if (wrc) {
+      wrc.onclick = function() {
+        syncWindowRoomCode();
+        var rc = window.roomCode || '';
+        if (rc && navigator.clipboard) {
+          navigator.clipboard.writeText(rc).then(function() {
+            if (window.showToast) window.showToast('✅ Room code copied: ' + rc);
+          });
+        }
+      };
+    }
+  });
+
+
+  /* ─────────────────────────────────────────────────────────────
+     FIX 15 — clearChat doesn't reset empty-state or scroll
+     After clearing all messages, the msgs-wrap is empty but
+     empty-state div is still hidden. Users see a blank grey box.
+     Fix: patch clearChat to show empty-state after clear.
+  ───────────────────────────────────────────────────────────── */
+  var _origClearChat = window.clearChat;
+  if (_origClearChat) {
+    window.clearChat = async function() {
+      await _origClearChat.apply(this, arguments);
+      // Show empty state after clear
+      setTimeout(function() {
+        var wrap = document.getElementById('msgs-wrap');
+        var es   = document.getElementById('empty-state');
+        // If no messages remain, show empty state
+        if (wrap && es && wrap.querySelectorAll('.msg-row').length === 0) {
+          es.style.display = '';
+        }
+      }, 300);
+    };
+  }
+
+
+  console.log(
+    '%c [SL v6] Chat room bug fixes applied ✓ (15 fixes)',
+    'color:#3de8a0;font-weight:bold;font-size:12px;background:#0b0f14;padding:4px 8px;border-radius:4px'
+  );
+})();
+</script>
 </body>
 </html>
