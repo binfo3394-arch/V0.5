@@ -6648,8 +6648,9 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
     <div class="ti-wrap" id="ti-wrap">
       <button id="chat-emoji-btn" onclick="chatToggleEmoji(event)" style="background:none;border:none;font-size:20px;cursor:pointer;padding:0 6px 0 2px;flex-shrink:0;opacity:0.7;transition:opacity 0.15s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;" title="Emoji" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">😊</button>
       <textarea class="ti-input" id="ti" placeholder="Message..." rows="1"
-        onkeydown="onKey(event)" oninput="onInput(event)"></textarea>
-      <button class="send-btn" id="send-btn" onclick="doSend()">➤</button>
+        onkeydown="onKey(event)" oninput="onInput(event)"
+        inputmode="text" enterkeyhint="send"></textarea>
+      <button class="send-btn" id="send-btn" onclick="doSend()" ontouchend="event.preventDefault();doSend()">➤</button>
     </div>
 
     <!-- Recording bar (shown while recording) -->
@@ -8020,11 +8021,12 @@ window.doSend = async () => {
   if (!db || !window._safeRoom) return;
   const ti = document.getElementById('ti');
   const sendBtn = document.getElementById('send-btn');
+  if (!ti) return; // Android: DOM not ready guard
   const text = ti.value.trim();
 
   if (!text && pendingFiles.length === 0) return;
 
-  sendBtn.disabled = true;
+  if (sendBtn) sendBtn.disabled = true;
   try {
     // Send files first
     if (pendingFiles.length > 0) {
@@ -8049,7 +8051,7 @@ window.doSend = async () => {
       playSnd('send');
     }
   } finally {
-    sendBtn.disabled = false;
+    if (sendBtn) sendBtn.disabled = false;
   }
 };
 
@@ -8379,10 +8381,12 @@ function stopTyping() {
 }
 
 window.onKey = (e) => {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); window.doSend(); }
+  // Android soft keyboard "Go" / "Send" uses keyCode 13 or key 'Enter'
+  const isEnter = e.key === 'Enter' || e.keyCode === 13;
+  if (isEnter && !e.shiftKey) { e.preventDefault(); window.doSend(); return; }
   if (e.key === 'Escape') {
     const ti = document.getElementById('ti');
-    if (ti.dataset.editKey) {
+    if (ti && ti.dataset.editKey) {
       delete ti.dataset.editKey;
       ti.value = '';
       ti.style.height = 'auto';
@@ -8850,6 +8854,7 @@ window.ctxEdit = () => {
 const _origDoSend = window.doSend;
 window.doSend = async () => {
   const ti = document.getElementById('ti');
+  if (!ti) { if (_origDoSend) await _origDoSend(); return; } // Android guard
   if (ti.dataset.editKey) {
     const key = ti.dataset.editKey;
     const newText = ti.value.trim();
@@ -19717,11 +19722,24 @@ body.pwa-visible #chat-screen .input-bar {
     transition: padding-bottom 0.22s ease, margin-bottom 0.22s ease;
   }
 
+  /* ANDROID FIX: When keyboard is open, zero the margin IMMEDIATELY so send btn is not pushed offscreen */
+  body.keyboard-open #chat-screen .input-bar {
+    margin-bottom: 0 !important;
+    padding-bottom: max(4px, env(safe-area-inset-bottom, 4px)) !important;
+    transition: none !important;
+  }
+
   /* DM input bar same fix */
   #dm-input-bar,
   .dm-input-bar {
     margin-bottom: var(--nav-total) !important;
     transition: margin-bottom 0.22s ease;
+  }
+
+  body.keyboard-open #dm-input-bar,
+  body.keyboard-open .dm-input-bar {
+    margin-bottom: 0 !important;
+    transition: none !important;
   }
 }
 
@@ -19729,6 +19747,32 @@ body.pwa-visible #chat-screen .input-bar {
 /* Nav bar: z-index 1000 (was 8500 — way too high) */
 .sl-bottom-nav {
   z-index: 1000 !important;
+}
+
+/* ── ANDROID SEND BUG: Ensure input bar and send button always receive taps ── */
+#chat-screen .input-bar {
+  position: relative;
+  z-index: 1100 !important;
+  pointer-events: all !important;
+}
+#send-btn {
+  position: relative;
+  z-index: 1200 !important;
+  pointer-events: all !important;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  /* Slightly larger tap target on mobile */
+  min-width: 44px;
+  min-height: 44px;
+}
+/* Prevent nav from ever covering input bar */
+@media (max-width: 699px) {
+  #chat-screen .input-bar,
+  #send-btn,
+  .ti-wrap,
+  .ti-input {
+    pointer-events: all !important;
+  }
 }
 
 /* Ensure all overlays/modals/menus beat the nav */
@@ -19813,14 +19857,16 @@ body.keyboard-open .dm-input-bar {
   'use strict';
 
   var NAV_H    = 58;  // px — must match CSS --nav-h
-  var THRESH   = 120; // px shrink = keyboard open threshold
+  var THRESH   = 80; // px shrink = keyboard open threshold (lowered from 120 for small Android screens)
 
   // ── Keyboard detection via visualViewport ────────────────
   function setupViewportHandler() {
     if (!window.visualViewport) return;
 
     var vv        = window.visualViewport;
+    // Defer initial windowH measurement to after page fully renders on Android
     var windowH   = window.innerHeight;
+    setTimeout(function() { windowH = window.innerHeight; }, 500);
     var keyboardOpen = false;
 
     function onViewportChange() {
@@ -19879,7 +19925,7 @@ body.keyboard-open .dm-input-bar {
         if (!document.body.classList.contains('keyboard-open')) {
           document.body.classList.add('keyboard-open');
         }
-      }, 300);
+      }, 150); // reduced from 300ms for faster Android response
     }, true);
 
     document.addEventListener('focusout', function(e) {
@@ -19892,7 +19938,7 @@ body.keyboard-open .dm-input-bar {
         if (!active || !active.matches(inputs)) {
           document.body.classList.remove('keyboard-open');
         }
-      }, 350);
+      }, 200); // reduced from 350ms for snappier nav restore
     }, true);
   }
 
