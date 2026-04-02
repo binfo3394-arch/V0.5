@@ -6528,7 +6528,7 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
         <button class="h-ov-item" style="border-radius:8px;border:1px solid var(--border);text-align:center;justify-content:center;" onclick="startGroupCall(true);closeOverflow()">👥📹 Group</button>
       </div>
       <div class="h-ov-sep"></div>
-      <button class="h-ov-item" onclick="(function(){var rc=window.roomCode||'';if(!rc)return;if(navigator.share){navigator.share({title:'Join me on SecretLine',text:'Room code: '+rc});}else{navigator.clipboard&&navigator.clipboard.writeText(rc).then(function(){window.showToast&&window.showToast('✅ Room code copied: '+rc);});}});closeOverflow()">🔗 Share Room Code</button>
+      <button class="h-ov-item" onclick="(function(){var rc=window.roomCode||'';if(!rc){window.showToast&&window.showToast('⚠️ Join a room first');return;}if(navigator.share){navigator.share({title:'Join me on SecretLine',text:'Room code: '+rc});}else{navigator.clipboard&&navigator.clipboard.writeText(rc).then(function(){window.showToast&&window.showToast('✅ Room code copied: '+rc);});}})();closeOverflow()">🔗 Share Room Code</button>
       <button class="h-ov-item" onclick="openSearchPanel();closeOverflow()">🔍 Search messages</button>
       <button class="h-ov-item" onclick="openStarredPanel();closeOverflow()">⭐ Starred</button>
       <button class="h-ov-item" onclick="openRoomSettings();closeOverflow()">⚙️ Room settings</button>
@@ -7188,7 +7188,7 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
   <div class="ctx-item" onclick="ctxPin()"><span>📌</span> <span id="ctx-pin-label">Pin message</span></div>
   <div class="ctx-sep" id="ctx-sep1"></div>
   <div class="ctx-item" id="ctx-delete-me" onclick="ctxDeleteMe()"><span>🗑️</span> Delete for me</div>
-  <div class="ctx-sep"></div>
+  <div class="ctx-sep" id="ctx-sep2"></div>
   <div class="ctx-item danger" id="ctx-delete-all" onclick="ctxDeleteAll()"><span>💥</span> Delete for everyone</div>
 </div>
 
@@ -7551,6 +7551,7 @@ let typingTimer, toastTimer;
 let peerCount = 0;
 let unsubMessages = null, unsubPresence = null, unsubTyping = null;
 let unsubChanged = null, unsubRemoved = null;
+let unsubScreenshot = null, unsubCalls = null, unsubGroupCall = null;
 let _audioCtx = null;
 function getAudioCtx() {
   if (!_audioCtx || _audioCtx.state === 'closed') {
@@ -7816,6 +7817,9 @@ try {
     if (unsubRemoved)  { unsubRemoved();  unsubRemoved  = null; }
     if (unsubPresence) { unsubPresence(); unsubPresence = null; }
     if (unsubTyping)   { unsubTyping();   unsubTyping   = null; }
+    if (unsubScreenshot) { unsubScreenshot(); unsubScreenshot = null; }
+    if (unsubCalls)    { unsubCalls();    unsubCalls    = null; }
+    if (unsubGroupCall){ unsubGroupCall();unsubGroupCall= null; }
 
     listenPresence(safeRoom);
     listenMessages(safeRoom);
@@ -7922,11 +7926,9 @@ window.joinRoom = window._joinRoom = async () => {
 
 function listenMessages(safeRoom) {
   const msgRef = ref(db, `rooms/${safeRoom}/messages`);
-  // Clear old message DOM before attaching a new listener (prevents duplicates on reconnect)
-  const wrap = document.getElementById('msgs-wrap');
-  if (wrap) {
-    Array.from(wrap.querySelectorAll('.msg-row, .sys-line')).forEach(el => el.remove());
-  }
+  // Clear stale message DOM to prevent duplicates on reconnect
+  const _mWrap = document.getElementById('msgs-wrap');
+  if (_mWrap) Array.from(_mWrap.querySelectorAll('.msg-row, .sys-line')).forEach(e => e.remove());
   const renderedKeys = new Set();
   let firstLoad = true;
   setTimeout(() => { firstLoad = false; }, 2000);
@@ -8000,8 +8002,10 @@ function listenTyping(safeRoom) {
     const data = snap.val() || {};
     const typers = Object.entries(data).filter(([k,v]) => k !== myId && v);
     const row = document.getElementById('typing-row');
+    const lbl = document.getElementById('typing-label');
+    if (!row) return;
     if (typers.length > 0) {
-      document.getElementById('typing-label').textContent = typers.map(([,v])=>v).join(', ') + ' typing...';
+      if (lbl) lbl.textContent = typers.map(([,v])=>v).join(', ') + ' typing...';
       row.classList.add('show');
     } else {
       row.classList.remove('show');
@@ -8013,8 +8017,7 @@ function listenTyping(safeRoom) {
    SEND MESSAGE
 ══════════════════════════════ */
 window.doSend = async () => {
-  if (!db) { if (window.showToast) window.showToast('❌ Firebase not connected — reload page'); return; }
-  if (!window._safeRoom) { if (window.showToast) window.showToast('⚠️ Join a room first'); return; }
+  if (!db || !window._safeRoom) return;
   const ti = document.getElementById('ti');
   const sendBtn = document.getElementById('send-btn');
   const text = ti.value.trim();
@@ -8294,14 +8297,17 @@ function renderMsg(msg, key) {
 ══════════════════════════════ */
 window.toggleAttach = (e) => {
   e.stopPropagation();
-  document.getElementById('attach-pop').classList.toggle('open');
+  const ap = document.getElementById('attach-pop');
+  if (ap) ap.classList.toggle('open');
 };
 
-document.addEventListener('click', () => document.getElementById('attach-pop').classList.remove('open'));
+document.addEventListener('click', () => { const ap = document.getElementById('attach-pop'); if (ap) ap.classList.remove('open'); });
 
 window.pick = (type) => {
-  document.getElementById('fi-' + type).click();
-  document.getElementById('attach-pop').classList.remove('open');
+  const fi = document.getElementById('fi-' + type);
+  if (fi) fi.click();
+  const ap = document.getElementById('attach-pop');
+  if (ap) ap.classList.remove('open');
 };
 
 window.onFiles = (input, type) => {
@@ -8555,11 +8561,10 @@ async function sendVoiceMsg(mimeType, duration) {
 window.clearChat = async () => {
   if (!confirm('Delete all messages?')) return;
   await remove(ref(db, `rooms/${window._safeRoom}/messages`));
-  // Restore empty state UI
-  const esEl = document.getElementById('empty-state');
-  if (esEl) esEl.style.display = '';
-  const wrap = document.getElementById('msgs-wrap');
-  if (wrap) Array.from(wrap.querySelectorAll('.msg-row, .sys-line')).forEach(el => el.remove());
+  const _ccWrap = document.getElementById('msgs-wrap');
+  if (_ccWrap) Array.from(_ccWrap.querySelectorAll('.msg-row,.sys-line')).forEach(e=>e.remove());
+  const _ccEs = document.getElementById('empty-state');
+  if (_ccEs) _ccEs.style.display = '';
   showToast('🗑️ Chat cleared');
 };
 
@@ -8585,8 +8590,14 @@ function showCtxMenu(x, y, key, senderId) {
   document.getElementById('ctx-delete-all').style.display = (isOwn && !isDeleted) ? 'flex' : 'none';
   document.getElementById('ctx-sep1').style.display       = (isOwn && !isDeleted) ? 'block' : 'none';
   document.querySelectorAll('.ctx-sep')[1].style.display  = (isOwn && !isDeleted) ? 'block' : 'none';
+  const _sep2 = document.getElementById('ctx-sep2');
+  if (_sep2) _sep2.style.display = (isOwn && !isDeleted) ? 'block' : 'none';
 
+  // Position off-screen first so we can measure real size
+  menu.style.left = '-9999px';
+  menu.style.top  = '-9999px';
   menu.classList.add('open');
+  // Force layout flush so offsetWidth/Height are accurate
   const mw = menu.offsetWidth  || 200;
   const mh = menu.offsetHeight || 120;
   const vw = window.innerWidth;
@@ -8596,7 +8607,8 @@ function showCtxMenu(x, y, key, senderId) {
 }
 
 function closeCtxMenu() {
-  document.getElementById('msg-ctx-menu').classList.remove('open');
+  const _cm = document.getElementById('msg-ctx-menu');
+  if (_cm) _cm.classList.remove('open');
   // Don't clear _ctxKey here — ctxReact needs it; it clears itself
 }
 function _clearCtxState() {
@@ -8642,21 +8654,20 @@ window.ctxDeleteAll = async () => {
 
 window.leaveRoom = async () => {
   if (!confirm('Leave this room?')) return;
-  // Clear typing indicator before leaving
-  try {
-    if (db && window._safeRoom && myId) {
-      await set(ref(db, `rooms/${window._safeRoom}/typing/${myId}`), null).catch(()=>{});
-    }
-  } catch(e) {}
+  // Clear typing before leaving
+  try { if (db && window._safeRoom && myId) await set(ref(db, `rooms/${window._safeRoom}/typing/${myId}`), null).catch(()=>{}); } catch(e) {}
   // Clear message DOM
-  const wrap = document.getElementById('msgs-wrap');
-  if (wrap) Array.from(wrap.querySelectorAll('.msg-row, .sys-line')).forEach(el => el.remove());
+  const _lWrap = document.getElementById('msgs-wrap');
+  if (_lWrap) Array.from(_lWrap.querySelectorAll('.msg-row,.sys-line')).forEach(e=>e.remove());
   // Unsubscribe all Firebase listeners first
   if (unsubMessages) { unsubMessages(); unsubMessages = null; }
   if (unsubChanged)  { unsubChanged();  unsubChanged  = null; }
   if (unsubRemoved)  { unsubRemoved();  unsubRemoved  = null; }
   if (unsubPresence) { unsubPresence(); unsubPresence = null; }
   if (unsubTyping)   { unsubTyping();   unsubTyping   = null; }
+  if (unsubScreenshot) { unsubScreenshot(); unsubScreenshot = null; }
+  if (unsubCalls)    { unsubCalls();    unsubCalls    = null; }
+  if (unsubGroupCall){ unsubGroupCall();unsubGroupCall= null; }
   await remove(ref(db, `rooms/${window._safeRoom}/presence/${myId}`));
   localStorage.removeItem('sl_session');
   location.reload();
@@ -8877,7 +8888,18 @@ window.toggleDisappearRow = () => {
 
 window.setDisappearTimer = (val) => {
   disappearSecs = parseInt(val) || 0;
-  showToast(disappearSecs > 0 ? `⏳ Messages disappear after ${document.getElementById('disappear-select').options[document.getElementById('disappear-select').selectedIndex].text}` : '⏳ Disappearing messages off');
+  // Sync both selects
+  ['disappear-select','pc-disappear-select'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = val;
+  });
+  if (disappearSecs > 0) {
+    const labels = {30:'30 seconds',60:'1 minute',300:'5 minutes',3600:'1 hour',86400:'24 hours'};
+    const label = labels[disappearSecs] || (disappearSecs + 's');
+    showToast('⏳ Messages disappear after ' + label);
+  } else {
+    showToast('⏳ Disappearing messages off');
+  }
 };
 
 function scheduleDisappear(row, disappearAt) {
@@ -8901,9 +8923,8 @@ function bumpUnread() {
   unreadCount++;
   const badge = document.getElementById('unread-badge');
   const btn = document.getElementById('scroll-down-btn');
-  badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
-  badge.classList.add('show');
-  btn.classList.add('show');
+  if (badge) { badge.textContent = unreadCount > 99 ? '99+' : unreadCount; badge.classList.add('show'); }
+  if (btn) btn.classList.add('show');
 }
 
 window.scrollBottomBtn = () => {
@@ -8913,15 +8934,24 @@ window.scrollBottomBtn = () => {
   document.getElementById('scroll-down-btn').classList.remove('show');
 };
 
-document.getElementById('msgs-wrap').addEventListener('scroll', () => {
-  if (isScrolledToBottom()) {
-    unreadCount = 0;
-    document.getElementById('unread-badge').classList.remove('show');
-    document.getElementById('scroll-down-btn').classList.remove('show');
-  } else {
-    document.getElementById('scroll-down-btn').classList.add('show');
-  }
-});
+function _attachMsgsScrollListener() {
+  const msgsWrap = document.getElementById('msgs-wrap');
+  if (!msgsWrap) return;
+  msgsWrap.addEventListener('scroll', () => {
+    if (isScrolledToBottom()) {
+      unreadCount = 0;
+      document.getElementById('unread-badge').classList.remove('show');
+      document.getElementById('scroll-down-btn').classList.remove('show');
+    } else {
+      document.getElementById('scroll-down-btn').classList.add('show');
+    }
+  });
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', _attachMsgsScrollListener);
+} else {
+  _attachMsgsScrollListener();
+}
 
 /* ══════════════════════════════
    SOUND EFFECTS
@@ -8929,11 +8959,16 @@ document.getElementById('msgs-wrap').addEventListener('scroll', () => {
 let soundOn = localStorage.getItem('sl_sound') !== 'off';
 
 function updateSoundBtn() {
-  document.getElementById('sound-btn').textContent = soundOn ? '🔊' : '🔇';
+  const btn = document.getElementById('sound-btn');
+  if (btn) btn.textContent = soundOn ? '🔊' : '🔇';
   const lbl = document.getElementById('h-ov-sound-label');
   if (lbl) lbl.textContent = soundOn ? 'Sound on' : 'Sound off';
 }
-updateSoundBtn();
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', updateSoundBtn);
+} else {
+  updateSoundBtn();
+}
 
 window.toggleSound = () => {
   soundOn = !soundOn;
@@ -8978,8 +9013,9 @@ document.addEventListener('visibilitychange', () => {
 
 // Listen for screenshot events from others
 function listenScreenshot(safeRoom) {
+  if (unsubScreenshot) { unsubScreenshot(); unsubScreenshot = null; }
   const evRef = ref(db, `rooms/${safeRoom}/events`);
-  onChildAdded(evRef, snap => {
+  unsubScreenshot = onChildAdded(evRef, snap => {
     const ev = snap.val();
     if (ev && ev.type === 'screenshot_attempt' && ev.by !== myName) {
       showToast('📸 ' + ev.by + ' may have taken a screenshot!');
@@ -9148,7 +9184,7 @@ setTimeout(checkPinLock, 500);
 document.addEventListener('dragover', e => e.preventDefault());
 document.addEventListener('drop', e => {
   e.preventDefault();
-  if (!db) return;
+  if (!db || !window._safeRoom) return;
   Array.from(e.dataTransfer.files).forEach(file => {
     if (file.size > MAX_SIZE) { showToast('⚠️ Max 100MB: ' + file.name); return; }
     const reader = new FileReader();
@@ -9169,6 +9205,7 @@ window.openLb = (src) => {
   const lb  = document.getElementById('lightbox');
   const img = document.getElementById('lb-img');
   const dl  = document.getElementById('lb-download');
+  if (!lb || !img) return;
   img.src = src;
   if (dl) { dl.href = src; dl.download = 'secretline_' + Date.now() + '.jpg'; }
   lb.classList.add('open');
@@ -9215,9 +9252,7 @@ document.addEventListener('keydown', function(e) {
 function scrollBottom() {
   const w = document.getElementById('msgs-wrap');
   if (!w) return;
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => { w.scrollTop = w.scrollHeight; });
-  });
+  requestAnimationFrame(() => { requestAnimationFrame(() => { w.scrollTop = w.scrollHeight; }); });
   setTimeout(() => { if (w) w.scrollTop = w.scrollHeight; }, 420);
 }
 
@@ -9467,8 +9502,10 @@ window.startCall = async (withVideo) => {
 
 // ── Incoming call listener ──
 function listenIncomingCalls(safeRoom) {
+  if (unsubCalls) { unsubCalls(); unsubCalls = null; }
+  if (unsubGroupCall) { unsubGroupCall(); unsubGroupCall = null; }
   const sRef = ref(db, `rooms/${safeRoom}/signal`);
-  onValue(sRef, (snap) => {
+  unsubCalls = onValue(sRef, (snap) => {
     const data = snap.val();
     if (!data) return;
     if (data.type === 'offer' && callRole === null && !pc) {
@@ -9483,7 +9520,7 @@ function listenIncomingCalls(safeRoom) {
 
   // ── Listen for group call invites (other peers joining) ──
   const gcRef = ref(db, `rooms/${safeRoom}/group_call`);
-  onValue(gcRef, (snap) => {
+  unsubGroupCall = onValue(gcRef, (snap) => {
     const data = snap.val();
     if (!data || !data.active) return;
     if (callRole === null && !pc && Object.keys(peers).length === 0) {
@@ -10199,21 +10236,6 @@ window.pcToggleDisappear = function() {
   };
 })();
 
-// Privacy button PC sidebar sync
-(function patchPrivacyForSidebar() {
-  const origTP = window.togglePrivacyMode;
-  window.togglePrivacyMode = function() {
-    if (origTP) origTP();
-    const pcBtn = document.getElementById('pc-privacy-btn');
-    const pcLabel = document.getElementById('pc-privacy-label');
-    // privacyModeOn is updated inside origTP
-    setTimeout(() => {
-      if (pcBtn) pcBtn.classList.toggle('active-state', privacyModeOn);
-      if (pcLabel) pcLabel.textContent = privacyModeOn ? 'Privacy mode: ON' : 'Privacy mode';
-    }, 10);
-  };
-})();
-
 /* ══════════════════════════════════════════════════════
    PRIVACY MODE — Screenshot Block + Screen Blackout
 ══════════════════════════════════════════════════════ */
@@ -10244,6 +10266,11 @@ window.togglePrivacyMode = function() {
     stopScreenshotWatch();
     stopVisibilityWatch();
   }
+  // Sync PC sidebar button
+  const pcBtn = document.getElementById('pc-privacy-btn');
+  const pcLabel = document.getElementById('pc-privacy-label');
+  if (pcBtn) pcBtn.classList.toggle('active-state', privacyModeOn);
+  if (pcLabel) pcLabel.textContent = privacyModeOn ? 'Privacy mode: ON' : 'Privacy mode';
 };
 
 // ── Privacy Toast ──
@@ -11360,22 +11387,7 @@ window.savePublicRoom = function() {
   });
 };
 
-// Check & restore Make Public state when room settings opens
-var _origOpenRoomSettings = window.openRoomSettings;
-window.openRoomSettings = function() {
-  if (_origOpenRoomSettings) _origOpenRoomSettings.apply(this, arguments);
-  setTimeout(function() {
-    var code = window._safeRoom;
-    if (!code) return;
-    var isPublic = !!localStorage.getItem('sl_public_room_' + code);
-    var cb = document.getElementById('rs-public-room');
-    if (cb) { cb.checked = isPublic; }
-    var fields = document.getElementById('rs-public-room-fields');
-    if (fields) fields.style.display = isPublic ? 'flex' : 'none';
-    var ni = document.getElementById('rs-room-name-input');
-    if (ni && !ni.value) ni.value = code;
-  }, 100);
-};
+// openRoomSettings public room state is now handled inside the main definition
 
 window.closeRoomsDirectory = function() {
   var overlay = document.getElementById('rooms-dir-overlay');
@@ -11762,6 +11774,18 @@ window.openRoomSettings = function(){
   if(rc) rc.textContent = window._safeRoom ? (window._safeRoom.replace(/_/g,' ') || '—') : '—';
   if(ri) ri.textContent = (window._myIdV5 || '—').slice(0,16);
   document.getElementById('room-settings-modal').classList.add('open');
+  // Restore Make Public state
+  setTimeout(function() {
+    var code = window._safeRoom;
+    if (!code) return;
+    var isPublic = !!localStorage.getItem('sl_public_room_' + code);
+    var cb = document.getElementById('rs-public-room');
+    if (cb) { cb.checked = isPublic; }
+    var fields = document.getElementById('rs-public-room-fields');
+    if (fields) fields.style.display = isPublic ? 'flex' : 'none';
+    var ni = document.getElementById('rs-room-name-input');
+    if (ni && !ni.value) ni.value = code;
+  }, 100);
 };
 window.closeRoomSettings = function(){ document.getElementById('room-settings-modal').classList.remove('open'); };
 
@@ -12754,15 +12778,16 @@ window.deleteRecentRoom = function(code) {
 document.addEventListener('DOMContentLoaded', () => renderRecentRooms());
 
 // Patch joinRoom to save recent rooms
-const _origJoinRoomFull = window._joinRoom;
 setTimeout(() => {
   const orig = window._joinRoom || window.joinRoom;
-  if (orig) {
-    window._joinRoom = window.joinRoom = async function() {
+  if (orig && !orig._patched) {
+    const patched = async function() {
       const code = document.getElementById('room-input')?.value?.trim();
       if (code) saveRecentRoom(code);
       return orig.apply(this, arguments);
     };
+    patched._patched = true;
+    window._joinRoom = window.joinRoom = patched;
   }
 }, 1500);
 
@@ -19272,15 +19297,13 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 })();
 
-// ── Send button success flash (FIXED: properly async) ────────
+// ── Send button success flash (FIXED: async + await) ──────────
 (function patchSendBtn() {
   var _origSend = window.doSend;
   if (!_origSend) return;
   window.doSend = async function() {
     var btn = document.getElementById('send-btn');
-    try {
-      await _origSend.apply(this, arguments);
-    } catch(e) { console.error('[SL] doSend error:', e); }
+    try { await _origSend.apply(this, arguments); } catch(e) { console.error('[SL] doSend:', e); }
     if (btn) {
       btn.classList.add('sent');
       setTimeout(function() { btn.classList.remove('sent'); }, 450);
@@ -19946,11 +19969,11 @@ body.keyboard-open .dm-input-bar {
 
 
 <script>
-/* SecretLine v6 — Supplemental fixes (window.roomCode sync, img scroll, PC sidebar) */
+/* SecretLine v6 — Supplemental fixes */
 (function() {
   'use strict';
 
-  // ── FIX A: window.roomCode sync ──────────────────────────────
+  // FIX A: window.roomCode always synced from h-room header
   function _syncRC() {
     try {
       var h = document.getElementById('h-room');
@@ -19964,102 +19987,94 @@ body.keyboard-open .dm-input-bar {
   }
   _syncRC();
   setInterval(_syncRC, 1500);
+
   document.addEventListener('DOMContentLoaded', function() {
+    // Mirror h-room changes → window.roomCode
     var h = document.getElementById('h-room');
     if (h) new MutationObserver(_syncRC).observe(h, { childList:true, subtree:true, characterData:true });
 
-    // ── FIX B: img/video load → scroll to bottom ──────────────
+    // FIX B: img/video load → scroll bottom
     var wrap = document.getElementById('msgs-wrap');
     if (wrap) {
       new MutationObserver(function(muts) {
         muts.forEach(function(m) {
           m.addedNodes.forEach(function(node) {
             if (node.nodeType !== 1) return;
-            var medias = [];
-            if (node.tagName === 'IMG' || node.tagName === 'VIDEO') medias.push(node);
-            node.querySelectorAll && node.querySelectorAll('img,video').forEach(function(el) { medias.push(el); });
-            medias.forEach(function(el) {
-              var ev = el.tagName === 'IMG' ? 'load' : 'loadedmetadata';
-              el.addEventListener(ev, function() {
-                if (wrap.scrollHeight - wrap.scrollTop - wrap.clientHeight < 250) {
-                  wrap.scrollTop = wrap.scrollHeight;
-                }
-              }, { once: true });
+            var els = [];
+            if (node.tagName === 'IMG' || node.tagName === 'VIDEO') els.push(node);
+            if (node.querySelectorAll) node.querySelectorAll('img,video').forEach(function(e){els.push(e);});
+            els.forEach(function(el) {
+              el.addEventListener(el.tagName==='IMG'?'load':'loadedmetadata', function() {
+                if (wrap.scrollHeight - wrap.scrollTop - wrap.clientHeight < 250) wrap.scrollTop = wrap.scrollHeight;
+              }, {once:true});
             });
           });
         });
-      }).observe(wrap, { childList: true, subtree: false });
+      }).observe(wrap, { childList:true, subtree:false });
     }
 
-    // ── FIX C: PC sidebar status mirror ───────────────────────
-    var hStatus = document.getElementById('h-status');
-    var hLed    = document.getElementById('status-led');
-    function _mirrorStatus() {
-      var pcStatus = document.getElementById('pc-status-text');
-      var pcLed    = document.getElementById('pc-status-led');
-      if (pcStatus && hStatus) pcStatus.textContent = hStatus.textContent;
-      if (pcLed && hLed) pcLed.className = hLed.className;
+    // FIX C: PC sidebar status live mirror
+    var hSt = document.getElementById('h-status');
+    var hLed = document.getElementById('status-led');
+    function _mir() {
+      var pc = document.getElementById('pc-status-text');
+      var pl = document.getElementById('pc-status-led');
+      if (pc && hSt) pc.textContent = hSt.textContent;
+      if (pl && hLed) pl.className = hLed.className;
     }
-    if (hStatus) {
-      new MutationObserver(_mirrorStatus).observe(hStatus, { childList:true, subtree:true, characterData:true });
-    }
-    if (hLed) {
-      new MutationObserver(_mirrorStatus).observe(hLed, { attributes:true, attributeFilter:['class'] });
-    }
+    if (hSt) new MutationObserver(_mir).observe(hSt, {childList:true,subtree:true,characterData:true});
+    if (hLed) new MutationObserver(_mir).observe(hLed, {attributes:true,attributeFilter:['class']});
 
-    // ── FIX D: All share-room-code buttons use live window.roomCode ──
-    function _shareRoom() {
+    // FIX D: share buttons use live roomCode
+    function _share() {
       _syncRC();
       var rc = window.roomCode || '';
       if (!rc) { if (window.showToast) window.showToast('⚠️ Join a room first'); return; }
-      if (navigator.share) navigator.share({ title:'Join me on SecretLine', text:'Room code: ' + rc });
-      else if (navigator.clipboard) navigator.clipboard.writeText(rc).then(function() {
-        if (window.showToast) window.showToast('✅ Room code copied: ' + rc);
+      if (navigator.share) navigator.share({title:'Join me on SecretLine', text:'Room code: '+rc});
+      else if (navigator.clipboard) navigator.clipboard.writeText(rc).then(function(){
+        if (window.showToast) window.showToast('✅ Room code copied: '+rc);
       });
     }
-    document.querySelectorAll('.h-ov-item').forEach(function(btn) {
-      if ((btn.textContent||'').indexOf('Share Room') !== -1) {
-        btn.onclick = function(e) { e.stopPropagation(); _shareRoom(); if(window.closeOverflow) window.closeOverflow(); };
+    document.querySelectorAll('.h-ov-item').forEach(function(b) {
+      if ((b.textContent||'').indexOf('Share Room')!==-1) {
+        b.onclick = function(e){e.stopPropagation();_share();if(window.closeOverflow)window.closeOverflow();};
       }
     });
     var wrc = document.getElementById('wait-room-code');
-    if (wrc) {
-      wrc.onclick = function() {
-        _syncRC();
-        var rc = window.roomCode || '';
-        if (rc && navigator.clipboard) navigator.clipboard.writeText(rc).then(function() {
-          if (window.showToast) window.showToast('✅ Copied: ' + rc);
-        });
-      };
-    }
+    if (wrc) wrc.onclick = function(){_syncRC();var rc=window.roomCode||'';if(rc&&navigator.clipboard)navigator.clipboard.writeText(rc).then(function(){if(window.showToast)window.showToast('✅ Copied: '+rc);});};
 
-    // ── FIX E: renderReactions null-guard ─────────────────────
-    var _origRR = window.renderReactions;
-    if (_origRR) {
-      window.renderReactions = function(reactRow, reactions, key) {
-        if (!reactRow) return;
-        try { return _origRR.apply(this, arguments); } catch(e) {}
-      };
-    }
+    // FIX E: renderReactions null-guard
+    var _rr = window.renderReactions;
+    if (_rr) window.renderReactions = function(r,rx,k){if(!r)return;try{return _rr.apply(this,arguments);}catch(e){}};
 
-    // ── FIX F: wait banner hide when partner already online ────
-    var chatScreen = document.getElementById('chat-screen');
-    if (chatScreen) {
-      new MutationObserver(function(muts) {
-        muts.forEach(function(m) {
-          if (m.attributeName === 'class' && !chatScreen.classList.contains('hidden')) {
-            setTimeout(function() {
-              var wb = document.getElementById('wait-banner');
-              var stat = document.getElementById('h-status');
-              if (wb && stat && stat.textContent.indexOf('online') !== -1) wb.style.display = 'none';
-            }, 900);
-          }
-        });
-      }).observe(chatScreen, { attributes:true, attributeFilter:['class'] });
+    // FIX F: wait banner — hide if partner already online when entering chat
+    var cs = document.getElementById('chat-screen');
+    if (cs) new MutationObserver(function(muts){
+      muts.forEach(function(m){
+        if(m.attributeName==='class'&&!cs.classList.contains('hidden')){
+          setTimeout(function(){
+            var wb=document.getElementById('wait-banner');
+            var st=document.getElementById('h-status');
+            if(wb&&st&&st.textContent.indexOf('online')!==-1)wb.style.display='none';
+          },900);
+        }
+      });
+    }).observe(cs,{attributes:true,attributeFilter:['class']});
+
+    // FIX G: close emoji picker on send
+    var origDs = window.doSend;
+    if (origDs && !origDs._emojiPatch) {
+      var wrapped = async function(){
+        var ep=document.getElementById('chat-emoji-pop');
+        if(ep&&ep.style.display!=='none')ep.style.display='none';
+        return origDs.apply(this,arguments);
+      };
+      wrapped._emojiPatch = true;
+      window.doSend = wrapped;
     }
   });
 
-  console.log('%c [SL v6] Supplemental fixes loaded ✓', 'color:#3de8a0;font-weight:bold');
+  console.log('%c [SL v6] Fixes loaded ✓', 'color:#3de8a0;font-weight:bold');
 })();
 </script>
 </body>
