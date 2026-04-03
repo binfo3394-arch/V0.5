@@ -9,146 +9,10 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SecretLine">
 <title>SecretLine v5 🔐</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1F510;</text></svg>">
 <link rel="manifest" href="data:application/json,{%22name%22:%22SecretLine%22,%22short_name%22:%22SecretLine%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%22%2305070a%22,%22theme_color%22:%22%2305070a%22,%22icons%22:[{%22src%22:%22data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1F510;</text></svg>%22,%22sizes%22:%22any%22,%22type%22:%22image/svg+xml%22}]}">
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Clash+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js" async defer></script>
-
-<!-- ════ PWA SERVICE WORKER ════ -->
-<script>
-(function() {
-  'use strict';
-
-  // ── Inline Service Worker via Blob ────────────────────────────
-  var SW_VERSION = 'sl-v5-cache-v1';
-  var STATIC_ASSETS = ['/'];
-
-  var swCode = `
-const CACHE_NAME = '${SW_VERSION}';
-const OFFLINE_URL = '/';
-
-self.addEventListener('install', function(e) {
-  console.log('[SW] Installing...');
-  e.waitUntil(
-    caches.open(CACHE_NAME).then(function(cache) {
-      return cache.addAll([OFFLINE_URL]).catch(function(err) {
-        console.warn('[SW] Cache addAll failed (expected in file://):', err);
-      });
-    }).then(function() {
-      return self.skipWaiting();
-    })
-  );
-});
-
-self.addEventListener('activate', function(e) {
-  console.log('[SW] Activating...');
-  e.waitUntil(
-    caches.keys().then(function(keys) {
-      return Promise.all(
-        keys.filter(function(k) { return k !== CACHE_NAME; })
-            .map(function(k) { return caches.delete(k); })
-      );
-    }).then(function() {
-      return self.clients.claim();
-    })
-  );
-});
-
-self.addEventListener('fetch', function(e) {
-  // Only cache GET requests, skip Firebase/API calls
-  if (e.request.method !== 'GET') return;
-  var url = e.request.url;
-  if (url.includes('firebaseio.com') || url.includes('googleapis.com') || url.includes('emailjs')) return;
-
-  e.respondWith(
-    fetch(e.request).then(function(response) {
-      if (response && response.status === 200 && response.type === 'basic') {
-        var clone = response.clone();
-        caches.open(CACHE_NAME).then(function(cache) { cache.put(e.request, clone); });
-      }
-      return response;
-    }).catch(function() {
-      return caches.match(e.request).then(function(cached) {
-        return cached || caches.match(OFFLINE_URL);
-      });
-    })
-  );
-});
-
-// ── Push Notifications ────────────────────────────────────────
-self.addEventListener('push', function(e) {
-  var data = {};
-  try { data = e.data ? e.data.json() : {}; } catch(err) {}
-  var title = data.title || 'SecretLine 🔐';
-  var opts = {
-    body: data.body || 'New message',
-    icon: data.icon || 'data:image/svg+xml,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'><text y=\'.9em\' font-size=\'90\'>🔐</text></svg>',
-    badge: data.badge || '',
-    tag: data.tag || 'sl-msg',
-    renotify: true,
-    vibrate: [200, 100, 200],
-    data: { url: data.url || '/' }
-  };
-  e.waitUntil(self.registration.showNotification(title, opts));
-});
-
-self.addEventListener('notificationclick', function(e) {
-  e.notification.close();
-  var target = (e.notification.data && e.notification.data.url) || '/';
-  e.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(all) {
-      for (var c of all) {
-        if (c.url === target && 'focus' in c) return c.focus();
-      }
-      if (clients.openWindow) return clients.openWindow(target);
-    })
-  );
-});
-`;
-
-  // Register SW via Blob URL (works in single-file HTML)
-  if ('serviceWorker' in navigator) {
-    try {
-      var blob = new Blob([swCode], { type: 'application/javascript' });
-      var swUrl = URL.createObjectURL(blob);
-      navigator.serviceWorker.register(swUrl, { scope: '/' })
-        .then(function(reg) {
-          console.log('%c [PWA] Service Worker registered ✓', 'color:#3de8a0;font-weight:bold');
-          window._swReg = reg;
-
-          // Check for updates periodically
-          setInterval(function() { reg.update(); }, 60 * 60 * 1000);
-        })
-        .catch(function(err) {
-          // Blob SW may be blocked in some browsers — log but don't break app
-          console.warn('[PWA] SW registration failed (blob scope limit):', err);
-        });
-
-      // Listen for SW messages
-      navigator.serviceWorker.addEventListener('message', function(e) {
-        if (e.data && e.data.type === 'SW_UPDATED') {
-          if (window.showToast) window.showToast('🔄 App updated! Refreshing...');
-          setTimeout(function() { location.reload(); }, 1500);
-        }
-      });
-    } catch(e) {
-      console.warn('[PWA] SW setup error:', e);
-    }
-  }
-
-  // ── PWA Online/Offline detection ─────────────────────────────
-  window.addEventListener('online', function() {
-    if (window.showToast) window.showToast('🌐 Back online!');
-    document.body.classList.remove('is-offline');
-  });
-
-  window.addEventListener('offline', function() {
-    if (window.showToast) window.showToast('📵 Offline mode — some features limited');
-    document.body.classList.add('is-offline');
-  });
-})();
-</script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 
 
 <style>
@@ -1266,8 +1130,6 @@ body.privacy-blur #setup-screen { filter: blur(12px); transition: filter 0.3s; }
   gap: 8px;
   flex-shrink: 0;
   position: relative;
-  /* Must sit above bottom nav bar */
-  z-index: 1100;
 }
 
 @media (min-width: 700px) {
@@ -1404,9 +1266,6 @@ body.privacy-blur #setup-screen { filter: blur(12px); transition: filter 0.3s; }
   display: flex; align-items: flex-end;
   padding: 4px 4px 4px 12px;
   transition: border-color 0.2s;
-  /* Ensure input area sits above nav bar overlay */
-  position: relative;
-  z-index: 5;
 }
 
 .ti-wrap:focus-within { border-color: rgba(61,232,160,0.35); }
@@ -1438,11 +1297,6 @@ body.privacy-blur #setup-screen { filter: blur(12px); transition: filter 0.3s; }
   margin: 2px;
   transition: opacity 0.15s, transform 0.15s;
   flex-shrink: 0;
-  /* Always above nav bar — never blocked */
-  position: relative;
-  z-index: 10;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
 }
 
 .send-btn:hover { opacity: 0.85; transform: scale(1.05); }
@@ -3994,38 +3848,6 @@ button, .attach-btn, .call-btn, .c-dot, .ap-item {
   .lobby-ftab { padding: 5px 9px; font-size: 11px; }
 }
 
-/* ── soc-feed-tabs (alias used in mobile responsive overrides) ── */
-.soc-feed-tabs {
-  display: flex; gap: 6px; padding: 0 0 10px;
-  overflow-x: auto; scrollbar-width: none; flex-shrink: 0;
-  -webkit-overflow-scrolling: touch;
-}
-.soc-feed-tabs::-webkit-scrollbar { display: none; }
-.soc-feed-tab {
-  padding: 6px 14px; background: var(--card); border: 1px solid var(--border);
-  border-radius: 20px; font-size: 12px; font-family: var(--sans);
-  color: var(--text2); cursor: pointer; white-space: nowrap;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
-  flex-shrink: 0; -webkit-user-select: none; user-select: none;
-  display: flex; align-items: center; gap: 5px;
-}
-.soc-feed-tab:hover { border-color: var(--border2); color: var(--text); background: var(--card2); }
-.soc-feed-tab.active {
-  background: var(--accent-dim); border-color: rgba(61,232,160,0.35);
-  color: var(--accent); font-weight: 600;
-}
-.soc-feed-tab .tab-count {
-  font-size: 10px; font-family: var(--mono);
-  background: rgba(255,255,255,0.08); border-radius: 20px;
-  padding: 1px 5px; min-width: 16px; text-align: center;
-}
-.soc-feed-tab.active .tab-count {
-  background: rgba(61,232,160,0.15);
-}
-@media(max-width:420px) {
-  .soc-feed-tab { padding: 5px 10px; font-size: 11px; }
-}
-
 /* ── User search in sidebar ── */
 .lobby-user-search-wrap {
   display: flex; align-items: center; gap: 6px;
@@ -4410,7 +4232,6 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
   display: flex; align-items: flex-end; gap: 8px;
   padding: 10px 12px;
   padding-bottom: max(10px, env(safe-area-inset-bottom));
-  position: relative;
   background: var(--panel); border-top: 1px solid var(--border);
   flex-shrink: 0;
 }
@@ -4736,38 +4557,30 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
 
 /* ── DM Emoji ── */
 .dm-emoji-btn {
-  width: 40px; height: 40px; background: none; border: none;
-  font-size: 22px; cursor: pointer; flex-shrink: 0;
+  width: 36px; height: 36px; background: none; border: none;
+  font-size: 20px; cursor: pointer; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
-  transition: background 0.15s; border-radius: 10px;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-  user-select: none;
+  transition: transform 0.15s; border-radius: 8px;
 }
-.dm-emoji-btn:hover, .dm-emoji-btn:active { background: var(--card); }
+.dm-emoji-btn:hover { transform: scale(1.2); background: var(--card); }
 .dm-emoji-pop {
-  position: fixed;
+  position: absolute; bottom: calc(100% + 8px); left: 40px;
   background: var(--card2); border: 1px solid var(--border2);
   border-radius: 14px; padding: 8px;
-  box-shadow: 0 12px 32px rgba(0,0,0,0.5); z-index: 99800;
-  width: min(300px, 92vw);
-  animation: ctxPop 0.15s cubic-bezier(0.34,1.56,0.64,1);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.5); z-index: 200;
+  width: 280px; animation: ctxPop 0.15s cubic-bezier(0.34,1.56,0.64,1);
 }
 .dm-emoji-grid {
-  display: grid; grid-template-columns: repeat(7, 1fr);
-  gap: 2px; max-height: 220px; overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  display: grid; grid-template-columns: repeat(8, 1fr);
+  gap: 2px; max-height: 200px; overflow-y: auto;
 }
 .dm-emoji-btn-item {
-  width: 40px; height: 40px; background: none; border: none;
-  font-size: 22px; cursor: pointer; border-radius: 8px;
+  width: 32px; height: 32px; background: none; border: none;
+  font-size: 18px; cursor: pointer; border-radius: 6px;
   display: flex; align-items: center; justify-content: center;
   transition: background 0.1s;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-  user-select: none;
 }
-.dm-emoji-btn-item:hover, .dm-emoji-btn-item:active { background: rgba(255,255,255,0.12); }
+.dm-emoji-btn-item:hover { background: rgba(255,255,255,0.1); transform: scale(1.2); }
 
 /* ── DM Preview Strip ── */
 .dm-preview-strip {
@@ -5414,17 +5227,12 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
     padding: 14px 12px;
     justify-content: flex-start;
     padding-top: 24px;
-    /* Ensure content is fully scrollable — not cut off */
-    padding-bottom: 80px;
-    overflow-y: auto;
   }
   .setup-card {
     padding: 20px 16px;
     border-radius: 16px;
     box-shadow: none;
     border: 1px solid var(--border);
-    /* Prevent card from being clipped at bottom */
-    margin-bottom: 16px;
   }
   .setup-hero { display: none !important; }
   .field-row {
@@ -5732,38 +5540,7 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
       </div>
     </div>
 
-    <!-- ══ ONBOARDING FLOW HINT (new users) ══ -->
-    <div id="setup-onboard-hint" style="
-      background: rgba(61,232,160,0.07);
-      border: 1px solid rgba(61,232,160,0.2);
-      border-radius: 12px;
-      padding: 12px 14px;
-      margin-bottom: 18px;
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-      font-size: 12px;
-      color: var(--text2);
-      line-height: 1.55;
-    ">
-      <span style="font-size:20px;flex-shrink:0;margin-top:-1px;">👋</span>
-      <div>
-        <div style="color:var(--accent);font-weight:700;font-size:12px;margin-bottom:3px;letter-spacing:0.3px;">Getting started</div>
-        <span style="color:var(--text);">1.</span> Sign in below &nbsp;→&nbsp;
-        <span style="color:var(--text);">2.</span> Create or join a room &nbsp;→&nbsp;
-        <span style="color:var(--text);">3.</span> Share the room code
-        <button onclick="document.getElementById('setup-onboard-hint').style.display='none'" style="display:block;margin-top:6px;background:none;border:none;color:var(--text3);font-size:11px;cursor:pointer;padding:0;font-family:var(--mono);">Dismiss ✕</button>
-      </div>
-    </div>
-
-    <!-- ══ SETUP TABS ══ -->
-    <div class="tabs" id="setup-tabs">
-      <button class="tab active" id="setup-tab-join" onclick="setupSwitchTab('join')">🔑 Join Room</button>
-      <button class="tab" id="setup-tab-create" onclick="setupSwitchTab('create')">✨ Create Room</button>
-    </div>
-
-    <!-- ── Profile block (shared by both tabs) ── -->
-    <div class="section-label">Step 1 — Sign In</div>
+    <div class="section-label">Room & Profile</div>
 
     <!-- Google sign-in button (hidden — auth handled via Sign In modal) -->
     <div class="google-signin-wrap" id="google-signin-wrap" style="display:none !important;"></div>
@@ -5789,86 +5566,34 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
       <span class="ppt-arrow">›</span>
     </button>
 
-    <!-- ══ JOIN ROOM PANE ══ -->
-    <div id="setup-pane-join">
-      <div class="section-label" style="margin-top:18px;">Step 2 — Enter Room Code</div>
+    <!-- Recent Rooms -->
+    <div class="recent-rooms-wrap" id="recent-rooms-wrap" style="display:none">
+      <div class="recent-rooms-label">Recent Rooms</div>
+      <div id="recent-rooms-list"></div>
+    </div>
 
-      <!-- Recent Rooms -->
-      <div class="recent-rooms-wrap" id="recent-rooms-wrap" style="display:none">
-        <div class="recent-rooms-label">Recent Rooms</div>
-        <div id="recent-rooms-list"></div>
-      </div>
-
+    <div class="field">
+      <label>Room Code</label>
+      <input type="text" id="room-input" placeholder="e.g. sunset-42"
+        oninput="filterRecentRooms(this.value)">
+    </div>
+    <div class="field-row">
       <div class="field">
-        <label>Room Code</label>
-        <input type="text" id="room-input" placeholder="e.g. sunset-42"
-        oninput="if(window.filterRecentRooms)filterRecentRooms(this.value)">
+        <label>Your Name</label>
+        <input type="text" id="name-input" placeholder="Name...">
       </div>
-      <div class="field-row">
-        <div class="field">
-          <label>Your Name</label>
-          <input type="text" id="name-input" placeholder="Name...">
-        </div>
-        <div class="field">
-          <label>Passcode (optional)</label>
-          <input type="password" id="pass-input" placeholder="Room password...">
-        </div>
-      </div>
-
-      <button class="btn-primary" id="join-btn" onclick="joinRoom()">Enter Room 🚀</button>
-      <div class="error-msg" id="join-error"></div>
-      <div style="display:flex;gap:8px;margin-top:10px;">
-        <button class="soc-lobby-link" id="lobby-main-btn" onclick="openSocialArea()" style="flex:1;">&#x1F310; Public Lobby<span id="lobby-signin-hint" style="font-size:10px;opacity:0.55;margin-left:5px;">(Sign in required)</span></button>
-        <button onclick="openRoomsDirectory()" title="Discover public rooms" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0 14px;cursor:pointer;font-size:18px;color:var(--text2);transition:border-color 0.2s,color 0.2s;flex-shrink:0;" onmouseover="this.style.borderColor='rgba(61,232,160,0.4)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">&#x1F50D;</button>
+      <div class="field">
+        <label>Passcode (optional)</label>
+        <input type="password" id="pass-input" placeholder="Room password...">
       </div>
     </div>
 
-    <!-- ══ CREATE ROOM PANE ══ -->
-    <div id="setup-pane-create" style="display:none;">
-      <div class="section-label" style="margin-top:18px;">Step 2 — Create Your Room</div>
-
-      <div class="field">
-        <label>Room Code</label>
-        <div style="display:flex;gap:8px;">
-          <input type="text" id="create-room-input" placeholder="Auto-generated or type your own" style="flex:1;">
-          <button onclick="setupGenCode()" title="Generate random code"
-            style="background:var(--card);border:1px solid var(--border2);border-radius:var(--r-sm);padding:0 14px;cursor:pointer;font-size:15px;color:var(--accent);transition:border-color 0.2s,background 0.2s;flex-shrink:0;"
-            onmouseover="this.style.borderColor='rgba(61,232,160,0.4)';this.style.background='var(--card2)'"
-            onmouseout="this.style.borderColor='var(--border2)';this.style.background='var(--card)'">🎲</button>
-        </div>
-        <div style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-top:5px;">Share this code with people you want to chat with</div>
-      </div>
-
-      <div class="field-row">
-        <div class="field">
-          <label>Your Name</label>
-          <input type="text" id="create-name-input" placeholder="Name...">
-        </div>
-        <div class="field">
-          <label>Passcode (optional)</label>
-          <input type="password" id="create-pass-input" placeholder="Lock your room...">
-        </div>
-      </div>
-
-      <div class="info-box" style="margin-bottom:14px;">
-        <div class="step">
-          <div class="step-num">1</div>
-          <div>Room code share කරන්න — ඕනෑම කෙනෙකුට join කරන්න පුළුවන්</div>
-        </div>
-        <div class="step">
-          <div class="step-num">2</div>
-          <div>Passcode optional — set කළොත් join කරන්න password දාන්න ඕනෑ</div>
-        </div>
-        <div class="step">
-          <div class="step-num">3</div>
-          <div>End-to-end encrypted — messages server එකේ store වෙන්නේ නැහැ</div>
-        </div>
-      </div>
-
-      <button class="btn-primary" id="create-btn" onclick="setupCreateRoom()">Create &amp; Enter Room 🔐</button>
-      <div class="error-msg" id="create-error"></div>
+    <button class="btn-primary" id="join-btn" onclick="joinRoom()">Enter Room 🚀</button>
+    <div class="error-msg" id="join-error"></div>
+    <div style="display:flex;gap:8px;">
+      <button class="soc-lobby-link" id="lobby-main-btn" onclick="openSocialArea()" style="flex:1;">&#x1F310; Public Lobby<span id="lobby-signin-hint" style="font-size:10px;opacity:0.55;margin-left:5px;">(Sign in required)</span></button>
+      <button onclick="openRoomsDirectory()" title="Discover public rooms" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0 14px;cursor:pointer;font-size:18px;color:var(--text2);transition:border-color 0.2s,color 0.2s;flex-shrink:0;" onmouseover="this.style.borderColor='rgba(61,232,160,0.4)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">&#x1F50D;</button>
     </div>
-
   </div>
 </div>
 
@@ -5996,28 +5721,6 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
         <button class="lobby-ftab" id="ftab-mine" onclick="lobbySetFeedTab('mine',this)">&#x1F464; My Posts</button>
         <button class="lobby-ftab" id="ftab-media" onclick="lobbySetFeedTab('media',this)">&#x1F4F7; Media</button>
         <button class="lobby-ftab" id="ftab-trending" onclick="lobbySetFeedTab('trending',this)">&#x1F525; Trending</button>
-      </div>
-
-      <!-- Social Feed Tabs (extended filter row, synced with lobby-feed-tabs) -->
-      <div class="soc-feed-tabs" id="soc-feed-tabs">
-        <button class="soc-feed-tab active" data-tab="all" onclick="socFeedTabSwitch('all',this)">
-          &#x1F30D; All <span class="tab-count" id="sftab-count-all"></span>
-        </button>
-        <button class="soc-feed-tab" data-tab="mine" onclick="socFeedTabSwitch('mine',this)">
-          &#x1F464; Mine <span class="tab-count" id="sftab-count-mine"></span>
-        </button>
-        <button class="soc-feed-tab" data-tab="following" onclick="socFeedTabSwitch('following',this)">
-          &#x1F49A; Following <span class="tab-count" id="sftab-count-following"></span>
-        </button>
-        <button class="soc-feed-tab" data-tab="media" onclick="socFeedTabSwitch('media',this)">
-          &#x1F4F7; Media <span class="tab-count" id="sftab-count-media"></span>
-        </button>
-        <button class="soc-feed-tab" data-tab="trending" onclick="socFeedTabSwitch('trending',this)">
-          &#x1F525; Trending <span class="tab-count" id="sftab-count-trending"></span>
-        </button>
-        <button class="soc-feed-tab" data-tab="polls" onclick="socFeedTabSwitch('polls',this)">
-          &#x1F4CA; Polls <span class="tab-count" id="sftab-count-polls"></span>
-        </button>
       </div>
 
       <!-- Posts feed -->
@@ -6262,7 +5965,7 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
       <div id="priv-cover-placeholder" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.4);font-size:13px;font-family:var(--mono);">&#x1F304; Add Cover Photo</div>
       <div class="priv-cover-overlay">&#x1F4F7;</div>
     </div>
-    <input type="file" id="priv-cover-input" accept="image/*" style="display:none" onchange="if(window.onPrivCoverSelect)onPrivCoverSelect(this)">
+    <input type="file" id="priv-cover-input" accept="image/*" style="display:none" onchange="onPrivCoverSelect(this)">
 
     <!-- Avatar (overlaps cover) -->
     <div class="priv-avatar-on-cover">
@@ -6513,29 +6216,14 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
     <!-- Mobile overflow menu button -->
     <button class="h-overflow-btn" onclick="toggleOverflow(event)" title="More">⋯</button>
 
-    <!-- Share room button (mobile only) -->
-    <button class="h-share-mobile h-action-btn" title="Share Room"
-      onclick="(function(){var rc=window.roomCode||'';if(!rc){window.showToast&&window.showToast('⚠️ Join a room first');return;}if(navigator.share){navigator.share({title:'Join me on SecretLine',text:'Room code: '+rc});}else{navigator.clipboard&&navigator.clipboard.writeText(rc).then(function(){window.showToast&&window.showToast('✅ Room code copied: '+rc);});}})()"
-      style="display:none;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🔗</button>
-
     <!-- Overflow dropdown -->
     <div class="h-overflow-panel" id="h-overflow-panel">
-      <!-- Calls section (mobile only — call buttons hidden on mobile) -->
-      <div class="h-ov-section-label" style="font-size:9px;font-family:var(--mono);letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);padding:6px 12px 2px;">Calls</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:0 6px 6px;">
-        <button class="h-ov-item" style="border-radius:8px;border:1px solid var(--border);text-align:center;justify-content:center;" onclick="startCall(false);closeOverflow()">📞 Voice</button>
-        <button class="h-ov-item" style="border-radius:8px;border:1px solid var(--border);text-align:center;justify-content:center;" onclick="startCall(true);closeOverflow()">📹 Video</button>
-        <button class="h-ov-item" style="border-radius:8px;border:1px solid var(--border);text-align:center;justify-content:center;" onclick="startGroupCall(false);closeOverflow()">👥📞 Group</button>
-        <button class="h-ov-item" style="border-radius:8px;border:1px solid var(--border);text-align:center;justify-content:center;" onclick="startGroupCall(true);closeOverflow()">👥📹 Group</button>
-      </div>
-      <div class="h-ov-sep"></div>
-      <button class="h-ov-item" onclick="(function(){var rc=window.roomCode||'';if(!rc){window.showToast&&window.showToast('⚠️ Join a room first');return;}if(navigator.share){navigator.share({title:'Join me on SecretLine',text:'Room code: '+rc});}else{navigator.clipboard&&navigator.clipboard.writeText(rc).then(function(){window.showToast&&window.showToast('✅ Room code copied: '+rc);});}})();closeOverflow()">🔗 Share Room Code</button>
       <button class="h-ov-item" onclick="openSearchPanel();closeOverflow()">🔍 Search messages</button>
-      <button class="h-ov-item" onclick="openStarredPanel();closeOverflow()">⭐ Starred</button>
+      <button class="h-ov-item" onclick="openStarredPanel();closeOverflow()">⭐ Starred messages</button>
       <button class="h-ov-item" onclick="openRoomSettings();closeOverflow()">⚙️ Room settings</button>
       <div class="h-ov-sep"></div>
       <button class="h-ov-item" onclick="toggleSound();closeOverflow()">🔊 <span id="h-ov-sound-label">Sound on</span></button>
-      <button class="h-ov-item" onclick="toggleDisappearRow();closeOverflow()">⏳ Disappearing</button>
+      <button class="h-ov-item" onclick="toggleDisappearRow();closeOverflow()">⏳ Disappearing messages</button>
       <button class="h-ov-item" onclick="showPinSetup();closeOverflow()">🔑 Lock chat</button>
       <button class="h-ov-item" id="h-ov-privacy" onclick="togglePrivacyMode();closeOverflow()">🛡️ Privacy mode</button>
       <div class="h-ov-sep"></div>
@@ -6546,7 +6234,7 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
 
   <!-- Waiting banner -->
   <div class="wait-banner" id="wait-banner">
-    <span class="wd">●</span> Waiting for someone to join — Share your room code: <strong id="wait-room-code" style="color:var(--accent);font-family:var(--mono);cursor:pointer;" onclick="(function(){var rc=window.roomCode||'';if(rc&&navigator.clipboard)navigator.clipboard.writeText(rc).then(function(){window.showToast&&window.showToast('✅ Room code copied: '+rc);});})()" title="Click to copy">—</strong>
+    <span class="wd">●</span> Waiting for partner to join with same room code...
   </div>
 
 
@@ -6571,25 +6259,9 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
 
   <!-- Messages -->
   <div class="msgs-wrap" id="msgs-wrap" style="position:relative">
-    <div class="empty-state" id="empty-state" style="gap:16px;padding:30px 20px;">
-      <div class="e-icon" style="opacity:0.4;font-size:48px;">🔐</div>
-      <div style="font-size:15px;color:var(--text);font-family:var(--sans);font-weight:600;">Room ready!</div>
-      <div style="font-size:13px;color:var(--text2);font-family:var(--sans);text-align:center;line-height:1.6;">Share the room code below to invite someone into this chat.</div>
-      <!-- Room code share box -->
-      <div id="empty-room-share" style="width:100%;max-width:320px;background:var(--card);border:1px solid rgba(61,232,160,0.25);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;box-shadow:0 0 20px rgba(61,232,160,0.06);">
-        <div style="display:flex;align-items:center;justify-content:space-between;">
-          <span style="font-size:10px;font-family:var(--mono);letter-spacing:1.5px;text-transform:uppercase;color:var(--text2);">Room Code</span>
-          <span style="font-size:10px;color:var(--accent);font-family:var(--mono);">🔒 Encrypted</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <div id="empty-room-code" style="flex:1;font-family:var(--mono);font-size:17px;font-weight:700;color:var(--accent);letter-spacing:1px;background:var(--card2);border-radius:8px;padding:10px 14px;">—</div>
-          <button onclick="(function(){var rc=document.getElementById('empty-room-code');if(!rc||rc.textContent==='—')return;navigator.clipboard&&navigator.clipboard.writeText(rc.textContent).then(function(){window.showToast&&window.showToast('✅ Room code copied!');});})();" style="background:var(--accent);color:#000;border:none;border-radius:8px;padding:10px 14px;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap;flex-shrink:0;font-family:var(--sans);transition:opacity 0.15s;">Copy 📋</button>
-        </div>
-        <button onclick="(function(){var rc=document.getElementById('empty-room-code');var code=rc&&rc.textContent!=='—'?rc.textContent:'';if(!code)return;if(navigator.share){navigator.share({title:'Join me on SecretLine',text:'Join my private room: '+code});}else{navigator.clipboard&&navigator.clipboard.writeText('Join my SecretLine room: '+code).then(function(){window.showToast&&window.showToast('✅ Invite text copied!');});}})();" style="width:100%;padding:10px;background:rgba(61,232,160,0.1);border:1px solid rgba(61,232,160,0.3);border-radius:8px;color:var(--accent);font-weight:600;font-size:13px;cursor:pointer;font-family:var(--sans);display:flex;align-items:center;justify-content:center;gap:6px;">
-          📤 Invite Someone
-        </button>
-      </div>
-      <div style="font-size:11px;color:var(--text3);font-family:var(--mono);">Also in header menu → Share 🔗</div>
+    <div class="empty-state" id="empty-state">
+      <div class="e-icon">💬</div>
+      <div>No messages yet.<br>Say hello!</div>
     </div>
   </div>
 
@@ -6649,9 +6321,8 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
     <div class="ti-wrap" id="ti-wrap">
       <button id="chat-emoji-btn" onclick="chatToggleEmoji(event)" style="background:none;border:none;font-size:20px;cursor:pointer;padding:0 6px 0 2px;flex-shrink:0;opacity:0.7;transition:opacity 0.15s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;" title="Emoji" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">😊</button>
       <textarea class="ti-input" id="ti" placeholder="Message..." rows="1"
-        onkeydown="onKey(event)" oninput="onInput(event)"
-        inputmode="text" enterkeyhint="send"></textarea>
-      <button class="send-btn" id="send-btn" onclick="doSend()" ontouchend="event.preventDefault();doSend()">➤</button>
+        onkeydown="onKey(event)" oninput="onInput(event)"></textarea>
+      <button class="send-btn" id="send-btn" onclick="doSend()">➤</button>
     </div>
 
     <!-- Recording bar (shown while recording) -->
@@ -6669,516 +6340,8 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
 </div><!-- /#chat-screen -->
 
 
-<!-- ════════════════════════════════════════════════
-     MOBILE BOTTOM NAVIGATION BAR
-     Visible only on mobile (< 700px)
-     Shows on: setup, chat, social screens
-════════════════════════════════════════════════ -->
-<nav id="sl-bottom-nav" class="sl-bottom-nav" aria-label="Main navigation">
 
-  <!-- Home / Setup -->
-  <button class="sl-nav-btn" id="nav-btn-home" onclick="slNavGo('home')" aria-label="Home">
-    <div class="sl-nav-icon">🏠</div>
-    <div class="sl-nav-label">Home</div>
-  </button>
-
-  <!-- Public Lobby -->
-  <button class="sl-nav-btn" id="nav-btn-lobby" onclick="slNavGo('lobby')" aria-label="Lobby">
-    <div class="sl-nav-icon">🌍</div>
-    <div class="sl-nav-label">Lobby</div>
-    <div class="sl-nav-badge" id="nav-badge-lobby"></div>
-  </button>
-
-  <!-- Chat Room (center prominent button) -->
-  <button class="sl-nav-btn sl-nav-center" id="nav-btn-chat" onclick="slNavGo('chat')" aria-label="Chat">
-    <div class="sl-nav-center-ring">
-      <div class="sl-nav-icon">💬</div>
-    </div>
-    <div class="sl-nav-label">Chat</div>
-    <div class="sl-nav-badge" id="nav-badge-chat"></div>
-  </button>
-
-  <!-- Messenger / DMs -->
-  <button class="sl-nav-btn" id="nav-btn-dm" onclick="slNavGo('dm')" aria-label="Messages">
-    <div class="sl-nav-icon">📩</div>
-    <div class="sl-nav-label">DMs</div>
-    <div class="sl-nav-badge" id="nav-badge-dm"></div>
-  </button>
-
-  <!-- Profile -->
-  <button class="sl-nav-btn" id="nav-btn-profile" onclick="slNavGo('profile')" aria-label="Profile">
-    <div class="sl-nav-icon sl-nav-av-wrap" id="nav-av-wrap">
-      <span id="nav-av-initials">👤</span>
-    </div>
-    <div class="sl-nav-label">Profile</div>
-  </button>
-
-</nav>
-
-<style>
-/* ══════════════════════════════════════════════════════
-   MOBILE BOTTOM NAVIGATION — SecretLine v5
-══════════════════════════════════════════════════════ */
-.sl-bottom-nav {
-  display: none; /* hidden by default, shown on mobile */
-  position: fixed;
-  bottom: 0; left: 0; right: 0;
-  z-index: 8500;
-  height: calc(58px + env(safe-area-inset-bottom, 0px));
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-  background: rgba(11,15,20,0.97);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border-top: 1px solid rgba(255,255,255,0.07);
-  box-shadow: 0 -8px 32px rgba(0,0,0,0.45);
-  display: flex;
-  align-items: stretch;
-  justify-content: space-around;
-}
-
-/* Only show on mobile */
-@media (min-width: 700px) {
-  .sl-bottom-nav { display: none !important; }
-}
-
-/* Nav buttons */
-.sl-nav-btn {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 6px 4px 2px;
-  position: relative;
-  -webkit-tap-highlight-color: transparent;
-  -webkit-user-select: none;
-  user-select: none;
-  transition: transform 0.12s cubic-bezier(0.34,1.56,0.64,1);
-  touch-action: manipulation;
-  min-width: 0;
-}
-
-.sl-nav-btn:active {
-  transform: scale(0.88);
-}
-
-/* Icon */
-.sl-nav-icon {
-  font-size: 20px;
-  line-height: 1;
-  transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1), filter 0.2s;
-  filter: grayscale(30%) opacity(0.65);
-}
-
-/* Label */
-.sl-nav-label {
-  font-size: 9.5px;
-  font-family: var(--sans);
-  font-weight: 500;
-  color: var(--text3);
-  letter-spacing: 0.3px;
-  transition: color 0.18s;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-}
-
-/* Active state */
-.sl-nav-btn.active .sl-nav-icon {
-  filter: grayscale(0%) opacity(1);
-  transform: scale(1.18) translateY(-1px);
-}
-.sl-nav-btn.active .sl-nav-label {
-  color: var(--accent);
-  font-weight: 700;
-}
-
-/* Active indicator dot */
-.sl-nav-btn.active::after {
-  content: '';
-  position: absolute;
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 1px);
-  left: 50%;
-  transform: translateX(-50%);
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 6px var(--accent);
-  animation: navDotPop 0.25s cubic-bezier(0.34,1.56,0.64,1);
-}
-
-@keyframes navDotPop {
-  from { transform: translateX(-50%) scale(0); opacity: 0; }
-  to   { transform: translateX(-50%) scale(1); opacity: 1; }
-}
-
-/* Badge (unread count) */
-.sl-nav-badge {
-  position: absolute;
-  top: 2px;
-  right: calc(50% - 18px);
-  min-width: 16px;
-  height: 16px;
-  background: var(--red);
-  color: #fff;
-  font-size: 9px;
-  font-weight: 700;
-  font-family: var(--mono);
-  border-radius: 20px;
-  padding: 0 4px;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  border: 2px solid rgba(11,15,20,0.97);
-  animation: badgePop 0.3s cubic-bezier(0.34,1.56,0.64,1);
-  z-index: 2;
-}
-.sl-nav-badge.show { display: flex; }
-
-@keyframes badgePop {
-  from { transform: scale(0); }
-  to   { transform: scale(1); }
-}
-
-/* ── Center Chat Button (prominent) ── */
-.sl-nav-center {
-  flex: 1.2;
-  padding-top: 2px;
-}
-
-.sl-nav-center-ring {
-  width: 46px;
-  height: 46px;
-  border-radius: 50%;
-  background: var(--accent-dim);
-  border: 2px solid rgba(61,232,160,0.35);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 0 18px rgba(61,232,160,0.18), inset 0 1px 0 rgba(255,255,255,0.08);
-  transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
-  margin-bottom: 2px;
-}
-
-.sl-nav-center .sl-nav-icon {
-  font-size: 22px;
-  filter: opacity(0.8);
-}
-
-.sl-nav-center.active .sl-nav-center-ring {
-  background: var(--accent);
-  border-color: var(--accent);
-  box-shadow: 0 0 24px rgba(61,232,160,0.45), inset 0 1px 0 rgba(255,255,255,0.2);
-}
-
-.sl-nav-center.active .sl-nav-icon {
-  filter: opacity(1) brightness(0) invert(0); /* dark on green */
-}
-
-/* When in active chat — ring pulses */
-.sl-nav-center.in-room .sl-nav-center-ring {
-  animation: chatRingPulse 3s infinite;
-}
-
-@keyframes chatRingPulse {
-  0%,100% { box-shadow: 0 0 18px rgba(61,232,160,0.18); }
-  50%     { box-shadow: 0 0 28px rgba(61,232,160,0.40); }
-}
-
-/* ── Avatar in nav ── */
-.sl-nav-av-wrap {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--card2);
-  border: 1.5px solid var(--border2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  overflow: hidden;
-  transition: border-color 0.2s;
-}
-
-.sl-nav-btn.active .sl-nav-av-wrap {
-  border-color: var(--accent);
-  box-shadow: 0 0 8px rgba(61,232,160,0.3);
-}
-
-.sl-nav-av-wrap img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 50%;
-}
-
-/* ── Adjust existing screen paddings to account for nav bar ── */
-@media (max-width: 699px) {
-  /* Chat screen: push input bar above nav — use margin not padding */
-  #chat-screen .input-bar {
-    padding-bottom: max(10px, env(safe-area-inset-bottom, 10px)) !important;
-    margin-bottom: 58px !important;
-  }
-
-  /* Social feed: pad bottom */
-  .soc-feed-col {
-    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)) !important;
-  }
-
-  /* FAB: move up above nav */
-  .soc-fab {
-    bottom: calc(max(20px, calc(env(safe-area-inset-bottom) + 16px)) + 58px) !important;
-  }
-
-  /* Toast: keep above nav */
-  .toast {
-    bottom: calc(68px + env(safe-area-inset-bottom, 0px)) !important;
-    top: auto !important;
-  }
-
-  /* Scroll-down btn: above nav */
-  .scroll-down-btn {
-    bottom: calc(80px + env(safe-area-inset-bottom, 0px)) !important;
-  }
-
-  /* Spam cooldown bar */
-  .lobby-cooldown-bar {
-    bottom: calc(58px + env(safe-area-inset-bottom, 0px)) !important;
-  }
-
-  /* PWA install banner — also above nav */
-  .pwa-banner {
-    bottom: calc(58px + env(safe-area-inset-bottom, 0px)) !important;
-  }
-}
-</style>
-
-<script>
-/* ══════════════════════════════════════════════════════
-   MOBILE BOTTOM NAV — Logic
-══════════════════════════════════════════════════════ */
-(function() {
-  'use strict';
-
-  var NAV_SCREENS = {
-    home:    'setup-screen',
-    lobby:   'social-screen',
-    chat:    'chat-screen',
-    dm:      null,   // opens messenger overlay
-    profile: null,   // opens profile modal
-  };
-
-  var _currentScreen = 'home';
-  var _inRoom = false;
-
-  // ── Navigation action ─────────────────────────────────────
-  window.slNavGo = function(target) {
-    switch (target) {
-      case 'home':
-        // If in room, confirm leave
-        if (_inRoom) {
-          if (!confirm('Room leave කරන්නද? — Leave current room?')) return;
-          if (window.leaveRoom) { window.leaveRoom(); return; }
-        }
-        _showScreen('setup-screen');
-        _setActive('home');
-        break;
-
-      case 'lobby':
-        if (window.openSocialArea) {
-          window.openSocialArea();
-        } else {
-          _showScreen('social-screen');
-        }
-        _setActive('lobby');
-        break;
-
-      case 'chat':
-        if (_inRoom) {
-          _showScreen('chat-screen');
-          _setActive('chat');
-        } else {
-          // Not in room — go to setup to join
-          _showScreen('setup-screen');
-          _setActive('home');
-          if (window.showToast) window.showToast('💬 Room join කරන්න — Join a room first');
-        }
-        break;
-
-      case 'dm':
-        if (window.openMessenger) {
-          window.openMessenger();
-        } else if (window.showToast) {
-          window.showToast('📩 Lobby-ට sign in කරන්න — Sign in to use DMs');
-        }
-        // Don't switch active — DM is an overlay
-        break;
-
-      case 'profile':
-        if (window.openPrivProfile) {
-          window.openPrivProfile();
-        } else if (window.openAuthModal) {
-          window.openAuthModal();
-        }
-        // Profile is an overlay, don't switch active screen
-        break;
-    }
-  };
-
-  // ── Set active tab ────────────────────────────────────────
-  function _setActive(tab) {
-    document.querySelectorAll('.sl-nav-btn').forEach(function(b) {
-      b.classList.remove('active');
-    });
-    var btn = document.getElementById('nav-btn-' + tab);
-    if (btn) btn.classList.add('active');
-    _currentScreen = tab;
-  }
-
-  // ── Show a screen ─────────────────────────────────────────
-  function _showScreen(screenId) {
-    ['setup-screen','social-screen','chat-screen'].forEach(function(id) {
-      var el = document.getElementById(id);
-      if (el) el.classList.toggle('hidden', id !== screenId);
-    });
-  }
-
-  // ── Update badge count ─────────────────────────────────────
-  window.slNavSetBadge = function(tab, count) {
-    var badge = document.getElementById('nav-badge-' + tab);
-    if (!badge) return;
-    if (count && count > 0) {
-      badge.textContent = count > 99 ? '99+' : count;
-      badge.classList.add('show');
-    } else {
-      badge.classList.remove('show');
-      badge.textContent = '';
-    }
-  };
-
-  // ── Update avatar in nav ──────────────────────────────────
-  window.slNavUpdateAvatar = function(sess) {
-    var wrap = document.getElementById('nav-av-wrap');
-    var initials = document.getElementById('nav-av-initials');
-    if (!wrap || !initials) return;
-
-    if (sess && sess.photo) {
-      wrap.innerHTML = '<img src="' + sess.photo + '" alt="' + (sess.displayName||'') + '">';
-    } else if (sess && sess.displayName) {
-      initials.textContent = sess.displayName.charAt(0).toUpperCase();
-      initials.style.color = sess.color || 'var(--accent)';
-    }
-  };
-
-  // ── Room state tracking ────────────────────────────────────
-  function _setInRoom(inRoom) {
-    _inRoom = inRoom;
-    var chatBtn = document.getElementById('nav-btn-chat');
-    if (chatBtn) chatBtn.classList.toggle('in-room', inRoom);
-    if (inRoom) _setActive('chat');
-  }
-
-  // ── Watch screen changes (MutationObserver on hidden class) ──
-  function _watchScreens() {
-    var screens = ['setup-screen','social-screen','chat-screen'];
-    var tabMap  = { 'setup-screen':'home', 'social-screen':'lobby', 'chat-screen':'chat' };
-
-    screens.forEach(function(id) {
-      var el = document.getElementById(id);
-      if (!el) return;
-      var obs = new MutationObserver(function() {
-        if (!el.classList.contains('hidden')) {
-          _setActive(tabMap[id] || 'home');
-          if (id === 'chat-screen') _setInRoom(true);
-          if (id === 'setup-screen') _setInRoom(false);
-        }
-      });
-      obs.observe(el, { attributes: true, attributeFilter: ['class'] });
-    });
-  }
-
-  // ── Sync DM badge with messenger badge ────────────────────
-  function _syncBadges() {
-    // Watch msg-nav-badge (messenger)
-    var msgBadge = document.getElementById('msg-nav-badge');
-    if (msgBadge) {
-      var badgeObs = new MutationObserver(function() {
-        var count = parseInt(msgBadge.textContent) || 0;
-        window.slNavSetBadge('dm', count > 0 ? count : 0);
-      });
-      badgeObs.observe(msgBadge, { characterData: true, subtree: true, childList: true });
-    }
-
-    // Watch soc-friends-badge
-    var frBadge = document.getElementById('soc-friends-badge');
-    if (frBadge) {
-      var frObs = new MutationObserver(function() {
-        // Reflect on lobby badge
-        var count = parseInt(frBadge.textContent) || 0;
-        window.slNavSetBadge('lobby', count > 0 ? count : 0);
-      });
-      frObs.observe(frBadge, { characterData: true, subtree: true, childList: true });
-    }
-  }
-
-  // ── Sync avatar from auth session ─────────────────────────
-  function _syncAvatar() {
-    try {
-      var sess = JSON.parse(localStorage.getItem('sl_auth_v2_sess') || 'null');
-      if (sess) window.slNavUpdateAvatar(sess);
-    } catch(e) {}
-
-    // Also patch auth save to update nav avatar
-    var _origSave = window._authV2SaveSession;
-    if (_origSave) {
-      window._authV2SaveSession = function(sess) {
-        _origSave.apply(this, arguments);
-        window.slNavUpdateAvatar(sess);
-      };
-    }
-  }
-
-  // ── Initial active state based on visible screen ──────────
-  function _initActiveState() {
-    var screenMap = {
-      'setup-screen': 'home',
-      'social-screen': 'lobby',
-      'chat-screen': 'chat'
-    };
-    Object.keys(screenMap).forEach(function(id) {
-      var el = document.getElementById(id);
-      if (el && !el.classList.contains('hidden')) {
-        _setActive(screenMap[id]);
-      }
-    });
-  }
-
-  // ── Init ──────────────────────────────────────────────────
-  document.addEventListener('DOMContentLoaded', function() {
-    _watchScreens();
-    _syncBadges();
-    _syncAvatar();
-    _initActiveState();
-  });
-
-  // Also init after window load (for late-bound elements)
-  window.addEventListener('load', function() {
-    setTimeout(function() {
-      _syncBadges();
-      _syncAvatar();
-      _initActiveState();
-    }, 800);
-  });
-
-  console.log('%c [Nav] Mobile bottom nav loaded ✓', 'color:#3de8a0;font-weight:bold');
-})();
-</script>
+<!-- ════ MESSAGE CONTEXT MENU ════ -->
 <div class="msg-ctx-menu" id="msg-ctx-menu">
   <div class="ctx-item" onclick="ctxReply()"><span>↩️</span> Reply</div>
   <div class="ctx-item" onclick="ctxReact()"><span>😄</span> React</div>
@@ -7190,7 +6353,7 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
   <div class="ctx-item" onclick="ctxPin()"><span>📌</span> <span id="ctx-pin-label">Pin message</span></div>
   <div class="ctx-sep" id="ctx-sep1"></div>
   <div class="ctx-item" id="ctx-delete-me" onclick="ctxDeleteMe()"><span>🗑️</span> Delete for me</div>
-  <div class="ctx-sep" id="ctx-sep2"></div>
+  <div class="ctx-sep"></div>
   <div class="ctx-item danger" id="ctx-delete-all" onclick="ctxDeleteAll()"><span>💥</span> Delete for everyone</div>
 </div>
 
@@ -7553,7 +6716,6 @@ let typingTimer, toastTimer;
 let peerCount = 0;
 let unsubMessages = null, unsubPresence = null, unsubTyping = null;
 let unsubChanged = null, unsubRemoved = null;
-let unsubScreenshot = null, unsubCalls = null, unsubGroupCall = null;
 let _audioCtx = null;
 function getAudioCtx() {
   if (!_audioCtx || _audioCtx.state === 'closed') {
@@ -7602,13 +6764,10 @@ function applyGoogleProfile(name, email, photo) {
   const nameInput = document.getElementById('name-input');
   if (nameInput) nameInput.value = name;
 
-  // Show profile card, hide sign-in button, hide priv-profile-trigger
+  // Show profile card, hide sign-in button
   document.getElementById('google-signin-wrap').style.display = 'none';
   const card = document.getElementById('profile-card');
   card.classList.remove('hidden');
-  // Hide the "Sign In / Register" auth trigger — Google card replaces it
-  const ppt = document.getElementById('priv-profile-trigger');
-  if (ppt) ppt.style.display = 'none';
 
   const photoEl = document.getElementById('profile-photo');
   if (photo) {
@@ -7681,9 +6840,6 @@ window.signOut = () => {
   document.getElementById('google-signin-wrap').style.display = 'flex';
   document.getElementById('profile-card').classList.add('hidden');
   document.getElementById('name-input').value = '';
-  // Restore the auth trigger button
-  const ppt = document.getElementById('priv-profile-trigger');
-  if (ppt) ppt.style.display = '';
 
   // Hide header avatar
   const avatarImg = document.getElementById('h-profile-avatar');
@@ -7805,12 +6961,9 @@ try {
 
     // Switch to chat
     document.getElementById('setup-screen').classList.add('hidden');
-    document.body.classList.remove('on-setup');
     document.getElementById('chat-screen').classList.remove('hidden');
     document.getElementById('h-room').textContent = '# ' + roomCode;
     window._safeRoom = safeRoom;
-    // Populate empty state room code share + wait banner
-    (function(){ var erc = document.getElementById('empty-room-code'); if(erc) erc.textContent = roomCode; var wrc = document.getElementById('wait-room-code'); if(wrc) wrc.textContent = roomCode; })();
     syncPCSidebar();
 
     // Unsubscribe any stale listeners before re-attaching
@@ -7819,9 +6972,6 @@ try {
     if (unsubRemoved)  { unsubRemoved();  unsubRemoved  = null; }
     if (unsubPresence) { unsubPresence(); unsubPresence = null; }
     if (unsubTyping)   { unsubTyping();   unsubTyping   = null; }
-    if (unsubScreenshot) { unsubScreenshot(); unsubScreenshot = null; }
-    if (unsubCalls)    { unsubCalls();    unsubCalls    = null; }
-    if (unsubGroupCall){ unsubGroupCall();unsubGroupCall= null; }
 
     listenPresence(safeRoom);
     listenMessages(safeRoom);
@@ -7851,16 +7001,14 @@ document.querySelectorAll('.c-dot').forEach(d => {
    JOIN ROOM
 ══════════════════════════════ */
 window.joinRoom = window._joinRoom = async () => {
-  if (!db) { showErr('join-error','❌ Firebase connection failed. Reload the page.\n🔌 Firebase connection නැහැ. Page reload කරන්න.'); return; }
+  if (!db) { showErr('join-error','❌ Firebase connection failed. Reload the page.'); return; }
 
   roomCode = document.getElementById('room-input').value.trim();
   myName   = document.getElementById('name-input').value.trim();
   myPass   = document.getElementById('pass-input').value.trim();
 
-  if (!roomCode) { showErr('join-error','⚠️ Room code enter කරන්න — e.g. sunset-42'); return; }
-  if (!myName)   { showErr('join-error','⚠️ ඔබේ නම enter කරන්න — Enter your name'); return; }
-  if (myName.length < 2) { showErr('join-error','⚠️ නම අකුරු 2ක් වත් දාන්න — Name must be at least 2 characters'); return; }
-  if (roomCode.length < 2) { showErr('join-error','⚠️ Valid room code දාන්න — Enter a valid room code'); return; }
+  if (!roomCode) { showErr('join-error','⚠️ Enter a room code'); return; }
+  if (!myName)   { showErr('join-error','⚠️ Enter your name'); return; }
 
   const safeRoom = roomCode.replace(/[.#$[\]/]/g,'_');
 
@@ -7880,7 +7028,7 @@ window.joinRoom = window._joinRoom = async () => {
       const stored = pcSnap.val();
       // Support both legacy plaintext and new hashed passcodes
       const match = stored === hashedInput || stored === myPass;
-      if (!match) { hideLoading(); showErr('join-error','🔒 Wrong passcode! — Passcode වැරදියි! Another try?'); return; }
+      if (!match) { hideLoading(); showErr('join-error','🔒 Wrong passcode!'); return; }
       // Upgrade legacy plaintext to hash silently
       if (stored === myPass && myPass) await set(pcRef, hashedInput).catch(()=>{});
     } else if (myPass) {
@@ -7895,11 +7043,8 @@ window.joinRoom = window._joinRoom = async () => {
     // UI switch
     hideLoading();
     document.getElementById('setup-screen').classList.add('hidden');
-    document.body.classList.remove('on-setup');
     document.getElementById('chat-screen').classList.remove('hidden');
     document.getElementById('h-room').textContent = '# ' + roomCode;
-    // Populate empty state room code share + wait banner
-    (function(){ var erc = document.getElementById('empty-room-code'); if(erc) erc.textContent = roomCode; var wrc = document.getElementById('wait-room-code'); if(wrc) wrc.textContent = roomCode; })();
     syncPCSidebar();
 
     // Listen
@@ -7918,7 +7063,7 @@ window.joinRoom = window._joinRoom = async () => {
     showToast('🎉 Joined room: ' + roomCode);
   } catch(e) {
     hideLoading();
-    showErr('join-error','❌ Error joining room — Room join error: ' + e.message + '\n💡 Network check කරන්න හෝ reload කරන්න.');
+    showErr('join-error','❌ Error: ' + e.message);
   }
 };
 
@@ -7928,9 +7073,6 @@ window.joinRoom = window._joinRoom = async () => {
 
 function listenMessages(safeRoom) {
   const msgRef = ref(db, `rooms/${safeRoom}/messages`);
-  // Clear stale message DOM to prevent duplicates on reconnect
-  const _mWrap = document.getElementById('msgs-wrap');
-  if (_mWrap) Array.from(_mWrap.querySelectorAll('.msg-row, .sys-line')).forEach(e => e.remove());
   const renderedKeys = new Set();
   let firstLoad = true;
   setTimeout(() => { firstLoad = false; }, 2000);
@@ -8004,10 +7146,8 @@ function listenTyping(safeRoom) {
     const data = snap.val() || {};
     const typers = Object.entries(data).filter(([k,v]) => k !== myId && v);
     const row = document.getElementById('typing-row');
-    const lbl = document.getElementById('typing-label');
-    if (!row) return;
     if (typers.length > 0) {
-      if (lbl) lbl.textContent = typers.map(([,v])=>v).join(', ') + ' typing...';
+      document.getElementById('typing-label').textContent = typers.map(([,v])=>v).join(', ') + ' typing...';
       row.classList.add('show');
     } else {
       row.classList.remove('show');
@@ -8022,12 +7162,11 @@ window.doSend = async () => {
   if (!db || !window._safeRoom) return;
   const ti = document.getElementById('ti');
   const sendBtn = document.getElementById('send-btn');
-  if (!ti) return; // Android: DOM not ready guard
   const text = ti.value.trim();
 
   if (!text && pendingFiles.length === 0) return;
 
-  if (sendBtn) sendBtn.disabled = true;
+  sendBtn.disabled = true;
   try {
     // Send files first
     if (pendingFiles.length > 0) {
@@ -8038,7 +7177,6 @@ window.doSend = async () => {
       pendingFiles = [];
       updatePreview();
       setUploading(false);
-      stopTyping();
     }
 
     if (text) {
@@ -8052,7 +7190,7 @@ window.doSend = async () => {
       playSnd('send');
     }
   } finally {
-    if (sendBtn) sendBtn.disabled = false;
+    sendBtn.disabled = false;
   }
 };
 
@@ -8300,17 +7438,14 @@ function renderMsg(msg, key) {
 ══════════════════════════════ */
 window.toggleAttach = (e) => {
   e.stopPropagation();
-  const ap = document.getElementById('attach-pop');
-  if (ap) ap.classList.toggle('open');
+  document.getElementById('attach-pop').classList.toggle('open');
 };
 
-document.addEventListener('click', () => { const ap = document.getElementById('attach-pop'); if (ap) ap.classList.remove('open'); });
+document.addEventListener('click', () => document.getElementById('attach-pop').classList.remove('open'));
 
 window.pick = (type) => {
-  const fi = document.getElementById('fi-' + type);
-  if (fi) fi.click();
-  const ap = document.getElementById('attach-pop');
-  if (ap) ap.classList.remove('open');
+  document.getElementById('fi-' + type).click();
+  document.getElementById('attach-pop').classList.remove('open');
 };
 
 window.onFiles = (input, type) => {
@@ -8382,12 +7517,10 @@ function stopTyping() {
 }
 
 window.onKey = (e) => {
-  // Android soft keyboard "Go" / "Send" uses keyCode 13 or key 'Enter'
-  const isEnter = e.key === 'Enter' || e.keyCode === 13;
-  if (isEnter && !e.shiftKey) { e.preventDefault(); window.doSend(); return; }
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); window.doSend(); }
   if (e.key === 'Escape') {
     const ti = document.getElementById('ti');
-    if (ti && ti.dataset.editKey) {
+    if (ti.dataset.editKey) {
       delete ti.dataset.editKey;
       ti.value = '';
       ti.style.height = 'auto';
@@ -8566,10 +7699,6 @@ async function sendVoiceMsg(mimeType, duration) {
 window.clearChat = async () => {
   if (!confirm('Delete all messages?')) return;
   await remove(ref(db, `rooms/${window._safeRoom}/messages`));
-  const _ccWrap = document.getElementById('msgs-wrap');
-  if (_ccWrap) Array.from(_ccWrap.querySelectorAll('.msg-row,.sys-line')).forEach(e=>e.remove());
-  const _ccEs = document.getElementById('empty-state');
-  if (_ccEs) _ccEs.style.display = '';
   showToast('🗑️ Chat cleared');
 };
 
@@ -8595,14 +7724,8 @@ function showCtxMenu(x, y, key, senderId) {
   document.getElementById('ctx-delete-all').style.display = (isOwn && !isDeleted) ? 'flex' : 'none';
   document.getElementById('ctx-sep1').style.display       = (isOwn && !isDeleted) ? 'block' : 'none';
   document.querySelectorAll('.ctx-sep')[1].style.display  = (isOwn && !isDeleted) ? 'block' : 'none';
-  const _sep2 = document.getElementById('ctx-sep2');
-  if (_sep2) _sep2.style.display = (isOwn && !isDeleted) ? 'block' : 'none';
 
-  // Position off-screen first so we can measure real size
-  menu.style.left = '-9999px';
-  menu.style.top  = '-9999px';
   menu.classList.add('open');
-  // Force layout flush so offsetWidth/Height are accurate
   const mw = menu.offsetWidth  || 200;
   const mh = menu.offsetHeight || 120;
   const vw = window.innerWidth;
@@ -8612,8 +7735,7 @@ function showCtxMenu(x, y, key, senderId) {
 }
 
 function closeCtxMenu() {
-  const _cm = document.getElementById('msg-ctx-menu');
-  if (_cm) _cm.classList.remove('open');
+  document.getElementById('msg-ctx-menu').classList.remove('open');
   // Don't clear _ctxKey here — ctxReact needs it; it clears itself
 }
 function _clearCtxState() {
@@ -8654,25 +7776,16 @@ window.ctxDeleteAll = async () => {
     showToast('❌ Delete failed');
   }
   closeCtxMenu();
-  _clearCtxState();
 };
 
 window.leaveRoom = async () => {
   if (!confirm('Leave this room?')) return;
-  // Clear typing before leaving
-  try { if (db && window._safeRoom && myId) await set(ref(db, `rooms/${window._safeRoom}/typing/${myId}`), null).catch(()=>{}); } catch(e) {}
-  // Clear message DOM
-  const _lWrap = document.getElementById('msgs-wrap');
-  if (_lWrap) Array.from(_lWrap.querySelectorAll('.msg-row,.sys-line')).forEach(e=>e.remove());
   // Unsubscribe all Firebase listeners first
   if (unsubMessages) { unsubMessages(); unsubMessages = null; }
   if (unsubChanged)  { unsubChanged();  unsubChanged  = null; }
   if (unsubRemoved)  { unsubRemoved();  unsubRemoved  = null; }
   if (unsubPresence) { unsubPresence(); unsubPresence = null; }
   if (unsubTyping)   { unsubTyping();   unsubTyping   = null; }
-  if (unsubScreenshot) { unsubScreenshot(); unsubScreenshot = null; }
-  if (unsubCalls)    { unsubCalls();    unsubCalls    = null; }
-  if (unsubGroupCall){ unsubGroupCall();unsubGroupCall= null; }
   await remove(ref(db, `rooms/${window._safeRoom}/presence/${myId}`));
   localStorage.removeItem('sl_session');
   location.reload();
@@ -8855,7 +7968,6 @@ window.ctxEdit = () => {
 const _origDoSend = window.doSend;
 window.doSend = async () => {
   const ti = document.getElementById('ti');
-  if (!ti) { if (_origDoSend) await _origDoSend(); return; } // Android guard
   if (ti.dataset.editKey) {
     const key = ti.dataset.editKey;
     const newText = ti.value.trim();
@@ -8894,18 +8006,7 @@ window.toggleDisappearRow = () => {
 
 window.setDisappearTimer = (val) => {
   disappearSecs = parseInt(val) || 0;
-  // Sync both selects
-  ['disappear-select','pc-disappear-select'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = val;
-  });
-  if (disappearSecs > 0) {
-    const labels = {30:'30 seconds',60:'1 minute',300:'5 minutes',3600:'1 hour',86400:'24 hours'};
-    const label = labels[disappearSecs] || (disappearSecs + 's');
-    showToast('⏳ Messages disappear after ' + label);
-  } else {
-    showToast('⏳ Disappearing messages off');
-  }
+  showToast(disappearSecs > 0 ? `⏳ Messages disappear after ${document.getElementById('disappear-select').options[document.getElementById('disappear-select').selectedIndex].text}` : '⏳ Disappearing messages off');
 };
 
 function scheduleDisappear(row, disappearAt) {
@@ -8922,15 +8023,16 @@ let unreadCount = 0;
 
 function isScrolledToBottom() {
   const w = document.getElementById('msgs-wrap');
-  return w.scrollHeight - w.scrollTop - w.clientHeight < 150;
+  return w.scrollHeight - w.scrollTop - w.clientHeight < 80;
 }
 
 function bumpUnread() {
   unreadCount++;
   const badge = document.getElementById('unread-badge');
   const btn = document.getElementById('scroll-down-btn');
-  if (badge) { badge.textContent = unreadCount > 99 ? '99+' : unreadCount; badge.classList.add('show'); }
-  if (btn) btn.classList.add('show');
+  badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+  badge.classList.add('show');
+  btn.classList.add('show');
 }
 
 window.scrollBottomBtn = () => {
@@ -8940,24 +8042,15 @@ window.scrollBottomBtn = () => {
   document.getElementById('scroll-down-btn').classList.remove('show');
 };
 
-function _attachMsgsScrollListener() {
-  const msgsWrap = document.getElementById('msgs-wrap');
-  if (!msgsWrap) return;
-  msgsWrap.addEventListener('scroll', () => {
-    if (isScrolledToBottom()) {
-      unreadCount = 0;
-      document.getElementById('unread-badge').classList.remove('show');
-      document.getElementById('scroll-down-btn').classList.remove('show');
-    } else {
-      document.getElementById('scroll-down-btn').classList.add('show');
-    }
-  });
-}
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', _attachMsgsScrollListener);
-} else {
-  _attachMsgsScrollListener();
-}
+document.getElementById('msgs-wrap').addEventListener('scroll', () => {
+  if (isScrolledToBottom()) {
+    unreadCount = 0;
+    document.getElementById('unread-badge').classList.remove('show');
+    document.getElementById('scroll-down-btn').classList.remove('show');
+  } else {
+    document.getElementById('scroll-down-btn').classList.add('show');
+  }
+});
 
 /* ══════════════════════════════
    SOUND EFFECTS
@@ -8965,16 +8058,11 @@ if (document.readyState === 'loading') {
 let soundOn = localStorage.getItem('sl_sound') !== 'off';
 
 function updateSoundBtn() {
-  const btn = document.getElementById('sound-btn');
-  if (btn) btn.textContent = soundOn ? '🔊' : '🔇';
+  document.getElementById('sound-btn').textContent = soundOn ? '🔊' : '🔇';
   const lbl = document.getElementById('h-ov-sound-label');
   if (lbl) lbl.textContent = soundOn ? 'Sound on' : 'Sound off';
 }
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', updateSoundBtn);
-} else {
-  updateSoundBtn();
-}
+updateSoundBtn();
 
 window.toggleSound = () => {
   soundOn = !soundOn;
@@ -9019,9 +8107,8 @@ document.addEventListener('visibilitychange', () => {
 
 // Listen for screenshot events from others
 function listenScreenshot(safeRoom) {
-  if (unsubScreenshot) { unsubScreenshot(); unsubScreenshot = null; }
   const evRef = ref(db, `rooms/${safeRoom}/events`);
-  unsubScreenshot = onChildAdded(evRef, snap => {
+  onChildAdded(evRef, snap => {
     const ev = snap.val();
     if (ev && ev.type === 'screenshot_attempt' && ev.by !== myName) {
       showToast('📸 ' + ev.by + ' may have taken a screenshot!');
@@ -9190,7 +8277,7 @@ setTimeout(checkPinLock, 500);
 document.addEventListener('dragover', e => e.preventDefault());
 document.addEventListener('drop', e => {
   e.preventDefault();
-  if (!db || !window._safeRoom) return;
+  if (!db) return;
   Array.from(e.dataTransfer.files).forEach(file => {
     if (file.size > MAX_SIZE) { showToast('⚠️ Max 100MB: ' + file.name); return; }
     const reader = new FileReader();
@@ -9211,7 +8298,6 @@ window.openLb = (src) => {
   const lb  = document.getElementById('lightbox');
   const img = document.getElementById('lb-img');
   const dl  = document.getElementById('lb-download');
-  if (!lb || !img) return;
   img.src = src;
   if (dl) { dl.href = src; dl.download = 'secretline_' + Date.now() + '.jpg'; }
   lb.classList.add('open');
@@ -9257,9 +8343,7 @@ document.addEventListener('keydown', function(e) {
 ══════════════════════════════ */
 function scrollBottom() {
   const w = document.getElementById('msgs-wrap');
-  if (!w) return;
-  requestAnimationFrame(() => { requestAnimationFrame(() => { w.scrollTop = w.scrollHeight; }); });
-  setTimeout(() => { if (w) w.scrollTop = w.scrollHeight; }, 420);
+  requestAnimationFrame(() => { w.scrollTop = w.scrollHeight; });
 }
 
 function fmtTime(ts) {
@@ -9508,10 +8592,8 @@ window.startCall = async (withVideo) => {
 
 // ── Incoming call listener ──
 function listenIncomingCalls(safeRoom) {
-  if (unsubCalls) { unsubCalls(); unsubCalls = null; }
-  if (unsubGroupCall) { unsubGroupCall(); unsubGroupCall = null; }
   const sRef = ref(db, `rooms/${safeRoom}/signal`);
-  unsubCalls = onValue(sRef, (snap) => {
+  onValue(sRef, (snap) => {
     const data = snap.val();
     if (!data) return;
     if (data.type === 'offer' && callRole === null && !pc) {
@@ -9526,7 +8608,7 @@ function listenIncomingCalls(safeRoom) {
 
   // ── Listen for group call invites (other peers joining) ──
   const gcRef = ref(db, `rooms/${safeRoom}/group_call`);
-  unsubGroupCall = onValue(gcRef, (snap) => {
+  onValue(gcRef, (snap) => {
     const data = snap.val();
     if (!data || !data.active) return;
     if (callRole === null && !pc && Object.keys(peers).length === 0) {
@@ -10242,6 +9324,21 @@ window.pcToggleDisappear = function() {
   };
 })();
 
+// Privacy button PC sidebar sync
+(function patchPrivacyForSidebar() {
+  const origTP = window.togglePrivacyMode;
+  window.togglePrivacyMode = function() {
+    if (origTP) origTP();
+    const pcBtn = document.getElementById('pc-privacy-btn');
+    const pcLabel = document.getElementById('pc-privacy-label');
+    // privacyModeOn is updated inside origTP
+    setTimeout(() => {
+      if (pcBtn) pcBtn.classList.toggle('active-state', privacyModeOn);
+      if (pcLabel) pcLabel.textContent = privacyModeOn ? 'Privacy mode: ON' : 'Privacy mode';
+    }, 10);
+  };
+})();
+
 /* ══════════════════════════════════════════════════════
    PRIVACY MODE — Screenshot Block + Screen Blackout
 ══════════════════════════════════════════════════════ */
@@ -10272,11 +9369,6 @@ window.togglePrivacyMode = function() {
     stopScreenshotWatch();
     stopVisibilityWatch();
   }
-  // Sync PC sidebar button
-  const pcBtn = document.getElementById('pc-privacy-btn');
-  const pcLabel = document.getElementById('pc-privacy-label');
-  if (pcBtn) pcBtn.classList.toggle('active-state', privacyModeOn);
-  if (pcLabel) pcLabel.textContent = privacyModeOn ? 'Privacy mode: ON' : 'Privacy mode';
 };
 
 // ── Privacy Toast ──
@@ -10450,13 +9542,6 @@ function setActivePrivProfile(p) {
 }
 
 function refreshPrivTrigger() {
-  // If Google profile card is visible, priv trigger should stay hidden
-  const profileCard = document.getElementById('profile-card');
-  const ppt = document.getElementById('priv-profile-trigger');
-  if (profileCard && !profileCard.classList.contains('hidden') && ppt) {
-    ppt.style.display = 'none';
-    return;
-  }
   const active = getActivePrivProfile();
   const avEl   = document.getElementById('ppt-av-display');
   const nameEl = document.getElementById('ppt-name-display');
@@ -10746,9 +9831,7 @@ window.openSocialArea = function() {
   socRefreshNav();
 
   document.getElementById('setup-screen').classList.add('hidden');
-    document.body.classList.remove('on-setup');
   document.getElementById('social-screen').classList.remove('hidden');
-  document.body.classList.add('on-social');
 
   const { ref, set, onValue, onChildAdded, onChildChanged, onChildRemoved, onDisconnect, serverTimestamp } = socGetFB();
   const db2 = socGetDB();
@@ -11393,7 +10476,22 @@ window.savePublicRoom = function() {
   });
 };
 
-// openRoomSettings public room state is now handled inside the main definition
+// Check & restore Make Public state when room settings opens
+var _origOpenRoomSettings = window.openRoomSettings;
+window.openRoomSettings = function() {
+  if (_origOpenRoomSettings) _origOpenRoomSettings.apply(this, arguments);
+  setTimeout(function() {
+    var code = window._safeRoom;
+    if (!code) return;
+    var isPublic = !!localStorage.getItem('sl_public_room_' + code);
+    var cb = document.getElementById('rs-public-room');
+    if (cb) { cb.checked = isPublic; }
+    var fields = document.getElementById('rs-public-room-fields');
+    if (fields) fields.style.display = isPublic ? 'flex' : 'none';
+    var ni = document.getElementById('rs-room-name-input');
+    if (ni && !ni.value) ni.value = code;
+  }, 100);
+};
 
 window.closeRoomsDirectory = function() {
   var overlay = document.getElementById('rooms-dir-overlay');
@@ -11647,9 +10745,7 @@ window.socGoBack=function(){
   try { if(socChangedUnsub){socChangedUnsub();socChangedUnsub=null;} } catch(e){}
   try { if(socFriendsUnsub){socFriendsUnsub();socFriendsUnsub=null;} } catch(e){}
   document.getElementById('social-screen').classList.add('hidden');
-  document.body.classList.remove('on-social');
   document.getElementById('setup-screen').classList.remove('hidden');
-    document.body.classList.add('on-setup');
 };
 window.socGoHome = function() {
   var feedCol = document.querySelector('.soc-feed-col');
@@ -11681,9 +10777,7 @@ function _socLeaveAndGo(code) {
   if(ri) ri.value=code;
   if(ni&&socName) ni.value=socName;
   document.getElementById('social-screen').classList.add('hidden');
-  document.body.classList.remove('on-social');
   document.getElementById('setup-screen').classList.remove('hidden');
-    document.body.classList.add('on-setup');
   setTimeout(()=>window.joinRoom&&window.joinRoom(),150);
 }
 
@@ -11780,18 +10874,6 @@ window.openRoomSettings = function(){
   if(rc) rc.textContent = window._safeRoom ? (window._safeRoom.replace(/_/g,' ') || '—') : '—';
   if(ri) ri.textContent = (window._myIdV5 || '—').slice(0,16);
   document.getElementById('room-settings-modal').classList.add('open');
-  // Restore Make Public state
-  setTimeout(function() {
-    var code = window._safeRoom;
-    if (!code) return;
-    var isPublic = !!localStorage.getItem('sl_public_room_' + code);
-    var cb = document.getElementById('rs-public-room');
-    if (cb) { cb.checked = isPublic; }
-    var fields = document.getElementById('rs-public-room-fields');
-    if (fields) fields.style.display = isPublic ? 'flex' : 'none';
-    var ni = document.getElementById('rs-room-name-input');
-    if (ni && !ni.value) ni.value = code;
-  }, 100);
 };
 window.closeRoomSettings = function(){ document.getElementById('room-settings-modal').classList.remove('open'); };
 
@@ -12558,8 +11640,8 @@ console.log('%c Lobby v5 loaded ✓', 'color:#4fa3ff;font-weight:bold');
     <div class="pwa-banner-sub">Home screen &#x1F4F1; &#x2022; Fast load &#x26A1; &#x2022; Works offline &#x1F4F4;</div>
   </div>
   <div class="pwa-banner-btns">
-    <button class="pwa-install-btn" id="pwa-install-btn" onclick="if(window.pwaInstall)pwaInstall()">Install</button>
-    <button class="pwa-dismiss-btn" onclick="if(window.pwaDismiss)pwaDismiss()">Not now</button>
+    <button class="pwa-install-btn" id="pwa-install-btn" onclick="pwaInstall()">Install</button>
+    <button class="pwa-dismiss-btn" onclick="pwaDismiss()">Not now</button>
   </div>
 </div>
 
@@ -12680,12 +11762,7 @@ window.addEventListener('beforeinstallprompt', e => {
   _pwaPrompt = e;
   const dismissed = localStorage.getItem('sl_pwa_dismissed');
   if (!dismissed) {
-    setTimeout(() => {
-      // Only show PWA banner if user is in chat (not on setup screen)
-      const setupScreen = document.getElementById('setup-screen');
-      const isOnSetup = setupScreen && !setupScreen.classList.contains('hidden');
-      if (!isOnSetup) document.getElementById('pwa-banner')?.classList.add('show');
-    }, 3000);
+    setTimeout(() => document.getElementById('pwa-banner')?.classList.add('show'), 3000);
   }
 });
 window.pwaInstall = async function() {
@@ -12784,16 +11861,15 @@ window.deleteRecentRoom = function(code) {
 document.addEventListener('DOMContentLoaded', () => renderRecentRooms());
 
 // Patch joinRoom to save recent rooms
+const _origJoinRoomFull = window._joinRoom;
 setTimeout(() => {
   const orig = window._joinRoom || window.joinRoom;
-  if (orig && !orig._patched) {
-    const patched = async function() {
+  if (orig) {
+    window._joinRoom = window.joinRoom = async function() {
       const code = document.getElementById('room-input')?.value?.trim();
       if (code) saveRecentRoom(code);
       return orig.apply(this, arguments);
     };
-    patched._patched = true;
-    window._joinRoom = window.joinRoom = patched;
   }
 }, 1500);
 
@@ -17395,77 +16471,61 @@ const DM_EMOJIS = [
 // ── CHAT EMOJI PICKER ──────────────────────────────────────
 window.chatToggleEmoji = function(e) {
   e.stopPropagation();
-  e.preventDefault();
   const pop = document.getElementById('chat-emoji-pop');
   if (!pop) return;
-  const isOpen = pop.style.display === 'block';
-
-  if (isOpen) { pop.style.display = 'none'; return; }
-
-  // Build emoji grid once
-  if (!pop.dataset.built) {
+  const isOpen = pop.style.display !== 'none';
+  pop.style.display = isOpen ? 'none' : 'block';
+  if (!isOpen && !pop.dataset.built) {
     pop.dataset.built = '1';
     const grid = document.getElementById('chat-emoji-grid');
     if (grid) {
       DM_EMOJIS.forEach(emoji => {
         const btn = document.createElement('button');
-        btn.style.cssText = 'width:40px;height:40px;background:none;border:none;font-size:22px;cursor:pointer;border-radius:8px;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none;';
+        btn.style.cssText = 'width:36px;height:36px;background:none;border:none;font-size:20px;cursor:pointer;border-radius:6px;display:flex;align-items:center;justify-content:center;transition:background 0.1s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;';
         btn.textContent = emoji;
-        btn.addEventListener('click', function(ev) {
+        btn.addEventListener('click', (ev) => {
           ev.stopPropagation();
-          ev.preventDefault();
           const ta = document.getElementById('ti');
           if (ta) {
-            const pos = (ta.selectionStart != null) ? ta.selectionStart : ta.value.length;
+            const pos = ta.selectionStart != null ? ta.selectionStart : ta.value.length;
             ta.value = ta.value.slice(0, pos) + emoji + ta.value.slice(pos);
             ta.selectionStart = ta.selectionEnd = pos + emoji.length;
             ta.focus();
+            // Trigger oninput to update send button state
             ta.dispatchEvent(new Event('input'));
           }
           pop.style.display = 'none';
         });
+        btn.addEventListener('mouseenter', () => btn.style.background = 'rgba(255,255,255,0.1)');
+        btn.addEventListener('mouseleave', () => btn.style.background = 'none');
         grid.appendChild(btn);
       });
     }
   }
-
-  // Fixed position from button
-  const btnEl = e.currentTarget || e.target;
-  const rect = btnEl.getBoundingClientRect();
-  const popW = Math.min(300, window.innerWidth * 0.92);
-  let left = rect.left;
-  const bottom = window.innerHeight - rect.top + 8;
-  if (left + popW > window.innerWidth - 8) left = window.innerWidth - popW - 8;
-  if (left < 8) left = 8;
-
-  pop.style.cssText = 'display:block;position:fixed;left:'+left+'px;bottom:'+bottom+'px;top:auto;width:'+popW+'px;background:var(--card2);border:1px solid var(--border2);border-radius:14px;padding:8px;box-shadow:0 12px 32px rgba(0,0,0,0.5);z-index:99800;';
-
-  // Close when tapping outside
-  setTimeout(function() {
-    function _closeEP(ev) {
-      if (!pop.contains(ev.target) && ev.target !== btnEl) {
-        pop.style.display = 'none';
-        document.removeEventListener('pointerdown', _closeEP);
+  // Close when clicking outside
+  if (!isOpen) {
+    setTimeout(() => {
+      function _closeEP(ev) {
+        const pop2 = document.getElementById('chat-emoji-pop');
+        const btn2 = document.getElementById('chat-emoji-btn');
+        if (pop2 && !pop2.contains(ev.target) && ev.target !== btn2) {
+          pop2.style.display = 'none';
+          document.removeEventListener('click', _closeEP);
+          document.removeEventListener('pointerdown', _closeEP);
+        }
       }
-    }
-    document.addEventListener('pointerdown', _closeEP);
-  }, 100);
+      document.addEventListener('pointerdown', _closeEP);
+    }, 100);
+  }
 };
 
 window.dmToggleEmoji = function(e) {
   e.stopPropagation();
-  e.preventDefault();
   const pop = document.getElementById('dm-emoji-pop');
   if (!pop) return;
-  const isOpen = pop.style.display === 'block';
-
-  if (isOpen) {
-    pop.style.display = 'none';
-    return;
-  }
-
-  // Build emoji grid once
-  if (!pop.dataset.built) {
+  const open = pop.style.display === 'none' || !pop.style.display;
+  pop.style.display = open ? 'block' : 'none';
+  if (open && !pop.dataset.built) {
     pop.dataset.built = '1';
     const grid = document.getElementById('dm-emoji-grid');
     if (grid) {
@@ -17473,51 +16533,21 @@ window.dmToggleEmoji = function(e) {
         const btn = document.createElement('button');
         btn.className = 'dm-emoji-btn-item';
         btn.textContent = emoji;
-        btn.addEventListener('click', function(ev) {
-          ev.stopPropagation();
-          ev.preventDefault();
+        btn.onclick = () => {
           const ta = document.getElementById('dm-textarea');
           if (ta) {
-            const pos = (ta.selectionStart != null) ? ta.selectionStart : ta.value.length;
-            ta.value = ta.value.slice(0, pos) + emoji + ta.value.slice(pos);
+            const pos = ta.selectionStart || ta.value.length;
+            ta.value = ta.value.slice(0,pos) + emoji + ta.value.slice(pos);
             ta.selectionStart = ta.selectionEnd = pos + emoji.length;
             ta.focus();
             dmOnInput(ta);
           }
           pop.style.display = 'none';
-        });
+        };
         grid.appendChild(btn);
       });
     }
   }
-
-  // Position popup using fixed coords from button rect
-  const btnEl = e.currentTarget || e.target;
-  const rect = btnEl.getBoundingClientRect();
-  const popW = Math.min(300, window.innerWidth * 0.92);
-  let left = rect.left;
-  let bottom = window.innerHeight - rect.top + 8;
-
-  // Keep within viewport
-  if (left + popW > window.innerWidth - 8) left = window.innerWidth - popW - 8;
-  if (left < 8) left = 8;
-
-  pop.style.left   = left + 'px';
-  pop.style.bottom = bottom + 'px';
-  pop.style.top    = 'auto';
-  pop.style.width  = popW + 'px';
-  pop.style.display = 'block';
-
-  // Close when tapping outside
-  setTimeout(function() {
-    function _close(ev) {
-      if (!pop.contains(ev.target) && ev.target !== btnEl) {
-        pop.style.display = 'none';
-        document.removeEventListener('pointerdown', _close);
-      }
-    }
-    document.addEventListener('pointerdown', _close);
-  }, 100);
 };
 
 
@@ -18730,1399 +17760,5 @@ document.addEventListener('DOMContentLoaded', function() {
 console.log('%c Auth Gate v2 loaded \u2713', 'color:#3de8a0;font-weight:bold;font-size:13px');
 </script>
 
-<!-- ════ SETUP TABS LOGIC ════ -->
-<script>
-// ── Setup screen tab switching ────────────────────────────────
-window.setupSwitchTab = function(tab) {
-  ['join','create'].forEach(function(t) {
-    var btn  = document.getElementById('setup-tab-' + t);
-    var pane = document.getElementById('setup-pane-' + t);
-    if (btn)  btn.classList.toggle('active', t === tab);
-    if (pane) pane.style.display = (t === tab) ? '' : 'none';
-  });
-  if (tab === 'create') {
-    var ci  = document.getElementById('create-room-input');
-    if (ci && !ci.value.trim()) setupGenCode();
-    var ni  = document.getElementById('name-input');
-    var cni = document.getElementById('create-name-input');
-    if (ni && cni && !cni.value.trim() && ni.value.trim()) cni.value = ni.value;
-  }
-  ['join-error','create-error'].forEach(function(id) {
-    var el = document.getElementById(id);
-    if (el) { el.classList.remove('show'); el.textContent = ''; }
-  });
-};
-
-// ── Random room code generator ────────────────────────────────
-window.setupGenCode = function() {
-  var adj  = ['cool','dark','bold','fast','calm','bright','quiet','sharp','fresh','deep',
-               'wild','clean','swift','glad','wise','warm','pure','safe','kind','brave'];
-  var noun = ['river','stone','echo','flame','wave','forest','cloud','moon','star','ridge',
-               'hawk','wolf','lake','peak','dawn','dusk','rain','sand','wind','glow'];
-  var code = adj[0|Math.random()*adj.length] + '-' + noun[0|Math.random()*noun.length]
-           + '-' + (10 + (0|Math.random()*89));
-  var inp = document.getElementById('create-room-input');
-  if (inp) {
-    inp.value = code;
-    inp.style.transition    = 'border-color 0.3s, box-shadow 0.3s';
-    inp.style.borderColor   = 'rgba(61,232,160,0.6)';
-    inp.style.boxShadow     = '0 0 0 3px rgba(61,232,160,0.12)';
-    setTimeout(function(){ inp.style.borderColor=''; inp.style.boxShadow=''; }, 700);
-  }
-};
-
-// ── Create Room: fills join form then delegates to joinRoom() ─
-window.setupCreateRoom = function() {
-  var code = (document.getElementById('create-room-input') &&
-              document.getElementById('create-room-input').value || '').trim();
-  var name = (document.getElementById('create-name-input') &&
-              document.getElementById('create-name-input').value || '').trim();
-  var pass = (document.getElementById('create-pass-input') &&
-              document.getElementById('create-pass-input').value || '').trim();
-
-  function showErr(msg) {
-    var el = document.getElementById('create-error');
-    if (el) { el.textContent = msg; el.classList.add('show'); }
-  }
-  if (!code) { showErr('\u26a0\ufe0f Room code enter \u0d9a\u0dbb\u0db1\u0dca\u0db1 \u0dc4\u0ddd \u1f3b2 generate \u0d9a\u0dbb\u0db1\u0dca\u0db1'); return; }
-  if (!name) { showErr('\u26a0\ufe0f \u0d94\u0db6\u0dda \u0db1\u0db8 enter \u0d9a\u0dbb\u0db1\u0dca\u0db1'); return; }
-
-  var ri = document.getElementById('room-input');
-  var ni = document.getElementById('name-input');
-  var pi = document.getElementById('pass-input');
-  if (ri) ri.value = code;
-  if (ni) ni.value = name;
-  if (pi) pi.value = pass;
-
-  if (typeof window.joinRoom === 'function')        window.joinRoom();
-  else if (typeof window._joinRoom === 'function')  window._joinRoom();
-
-  // Forward any error from join tab → create tab
-  setTimeout(function() {
-    var je = document.getElementById('join-error');
-    var ce = document.getElementById('create-error');
-    if (je && ce && je.classList.contains('show') && je.textContent) {
-      ce.textContent = je.textContent;
-      ce.classList.add('show');
-      je.classList.remove('show');
-    }
-  }, 300);
-};
-
-// ── Sync name & room code between tabs so user only types once ─
-(function initSetupTabSync() {
-  function ready(fn) {
-    if (document.readyState !== 'loading') fn();
-    else document.addEventListener('DOMContentLoaded', fn);
-  }
-  ready(function() {
-    var ni  = document.getElementById('name-input');
-    var cni = document.getElementById('create-name-input');
-    if (ni && cni) {
-      ni.addEventListener('input',  function() { if (!cni.value) cni.value = ni.value; });
-      cni.addEventListener('input', function() { if (!ni.value)  ni.value  = cni.value; });
-    }
-    var ri  = document.getElementById('room-input');
-    var cri = document.getElementById('create-room-input');
-    if (cri && ri) {
-      cri.addEventListener('input',   function()  { ri.value = cri.value; });
-      cri.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') { e.preventDefault(); window.setupCreateRoom(); }
-      });
-    }
-    // Pre-generate a code on load so Create tab is ready immediately
-    setupGenCode();
-  });
-})();
-
-console.log('%c Setup Tabs loaded \u2713', 'color:#3de8a0;font-weight:bold;font-size:13px');
-</script>
-
-<!-- ════ FIX PACK: Push Notifications + Performance + UI Polish + Social Feed Tabs Logic ════ -->
-<script>
-'use strict';
-
-/* ══════════════════════════════════════════════════════════
-   FIX 1 — PUSH NOTIFICATIONS (browser Web Push setup)
-══════════════════════════════════════════════════════════ */
-
-window.SLNotif = (function() {
-  var _granted = false;
-  var _vapidKey = ''; // Set your VAPID public key here if using a push server
-
-  // Check current permission state
-  function getState() {
-    if (!('Notification' in window)) return 'unsupported';
-    return Notification.permission; // 'default' | 'granted' | 'denied'
-  }
-
-  // Request permission (call from UI button)
-  async function requestPermission() {
-    if (!('Notification' in window)) {
-      if (window.showToast) window.showToast('❌ Browser notifications support නැහැ');
-      return false;
-    }
-    if (Notification.permission === 'granted') {
-      _granted = true;
-      return true;
-    }
-    if (Notification.permission === 'denied') {
-      if (window.showToast) window.showToast('🔕 Notifications blocked — Browser settings වලින් enable කරන්න');
-      return false;
-    }
-    try {
-      var result = await Notification.requestPermission();
-      _granted = (result === 'granted');
-      if (_granted) {
-        if (window.showToast) window.showToast('🔔 Notifications enabled! — දැනුම් දීම් සක්‍රිය කළා');
-        // Show a test notification
-        setTimeout(function() {
-          _show('SecretLine 🔐', 'Notifications සක්‍රිය! — You\'ll get notified of new messages.', '');
-        }, 500);
-      } else {
-        if (window.showToast) window.showToast('🔕 Notifications disabled — දැනුම් දීම් disable කළා');
-      }
-      return _granted;
-    } catch(e) {
-      console.warn('[Notif] Permission request failed:', e);
-      return false;
-    }
-  }
-
-  // Show a notification (internal)
-  function _show(title, body, icon) {
-    if (!_granted && Notification.permission !== 'granted') return;
-    try {
-      // Prefer SW notification if registered
-      if (window._swReg && window._swReg.active) {
-        window._swReg.showNotification(title, {
-          body: body,
-          icon: icon || '',
-          badge: '',
-          tag: 'sl-msg-' + Date.now(),
-          vibrate: [200, 100, 200],
-          renotify: true
-        });
-      } else {
-        new Notification(title, { body: body, icon: icon || '' });
-      }
-    } catch(e) {
-      console.warn('[Notif] Show failed:', e);
-    }
-  }
-
-  // Public: notify of a new chat message (call when tab is hidden)
-  function notifyMessage(senderName, text, photoUrl) {
-    if (document.visibilityState === 'visible') return; // App is in focus
-    if (!_granted && Notification.permission !== 'granted') return;
-    _show(
-      '💬 ' + (senderName || 'Someone') + ' — SecretLine',
-      text || 'New message',
-      photoUrl || ''
-    );
-  }
-
-  // Public: notify of DM
-  function notifyDM(senderName, text, photoUrl) {
-    if (document.visibilityState === 'visible') return;
-    if (!_granted && Notification.permission !== 'granted') return;
-    _show(
-      '📩 DM from ' + (senderName || 'Someone'),
-      text || 'New direct message',
-      photoUrl || ''
-    );
-  }
-
-  // Auto-check on load
-  (function init() {
-    if (Notification.permission === 'granted') _granted = true;
-    // Subtly request after user interaction (better UX — don't ask on load)
-    document.addEventListener('click', function _firstClick() {
-      document.removeEventListener('click', _firstClick);
-      if (Notification.permission === 'default') {
-        // Gentle auto-ask after first interaction
-        setTimeout(function() {
-          if (Notification.permission === 'default') requestPermission();
-        }, 8000);
-      }
-    }, { once: true });
-  })();
-
-  return { requestPermission, notifyMessage, notifyDM, getState };
-})();
-
-// Hook into existing showToast / message render to trigger notifications
-(function hookNotifications() {
-  // Patch existing message render (look for addMessage or renderMsg)
-  var _origRender = window.renderMsg || window.addMessage;
-  function _patchRender(fn) {
-    return function(msg) {
-      var result = fn.apply(this, arguments);
-      // If message is not mine and tab is hidden → notify
-      try {
-        var sess = JSON.parse(localStorage.getItem('sl_auth_v2_sess') || 'null');
-        var myId = sess && sess.uid;
-        if (msg && msg.uid && msg.uid !== myId && msg.sender && msg.text) {
-          window.SLNotif.notifyMessage(msg.sender, msg.text, msg.photo || '');
-        }
-      } catch(e) {}
-      return result;
-    };
-  }
-  if (window.renderMsg) window.renderMsg = _patchRender(window.renderMsg);
-  if (window.addMessage) window.addMessage = _patchRender(window.addMessage);
-
-  // Also add a notification enable button to the overflow menu
-  document.addEventListener('DOMContentLoaded', function() {
-    var panel = document.getElementById('h-overflow-panel');
-    if (panel) {
-      var sep = document.createElement('div');
-      sep.className = 'h-ov-sep';
-      var btn = document.createElement('button');
-      btn.className = 'h-ov-item';
-      btn.innerHTML = '🔔 Enable notifications';
-      btn.onclick = function() {
-        window.SLNotif.requestPermission();
-        if (window.closeOverflow) window.closeOverflow();
-      };
-      // Only show if not yet granted
-      if (Notification.permission !== 'granted') {
-        panel.appendChild(sep);
-        panel.appendChild(btn);
-      }
-    }
-  });
-})();
-
-
-/* ══════════════════════════════════════════════════════════
-   FIX 2 — PERFORMANCE: debounce, lazy images, memory leaks
-══════════════════════════════════════════════════════════ */
-
-// Universal debounce helper
-window.debounce = window.debounce || function(fn, delay) {
-  var t;
-  return function() {
-    var args = arguments, ctx = this;
-    clearTimeout(t);
-    t = setTimeout(function() { fn.apply(ctx, args); }, delay);
-  };
-};
-
-// Throttle helper
-window.throttle = window.throttle || function(fn, limit) {
-  var lastRun = 0;
-  return function() {
-    var now = Date.now();
-    if (now - lastRun >= limit) {
-      lastRun = now;
-      fn.apply(this, arguments);
-    }
-  };
-};
-
-// ── Lazy image loading (IntersectionObserver) ─────────────────
-(function initLazyImages() {
-  if (!('IntersectionObserver' in window)) return;
-
-  var observer = new IntersectionObserver(function(entries) {
-    entries.forEach(function(entry) {
-      if (entry.isIntersecting) {
-        var img = entry.target;
-        if (img.dataset.src) {
-          img.src = img.dataset.src;
-          img.removeAttribute('data-src');
-          img.classList.remove('img-lazy');
-          img.classList.add('img-loaded');
-        }
-        observer.unobserve(img);
-      }
-    });
-  }, { rootMargin: '100px 0px', threshold: 0.01 });
-
-  window._lazyObserver = observer;
-
-  // Observe any existing lazy images
-  function observeAll() {
-    document.querySelectorAll('img[data-src]').forEach(function(img) {
-      img.classList.add('img-lazy');
-      observer.observe(img);
-    });
-  }
-
-  document.addEventListener('DOMContentLoaded', observeAll);
-
-  // MutationObserver to catch dynamically added images
-  var mutObs = new MutationObserver(window.debounce(function(mutations) {
-    mutations.forEach(function(m) {
-      m.addedNodes.forEach(function(node) {
-        if (node.nodeType !== 1) return;
-        if (node.tagName === 'IMG' && node.dataset.src) observer.observe(node);
-        node.querySelectorAll && node.querySelectorAll('img[data-src]').forEach(function(img) {
-          observer.observe(img);
-        });
-      });
-    });
-  }, 100));
-  mutObs.observe(document.body || document.documentElement, { childList: true, subtree: true });
-  window._lazyMutObs = mutObs;
-})();
-
-// ── Debounce search inputs ────────────────────────────────────
-document.addEventListener('DOMContentLoaded', function() {
-  // Lobby search
-  var lobbyInput = document.getElementById('lobby-search-input');
-  if (lobbyInput && window.lobbySearch) {
-    var _origLobbySearch = window.lobbySearch;
-    window.lobbySearch = window.debounce(_origLobbySearch, 280);
-    lobbyInput.oninput = function() { window.lobbySearch(this.value); };
-  }
-  var mobLobbyInput = document.getElementById('lobby-mob-search-input');
-  if (mobLobbyInput && window.lobbySearch) {
-    mobLobbyInput.oninput = function() { window.lobbySearch(this.value); };
-  }
-
-  // User search in sidebar
-  var userSearch = document.getElementById('lobby-user-search');
-  if (userSearch && window.lobbyFilterUsers) {
-    var _origFilterUsers = window.lobbyFilterUsers;
-    window.lobbyFilterUsers = window.debounce(_origFilterUsers, 250);
-    userSearch.oninput = function() { window.lobbyFilterUsers(this.value); };
-  }
-});
-
-// ── Firebase listener cleanup on room leave ───────────────────
-(function patchLeaveRoom() {
-  var _origLeave = window.leaveRoom;
-  if (!_origLeave) return;
-  window.leaveRoom = function() {
-    // Clean up lazy observer
-    if (window._lazyMutObs) { window._lazyMutObs.disconnect(); }
-    _origLeave.apply(this, arguments);
-  };
-})();
-
-// ── Message list virtual scroll guard ────────────────────────
-// Prevent unbounded DOM growth in long chat sessions
-(function guardMsgList() {
-  var MAX_VISIBLE_MSGS = 200;
-  var _originalAddMsg = window.addMessageDOM || window._addMsgDOM;
-
-  window._msgDOMCount = 0;
-  var _pruneScheduled = false;
-
-  function pruneOldMessages() {
-    if (_pruneScheduled) return;
-    _pruneScheduled = true;
-    requestAnimationFrame(function() {
-      _pruneScheduled = false;
-      var wrap = document.getElementById('msgs-wrap');
-      if (!wrap) return;
-      var rows = wrap.querySelectorAll('.msg-row, .sys-line');
-      if (rows.length > MAX_VISIBLE_MSGS) {
-        var toRemove = rows.length - MAX_VISIBLE_MSGS;
-        for (var i = 0; i < toRemove; i++) {
-          if (rows[i]) rows[i].remove();
-        }
-      }
-    });
-  }
-
-  // Patch the messages wrapper observer
-  var msgWrap = document.getElementById('msgs-wrap');
-  if (msgWrap && 'MutationObserver' in window) {
-    var msgMut = new MutationObserver(window.throttle(function() {
-      var rows = msgWrap.querySelectorAll('.msg-row');
-      if (rows.length > MAX_VISIBLE_MSGS + 20) pruneOldMessages();
-    }, 3000));
-    msgMut.observe(msgWrap, { childList: true });
-  }
-})();
-
-
-/* ══════════════════════════════════════════════════════════
-   FIX 3 — UI POLISH: animations, loading states, micro-interactions
-══════════════════════════════════════════════════════════ */
-
-// ── Button press ripple effect ────────────────────────────────
-(function initRipple() {
-  var style = document.createElement('style');
-  style.textContent = `
-    /* Ripple */
-    .ripple-host { position: relative; overflow: hidden; }
-    .ripple-wave {
-      position: absolute; border-radius: 50%;
-      transform: scale(0); animation: rippleAnim 0.55s linear;
-      background: rgba(255,255,255,0.18); pointer-events: none; z-index: 10;
-    }
-    @keyframes rippleAnim { to { transform: scale(4); opacity: 0; } }
-
-    /* Button loading state */
-    .btn-loading { position: relative; pointer-events: none; opacity: 0.75; }
-    .btn-loading::after {
-      content: '';
-      position: absolute; top: 50%; left: 50%;
-      transform: translate(-50%,-50%);
-      width: 16px; height: 16px;
-      border: 2px solid rgba(0,0,0,0.2);
-      border-top-color: #000;
-      border-radius: 50%;
-      animation: spin 0.6s linear infinite;
-    }
-
-    /* Image lazy load fade */
-    .img-lazy { opacity: 0; transition: opacity 0.3s ease; }
-    .img-loaded { opacity: 1; }
-
-    /* Input focus glow pulse */
-    .field input:focus, .field textarea:focus, .soc-create-input:focus {
-      animation: inputGlow 0.3s ease-out;
-    }
-    @keyframes inputGlow {
-      0%   { box-shadow: 0 0 0 0 rgba(61,232,160,0.4); }
-      100% { box-shadow: 0 0 0 4px rgba(61,232,160,0.08); }
-    }
-
-    /* Send button pulse on success */
-    .send-btn.sent {
-      animation: sendPop 0.4s cubic-bezier(0.34,1.56,0.64,1);
-      background: var(--accent-b) !important;
-    }
-    @keyframes sendPop {
-      0%   { transform: scale(1); }
-      40%  { transform: scale(1.22); }
-      100% { transform: scale(1); }
-    }
-
-    /* Tab switch slide animation */
-    .soc-feed-col > *:not(.soc-feed-tabs):not(.lobby-feed-tabs):not(.soc-create-box) {
-      animation: feedFadeIn 0.2s ease;
-    }
-    @keyframes feedFadeIn { from { opacity:0.4; transform:translateY(4px); } to { opacity:1; transform:none; } }
-
-    /* Toast improved */
-    .toast {
-      transition: opacity 0.3s cubic-bezier(0.16,1,0.3,1), transform 0.3s cubic-bezier(0.16,1,0.3,1) !important;
-    }
-
-    /* Offline banner */
-    .offline-banner {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 99999;
-      background: rgba(255,92,92,0.92); backdrop-filter: blur(8px);
-      color: #fff; font-size: 12px; font-family: var(--mono);
-      padding: 6px 16px; text-align: center; letter-spacing: 0.5px;
-      transform: translateY(-100%); transition: transform 0.3s ease;
-    }
-    body.is-offline .offline-banner { transform: translateY(0); }
-
-    /* Error message animated */
-    .error-msg.show {
-      animation: errShake 0.35s ease;
-    }
-    @keyframes errShake {
-      0%,100% { transform: translateX(0); }
-      20%     { transform: translateX(-4px); }
-      60%     { transform: translateX(4px); }
-      80%     { transform: translateX(-2px); }
-    }
-
-    /* Notification permission button styling */
-    .notif-enable-btn {
-      display: flex; align-items: center; gap: 8px;
-      padding: 10px 14px; background: rgba(61,232,160,0.07);
-      border: 1px solid rgba(61,232,160,0.2); border-radius: 10px;
-      color: var(--accent); font-size: 12px; font-family: var(--mono);
-      cursor: pointer; margin: 8px 0; width: 100%;
-      transition: background 0.15s, border-color 0.15s;
-    }
-    .notif-enable-btn:hover { background: rgba(61,232,160,0.12); border-color: rgba(61,232,160,0.4); }
-
-    /* Micro: reaction pill pop */
-    .reaction-pill:active, .soc-react-chip:active {
-      transform: scale(0.9);
-      transition: transform 0.1s;
-    }
-
-    /* Msg bubble hover */
-    .msg-bubble {
-      transition: box-shadow 0.2s ease;
-    }
-    .msg-row.mine .msg-bubble:hover {
-      box-shadow: 0 4px 16px rgba(61,232,160,0.15);
-    }
-    .msg-row.theirs .msg-bubble:hover {
-      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-    }
-
-    /* Loading skeleton pulse for posts */
-    .soc-post-skeleton {
-      background: var(--panel); border: 1px solid var(--border);
-      border-radius: 16px; overflow: hidden; padding: 14px;
-    }
-    .skeleton-line {
-      height: 12px; background: var(--card2); border-radius: 6px;
-      animation: skelPulse 1.4s ease-in-out infinite;
-    }
-    @keyframes skelPulse {
-      0%,100% { opacity: 0.5; }
-      50% { opacity: 1; }
-    }
-    .skeleton-av {
-      width: 38px; height: 38px; border-radius: 50%;
-      background: var(--card2); flex-shrink: 0;
-      animation: skelPulse 1.4s ease-in-out infinite;
-    }
-  `;
-  document.head.appendChild(style);
-
-  // Add offline banner to DOM
-  var offlineBanner = document.createElement('div');
-  offlineBanner.className = 'offline-banner';
-  offlineBanner.textContent = '📵 Offline — Internet connection නැහැ. Some features may not work.';
-  document.body.insertBefore(offlineBanner, document.body.firstChild);
-})();
-
-// ── Ripple effect on primary buttons ─────────────────────────
-(function attachRipple() {
-  function addRipple(e) {
-    var btn = e.currentTarget;
-    btn.classList.add('ripple-host');
-    var rect = btn.getBoundingClientRect();
-    var size = Math.max(rect.width, rect.height) * 2;
-    var x = e.clientX - rect.left - size / 2;
-    var y = e.clientY - rect.top - size / 2;
-    var wave = document.createElement('span');
-    wave.className = 'ripple-wave';
-    wave.style.cssText = 'width:'+size+'px;height:'+size+'px;left:'+x+'px;top:'+y+'px';
-    btn.appendChild(wave);
-    wave.addEventListener('animationend', function() { wave.remove(); });
-  }
-  document.addEventListener('click', function(e) {
-    var btn = e.target.closest('.btn-primary, .soc-post-btn, .soc-rc-btn, .perm-try-btn');
-    if (btn) addRipple({ currentTarget: btn, clientX: e.clientX, clientY: e.clientY });
-  });
-})();
-
-// ── Send button success flash (FIXED: async + await) ──────────
-(function patchSendBtn() {
-  var _origSend = window.doSend;
-  if (!_origSend) return;
-  window.doSend = async function() {
-    var btn = document.getElementById('send-btn');
-    try { await _origSend.apply(this, arguments); } catch(e) { console.error('[SL] doSend:', e); }
-    if (btn) {
-      btn.classList.add('sent');
-      setTimeout(function() { btn.classList.remove('sent'); }, 450);
-    }
-  };
-})();
-
-// ── Button loading state helpers ──────────────────────────────
-window.setBtnLoading = function(btnId, loading) {
-  var btn = document.getElementById(btnId);
-  if (!btn) return;
-  if (loading) {
-    btn.classList.add('btn-loading');
-    btn.disabled = true;
-    btn._origText = btn.innerHTML;
-  } else {
-    btn.classList.remove('btn-loading');
-    btn.disabled = false;
-    if (btn._origText) btn.innerHTML = btn._origText;
-  }
-};
-
-// Patch join button to show loading state
-(function patchJoinBtn() {
-  var joinBtn = document.getElementById('join-btn');
-  var createBtn = document.getElementById('create-btn');
-  function wrapBtn(btn, originalFn) {
-    if (!btn || !originalFn) return;
-    btn.addEventListener('click', function() {
-      btn.classList.add('btn-loading');
-      setTimeout(function() { btn.classList.remove('btn-loading'); }, 3000);
-    });
-  }
-  document.addEventListener('DOMContentLoaded', function() {
-    wrapBtn(document.getElementById('join-btn'), window.joinRoom);
-    wrapBtn(document.getElementById('create-btn'), window.setupCreateRoom);
-  });
-})();
-
-
-/* ══════════════════════════════════════════════════════════
-   FIX 4 — soc-feed-tabs JS LOGIC
-══════════════════════════════════════════════════════════ */
-
-window.socFeedTabSwitch = function(tab, btnEl) {
-  // Sync both tab bars
-  document.querySelectorAll('.soc-feed-tab').forEach(function(b) {
-    b.classList.toggle('active', b.dataset.tab === tab);
-  });
-
-  // Also sync lobby-feed-tabs if applicable
-  var tabMap = { all: 'ftab-all', mine: 'ftab-mine', media: 'ftab-media', trending: 'ftab-trending' };
-  Object.keys(tabMap).forEach(function(k) {
-    var el = document.getElementById(tabMap[k]);
-    if (el) el.classList.toggle('active', k === tab);
-  });
-
-  // Delegate to existing lobbySetFeedTab if available
-  if (window.lobbySetFeedTab) {
-    var mappedTab = (tab === 'following' || tab === 'polls') ? 'all' : tab;
-    window.lobbySetFeedTab(mappedTab, null);
-  }
-
-  // Store tab preference
-  try { localStorage.setItem('sl_feed_tab', tab); } catch(e) {}
-
-  // Filter posts in DOM
-  _filterPostsByTab(tab);
-};
-
-function _filterPostsByTab(tab) {
-  var posts = document.querySelectorAll('#soc-posts .soc-post');
-  var sess = null;
-  try { sess = JSON.parse(localStorage.getItem('sl_auth_v2_sess') || 'null'); } catch(e) {}
-  var myUid = sess && sess.uid;
-
-  posts.forEach(function(post) {
-    var show = true;
-    switch (tab) {
-      case 'mine':
-        show = myUid && (post.dataset.uid === myUid || post.dataset.author === myUid);
-        break;
-      case 'media':
-        show = !!post.querySelector('.soc-post-img, .soc-post-video, .soc-post-media-wrap img, .soc-post-media-wrap video');
-        break;
-      case 'trending':
-        // Show posts with >2 reactions or >1 comment
-        var reactions = post.querySelectorAll('.soc-react-chip').length;
-        var comments  = post.querySelectorAll('.soc-comment').length;
-        show = (reactions >= 2 || comments >= 1);
-        break;
-      case 'following':
-        // Show all if following data not available (fallback)
-        show = true;
-        break;
-      case 'polls':
-        show = !!post.querySelector('.soc-poll, [class*="poll"]');
-        break;
-      default: // 'all'
-        show = true;
-    }
-    post.style.display = show ? '' : 'none';
-  });
-
-  // Update empty state
-  var visibleCount = document.querySelectorAll('#soc-posts .soc-post:not([style*="display: none"])').length;
-  var emptyEl = document.getElementById('soc-feed-empty');
-  if (emptyEl) emptyEl.style.display = visibleCount === 0 ? 'block' : 'none';
-
-  // Update tab counts
-  _updateTabCounts();
-}
-
-function _updateTabCounts() {
-  var all     = document.querySelectorAll('#soc-posts .soc-post').length;
-  var media   = document.querySelectorAll('#soc-posts .soc-post:has(.soc-post-img), #soc-posts .soc-post:has(.soc-post-video)').length;
-  var polls   = document.querySelectorAll('#soc-posts .soc-post:has(.soc-poll)').length;
-
-  var counts = { all: all, media: media, polls: polls };
-  Object.keys(counts).forEach(function(k) {
-    var el = document.getElementById('sftab-count-' + k);
-    if (el) el.textContent = counts[k] > 0 ? counts[k] : '';
-  });
-}
-
-// Show soc-feed-tabs on mobile (supplement lobby-feed-tabs)
-(function initSocFeedTabs() {
-  document.addEventListener('DOMContentLoaded', function() {
-    var tabBar = document.getElementById('soc-feed-tabs');
-    if (!tabBar) return;
-
-    // Show the extended tab bar on screens > 480px where lobby-feed-tabs is visible
-    function syncVisibility() {
-      var width = window.innerWidth;
-      // Show soc-feed-tabs as replacement / supplement depending on screen
-      tabBar.style.display = width <= 480 ? '' : 'none';
-    }
-    syncVisibility();
-    window.addEventListener('resize', window.debounce(syncVisibility, 200));
-
-    // Restore last tab
-    try {
-      var saved = localStorage.getItem('sl_feed_tab');
-      if (saved) {
-        var el = tabBar.querySelector('[data-tab="' + saved + '"]');
-        if (el) { el.classList.add('active'); }
-      }
-    } catch(e) {}
-  });
-
-  // Watch for new posts and update counts
-  var postContainer = document.getElementById('soc-posts');
-  if (postContainer && 'MutationObserver' in window) {
-    var obs = new MutationObserver(window.debounce(_updateTabCounts, 500));
-    obs.observe(postContainer, { childList: true, subtree: true });
-  }
-})();
-
-
-/* ══════════════════════════════════════════════════════════
-   FIX 5 — BILINGUAL ERROR MESSAGES (global error helper upgrade)
-══════════════════════════════════════════════════════════ */
-
-// Bilingual message map (Sinhala + English)
-var SL_ERRORS = {
-  // Auth
-  'auth_required':      '🔐 Sign in කරන්න — Please sign in first',
-  'auth_failed':        '❌ Login failed — Login error. Try again / නැවත try කරන්න',
-  'email_invalid':      '📧 Valid email enter කරන්න — Enter a valid email address',
-  'otp_invalid':        '🔢 OTP code වැරදියි — Wrong OTP code. Check your email',
-  'otp_expired':        '⏱️ OTP expire වුණා — OTP expired. Resend කරන්න',
-  'name_short':         '👤 නම කෙටියි — Name too short (minimum 2 characters)',
-  'name_long':          '👤 නම දිගයි — Name too long (maximum 30 characters)',
-  // Room
-  'room_required':      '🏠 Room code enter කරන්න — Enter a room code',
-  'room_invalid':       '🏠 Room code invalid — Valid room code enter කරන්න',
-  'room_wrong_pass':    '🔒 Passcode වැරදියි — Wrong passcode!',
-  'room_join_fail':     '❌ Room join error — Check your connection / Network check කරන්න',
-  'room_firebase_fail': '🔌 Firebase connection error — Reload the page / Page reload කරන්න',
-  // Post
-  'post_empty':         '📝 Post text enter කරන්න — Write something first',
-  'post_too_long':      '📝 Post characters limit exceeded — Post text 2000 characters limit',
-  'post_cooldown':      '⏳ Spam cooldown — Wait a moment before posting again / ටිකක් wait කරන්න',
-  // Media
-  'file_too_large':     '📦 File too large — Max 100MB / File 100MB ට වඩා නැහැ',
-  'file_type_invalid':  '📎 File type not supported — Supported: Images, Videos, Documents',
-  // Network
-  'network_offline':    '📵 Offline — Internet connection නැහැ. Check your connection',
-  'network_timeout':    '⏱️ Connection timeout — Try again / නැවත try කරන්න',
-  // Generic
-  'unknown':            '❌ Something went wrong — Error occurred. Reload if problem persists / ගැටළු continue නම් reload කරන්න',
-};
-
-// Enhanced showErr that supports bilingual keys
-var _origShowErr = window.showErr;
-window.showErr = function(elId, msgOrKey) {
-  var msg = SL_ERRORS[msgOrKey] || msgOrKey || SL_ERRORS['unknown'];
-  // Call original if exists
-  if (_origShowErr) {
-    _origShowErr(elId, msg);
-  } else {
-    var el = document.getElementById(elId);
-    if (el) {
-      el.textContent = msg;
-      el.classList.add('show');
-      setTimeout(function() { el.classList.remove('show'); el.textContent = ''; }, 5000);
-    }
-  }
-};
-
-// Upgrade create room error messages
-window.setupCreateRoom = (function(_orig) {
-  if (!_orig) return window.setupCreateRoom;
-  return function() {
-    var code = (document.getElementById('create-room-input') &&
-                document.getElementById('create-room-input').value || '').trim();
-    var name = (document.getElementById('create-name-input') &&
-                document.getElementById('create-name-input').value || '').trim();
-
-    function showErr(msg) {
-      var el = document.getElementById('create-error');
-      if (el) { el.textContent = msg; el.classList.add('show'); }
-    }
-    if (!code) { showErr(SL_ERRORS['room_required'] || '⚠️ Room code enter කරන්න — Generate or type a room code'); return; }
-    if (!name) { showErr(SL_ERRORS['name_short'] || '⚠️ ඔබේ නම enter කරන්න — Enter your name'); return; }
-    if (name.length < 2) { showErr(SL_ERRORS['name_short']); return; }
-
-    _orig.apply(this, arguments);
-  };
-})(window.setupCreateRoom);
-
-
-/* ══════════════════════════════════════════════════════════
-   FIX 6 — POST LOADING SKELETON
-══════════════════════════════════════════════════════════ */
-
-window.showFeedSkeleton = function(count) {
-  var container = document.getElementById('soc-posts');
-  if (!container) return;
-  count = count || 3;
-  for (var i = 0; i < count; i++) {
-    var sk = document.createElement('div');
-    sk.className = 'soc-post-skeleton';
-    sk.innerHTML = '<div style="display:flex;gap:10px;margin-bottom:10px"><div class="skeleton-av"></div><div style="flex:1;display:flex;flex-direction:column;gap:6px"><div class="skeleton-line" style="width:40%"></div><div class="skeleton-line" style="width:25%;height:8px;opacity:0.6"></div></div></div><div class="skeleton-line" style="margin-bottom:6px"></div><div class="skeleton-line" style="width:75%;margin-bottom:6px"></div><div class="skeleton-line" style="width:55%;height:8px;opacity:0.5"></div>';
-    sk.id = 'sk-' + i;
-    container.insertBefore(sk, container.firstChild);
-  }
-};
-
-window.hideFeedSkeleton = function() {
-  document.querySelectorAll('.soc-post-skeleton').forEach(function(el) { el.remove(); });
-};
-
-// Auto show skeleton when social area opens
-(function patchOpenSocialArea() {
-  var _orig = window.openSocialArea;
-  if (!_orig) return;
-  window.openSocialArea = function() {
-    _orig.apply(this, arguments);
-    window.showFeedSkeleton(3);
-    setTimeout(window.hideFeedSkeleton, 1800);
-  };
-})();
-
-console.log('%c SecretLine v5 — All fixes loaded ✓ (PWA+SW, Feed Tabs, Push Notifications, Performance, Bilingual Errors, UI Polish)', 'color:#3de8a0;font-weight:bold;font-size:12px');
-</script>
-
-<!-- ════════════════════════════════════════════════════════════
-     ANDROID NAV + KEYBOARD MASTER FIX — SecretLine v5
-     Fixes:
-       Bug 1  input-bar padding — nav bar cover
-       Bug 2  keyboard open → double cover (nav + keyboard)
-       Bug 3  visualViewport handler — nav height not accounted
-       Bug 4  chat screen 100dvh — nav height not subtracted
-       Bug 5  social screen 100dvh — same
-       Bug 6  z-index — nav overlapping modals, menus, call overlay
-════════════════════════════════════════════════════════════ -->
-<style>
-
-
-
-/* ══ PWA BANNER: hidden on setup screen, shown only in chat/social ══ */
-body.on-setup .pwa-banner,
-body.on-social .pwa-banner {
-  display: none !important;
-}
-/* Also: when banner IS showing in chat, push input bar up */
-body.pwa-visible #chat-screen .input-bar {
-  padding-bottom: calc(max(10px, env(safe-area-inset-bottom)) + 58px + 72px) !important;
-}
-
-
-/* ══ FIX: Double tab row — hide old lobby-feed-tabs on mobile, soc-feed-tabs handles it ══ */
-@media (max-width: 699px) {
-  /* Hide the duplicate older tab row */
-  .lobby-feed-tabs {
-    display: none !important;
-  }
-  /* Show the extended soc-feed-tabs instead (JS controls display:none initially) */
-  .soc-feed-tabs {
-    display: flex !important;
-    padding: 6px 10px 4px !important;
-    gap: 5px !important;
-  }
-  /* Reduce tab padding on mobile */
-  .soc-feed-tab {
-    padding: 5px 10px !important;
-    font-size: 11px !important;
-    white-space: nowrap !important;
-  }
-}
-
-
-/* ══ FIX: Social top nav — minimal on mobile, bottom nav handles navigation ══ */
-@media (max-width: 699px) {
-  /* Hide redundant nav action buttons — bottom nav covers these */
-  .soc-nav-btn:not(.soc-notif-btn):not(.soc-profile-nav-btn) {
-    display: none !important;
-  }
-  /* Reduce nav height */
-  .soc-nav {
-    min-height: 48px !important;
-    max-height: 48px !important;
-    padding: 8px 12px !important;
-  }
-}
-
-/* ══ FIX 4: Social Screen — hide top nav on mobile, use bottom nav instead ══ */
-@media (max-width: 699px) {
-  /* Collapse the social top-nav height significantly */
-  .soc-nav {
-    min-height: 44px !important;
-    max-height: 44px !important;
-    padding: 6px 10px !important;
-  }
-  /* Hide the tab strip inside soc-nav on mobile — bottom nav handles navigation */
-  .soc-tabs-nav {
-    display: none !important;
-  }
-  /* Hide back button on mobile (use bottom nav home instead) */
-  .soc-back-btn {
-    display: none !important;
-  }
-  /* Compress brand */
-  .soc-nav-brand {
-    font-size: 13px !important;
-  }
-  /* Give back content area the reclaimed space */
-  .soc-feed-col {
-    padding-top: 8px !important;
-  }
-}
-
-/* ══ FIX 3: Mobile Header Button Consolidation ══ */
-@media (max-width: 699px) {
-  /* Hide 4 call buttons — moved to overflow menu on mobile */
-  .h-call-group { display: none !important; }
-  /* Hide secondary action buttons — already in overflow */
-  .h-secondary  { display: none !important; }
-  /* Show share btn in header on mobile */
-  .h-share-mobile { display: flex !important; }
-}
-@media (min-width: 700px) {
-  .h-share-mobile { display: none !important; }
-}
-
-/* ── CSS Custom Properties for nav-aware layout ─────────────── */
-:root {
-  --nav-h:      58px;
-  --nav-safe:   env(safe-area-inset-bottom, 0px);
-  --nav-total:  calc(var(--nav-h) + var(--nav-safe));
-}
-
-/* On desktop: nav is hidden, so total = 0 */
-@media (min-width: 700px) {
-  :root {
-    --nav-h:     0px;
-    --nav-safe:  0px;
-    --nav-total: 0px;
-  }
-}
-
-/* ── BUG 4 & 5: Chat + Social screen height — subtract nav ──── */
-/* Override the blanket 100dvh !important that didn't account for nav */
-@media (max-width: 699px) {
-  @supports (height: 100dvh) {
-    #chat-screen,
-    #social-screen {
-      height: calc(100dvh - var(--nav-total)) !important;
-      max-height: calc(100dvh - var(--nav-total)) !important;
-    }
-  }
-  /* Fallback for browsers without dvh */
-  @supports not (height: 100dvh) {
-    #chat-screen,
-    #social-screen {
-      height: calc(100vh - var(--nav-total)) !important;
-      max-height: calc(100vh - var(--nav-total)) !important;
-    }
-  }
-}
-
-/* ── BUG 1: Input-bar — nav-aware bottom padding ────────────── */
-/* Replace fixed px with CSS custom prop so keyboard fix can zero it */
-@media (max-width: 699px) {
-  #chat-screen .input-bar {
-    /* Nav clearance via margin-bottom, NOT padding — keeps send btn in clickable zone */
-    padding-bottom: max(10px, env(safe-area-inset-bottom, 10px)) !important;
-    margin-bottom: var(--nav-h) !important;
-    /* Smooth transition when nav slides away on keyboard open */
-    transition: padding-bottom 0.22s ease, margin-bottom 0.22s ease;
-  }
-
-  /* ANDROID FIX: When keyboard is open, zero the margin IMMEDIATELY so send btn is not pushed offscreen */
-  body.keyboard-open #chat-screen .input-bar {
-    margin-bottom: 0 !important;
-    padding-bottom: max(4px, env(safe-area-inset-bottom, 4px)) !important;
-    transition: none !important;
-  }
-
-  /* DM input bar same fix */
-  #dm-input-bar,
-  .dm-input-bar {
-    margin-bottom: var(--nav-total) !important;
-    transition: margin-bottom 0.22s ease;
-  }
-
-  body.keyboard-open #dm-input-bar,
-  body.keyboard-open .dm-input-bar {
-    margin-bottom: 0 !important;
-    transition: none !important;
-  }
-}
-
-/* ── BUG 6: Z-index — nav must sit BELOW modals/menus/calls ─── */
-/* Nav bar: z-index 1000 (was 8500 — way too high) */
-.sl-bottom-nav {
-  z-index: 1000 !important;
-}
-
-/* ── ANDROID SEND BUG: Ensure input bar and send button always receive taps ── */
-#chat-screen .input-bar {
-  position: relative;
-  z-index: 1100 !important;
-  pointer-events: all !important;
-}
-#send-btn {
-  position: relative;
-  z-index: 1200 !important;
-  pointer-events: all !important;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-  /* Slightly larger tap target on mobile */
-  min-width: 44px;
-  min-height: 44px;
-}
-/* Prevent nav from ever covering input bar */
-@media (max-width: 699px) {
-  #chat-screen .input-bar,
-  #send-btn,
-  .ti-wrap,
-  .ti-input {
-    pointer-events: all !important;
-  }
-}
-
-/* Ensure all overlays/modals/menus beat the nav */
-/* Context menu */
-.msg-ctx-menu           { z-index: 9100 !important; }
-/* Emoji reaction picker */
-.emoji-picker-pop       { z-index: 9100 !important; }
-/* Attach popup */
-.attach-pop             { z-index: 9100 !important; }
-/* Chat emoji popup */
-#chat-emoji-pop         { z-index: 9100 !important; }
-/* Overflow panel (header ⋯) */
-.h-overflow-panel       { z-index: 9100 !important; }
-/* Soc post options menu */
-.soc-post-options-menu  { z-index: 9100 !important; }
-/* Soc notification panel */
-.soc-notif-panel        { z-index: 9100 !important; }
-/* Call overlay (main chat) */
-.call-overlay           { z-index: 9200 !important; }
-/* DM call overlay */
-#dm-call-overlay        { z-index: 9200 !important; }
-/* Story viewer */
-.story-viewer           { z-index: 9300 !important; }
-/* Story upload sheet */
-.story-upload-sheet     { z-index: 9300 !important; }
-/* Full-screen modals (search, starred, settings, msg-info, etc.) */
-.search-panel,
-.starred-panel,
-.room-settings-modal,
-.msg-info-overlay,
-.soc-fullpost-modal,
-.soc-saved-panel,
-.soc-edit-modal         { z-index: 9400 !important; }
-/* Auth / pin modals */
-#pin-lock-screen        { z-index: 9500 !important; }
-/* Lightbox */
-.lightbox               { z-index: 9600 !important; }
-/* Toast — always on top but below privacy shield */
-.toast                  { z-index: 9700 !important; }
-.notif-toast            { z-index: 9700 !important; }
-/* Privacy shield always topmost */
-#privacy-shield         { z-index: 99999 !important; }
-#screenshot-flash       { z-index: 99998 !important; }
-/* Noise texture overlay stays decorative-top */
-body::after             { z-index: 99997 !important; }
-
-/* ── Keyboard open: extra clearance state ────────────────────── */
-/* Applied by JS when keyboard detected */
-body.keyboard-open .sl-bottom-nav {
-  transform: translateY(100%);
-  pointer-events: none;
-}
-
-body.keyboard-open #chat-screen {
-  height: 100dvh !important;
-  max-height: 100dvh !important;
-}
-
-body.keyboard-open #chat-screen .input-bar {
-  padding-bottom: 10px !important;
-  margin-bottom: 0 !important;
-}
-
-body.keyboard-open #dm-input-bar,
-body.keyboard-open .dm-input-bar {
-  margin-bottom: 0 !important;
-}
-
-/* Smooth nav slide */
-.sl-bottom-nav {
-  transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1) !important;
-}
-</style>
-
-<script>
-/* ════════════════════════════════════════════════════════════
-   ANDROID KEYBOARD + NAV MASTER FIX SCRIPT
-   Bug 2 & 3: visualViewport handler — hide nav on keyboard open,
-              account for nav height, auto-scroll messages
-════════════════════════════════════════════════════════════ */
-(function() {
-  'use strict';
-
-  var NAV_H    = 58;  // px — must match CSS --nav-h
-  var THRESH   = 80; // px shrink = keyboard open threshold (lowered from 120 for small Android screens)
-
-  // ── Keyboard detection via visualViewport ────────────────
-  function setupViewportHandler() {
-    if (!window.visualViewport) return;
-
-    var vv        = window.visualViewport;
-    // Defer initial windowH measurement to after page fully renders on Android
-    var windowH   = window.innerHeight;
-    setTimeout(function() { windowH = window.innerHeight; }, 500);
-    var keyboardOpen = false;
-
-    function onViewportChange() {
-      var vh     = vv.height;
-      var shrink = windowH - vh;
-      var kbOpen = shrink > THRESH;
-
-      if (kbOpen !== keyboardOpen) {
-        keyboardOpen = kbOpen;
-        document.body.classList.toggle('keyboard-open', kbOpen);
-      }
-
-      // Bug 3 fix: use vv.height for chat-column, NOT raw window.innerHeight
-      // This already subtracts the keyboard area correctly.
-      // When keyboard is closed, nav is visible so subtract it.
-      var chatCol = document.getElementById('chat-column');
-      if (chatCol) {
-        // visualViewport.height = usable area above keyboard
-        // When keyboard closed, nav takes bottom 58+safe px → already handled by CSS
-        // When keyboard open, nav is hidden → full vh is usable
-        chatCol.style.height = '';  // let CSS handle it via calc()
-      }
-
-      // Auto-scroll messages to bottom after keyboard opens
-      if (kbOpen) {
-        setTimeout(function() {
-          var wrap = document.getElementById('msgs-wrap');
-          if (wrap) wrap.scrollTop = wrap.scrollHeight;
-          // DM messages too
-          var dmWrap = document.getElementById('dm-msgs-wrap');
-          if (dmWrap) dmWrap.scrollTop = dmWrap.scrollHeight;
-        }, 150);
-      }
-
-      // Re-measure window height when keyboard fully closes
-      if (!kbOpen) {
-        setTimeout(function() {
-          windowH = window.innerHeight;
-        }, 300);
-      }
-    }
-
-    vv.addEventListener('resize', onViewportChange);
-    vv.addEventListener('scroll', onViewportChange);
-  }
-
-  // ── Focusin/focusout fallback for older Android WebViews ─
-  function setupFocusFallback() {
-    var inputs = 'input, textarea, [contenteditable]';
-    var openTimer, closeTimer;
-
-    document.addEventListener('focusin', function(e) {
-      if (!e.target.matches(inputs)) return;
-      clearTimeout(closeTimer);
-      openTimer = setTimeout(function() {
-        if (!document.body.classList.contains('keyboard-open')) {
-          document.body.classList.add('keyboard-open');
-        }
-      }, 150); // reduced from 300ms for faster Android response
-    }, true);
-
-    document.addEventListener('focusout', function(e) {
-      if (!e.target.matches(inputs)) return;
-      clearTimeout(openTimer);
-      // Small delay: blur fires before next focus
-      closeTimer = setTimeout(function() {
-        // Check no other input is focused
-        var active = document.activeElement;
-        if (!active || !active.matches(inputs)) {
-          document.body.classList.remove('keyboard-open');
-        }
-      }, 200); // reduced from 350ms for snappier nav restore
-    }, true);
-  }
-
-  // ── Init ─────────────────────────────────────────────────
-  function init() {
-    setupViewportHandler();
-    setupFocusFallback();
-    console.log('%c [NavFix] Android keyboard + z-index master fix loaded ✓', 'color:#3de8a0;font-weight:bold');
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
-})();
-</script>
-
-
-<script>
-/* ══ Setup screen initial state: add on-setup class ══ */
-(function() {
-  var setup = document.getElementById('setup-screen');
-  if (setup && !setup.classList.contains('hidden')) {
-    document.body.classList.add('on-setup');
-  }
-})();
-
-/* ══ FIX 1 — Hide onboarding hint after first visit ══ */
-(function() {
-  try {
-    var hint = document.getElementById('setup-onboard-hint');
-    if (hint) {
-      // Hide if user has been here before (has any session data)
-      var hasSession = localStorage.getItem('sl_session') || localStorage.getItem('sl_active_profile');
-      if (hasSession) {
-        hint.style.display = 'none';
-      }
-    }
-  } catch(e) {}
-
-  /* Fix 1b — Setup tabs: add visual step numbers */
-  try {
-    var joinTab = document.getElementById('setup-tab-join');
-    var createTab = document.getElementById('setup-tab-create');
-    // Already labeled well with emoji, just ensure section labels read as steps
-    var sectionLabels = document.querySelectorAll('#setup-screen .section-label');
-    sectionLabels.forEach(function(el, i) {
-      // Already updated in HTML
-    });
-  } catch(e) {}
-
-  /* Fix 2 — also update the share button in overflow to use current roomCode */
-  document.addEventListener('DOMContentLoaded', function() {
-    // Patch overflow share button to always read window.roomCode at call time
-    var shareBtn = document.querySelector('.h-overflow-panel .h-ov-item[onclick*="Share Room Code"]');
-    if (shareBtn) {
-      shareBtn.onclick = function() {
-        var rc = window.roomCode || '';
-        if (!rc) { window.showToast && window.showToast('⚠️ Join a room first'); return; }
-        if (navigator.share) {
-          navigator.share({ title: 'Join me on SecretLine', text: 'Room code: ' + rc });
-        } else {
-          navigator.clipboard && navigator.clipboard.writeText(rc).then(function() {
-            window.showToast && window.showToast('✅ Room code copied: ' + rc);
-          });
-        }
-        window.closeOverflow && window.closeOverflow();
-      };
-    }
-  });
-})();
-</script>
-
-
-<script>
-/* SecretLine v6 — Supplemental fixes */
-(function() {
-  'use strict';
-
-  // FIX A: window.roomCode always synced from h-room header
-  function _syncRC() {
-    try {
-      var h = document.getElementById('h-room');
-      if (h && h.textContent && h.textContent !== '—') {
-        window.roomCode = h.textContent.replace(/^#\s*/, '').trim();
-        return;
-      }
-      var s = localStorage.getItem('sl_session');
-      if (s) { var p = JSON.parse(s); if (p.roomCode) window.roomCode = p.roomCode; }
-    } catch(e) {}
-  }
-  _syncRC();
-  setInterval(_syncRC, 1500);
-
-  document.addEventListener('DOMContentLoaded', function() {
-    // Mirror h-room changes → window.roomCode
-    var h = document.getElementById('h-room');
-    if (h) new MutationObserver(_syncRC).observe(h, { childList:true, subtree:true, characterData:true });
-
-    // FIX B: img/video load → scroll bottom
-    var wrap = document.getElementById('msgs-wrap');
-    if (wrap) {
-      new MutationObserver(function(muts) {
-        muts.forEach(function(m) {
-          m.addedNodes.forEach(function(node) {
-            if (node.nodeType !== 1) return;
-            var els = [];
-            if (node.tagName === 'IMG' || node.tagName === 'VIDEO') els.push(node);
-            if (node.querySelectorAll) node.querySelectorAll('img,video').forEach(function(e){els.push(e);});
-            els.forEach(function(el) {
-              el.addEventListener(el.tagName==='IMG'?'load':'loadedmetadata', function() {
-                if (wrap.scrollHeight - wrap.scrollTop - wrap.clientHeight < 250) wrap.scrollTop = wrap.scrollHeight;
-              }, {once:true});
-            });
-          });
-        });
-      }).observe(wrap, { childList:true, subtree:false });
-    }
-
-    // FIX C: PC sidebar status live mirror
-    var hSt = document.getElementById('h-status');
-    var hLed = document.getElementById('status-led');
-    function _mir() {
-      var pc = document.getElementById('pc-status-text');
-      var pl = document.getElementById('pc-status-led');
-      if (pc && hSt) pc.textContent = hSt.textContent;
-      if (pl && hLed) pl.className = hLed.className;
-    }
-    if (hSt) new MutationObserver(_mir).observe(hSt, {childList:true,subtree:true,characterData:true});
-    if (hLed) new MutationObserver(_mir).observe(hLed, {attributes:true,attributeFilter:['class']});
-
-    // FIX D: share buttons use live roomCode
-    function _share() {
-      _syncRC();
-      var rc = window.roomCode || '';
-      if (!rc) { if (window.showToast) window.showToast('⚠️ Join a room first'); return; }
-      if (navigator.share) navigator.share({title:'Join me on SecretLine', text:'Room code: '+rc});
-      else if (navigator.clipboard) navigator.clipboard.writeText(rc).then(function(){
-        if (window.showToast) window.showToast('✅ Room code copied: '+rc);
-      });
-    }
-    document.querySelectorAll('.h-ov-item').forEach(function(b) {
-      if ((b.textContent||'').indexOf('Share Room')!==-1) {
-        b.onclick = function(e){e.stopPropagation();_share();if(window.closeOverflow)window.closeOverflow();};
-      }
-    });
-    var wrc = document.getElementById('wait-room-code');
-    if (wrc) wrc.onclick = function(){_syncRC();var rc=window.roomCode||'';if(rc&&navigator.clipboard)navigator.clipboard.writeText(rc).then(function(){if(window.showToast)window.showToast('✅ Copied: '+rc);});};
-
-    // FIX E: renderReactions null-guard
-    var _rr = window.renderReactions;
-    if (_rr) window.renderReactions = function(r,rx,k){if(!r)return;try{return _rr.apply(this,arguments);}catch(e){}};
-
-    // FIX F: wait banner — hide if partner already online when entering chat
-    var cs = document.getElementById('chat-screen');
-    if (cs) new MutationObserver(function(muts){
-      muts.forEach(function(m){
-        if(m.attributeName==='class'&&!cs.classList.contains('hidden')){
-          setTimeout(function(){
-            var wb=document.getElementById('wait-banner');
-            var st=document.getElementById('h-status');
-            if(wb&&st&&st.textContent.indexOf('online')!==-1)wb.style.display='none';
-          },900);
-        }
-      });
-    }).observe(cs,{attributes:true,attributeFilter:['class']});
-
-    // FIX G: close emoji picker on send
-    var origDs = window.doSend;
-    if (origDs && !origDs._emojiPatch) {
-      var wrapped = async function(){
-        var ep=document.getElementById('chat-emoji-pop');
-        if(ep&&ep.style.display!=='none')ep.style.display='none';
-        return origDs.apply(this,arguments);
-      };
-      wrapped._emojiPatch = true;
-      window.doSend = wrapped;
-    }
-  });
-
-  console.log('%c [SL v6] Fixes loaded ✓', 'color:#3de8a0;font-weight:bold');
-})();
-</script>
 </body>
 </html>
