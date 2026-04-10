@@ -151,9 +151,12 @@ body.privacy-blur #setup-screen { filter: blur(12px); transition: filter 0.3s; }
 @media (min-width: 900px) {
   #setup-screen {
     flex-direction: row;
-    align-items: stretch;
+    align-items: center;
+    justify-content: center;
     padding: 0;
     gap: 0;
+    height: 100vh;
+    overflow: hidden;
   }
 
   .setup-hero {
@@ -175,8 +178,9 @@ body.privacy-blur #setup-screen { filter: blur(12px); transition: filter 0.3s; }
     border-radius: 0;
     border: none;
     border-left: 1px solid var(--border);
-    padding: 48px 40px;
+    padding: 40px 40px;
     min-height: 100vh;
+    height: 100vh;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -3356,6 +3360,7 @@ body.theme-light { --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --card2:#e2e8f
 window.openSocialArea=function(){};
 window.openRoomsDirectory=function(){};
 window.openAuthV2Modal=function(){};
+window.openAuthModal=function(){};
 window.closeAuthV2Modal=function(){};
 </script>
 </head>
@@ -3416,31 +3421,7 @@ window.closeAuthV2Modal=function(){};
       </div>
     </div>
 
-    <div class="section-label">Room & Profile</div>
-
-    <!-- Google sign-in button (hidden — auth handled via Sign In modal) -->
-    <div class="google-signin-wrap" id="google-signin-wrap" style="display:none !important;"></div>
-
-    <!-- Profile card (shown after Google sign-in) -->
-    <div class="profile-card hidden" id="profile-card">
-      <img class="profile-avatar" id="profile-photo" src="" alt="">
-      <div class="profile-info">
-        <div class="profile-name" id="profile-name-display"></div>
-        <div class="profile-email" id="profile-email-display"></div>
-      </div>
-      <div class="profile-badge">Google ✓</div>
-      <button class="profile-signout" onclick="signOut()" title="Sign out">✕</button>
-    </div>
-
-    <!-- Auth Trigger -->
-    <button class="priv-profile-trigger" id="priv-profile-trigger" onclick="openAuthModal()">
-      <div class="ppt-av" id="ppt-av-display" style="font-size:20px;">👤</div>
-      <div class="ppt-info">
-        <div class="ppt-name" id="ppt-name-display">Sign In / Register</div>
-        <div class="ppt-hint" id="ppt-hint-display">Create account or sign in</div>
-      </div>
-      <span class="ppt-arrow">›</span>
-    </button>
+    <div class="section-label">Join Room</div>
 
     <!-- Recent Rooms -->
     <div class="recent-rooms-wrap" id="recent-rooms-wrap" style="display:none">
