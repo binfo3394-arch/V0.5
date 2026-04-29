@@ -1037,6 +1037,12 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
               <h3 style="font-size:14px">🛒 Cart <span id="cart-cnt" style="background:var(--primary);color:#fff;font-size:10px;padding:2px 7px;border-radius:10px">0</span></h3>
               <button class="btn bd2 bsm" onclick="clearCart()">🗑️</button>
             </div>
+            <div class="fg" style="margin-bottom:8px">
+              <label>👷 Cashier / Staff</label>
+              <select id="cart-cashier-sel" style="width:100%">
+                <option value="">— Select Cashier —</option>
+              </select>
+            </div>
             <div class="fg" style="position:relative">
               <label>👤 Customer</label>
               <input id="cart-cust-input" placeholder="Walk-in (type to search...)" autocomplete="off"
@@ -1286,7 +1292,7 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
             <button class="btn bo bsm" onclick="document.getElementById('inv2-from').value='';document.getElementById('inv2-to').value='';renderInv2()">✕</button>
           </div>
         </div>
-        <div class="tcard"><table><thead><tr><th>Invoice #</th><th>Customer</th><th>Items</th><th>Total</th><th>Payment</th><th>Date</th><th>Actions</th></tr></thead><tbody id="inv2-tbl"></tbody></table></div>
+        <div class="tcard"><table><thead><tr><th>Invoice #</th><th>Customer</th><th>Cashier</th><th>Items</th><th>Total</th><th>Payment</th><th>Date</th><th>Actions</th></tr></thead><tbody id="inv2-tbl"></tbody></table></div>
       </div>
 
       <!-- ANALYTICS -->
@@ -4213,19 +4219,14 @@ function deleteStaff(id) {
 
 // Staff selector in POS cart
 function updateStaffSelector() {
-  var existing = document.getElementById('cart-staff-sel');
-  if (!existing && db.staff && db.staff.length > 0) {
-    var cartCust = document.querySelector('#pg-pos .cpanel');
-    if (cartCust) {
-      var div = document.createElement('div');
-      div.className = 'fg'; div.style.marginBottom = '8px';
-      div.innerHTML = '<label>👷 Staff (for commission)</label><select id="cart-staff-sel"><option value="">— No staff —</option>'+
-        (db.staff||[]).filter(function(s){ return s.status!=='Inactive'; }).map(function(s){ return '<option value="'+s.id+'">'+s.name+'</option>'; }).join('')+
-        '</select>';
-      var firstFg = cartCust.querySelector('.fg');
-      if (firstFg) cartCust.insertBefore(div, firstFg);
-    }
-  }
+  var sel = document.getElementById('cart-cashier-sel');
+  if (!sel) return;
+  var activeStaff = (db.staff||[]).filter(function(s){ return s.status!=='Inactive'; });
+  var currentVal = sel.value;
+  sel.innerHTML = '<option value="">— Select Cashier —</option>' +
+    activeStaff.map(function(s){
+      return '<option value="'+s.id+'"'+(currentVal==s.id?' selected':'')+'>'+s.name+' ('+s.role+')</option>';
+    }).join('');
 }
 
 // ============================================================
@@ -5129,6 +5130,7 @@ function init() {
 function renderAll() {
   renderInv(); renderRep(); renderOrd(); renderCust(); renderInv2(); updateDash(); updateBadges(); refreshCustSel(); updateNotifBadge(); renderCredits(); renderSuppliers(); renderPurchases(); renderStockLog(); updateCrBadge();
   if (typeof renderStaff === 'function') renderStaff();
+  if (typeof updateStaffSelector === 'function') updateStaffSelector();
 }
 
 // =========== CREDIT AUTO-OVERDUE CHECK ===========
@@ -6015,7 +6017,10 @@ function completeSale(){
     var n = parseInt((i.invNo||'').replace(/\D+/g,'')) || 0;
     return n > m ? n : m;
   }, 0);
-  var inv={ id:Date.now(), invNo:prefix+'-'+String(maxNum+1).padStart(4,'0'), customer:cust?cust.name:'Walk-in', customerId:custId, items:cart.map(function(c){ return Object.assign({},c); }), subtotal:sub, discount:disc, tax:tax, taxPct:taxP, total:ttl, payment:selPayment, date:new Date().toLocaleDateString('en-GB') };
+  var cashierSel=document.getElementById('cart-cashier-sel');
+  var cashierStaffId = cashierSel ? (parseInt(cashierSel.value)||0) : 0;
+  var cashierStaff = cashierStaffId ? (db.staff||[]).find(function(s){ return s.id===cashierStaffId; }) : null;
+  var inv={ id:Date.now(), invNo:prefix+'-'+String(maxNum+1).padStart(4,'0'), customer:cust?cust.name:'Walk-in', customerId:custId, items:cart.map(function(c){ return Object.assign({},c); }), subtotal:sub, discount:disc, tax:tax, taxPct:taxP, total:ttl, payment:selPayment, date:new Date().toLocaleDateString('en-GB'), staffId:cashierStaffId, cashierName:cashierStaff?cashierStaff.name:'' };
   cart.forEach(function(c){ if(!c.custom){ var p=db.products.find(function(x){ return x.id===c.id; }); if(p){ p.stock-=c.qty; logStock(p.id, p.name, 'Sale', -c.qty, p.stock, inv.invNo, true); }}});
   db.invoices.push(inv);
   selPayment = 'Cash';
@@ -6448,7 +6453,7 @@ function renderInv2(){
   var cnt=document.getElementById('inv-count');
   if(cnt) cnt.textContent='Showing '+rows.length+' / '+db.invoices.length+' invoice(s) | Rs. '+filteredTotal.toFixed(2);
   tb.innerHTML=rows.length?rows.map(function(inv){
-    return '<tr><td><b>'+inv.invNo+'</b></td><td>'+inv.customer+'</td><td>'+inv.items.length+' item(s)</td><td><b>Rs. '+inv.total.toFixed(2)+'</b></td><td><span class="badge bs">'+inv.payment+'</span></td><td>'+inv.date+'</td><td style="white-space:nowrap"><button class="btn bo bsm" onclick="showInv('+inv.id+')" style="margin-right:3px">🧾</button><button class="btn bd2 bsm" onclick="delInv('+inv.id+')">🗑️</button></td></tr>';
+    return '<tr><td><b>'+inv.invNo+'</b></td><td>'+inv.customer+'</td><td>'+(inv.cashierName?'<span class="badge bp">'+inv.cashierName+'</span>':'<span style="color:var(--muted);font-size:11px">—</span>')+'</td><td>'+inv.items.length+' item(s)</td><td><b>Rs. '+inv.total.toFixed(2)+'</b></td><td><span class="badge bs">'+inv.payment+'</span></td><td>'+inv.date+'</td><td style="white-space:nowrap"><button class="btn bo bsm" onclick="showInv('+inv.id+')" style="margin-right:3px">🧾</button><button class="btn bd2 bsm" onclick="delInv('+inv.id+')">🗑️</button></td></tr>';
   }).join(''):'<tr><td colspan="7" class="empty"><div class="ei">🧾</div>No invoices found</td></tr>';
 }
 
@@ -6501,7 +6506,7 @@ function showInv(id){
   var inv=db.invoices.find(function(i){ return i.id===id; }); if(!inv) return;
   var s=db.settings;
   var el=document.getElementById('inv-content'); if(!el) return;
-  el.innerHTML='<h2>'+s.shopName+'</h2><p style="text-align:center;color:#666;font-size:11px">'+[s.phone,s.email,s.address].filter(Boolean).join(' | ')+'</p><div class="inv-line"></div><div class="inv-row"><span><b>Invoice:</b> '+inv.invNo+'</span><span><b>Date:</b> '+inv.date+'</span></div><div class="inv-row"><span><b>Customer:</b> '+inv.customer+'</span><span><b>Payment:</b> '+inv.payment+'</span></div><div class="inv-line"></div><table style="width:100%;font-size:12px"><tr style="background:#f5f5ff"><th style="padding:5px">Item</th><th style="text-align:center">Qty</th><th style="text-align:right">Price</th><th style="text-align:right">Total</th></tr>'+inv.items.map(function(i){ return '<tr><td style="padding:4px">'+i.name+'</td><td style="text-align:center">'+i.qty+'</td><td style="text-align:right">Rs.'+i.price.toFixed(2)+'</td><td style="text-align:right">Rs.'+(i.price*i.qty).toFixed(2)+'</td></tr>'; }).join('')+'</table><div class="inv-line"></div><div class="inv-row"><span>Subtotal</span><span>Rs. '+inv.subtotal.toFixed(2)+'</span></div>'+(inv.discount>0?'<div class="inv-row"><span>Discount</span><span>- Rs. '+inv.discount.toFixed(2)+'</span></div>':'')+(inv.tax>0?'<div class="inv-row"><span>Tax ('+(inv.taxPct||0)+'%)</span><span>+ Rs. '+inv.tax.toFixed(2)+'</span></div>':'')+'<div class="inv-row" style="font-size:16px;font-weight:800;color:#6c63ff"><span>TOTAL</span><span>Rs. '+inv.total.toFixed(2)+'</span></div><div class="inv-line"></div><p style="text-align:center;color:#888;font-size:11px">'+s.note+'</p>'+(s.whatsapp?'<p style="text-align:center;color:#888;font-size:11px">📱 '+s.whatsapp+'</p>':'')+(s.fb?'<p style="text-align:center;color:#888;font-size:11px">🌐 '+s.fb+'</p>':'');
+  el.innerHTML='<h2>'+s.shopName+'</h2><p style="text-align:center;color:#666;font-size:11px">'+[s.phone,s.email,s.address].filter(Boolean).join(' | ')+'</p><div class="inv-line"></div><div class="inv-row"><span><b>Invoice:</b> '+inv.invNo+'</span><span><b>Date:</b> '+inv.date+'</span></div><div class="inv-row"><span><b>Customer:</b> '+inv.customer+'</span><span><b>Payment:</b> '+inv.payment+'</span></div>'+(inv.cashierName?'<div class="inv-row"><span><b>Cashier:</b> '+inv.cashierName+'</span><span></span></div>':'')+'<div class="inv-line"></div><table style="width:100%;font-size:12px"><tr style="background:#f5f5ff"><th style="padding:5px">Item</th><th style="text-align:center">Qty</th><th style="text-align:right">Price</th><th style="text-align:right">Total</th></tr>'+inv.items.map(function(i){ return '<tr><td style="padding:4px">'+i.name+'</td><td style="text-align:center">'+i.qty+'</td><td style="text-align:right">Rs.'+i.price.toFixed(2)+'</td><td style="text-align:right">Rs.'+(i.price*i.qty).toFixed(2)+'</td></tr>'; }).join('')+'</table><div class="inv-line"></div><div class="inv-row"><span>Subtotal</span><span>Rs. '+inv.subtotal.toFixed(2)+'</span></div>'+(inv.discount>0?'<div class="inv-row"><span>Discount</span><span>- Rs. '+inv.discount.toFixed(2)+'</span></div>':'')+(inv.tax>0?'<div class="inv-row"><span>Tax ('+(inv.taxPct||0)+'%)</span><span>+ Rs. '+inv.tax.toFixed(2)+'</span></div>':'')+'<div class="inv-row" style="font-size:16px;font-weight:800;color:#6c63ff"><span>TOTAL</span><span>Rs. '+inv.total.toFixed(2)+'</span></div><div class="inv-line"></div><p style="text-align:center;color:#888;font-size:11px">'+s.note+'</p>'+(s.whatsapp?'<p style="text-align:center;color:#888;font-size:11px">📱 '+s.whatsapp+'</p>':'')+(s.fb?'<p style="text-align:center;color:#888;font-size:11px">🌐 '+s.fb+'</p>':'');
   openM('m-inv');
 }
 
