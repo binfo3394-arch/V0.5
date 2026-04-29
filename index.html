@@ -106,26 +106,32 @@
       if (!snapshot.exists()) return;
       var remote = snapshot.val();
       if (typeof db === 'undefined' || typeof renderAll !== 'function') return;
+      // Helper: Firebase stores arrays as objects with numeric keys — convert back to real arrays
+      function _fbArr(val) {
+        if (!val) return [];
+        if (Array.isArray(val)) return val;
+        return Object.keys(val).sort(function(a,b){ return Number(a)-Number(b); }).map(function(k){ return val[k]; });
+      }
       // Always load all data from Firebase on every change
-      if (remote.products)    db.products    = remote.products;
-      if (remote.invoices)    db.invoices    = remote.invoices;
-      if (remote.repairs)     db.repairs     = remote.repairs;
-      if (remote.orders)      db.orders      = remote.orders;
-      if (remote.customers)   db.customers   = remote.customers;
-      if (remote.expenses)    db.expenses    = remote.expenses;
-      if (remote.suppliers)   db.suppliers   = remote.suppliers;
-      if (remote.purchases)   db.purchases   = remote.purchases;
-      if (remote.stockLog)    db.stockLog    = remote.stockLog;
-      if (remote.credits)     db.credits     = remote.credits;
-      if (remote.activityLog) db.activityLog = remote.activityLog;
+      if (remote.products)    db.products    = _fbArr(remote.products);
+      if (remote.invoices)    db.invoices    = _fbArr(remote.invoices);
+      if (remote.repairs)     db.repairs     = _fbArr(remote.repairs);
+      if (remote.orders)      db.orders      = _fbArr(remote.orders);
+      if (remote.customers)   db.customers   = _fbArr(remote.customers);
+      if (remote.expenses)    db.expenses    = _fbArr(remote.expenses);
+      if (remote.suppliers)   db.suppliers   = _fbArr(remote.suppliers);
+      if (remote.purchases)   db.purchases   = _fbArr(remote.purchases);
+      if (remote.stockLog)    db.stockLog    = _fbArr(remote.stockLog);
+      if (remote.credits)     db.credits     = _fbArr(remote.credits);
+      if (remote.activityLog) db.activityLog = _fbArr(remote.activityLog);
       if (remote.settings)    db.settings    = Object.assign({}, db.settings, remote.settings);
-      if (remote.staff)       db.staff       = remote.staff;
-      if (remote.shifts)      db.shifts      = remote.shifts;
-      if (remote.rosterShifts)db.rosterShifts= remote.rosterShifts;
-      if (remote.tasks)       db.tasks       = remote.tasks;
-      if (remote.followups)   db.followups   = remote.followups;
-      if (remote.timerLogs)   db.timerLogs   = remote.timerLogs;
-      if (remote.repTemplates)db.repTemplates= remote.repTemplates;
+      if (remote.staff)       db.staff       = _fbArr(remote.staff);
+      if (remote.shifts)      db.shifts      = _fbArr(remote.shifts);
+      if (remote.rosterShifts)db.rosterShifts= _fbArr(remote.rosterShifts);
+      if (remote.tasks)       db.tasks       = _fbArr(remote.tasks);
+      if (remote.followups)   db.followups   = _fbArr(remote.followups);
+      if (remote.timerLogs)   db.timerLogs   = _fbArr(remote.timerLogs);
+      if (remote.repTemplates)db.repTemplates= _fbArr(remote.repTemplates);
       renderAll();
       setFBStatus('\uD83D\uDD04 Live synced', 'var(--info)');
     }, function(error){ console.error('Firebase listener error:', error); });
@@ -5130,26 +5136,33 @@ function init() {
         toast('☁️ Firebase connected! (No cloud data yet — add products to get started)');
         return;
       }
+      // Helper: Firebase stores arrays as objects with numeric keys — convert back to real arrays
+      function _fbArr(val) {
+        if (!val) return [];
+        if (Array.isArray(val)) return val;
+        // Firebase object with numeric keys → array
+        return Object.keys(val).sort(function(a,b){ return Number(a)-Number(b); }).map(function(k){ return val[k]; });
+      }
       // Fully replace local db with cloud data
-      if (cloudData.products)    db.products    = cloudData.products    || [];
-      if (cloudData.invoices)    db.invoices    = cloudData.invoices    || [];
-      if (cloudData.repairs)     db.repairs     = cloudData.repairs     || [];
-      if (cloudData.orders)      db.orders      = cloudData.orders      || [];
-      if (cloudData.customers)   db.customers   = cloudData.customers   || [];
-      if (cloudData.expenses)    db.expenses    = cloudData.expenses    || [];
-      if (cloudData.suppliers)   db.suppliers   = cloudData.suppliers   || [];
-      if (cloudData.purchases)   db.purchases   = cloudData.purchases   || [];
-      if (cloudData.stockLog)    db.stockLog    = cloudData.stockLog    || [];
-      if (cloudData.credits)     db.credits     = cloudData.credits     || [];
-      if (cloudData.activityLog) db.activityLog = cloudData.activityLog || [];
+      if (cloudData.products)    db.products    = _fbArr(cloudData.products);
+      if (cloudData.invoices)    db.invoices    = _fbArr(cloudData.invoices);
+      if (cloudData.repairs)     db.repairs     = _fbArr(cloudData.repairs);
+      if (cloudData.orders)      db.orders      = _fbArr(cloudData.orders);
+      if (cloudData.customers)   db.customers   = _fbArr(cloudData.customers);
+      if (cloudData.expenses)    db.expenses    = _fbArr(cloudData.expenses);
+      if (cloudData.suppliers)   db.suppliers   = _fbArr(cloudData.suppliers);
+      if (cloudData.purchases)   db.purchases   = _fbArr(cloudData.purchases);
+      if (cloudData.stockLog)    db.stockLog    = _fbArr(cloudData.stockLog);
+      if (cloudData.credits)     db.credits     = _fbArr(cloudData.credits);
+      if (cloudData.activityLog) db.activityLog = _fbArr(cloudData.activityLog);
       if (cloudData.settings)    db.settings    = Object.assign({}, db.settings, cloudData.settings);
-      if (cloudData.staff)       db.staff       = cloudData.staff       || [];
-      if (cloudData.shifts)      db.shifts      = cloudData.shifts      || [];
-      if (cloudData.rosterShifts)db.rosterShifts= cloudData.rosterShifts|| [];
-      if (cloudData.tasks)       db.tasks       = cloudData.tasks       || [];
-      if (cloudData.followups)   db.followups   = cloudData.followups   || [];
-      if (cloudData.timerLogs)   db.timerLogs   = cloudData.timerLogs   || [];
-      if (cloudData.repTemplates)db.repTemplates= cloudData.repTemplates|| [];
+      if (cloudData.staff)       db.staff       = _fbArr(cloudData.staff);
+      if (cloudData.shifts)      db.shifts      = _fbArr(cloudData.shifts);
+      if (cloudData.rosterShifts)db.rosterShifts= _fbArr(cloudData.rosterShifts);
+      if (cloudData.tasks)       db.tasks       = _fbArr(cloudData.tasks);
+      if (cloudData.followups)   db.followups   = _fbArr(cloudData.followups);
+      if (cloudData.timerLogs)   db.timerLogs   = _fbArr(cloudData.timerLogs);
+      if (cloudData.repTemplates)db.repTemplates= _fbArr(cloudData.repTemplates);
       // Sync to SQLite for local queries
       renderAll();
       applyTheme(db.settings.theme || '#6c63ff');
