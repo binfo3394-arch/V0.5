@@ -5128,6 +5128,7 @@ function init() {
 
 function renderAll() {
   renderInv(); renderRep(); renderOrd(); renderCust(); renderInv2(); updateDash(); updateBadges(); refreshCustSel(); updateNotifBadge(); renderCredits(); renderSuppliers(); renderPurchases(); renderStockLog(); updateCrBadge();
+  if (typeof renderStaff === 'function') renderStaff();
 }
 
 // =========== CREDIT AUTO-OVERDUE CHECK ===========
