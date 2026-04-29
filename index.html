@@ -62,6 +62,13 @@
       suppliers:  dbObj.suppliers  || [],
       activityLog:dbObj.activityLog|| [],
       settings:   dbObj.settings   || {},
+      staff:      dbObj.staff      || [],
+      shifts:     dbObj.shifts     || [],
+      rosterShifts:dbObj.rosterShifts||[],
+      tasks:      dbObj.tasks      || [],
+      followups:  dbObj.followups  || [],
+      timerLogs:  dbObj.timerLogs  || [],
+      repTemplates:dbObj.repTemplates||[],
       _lastSync:  Date.now()
     };
     set(ref(database, 'pos-data'), payload)
@@ -112,6 +119,13 @@
       if (remote.credits)     db.credits     = remote.credits;
       if (remote.activityLog) db.activityLog = remote.activityLog;
       if (remote.settings)    db.settings    = Object.assign({}, db.settings, remote.settings);
+      if (remote.staff)       db.staff       = remote.staff;
+      if (remote.shifts)      db.shifts      = remote.shifts;
+      if (remote.rosterShifts)db.rosterShifts= remote.rosterShifts;
+      if (remote.tasks)       db.tasks       = remote.tasks;
+      if (remote.followups)   db.followups   = remote.followups;
+      if (remote.timerLogs)   db.timerLogs   = remote.timerLogs;
+      if (remote.repTemplates)db.repTemplates= remote.repTemplates;
       renderAll();
       setFBStatus('\uD83D\uDD04 Live synced', 'var(--info)');
     }, function(error){ console.error('Firebase listener error:', error); });
@@ -5079,6 +5093,13 @@ function init() {
       if (cloudData.credits)     db.credits     = cloudData.credits     || [];
       if (cloudData.activityLog) db.activityLog = cloudData.activityLog || [];
       if (cloudData.settings)    db.settings    = Object.assign({}, db.settings, cloudData.settings);
+      if (cloudData.staff)       db.staff       = cloudData.staff       || [];
+      if (cloudData.shifts)      db.shifts      = cloudData.shifts      || [];
+      if (cloudData.rosterShifts)db.rosterShifts= cloudData.rosterShifts|| [];
+      if (cloudData.tasks)       db.tasks       = cloudData.tasks       || [];
+      if (cloudData.followups)   db.followups   = cloudData.followups   || [];
+      if (cloudData.timerLogs)   db.timerLogs   = cloudData.timerLogs   || [];
+      if (cloudData.repTemplates)db.repTemplates= cloudData.repTemplates|| [];
       // Sync to SQLite for local queries
       renderAll();
       applyTheme(db.settings.theme || '#6c63ff');
