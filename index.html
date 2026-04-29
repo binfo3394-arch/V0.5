@@ -1705,7 +1705,7 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
           <div class="scard s3"><div style="font-size:22px">🏆</div><div class="sval" id="staff-top">—</div><div class="slabel">Top Performer</div></div>
           <div class="scard s4"><div style="font-size:22px">🔧</div><div class="sval" id="staff-repairs-done">0</div><div class="slabel">Repairs Completed</div></div>
         </div>
-        <div class="tcard"><table><thead><tr><th>Staff Name</th><th>Role</th><th>Sales Count</th><th>Sales Revenue</th><th>Repairs Done</th><th>Commission Rate</th><th>Commission Earned</th><th>Actions</th></tr></thead><tbody id="staff-tbl"></tbody></table></div>
+        <div class="tcard"><table><thead><tr><th>Staff Name</th><th>Role / Status</th><th>Sales (This Month)</th><th>Repairs Done (This Month)</th><th>Commission Rate</th><th>Commission Earned</th><th>Actions</th></tr></thead><tbody id="staff-tbl"></tbody></table></div>
       </div>
 
       <!-- ===================== REPAIR DIAGNOSTICS ===================== -->
@@ -3776,10 +3776,11 @@ setTimeout(function(){
           <select id="staff-role"><option>Cashier</option><option>Technician</option><option>Manager</option><option>Sales</option><option>Other</option></select>
         </div>
         <div class="fg"><label>Phone</label><input id="staff-phone" placeholder="+94..."></div>
-        <div class="fg"><label>Commission Rate (%)</label><input type="number" id="staff-comm" placeholder="e.g. 5" min="0" max="100" step="0.5" value="0"></div>
+        <div class="fg"><label>💰 Sales Commission Rate (%)</label><input type="number" id="staff-comm" placeholder="e.g. 5" min="0" max="100" step="0.5" value="0"></div>
         <div class="fg"><label>Commission Base</label>
           <select id="staff-comm-base"><option value="revenue">On Revenue</option><option value="profit">On Profit</option></select>
         </div>
+        <div class="fg"><label>🔧 Repair Commission Rate (%)</label><input type="number" id="staff-repair-comm" placeholder="e.g. 10" min="0" max="100" step="0.5" value="0"></div>
         <div class="fg"><label>Status</label>
           <select id="staff-status"><option>Active</option><option>Inactive</option></select>
         </div>
@@ -4151,6 +4152,7 @@ function renderStaff() {
   var repairsDone = repairs.filter(function(r){ return r.status==='Delivered'||r.status==='Done'; }).length;
   
   tbody.innerHTML = staff.length ? staff.map(function(s) {
+    // Sales: match by staffId (POS invoices)
     var staffInvs = invoices.filter(function(inv) {
       var d=parseDate(inv.date); return inv.staffId===s.id && d && d>=monthStart;
     });
@@ -4163,21 +4165,35 @@ function renderStaff() {
       });
       return a+p;
     }, 0);
-    var staffReps = repairs.filter(function(r){ return r.staffId===s.id && (r.status==='Delivered'||r.status==='Done'); }).length;
+    // Repairs: match by tech name (r.tech === s.name), this month
+    var staffRepsAll = repairs.filter(function(r){
+      return r.tech && r.tech.trim().toLowerCase()===s.name.trim().toLowerCase() && (r.status==='Delivered'||r.status==='Done');
+    });
+    var staffRepsMonth = staffRepsAll.filter(function(r){
+      var d=parseDate(r.date); return d && d>=monthStart;
+    });
+    var repairRevenue = staffRepsMonth.reduce(function(a,r){ return a+(r.cost||0); }, 0);
+
+    // Sales commission
     var commBase = s.commBase==='profit' ? staffProfit : staffRevenue;
-    var commEarned = commBase * (s.commRate||0) / 100;
+    var salesComm = commBase * (s.commRate||0) / 100;
+    // Repair commission
+    var repairComm = repairRevenue * (s.repairCommRate||0) / 100;
+    var commEarned = salesComm + repairComm;
+
     totalComm += commEarned;
     if (commEarned > topComm) { topComm = commEarned; topName = s.name; }
+    var statusBadge = s.status==='Inactive' ? '<span class="badge bd">Inactive</span>' : '<span class="badge bs">Active</span>';
     return '<tr>'+
-      '<td><strong>'+s.name+'</strong></td>'+
-      '<td><span class="badge bp">'+s.role+'</span></td>'+
-      '<td>'+staffInvs.length+'</td>'+
-      '<td>Rs. '+staffRevenue.toLocaleString()+'</td>'+
-      '<td>'+staffReps+'</td>'+
-      '<td>'+(s.commRate||0)+'% (on '+(s.commBase||'revenue')+')</td>'+
-      '<td style="color:var(--success);font-weight:700">Rs. '+Math.round(commEarned).toLocaleString()+'</td>'+
+      '<td><strong>'+s.name+'</strong><br><span style="font-size:11px;color:var(--muted)">'+s.phone+'</span></td>'+
+      '<td><span class="badge bp">'+s.role+'</span><br>'+statusBadge+'</td>'+
+      '<td>'+staffInvs.length+'<br><span style="font-size:11px;color:var(--muted)">Rs. '+staffRevenue.toLocaleString()+'</span></td>'+
+      '<td>'+staffRepsMonth.length+' <span style="font-size:10px;color:var(--muted)">('+staffRepsAll.length+' total)</span><br><span style="font-size:11px;color:var(--info)">Rs. '+repairRevenue.toLocaleString()+'</span></td>'+
+      '<td>'+(s.commRate||0)+'% '+((s.repairCommBase||s.commBase)==='profit'?'profit':'rev')+'<br><span style="font-size:11px;color:var(--warning)">Repair: '+(s.repairCommRate||0)+'%</span></td>'+
+      '<td><span style="color:var(--success);font-weight:700;font-size:14px">Rs. '+Math.round(commEarned).toLocaleString()+'</span><br>'+
+        '<span style="font-size:10px;color:var(--muted)">Sales: Rs.'+Math.round(salesComm).toLocaleString()+' + Rep: Rs.'+Math.round(repairComm).toLocaleString()+'</span></td>'+
       '<td><button class="btn bo bsm" onclick="editStaff('+s.id+')">✏️</button> <button class="btn bd2 bsm" onclick="deleteStaff('+s.id+')">🗑️</button></td></tr>';
-  }).join('') : '<tr><td colspan="8" class="empty" style="text-align:center;padding:20px;color:var(--muted)">No staff added yet</td></tr>';
+  }).join('') : '<tr><td colspan="7" class="empty" style="text-align:center;padding:20px;color:var(--muted)">No staff added yet</td></tr>';
   
   document.getElementById('staff-count').textContent = staff.filter(function(s){ return s.status!=='Inactive'; }).length;
   document.getElementById('staff-total-comm').textContent = 'Rs. ' + Math.round(totalComm).toLocaleString();
@@ -4193,6 +4209,7 @@ function openStaffModal(id) {
   document.getElementById('staff-phone').value = s ? (s.phone||'') : '';
   document.getElementById('staff-comm').value = s ? (s.commRate||0) : 0;
   document.getElementById('staff-comm-base').value = s ? (s.commBase||'revenue') : 'revenue';
+  document.getElementById('staff-repair-comm').value = s ? (s.repairCommRate||0) : 0;
   document.getElementById('staff-status').value = s ? (s.status||'Active') : 'Active';
   openM('m-staff');
 }
@@ -4209,6 +4226,7 @@ function saveStaff() {
     phone: document.getElementById('staff-phone').value,
     commRate: parseFloat(document.getElementById('staff-comm').value)||0,
     commBase: document.getElementById('staff-comm-base').value,
+    repairCommRate: parseFloat(document.getElementById('staff-repair-comm').value)||0,
     status: document.getElementById('staff-status').value
   };
   if (!db.staff) db.staff = [];
