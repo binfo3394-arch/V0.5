@@ -2324,7 +2324,26 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
       <div class="fgrid">
         <div class="fg"><label>Customer *</label><input id="r-cust" placeholder="Name"></div>
         <div class="fg"><label>Phone</label><input id="r-phone" placeholder="07X XXX XXXX"></div>
-        <div class="fg"><label>Device *</label><input id="r-dev" placeholder="e.g. iPhone 13"></div>
+
+        <!-- ══ Device Brand + Model Selector ══ -->
+        <div class="fg full" id="device-selector-wrap">
+          <label>📱 Device *</label>
+          <div style="display:grid;grid-template-columns:160px 1fr;gap:8px;align-items:start">
+            <!-- Brand Dropdown -->
+            <select id="r-brand" onchange="onBrandChange()" style="padding:9px 11px;border-radius:7px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:13px">
+              <option value="">— Brand —</option>
+            </select>
+            <!-- Model Search -->
+            <div style="position:relative">
+              <input id="r-dev" placeholder="Model name type or search..." autocomplete="off"
+                oninput="onDeviceInput(this.value)"
+                onfocus="showDeviceSuggestions()"
+                style="width:100%">
+              <div id="device-suggestions" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--card);border:1px solid var(--border);border-radius:0 0 8px 8px;max-height:200px;overflow-y:auto;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,0.3)"></div>
+            </div>
+          </div>
+          <div style="font-size:10px;color:var(--muted);margin-top:3px">Brand select කරලා model search කරන්න, හෝ directly type කරන්න</div>
+        </div>
         <div class="fg"><label>IMEI / Serial</label><input id="r-imei"></div>
         <div class="fg full"><label>Issue *</label><textarea id="r-issue" rows="2"></textarea></div>
         <div class="fg"><label>Cost (Rs.)</label><input id="r-cost" type="number" min="0"></div>
@@ -10408,32 +10427,108 @@ setTimeout(function(){
   updateAutoBackupStatus();
 }, 3000);
 
-// ── Firebase manual sync & status helpers ──
-function firebaseManualSync() {
-  if (typeof window.firebaseSaveDB !== 'function') {
-    toast('⚠️ Firebase module load වෙලා නෑ. Page refresh කරන්න.', 'var(--warning)');
-    return;
-  }
-  window.firebaseSaveDB(db);
-  toast('☁️ Firebase sync ගියා!');
+// ══════════════════════════════════════════════════════════
+// 📱 PHONE MODEL DATABASE (GSMArena — Popular brands)
+// ══════════════════════════════════════════════════════════
+var PHONE_DB = {
+  "Samsung": ["Galaxy S26 Ultra","Galaxy S26+","Galaxy S26","Galaxy S25 Ultra","Galaxy S25+","Galaxy S25","Galaxy S25 Edge","Galaxy S25 FE","Galaxy S24 Ultra","Galaxy S24+","Galaxy S24","Galaxy S24 FE","Galaxy S23 Ultra","Galaxy S23+","Galaxy S23","Galaxy S23 FE","Galaxy S22 Ultra","Galaxy S22+","Galaxy S22","Galaxy S21 Ultra","Galaxy S21+","Galaxy S21","Galaxy S21 FE","Galaxy S20 Ultra","Galaxy S20+","Galaxy S20","Galaxy S20 FE","Galaxy S10+","Galaxy S10","Galaxy S10e","Galaxy S10 Lite","Galaxy S9+","Galaxy S9","Galaxy A56","Galaxy A36","Galaxy A26","Galaxy A17","Galaxy A17 5G","Galaxy A16","Galaxy A16 5G","Galaxy A15","Galaxy A15 5G","Galaxy A14","Galaxy A14 5G","Galaxy A13","Galaxy A13 5G","Galaxy A12","Galaxy A12 Nacho","Galaxy A11","Galaxy A10","Galaxy A10s","Galaxy A10e","Galaxy A09","Galaxy A06","Galaxy A06 5G","Galaxy A05","Galaxy A05s","Galaxy A04","Galaxy A04s","Galaxy A04e","Galaxy A03","Galaxy A03s","Galaxy A03 Core","Galaxy A02","Galaxy A02s","Galaxy A01","Galaxy A01 Core","Galaxy M56","Galaxy M36","Galaxy M17","Galaxy M16","Galaxy M15","Galaxy M14","Galaxy M13","Galaxy M12","Galaxy M11","Galaxy M10","Galaxy M07","Galaxy M06","Galaxy F56","Galaxy F36","Galaxy F17","Galaxy F16","Galaxy F07","Galaxy F06 5G","Galaxy Z Fold7","Galaxy Z Fold6","Galaxy Z Fold5","Galaxy Z Fold4","Galaxy Z Fold3","Galaxy Z Fold2","Galaxy Z Fold","Galaxy Z Flip7","Galaxy Z Flip7 FE","Galaxy Z Flip6","Galaxy Z Flip5","Galaxy Z Flip4","Galaxy Z Flip3","Galaxy Z Flip","Galaxy Note 20 Ultra","Galaxy Note 20","Galaxy Note 10+","Galaxy Note 10","Galaxy Note 9","Galaxy Note 8","Galaxy Tab S11 Ultra","Galaxy Tab S11","Galaxy Tab S10 Ultra","Galaxy Tab S10+","Galaxy Tab S10","Galaxy Tab S10 FE","Galaxy Tab S10 Lite","Galaxy Tab S9 Ultra","Galaxy Tab S9+","Galaxy Tab S9","Galaxy Tab S9 FE","Galaxy Tab A9+","Galaxy Tab A9","Galaxy Tab A8","Galaxy Tab A7","Galaxy Tab A7 Lite","Galaxy Tab A11","Galaxy Tab A11+"],
+  "Apple": ["iPhone 17 Pro Max","iPhone 17 Pro","iPhone 17","iPhone 17e","iPhone 16 Pro Max","iPhone 16 Pro","iPhone 16","iPhone 16 Plus","iPhone 16e","iPhone 15 Pro Max","iPhone 15 Pro","iPhone 15","iPhone 15 Plus","iPhone 14 Pro Max","iPhone 14 Pro","iPhone 14","iPhone 14 Plus","iPhone 13 Pro Max","iPhone 13 Pro","iPhone 13","iPhone 13 Mini","iPhone 12 Pro Max","iPhone 12 Pro","iPhone 12","iPhone 12 Mini","iPhone 11 Pro Max","iPhone 11 Pro","iPhone 11","iPhone XS Max","iPhone XS","iPhone XR","iPhone X","iPhone SE (2022)","iPhone SE (2020)","iPhone SE (2016)","iPhone 8 Plus","iPhone 8","iPhone 7 Plus","iPhone 7","iPhone 6s Plus","iPhone 6s","iPhone 6 Plus","iPhone 6","iPad Pro 13 (2025)","iPad Pro 11 (2025)","iPad Air 13 (2024)","iPad Air 11 (2024)","iPad mini 7","iPad 10th Gen","iPad 9th Gen"],
+  "Xiaomi": ["Xiaomi 15 Ultra","Xiaomi 15 Pro","Xiaomi 15","Xiaomi 14 Ultra","Xiaomi 14 Pro","Xiaomi 14","Xiaomi 14T Pro","Xiaomi 14T","Xiaomi 13 Ultra","Xiaomi 13 Pro","Xiaomi 13","Xiaomi 13T Pro","Xiaomi 13T","Xiaomi 12 Pro","Xiaomi 12","Xiaomi 12T Pro","Xiaomi 12T","Xiaomi 11T Pro","Xiaomi 11T","Xiaomi 11 Lite 5G NE","Xiaomi 11","Xiaomi 10T Pro","Xiaomi 10T","Xiaomi 10 Pro","Xiaomi 10","Redmi Note 14 Pro+","Redmi Note 14 Pro","Redmi Note 14","Redmi Note 14 5G","Redmi Note 13 Pro+","Redmi Note 13 Pro","Redmi Note 13","Redmi Note 13 5G","Redmi Note 12 Pro+","Redmi Note 12 Pro","Redmi Note 12","Redmi Note 12 5G","Redmi Note 11 Pro+","Redmi Note 11 Pro","Redmi Note 11","Redmi Note 11S","Redmi Note 10 Pro","Redmi Note 10","Redmi Note 10S","Redmi Note 9 Pro","Redmi Note 9","Redmi Note 9S","Redmi Note 8 Pro","Redmi Note 8","Redmi 14C","Redmi 14R","Redmi 13C","Redmi 13","Redmi 12C","Redmi 12","Redmi 10C","Redmi 10","Redmi 9C","Redmi 9A","Redmi 9","Redmi A3","Redmi A2","Redmi A1","POCO X7 Pro","POCO X7","POCO X6 Pro","POCO X6","POCO X5 Pro","POCO X5","POCO X4 Pro","POCO X4 GT","POCO X3 Pro","POCO X3 NFC","POCO M6 Pro","POCO M5s","POCO M5","POCO M4 Pro","POCO M4 5G","POCO F5 Pro","POCO F5","POCO F4 GT","POCO F4","POCO C75","POCO C65","POCO C55","POCO C51","POCO C40"],
+  "Oppo": ["Find X8 Ultra","Find X8 Pro","Find X8","Find X7 Ultra","Find X7","Find X6 Pro","Find X6","Find X5 Pro","Find X5","Find N5","Find N3 Flip","Reno13 Pro","Reno13","Reno12 Pro","Reno12","Reno11 Pro","Reno11","Reno10 Pro+","Reno10 Pro","Reno10","Reno9 Pro+","Reno9 Pro","Reno9","Reno8 Pro","Reno8","Reno7 Pro","Reno7","Reno6 Pro","Reno6","Reno5 Pro","Reno5","A3 Pro","A3x","A79","A78","A77","A76","A74","A73","A72","A57","A57s","A55","A54","A53","A52","A51","A38","A36","A35","A34","A33","A32","A31","A17","A17k","A16","A16s","A15s","A15","A12","A11s","A11","A9 (2020)","A5 (2020)"],
+  "Vivo": ["X200 Ultra","X200 Pro","X200","X100 Ultra","X100 Pro","X100","X90 Pro","X90","X80 Pro","X80","X70 Pro+","X70 Pro","X70","X60 Pro","X60","V40 Pro","V40","V30 Pro","V30","V29 Pro","V29","V27 Pro","V27","V25 Pro","V25","V23 Pro","V23","V21s","V21","V20 Pro","V20","V19","V17 Pro","Y200 GT","Y200e","Y100","Y100A","Y78","Y77","Y75","Y73","Y72","Y71","Y70","Y33t","Y33s","Y33e","Y22","Y22s","Y21s","Y21","Y20s","Y20","Y19","Y17","Y15s","Y15","Y12s","Y12","Y11","Y02s","Y02","Y01A"],
+  "Realme": ["GT 7 Pro","GT 7","GT 6T","GT 6","GT 5 Pro","GT 5","GT Neo 6","GT Neo 5","GT Neo 3","GT Neo 2","GT2 Pro","GT2","12 Pro+","12 Pro","12","12x","11 Pro+","11 Pro","11","10 Pro+","10 Pro","10","9 Pro+","9 Pro","9","8 Pro","8","7 Pro","7","6 Pro","6","5 Pro","5","Narzo 70 Pro","Narzo 70","Narzo 60 Pro","Narzo 60","Narzo 50 Pro","Narzo 50","Narzo 30 Pro","Narzo 30","C75","C67","C65","C63","C55","C53","C51","C35","C33","C31","C30","C25Y","C25s","C25","C21Y","C21","C20","C17","C15","C12","C11"],
+  "OnePlus": ["13","13R","12","12R","11","11R","10 Pro","10T","10R","9 Pro","9","9R","8 Pro","8T","8","7T Pro","7T","7 Pro","7","6T","6","Nord 4","Nord CE 4 Lite","Nord CE 4","Nord CE 3 Lite","Nord CE 3","Nord CE 2 Lite","Nord CE 2","Nord CE","Nord 3","Nord 2T","Nord 2","Nord","Open"],
+  "Infinix": ["Note 50 Pro+","Note 50 Pro","Note 50","Note 40 Pro+","Note 40 Pro","Note 40","Note 30 Pro","Note 30","Note 12 Pro","Note 12","Note 11 Pro","Note 11","Note 10 Pro","Note 10","Hot 50 Pro+","Hot 50 Pro","Hot 50","Hot 40 Pro","Hot 40","Hot 30 Play","Hot 30","Hot 20s","Hot 20 Play","Hot 20","Hot 12 Play","Hot 12","Hot 11 Play","Hot 11s","Hot 11","Hot 10 Play","Hot 10","Hot 9 Play","Hot 9","Hot 8","Hot 7","Smart 9 HD","Smart 8 Plus","Smart 8 HD","Smart 8","Smart 7","Smart 6","Smart 5","Zero Ultra","Zero 40","Zero 30","Zero 20"],
+  "Nokia": ["G60","G42","G22","G21","G20","G11 Plus","G11","G10","C32","C31","C30","C22","C21","C20 Plus","C20","C12 Pro","C12","C10","C02","C01 Plus","C01","105 Plus","105","110 4G","110","150","3310 4G","1100","8210 4G","8000 4G","5310","105+","225 4G","215 4G","G50","X30","X20","X10","XR21","X100","5.4","5.3","3.4","3.2","2.4","2.3","1.4","1.3"],
+  "Huawei": ["Mate 70 Pro+","Mate 70 Pro","Mate 70","Mate 60 Pro+","Mate 60 Pro","Mate 60","Mate 50 Pro","Mate 50","Mate 40 Pro","Mate 40","Mate 30 Pro","Mate 30","P60 Pro","P60","P50 Pro","P50","P40 Pro+","P40 Pro","P40","P30 Pro","P30","P20 Pro","P20","nova 12 Ultra","nova 12 Pro","nova 12","nova 11 Ultra","nova 11 Pro","nova 11","nova 10 Pro","nova 10","nova 9 Pro","nova 9","nova 8 Pro","nova 8","nova 7","nova 6","nova 5T","Y90","Y70 Plus","Y61","Y60","Y52s","Y52","Y7a","Y9a","Y9s","Y9 Prime","Y8p","Y6p","Y6s","Y5p"],
+  "Honor": ["Magic 7 Pro","Magic 7","Magic 6 Pro","Magic 6","Magic 5 Pro","Magic 5","Magic 4 Pro","Magic 4","Magic3 Pro","Magic3","X60 Pro","X60","X50 Pro","X50","X40 Pro","X40","X30 Max","X30","X20","X9b","X9a","X9","X8b","X8a","X8","X7b","X7a","X7","X6","90 Pro","90","80 Pro","80","70 Pro","70","200 Pro","200","100 Pro","100"],
+  "itel": ["S25","S24","S23","S22","P40+","P40","P38 Pro","P38","P37","P36 Pro","P36","A70","A60s","A60","A58","A57","A55","A49","A48","A46","A37","A36","A23 Pro","A23","A22 Pro","A22","Vision 1 Pro","Vision 1","Magic 2","Magic 3","it2175","it2163","it2161"],
+  "Tecno": ["Phantom X2 Pro","Phantom X2","Phantom V Flip","Spark 30 Pro","Spark 30","Spark 20 Pro+","Spark 20 Pro","Spark 20","Spark 10 Pro","Spark 10","Spark 9 Pro","Spark 9","Spark 8 Pro","Spark 8C","Spark 8","Spark 7 Pro","Spark 7","Spark 6 Go","Spark 6","Pop 8","Pop 7 Pro","Pop 7","Pop 6 Pro","Pop 6","Pop 5 LTE","Pop 5","Camon 30 Premier","Camon 30 Pro","Camon 30","Camon 20 Pro","Camon 20","Camon 19 Pro","Camon 19","Camon 18 Premier","Camon 18","Pova 6 Pro","Pova 6","Pova 5 Pro","Pova 5","Pova 4 Pro","Pova 4","Pova Neo 3","Pova 3"],
+  "Motorola": ["Edge 50 Ultra","Edge 50 Pro","Edge 50 Fusion","Edge 50","Edge 40 Neo","Edge 40 Pro","Edge 40","Edge 30 Ultra","Edge 30 Pro","Edge 30 Fusion","Edge 30","Edge 20 Pro","Edge 20 Fusion","Edge 20","Moto G85","Moto G84","Moto G75","Moto G73","Moto G72","Moto G62","Moto G60s","Moto G60","Moto G54","Moto G53","Moto G52","Moto G42","Moto G41","Moto G32","Moto G31","Moto G22","Moto G21","Moto G14","Moto G13","Moto E40","Moto E32","Moto E30","Moto E22","Moto E20","Razr 50 Ultra","Razr 50","Razr 40 Ultra","Razr 40"],
+  "Google": ["Pixel 9 Pro Fold","Pixel 9 Pro XL","Pixel 9 Pro","Pixel 9","Pixel 8a","Pixel 8 Pro","Pixel 8","Pixel 7a","Pixel 7 Pro","Pixel 7","Pixel 6a","Pixel 6 Pro","Pixel 6","Pixel 5","Pixel 5a","Pixel 4a"],
+  "Sony": ["Xperia 1 VII","Xperia 1 VI","Xperia 1 V","Xperia 1 IV","Xperia 5 V","Xperia 5 IV","Xperia 10 VI","Xperia 10 V","Xperia 10 IV","Xperia 10 III","Xperia Pro-I","Xperia Pro"],
+  "Nothing": ["Phone (3a) Pro","Phone (3a)","Phone (2a) Plus","Phone (2a)","Phone (2)","Phone (1)","CMF Phone 1"],
+  "Asus": ["ROG Phone 9 Pro","ROG Phone 9","ROG Phone 8 Pro","ROG Phone 8","ROG Phone 7 Ultimate","ROG Phone 7","ROG Phone 6 Pro","ROG Phone 6","Zenfone 11 Ultra","Zenfone 10","Zenfone 9","Zenfone 8"],
+  "Blackview": ["BV9300 Pro","BV9300","BV8800","BV6600 Pro","BV6600","A100","A95","A85","A80 Pro","A80","Tab 18","Tab 16","Tab 15"],
+  "Oppo (Other)": ["Find N2 Flip","Find N2"],
+  "TCL": ["40 SE","30 SE","30+","20 Pro 5G","20 SE","20L","20L+","305","306","305i"],
+  "Lenovo": ["Legion Phone 3","Legion Phone 2 Pro","K15 Plus","K15","K13 Note","K13","Tab M11","Tab M10 Plus","Tab P12 Pro","Tab P11 Pro"],
+  "Other": []
+};
+
+// ── Populate brand dropdown on DOM ready ──
+document.addEventListener('DOMContentLoaded', function(){
+  var sel = document.getElementById('r-brand');
+  if (!sel) return;
+  Object.keys(PHONE_DB).forEach(function(brand){
+    var opt = document.createElement('option');
+    opt.value = brand;
+    opt.textContent = brand;
+    sel.appendChild(opt);
+  });
+});
+
+// ── Brand change → filter models ──
+function onBrandChange() {
+  var brand = document.getElementById('r-brand').value;
+  var inp = document.getElementById('r-dev');
+  if (inp) { inp.value = ''; inp.focus(); }
+  onDeviceInput('');
 }
 
-function checkFirebaseStatus() {
-  var el = document.getElementById('fb-config-status');
-  var ind = document.getElementById('fb-sync-indicator');
-  if (typeof window.firebaseSaveDB !== 'function') {
-    if(el) { el.textContent = '❌ Firebase module load වෙලා නෑ (type="module" script check කරන්න)'; el.style.color='var(--danger)'; }
-    toast('❌ Firebase module not loaded','var(--danger)');
-    return;
+// ── Device input → show suggestions ──
+function onDeviceInput(val) {
+  var brand = document.getElementById('r-brand') ? document.getElementById('r-brand').value : '';
+  var q = val.toLowerCase().trim();
+  var pool = [];
+  if (brand && PHONE_DB[brand]) {
+    pool = PHONE_DB[brand];
+  } else {
+    // Search all brands
+    Object.keys(PHONE_DB).forEach(function(b){
+      PHONE_DB[b].forEach(function(m){ pool.push(b + ' ' + m); });
+    });
   }
-  // Check if config looks valid (not placeholder)
-  if(el) { el.textContent = '✅ Firebase module loaded! Config check → console log බලන්න.'; el.style.color='var(--success)'; el.style.background='rgba(0,230,118,0.08)'; el.style.borderColor='rgba(0,230,118,0.3)'; }
-  if(ind) { ind.textContent = '☁️ Firebase OK'; ind.style.opacity='1'; ind.style.color='var(--success)'; }
-  // Trigger a test save
-  window.firebaseSaveDB(db);
-  toast('🔥 Firebase status checked — topbar indicator බලන්න!');
+  var filtered = pool.filter(function(m){ return m.toLowerCase().includes(q); }).slice(0, 40);
+  renderDeviceSuggestions(filtered, brand);
 }
 
+function showDeviceSuggestions() {
+  var inp = document.getElementById('r-dev');
+  if (inp) onDeviceInput(inp.value || '');
+}
+
+function renderDeviceSuggestions(list, brand) {
+  var box = document.getElementById('device-suggestions');
+  if (!box) return;
+  if (!list.length) { box.style.display = 'none'; return; }
+  box.style.display = 'block';
+  box.innerHTML = list.map(function(m){
+    return '<div onclick="selectDeviceModel(\''+m.replace(/'/g,"\\'")+'\')" style="padding:9px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);transition:0.15s" onmouseover="this.style.background=\'rgba(108,99,255,0.12)\'" onmouseout="this.style.background=\'\'">'+
+      (brand ? '📱 ' : '📱 ') + m +
+    '</div>';
+  }).join('');
+}
+
+function selectDeviceModel(model) {
+  var inp = document.getElementById('r-dev');
+  if (inp) inp.value = model;
+  var box = document.getElementById('device-suggestions');
+  if (box) box.style.display = 'none';
+}
+
+// Hide suggestions on outside click
+document.addEventListener('click', function(e){
+  if (!e.target.closest('#device-selector-wrap')) {
+    var box = document.getElementById('device-suggestions');
+    if (box) box.style.display = 'none';
+  }
+});
+
+// ─────────────────────────────────────────────────
+
+firebaseManualSync();
+checkFirebaseStatus();
 init();
 </script>
 </body>
