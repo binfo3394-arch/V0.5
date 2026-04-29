@@ -2344,7 +2344,13 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
     <div class="mhdr"><h3>🔧 Repair Order</h3><button class="xbtn" onclick="closeM('m-rep')">×</button></div>
     <div class="mbody">
       <div class="fgrid">
-        <div class="fg"><label>Customer *</label><input id="r-cust" placeholder="Name"></div>
+        <div class="fg">
+          <label>Customer *</label>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input id="r-cust" placeholder="Name" style="flex:1">
+            <button type="button" class="btn bo bsm" onclick="document.getElementById('r-cust').value='Walk-in';document.getElementById('r-phone').value='';document.getElementById('r-cust').focus();" style="white-space:nowrap;padding:8px 10px;font-size:12px;border:1px dashed rgba(108,99,255,0.5);color:var(--muted);" title="Walk-in Customer">🚶 Walk-in</button>
+          </div>
+        </div>
         <div class="fg"><label>Phone</label><input id="r-phone" placeholder="07X XXX XXXX"></div>
 
         <!-- ══ Device Brand + Model Selector ══ -->
