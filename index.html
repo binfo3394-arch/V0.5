@@ -1102,15 +1102,21 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
           <div class="estitle">🔧 Repairs</div>
           <button class="btn bp2" onclick="openM('m-rep')">➕ New Repair</button>
         </div>
-        <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
+        <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
           <button class="btn bo bsm" onclick="setRepF('')">All</button>
           <button class="btn bo bsm" onclick="setRepF('Pending')">⏳ Pending</button>
           <button class="btn bo bsm" onclick="setRepF('In Progress')">🔄 In Progress</button>
           <button class="btn bo bsm" onclick="setRepF('Done')">✅ Done</button>
           <button class="btn bo bsm" onclick="setRepF('Delivered')">📦 Delivered</button>
         </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+          <span style="font-size:12px;color:var(--muted)">👨‍🔧 Technician:</span>
+          <select id="rep-tech-filter" onchange="renderRep()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);padding:5px 10px;border-radius:7px;font-size:12px;min-width:160px">
+            <option value="">All Technicians</option>
+          </select>
+        </div>
         <div class="sbar"><span>🔍</span><input id="rep-q" placeholder="Customer name / device search..." oninput="renderRep()"></div>
-        <div class="tcard"><table><thead><tr><th>ID</th><th>Customer</th><th>Device</th><th>Issue</th><th>Cost</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead><tbody id="rep-tbl"></tbody></table></div>
+        <div class="tcard"><table><thead><tr><th>ID</th><th>Customer</th><th>Device</th><th>Issue</th><th>Cost</th><th>👨‍🔧 Tech</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead><tbody id="rep-tbl"></tbody></table></div>
       </div>
 
       <!-- ORDERS -->
@@ -2347,7 +2353,7 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
         <div class="fg"><label>⏰ Due Date</label><input id="r-due" type="date"></div>
         <div class="fg"><label>Advance Paid (Rs.)</label><input id="r-adv" type="number" min="0" placeholder="0.00"></div>
         <div class="fg"><label>🔴 Priority</label><select id="r-priority"><option value="Normal">Normal</option><option value="High">🔴 High</option><option value="Medium">🟡 Medium</option><option value="Low">🟢 Low</option></select></div>
-        <div class="fg"><label>👨‍🔧 Technician</label><input id="r-tech" placeholder="Assigned technician name"></div>
+        <div class="fg"><label>👨‍🔧 Technician</label><input id="r-tech" placeholder="Assigned technician name" list="r-tech-list" autocomplete="off"><datalist id="r-tech-list"></datalist></div>
         <div class="fg full"><label>📝 Customer Notes (Bill ේ show වෙයි)</label><textarea id="r-notes" rows="2"></textarea></div>
         <div class="fg full"><label>🔧 Technician Notes (Internal — bill ේ show නොවෙයි)</label><textarea id="r-technotes" rows="2" style="border-color:rgba(255,171,0,0.4);background:rgba(255,171,0,0.04)" placeholder="Internal notes, parts used, diagnosis..."></textarea></div>
       </div>
@@ -5171,7 +5177,17 @@ function toast(msg, clr) {
 }
 
 // =========== MODALS ===========
-function openM(id) { var el = document.getElementById(id); if (el) el.classList.add('open'); }
+function openM(id) {
+  var el = document.getElementById(id); if (el) el.classList.add('open');
+  if (id === 'm-rep') {
+    var dl = document.getElementById('r-tech-list');
+    if (dl && typeof db !== 'undefined' && db.staff) {
+      var techs = (db.staff||[]).filter(function(s){ return s.status !== 'Inactive'; });
+      techs.sort(function(a,b){ return (a.role==='Technician'?0:1)-(b.role==='Technician'?0:1); });
+      dl.innerHTML = techs.map(function(s){ return '<option value="'+s.name+'">'+(s.role ? s.name+' ('+s.role+')' : s.name)+'</option>'; }).join('');
+    }
+  }
+}
 // Modals that should NOT have their inputs cleared on close
 var _noClrModals = ['m-invoice','m-rbill','m-obill','m-thermal','m-eod','m-held','m-notif','m-estimate','m-markup','m-cust-hist'];
 function closeM(id) {
@@ -6067,25 +6083,35 @@ function clearCustSel(){
 function setRepF(s){ repF=s; renderRep(); }
 function renderRep(){
   var q=(document.getElementById('rep-q')?document.getElementById('rep-q').value:'').toLowerCase();
+  var techF=(document.getElementById('rep-tech-filter')?document.getElementById('rep-tech-filter').value:'');
+  // Populate tech filter dropdown from current repairs + staff
+  var techSel=document.getElementById('rep-tech-filter');
+  if(techSel){
+    var techNames=[...new Set((db.repairs||[]).map(function(r){ return r.tech||''; }).filter(Boolean).concat((db.staff||[]).filter(function(s){ return s.status!=='Inactive'; }).map(function(s){ return s.name; })))].sort();
+    var curVal=techSel.value;
+    techSel.innerHTML='<option value="">All Technicians</option>'+techNames.map(function(t){ return '<option value="'+t+'"'+(curVal===t?' selected':'')+'>'+t+'</option>'; }).join('');
+  }
   var rows=db.repairs.filter(function(r){
     var matchF=repF?r.status===repF:true;
     var matchQ=q?(r.customer.toLowerCase().includes(q)||r.device.toLowerCase().includes(q)||(r.phone&&r.phone.includes(q))):true;
-    return matchF&&matchQ;
+    var matchT=techF?(r.tech===techF):true;
+    return matchF&&matchQ&&matchT;
   });
   var tb=document.getElementById('rep-tbl'); if(!tb) return;
   tb.innerHTML=rows.length?rows.slice().reverse().map(function(r){
     var isOverdue=r.dueDate&&new Date(r.dueDate)<new Date()&&r.status!=='Delivered';
-    var dueTxt=r.dueDate?'<br><small style="color:'+(isOverdue?'var(--danger)':'var(--warning)')+'">⏰ '+r.dueDate+(isOverdue?' ⚠️':'')+'</small>':'';
+    var dueTxt=r.dueDate?'<br><small style="color:'+(isOverdue?'var(--danger)':'var(--warning)')+'">\u23f0 '+r.dueDate+(isOverdue?' \u26a0\ufe0f':'')+'</small>':'';
     var advTxt=r.advance>0?'<br><small style="color:var(--success)">Adv: Rs.'+r.advance.toFixed(0)+'</small>':'';
-    var waPhone = r.phone ? r.phone.replace(/\D/g,'').replace(/^0/,'94') : '';
-    var phoneHtml = r.phone ? '<br><small style="color:var(--muted);cursor:pointer" onclick="window.open(\'https://wa.me/'+waPhone+'\',\'_blank\')" title="WhatsApp">💬 '+r.phone+'</small>' : '';
-    return '<tr class="'+(isOverdue?'overdue':'')+'"><td><b>#'+String(r.id).slice(-4)+'</b></td><td>'+r.customer+phoneHtml+'</td><td>'+r.device+'</td><td style="max-width:130px">'+r.issue+'</td><td>Rs. '+(r.cost||0).toFixed(2)+advTxt+'</td><td>'+sbadge(r.status)+dueTxt+'</td><td>'+r.date+'</td><td style="white-space:nowrap"><button class="btn bo bsm" onclick="editRep('+r.id+')" style="margin-right:3px">✏️</button><button class="btn bs2 bsm" onclick="cycleRep('+r.id+')" style="margin-right:3px">→</button><button class="btn bp2 bsm" onclick="showRepBill('+r.id+')" style="margin-right:3px">🧾</button><button class="btn bwa bsm" onclick="waShareRepCustomer('+r.id+')" style="margin-right:3px">💬</button><button class="btn bd2 bsm" onclick="delRep('+r.id+')">🗑️</button></td></tr>';
-  }).join(''):'<tr><td colspan="8" class="empty"><div class="ei">🔧</div>No repairs</td></tr>';
+    var techCell=r.tech?('<span style="color:var(--info);font-size:12px">'+r.tech+'</span>'):'<span style="color:var(--muted);font-size:11px">\u2014</span>';
+    var waPhone=r.phone?r.phone.replace(/\D/g,'').replace(/^0/,'94'):'';
+    var phoneHtml=r.phone?'<br><small style="color:var(--muted)">\ud83d\udcac '+r.phone+'</small>':'';
+    return '<tr class="'+(isOverdue?'overdue':'')+'"><td><b>#'+String(r.id).slice(-4)+'</b></td><td>'+r.customer+phoneHtml+'</td><td>'+r.device+'</td><td style="max-width:130px">'+r.issue+'</td><td>Rs. '+(r.cost||0).toFixed(2)+advTxt+'</td><td>'+techCell+'</td><td>'+sbadge(r.status)+dueTxt+'</td><td>'+r.date+'</td><td style="white-space:nowrap"><button class="btn bo bsm" onclick="editRep('+r.id+')" style="margin-right:3px">\u270f\ufe0f</button><button class="btn bs2 bsm" onclick="cycleRep('+r.id+')" style="margin-right:3px">\u2192</button><button class="btn bp2 bsm" onclick="showRepBill('+r.id+')" style="margin-right:3px">\ud83e\uddfe</button><button class="btn bwa bsm" onclick="waShareRepCustomer('+r.id+')" style="margin-right:3px">\ud83d\udcac</button><button class="btn bd2 bsm" onclick="delRep('+r.id+')">\ud83d\uddd1\ufe0f</button></td></tr>';
+  }).join(''):'<tr><td colspan="9" class="empty"><div class="ei">\ud83d\udd27</div>No repairs</td></tr>';
 }
 function saveRep(){
   var id=document.getElementById('r-id').value;
   var existing = id ? db.repairs.find(function(x){ return x.id===parseInt(id); }) : null;
-  var r={ id:id?parseInt(id):Date.now(), customer:document.getElementById('r-cust').value.trim(), phone:document.getElementById('r-phone').value.trim(), device:document.getElementById('r-dev').value.trim(), imei:document.getElementById('r-imei').value.trim(), issue:document.getElementById('r-issue').value.trim(), cost:parseFloat(document.getElementById('r-cost').value)||0, status:document.getElementById('r-status').value, notes:document.getElementById('r-notes').value.trim(), date: existing ? existing.date : new Date().toLocaleDateString('en-GB'), dueDate:document.getElementById('r-due').value, advance:parseFloat(document.getElementById('r-adv').value)||0, techNotes:document.getElementById('r-technotes')?document.getElementById('r-technotes').value.trim():'' };
+  var r={ id:id?parseInt(id):Date.now(), customer:document.getElementById('r-cust').value.trim(), phone:document.getElementById('r-phone').value.trim(), device:document.getElementById('r-dev').value.trim(), imei:document.getElementById('r-imei').value.trim(), issue:document.getElementById('r-issue').value.trim(), cost:parseFloat(document.getElementById('r-cost').value)||0, status:document.getElementById('r-status').value, notes:document.getElementById('r-notes').value.trim(), date: existing ? existing.date : new Date().toLocaleDateString('en-GB'), dueDate:document.getElementById('r-due').value, advance:parseFloat(document.getElementById('r-adv').value)||0, tech:document.getElementById('r-tech')?document.getElementById('r-tech').value.trim():'', techNotes:document.getElementById('r-technotes')?document.getElementById('r-technotes').value.trim():'' };
   if(!r.customer||!r.device||!r.issue){ toast('❌ Fill required fields','var(--danger)'); return; }
   if(id){ var i=db.repairs.findIndex(function(x){ return x.id===r.id; }); if(i>=0) db.repairs[i]=r; } else db.repairs.push(r);
   saveDB(); renderRep(); updateDash(); updateBadges(); closeM('m-rep'); toast('✅ Repair saved!');
@@ -6104,6 +6130,7 @@ function editRep(id){
   document.getElementById('r-due').value=r.dueDate||'';
   document.getElementById('r-adv').value=r.advance||'';
   var tn=document.getElementById('r-technotes'); if(tn) tn.value=r.techNotes||'';
+  var te=document.getElementById('r-tech'); if(te) te.value=r.tech||'';
   openM('m-rep');
 }
 function cycleRep(id){
