@@ -98,22 +98,22 @@
     onValue(ref(database, 'pos-data'), function(snapshot) {
       if (!snapshot.exists()) return;
       var remote = snapshot.val();
-      // Only update if remote data is newer than local
-      if (remote._lastSync && remote._lastSync > (window._lastLocalSave || 0)) {
-        if (typeof db !== 'undefined' && typeof renderAll === 'function') {
-          // Merge remote data into local db
-          if (remote.products)   db.products   = remote.products;
-          if (remote.invoices)   db.invoices   = remote.invoices;
-          if (remote.repairs)    db.repairs    = remote.repairs;
-          if (remote.orders)     db.orders     = remote.orders;
-          if (remote.customers)  db.customers  = remote.customers;
-          if (remote.expenses)   db.expenses   = remote.expenses;
-          if (remote.suppliers)  db.suppliers  = remote.suppliers;
-          if (remote.activityLog) db.activityLog = remote.activityLog;
-          renderAll();
-          setFBStatus('🔄 Live synced', 'var(--info)');
-        }
-      }
+      if (typeof db === 'undefined' || typeof renderAll !== 'function') return;
+      // Always load all data from Firebase on every change
+      if (remote.products)    db.products    = remote.products;
+      if (remote.invoices)    db.invoices    = remote.invoices;
+      if (remote.repairs)     db.repairs     = remote.repairs;
+      if (remote.orders)      db.orders      = remote.orders;
+      if (remote.customers)   db.customers   = remote.customers;
+      if (remote.expenses)    db.expenses    = remote.expenses;
+      if (remote.suppliers)   db.suppliers   = remote.suppliers;
+      if (remote.purchases)   db.purchases   = remote.purchases;
+      if (remote.stockLog)    db.stockLog    = remote.stockLog;
+      if (remote.credits)     db.credits     = remote.credits;
+      if (remote.activityLog) db.activityLog = remote.activityLog;
+      if (remote.settings)    db.settings    = Object.assign({}, db.settings, remote.settings);
+      renderAll();
+      setFBStatus('\uD83D\uDD04 Live synced', 'var(--info)');
     }, function(error){ console.error('Firebase listener error:', error); });
   };
 
@@ -4979,7 +4979,6 @@ var _saveDBPending = false;
 
 function saveDB() {
   // ── Firebase Realtime Database sync (primary storage) ──
-  window._lastLocalSave = Date.now();
   if (typeof window.firebaseSaveDB === 'function') {
     window.firebaseSaveDB(db);
   }
