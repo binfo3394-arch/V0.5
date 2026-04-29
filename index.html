@@ -6111,7 +6111,7 @@ function renderRep(){
 function saveRep(){
   var id=document.getElementById('r-id').value;
   var existing = id ? db.repairs.find(function(x){ return x.id===parseInt(id); }) : null;
-  var r={ id:id?parseInt(id):Date.now(), customer:document.getElementById('r-cust').value.trim(), phone:document.getElementById('r-phone').value.trim(), device:document.getElementById('r-dev').value.trim(), imei:document.getElementById('r-imei').value.trim(), issue:document.getElementById('r-issue').value.trim(), cost:parseFloat(document.getElementById('r-cost').value)||0, status:document.getElementById('r-status').value, notes:document.getElementById('r-notes').value.trim(), date: existing ? existing.date : new Date().toLocaleDateString('en-GB'), dueDate:document.getElementById('r-due').value, advance:parseFloat(document.getElementById('r-adv').value)||0, tech:document.getElementById('r-tech')?document.getElementById('r-tech').value.trim():'', techNotes:document.getElementById('r-technotes')?document.getElementById('r-technotes').value.trim():'' };
+  var r={ id:id?parseInt(id):Date.now(), customer:document.getElementById('r-cust').value.trim(), phone:document.getElementById('r-phone').value.trim(), device:document.getElementById('r-dev').value.trim(), imei:document.getElementById('r-imei').value.trim(), issue:document.getElementById('r-issue').value.trim(), cost:parseFloat(document.getElementById('r-cost').value)||0, status:document.getElementById('r-status').value, notes:document.getElementById('r-notes').value.trim(), date: existing ? existing.date : new Date().toLocaleDateString('en-GB'), dueDate:document.getElementById('r-due').value, advance:parseFloat(document.getElementById('r-adv').value)||0, priority:document.getElementById('r-priority')?document.getElementById('r-priority').value:'Normal', tech:document.getElementById('r-tech')?document.getElementById('r-tech').value.trim():'', techNotes:document.getElementById('r-technotes')?document.getElementById('r-technotes').value.trim():'' };
   if(!r.customer||!r.device||!r.issue){ toast('❌ Fill required fields','var(--danger)'); return; }
   if(id){ var i=db.repairs.findIndex(function(x){ return x.id===r.id; }); if(i>=0) db.repairs[i]=r; } else db.repairs.push(r);
   saveDB(); renderRep(); updateDash(); updateBadges(); closeM('m-rep'); toast('✅ Repair saved!');
@@ -6131,6 +6131,7 @@ function editRep(id){
   document.getElementById('r-adv').value=r.advance||'';
   var tn=document.getElementById('r-technotes'); if(tn) tn.value=r.techNotes||'';
   var te=document.getElementById('r-tech'); if(te) te.value=r.tech||'';
+  var pr=document.getElementById('r-priority'); if(pr) pr.value=r.priority||'Normal';
   openM('m-rep');
 }
 function cycleRep(id){
@@ -9884,27 +9885,7 @@ document.addEventListener('DOMContentLoaded',function(){
   var pimgPrev=document.getElementById('p-img-preview'); if(pimgPrev) pimgPrev.style.display='none';
 });
 
-// ---- PATCH saveRep for priority + tech ----
-var _v27SaveRep = saveRep;
-saveRep = function(){
-  var priority=document.getElementById('r-priority')?document.getElementById('r-priority').value:'Normal';
-  var tech=document.getElementById('r-tech')?document.getElementById('r-tech').value.trim():'';
-  var id=document.getElementById('r-id')?document.getElementById('r-id').value:'';
-  _v27SaveRep();
-  var rep=id?db.repairs.find(function(r){ return r.id==parseInt(id); }):db.repairs[db.repairs.length-1];
-  if(rep){ rep.priority=priority; rep.tech=tech; saveDB(); }
-};
-
-// Patch editRep to load priority + tech
-var _origEditRep=editRep;
-editRep = function(id){
-  _origEditRep(id);
-  var rep=db.repairs.find(function(r){ return r.id==id; });
-  if(rep){
-    var pr=document.getElementById('r-priority'); if(pr) pr.value=rep.priority||'Normal';
-    var te=document.getElementById('r-tech'); if(te) te.value=rep.tech||'';
-  }
-};
+// v27 saveRep/editRep patch removed — tech & priority now handled directly in saveRep/editRep functions
 
 // ---- PATCH saveCust for tags ----
 var _v27SaveCust = saveCust;
