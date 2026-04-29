@@ -10,7 +10,6 @@
 <link rel="manifest" href="data:application/json;charset=utf-8,%7B%22name%22%3A%22ST%20Mobile%20POS%22%2C%22short_name%22%3A%22ST%20POS%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230a0a1a%22%2C%22theme_color%22%3A%22%236c63ff%22%7D">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/sql-wasm.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <!-- ===== FIREBASE REALTIME DATABASE ===== -->
 <script type="module">
@@ -809,8 +808,7 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
     </div>
     <div class="sfooter">
       <div style="margin-bottom:6px;font-size:10px;color:var(--muted)">v26 🚀 — ST Mobile POS</div>
-      <div id="db-status-bar" style="font-size:10px;color:var(--success);margin-bottom:6px">🗄️ SQLite Initializing...</div>
-      <button class="btn bs2 bsm" style="width:100%;margin-bottom:5px;font-size:11px" onclick="exportSQLiteFile()">📥 Download .db</button>
+      <div id="db-status-bar" style="font-size:10px;color:var(--success);margin-bottom:6px">🔥 Firebase Mode</div>
       <button class="btn bp2 bsm" style="width:100%;margin-bottom:5px;font-size:11px" onclick="exportDB()">📤 JSON Backup</button>
       <button class="btn bsm" onclick="openAdminPanel()" id="admin-panel-btn" style="width:100%;margin-bottom:5px;font-size:11px;background:rgba(255,23,68,0.12);color:#ff1744;border:1px solid rgba(255,23,68,0.3)">🛡️ Admin Panel</button>
     </div>
@@ -1855,12 +1853,10 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
           <div style="background:rgba(0,230,118,0.08);border:1px solid rgba(0,230,118,0.25);border-radius:10px;padding:12px;margin-bottom:10px">
             <div style="font-size:12px;font-weight:700;color:var(--success);margin-bottom:8px">🗄️ SQLite Database Backup (.db)</div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-              <button class="btn bs2" onclick="exportSQLiteFile()" style="font-size:13px">📥 Download .db File</button>
               <label class="btn bo" style="font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:6px">
-                📤 Restore .db File<input type="file" accept=".db" style="display:none" onchange="importSQLiteFile(this)">
               </label>
             </div>
-            <div style="font-size:11px;color:var(--muted);margin-top:6px">SQLite .db file — DB Browser for SQLite software වලින් open කරන්නත් පුළුවන්!</div>
+
           </div>
 
           <div style="background:rgba(108,99,255,0.08);border:1px solid rgba(108,99,255,0.25);border-radius:10px;padding:12px;margin-bottom:10px">
@@ -4821,8 +4817,7 @@ var db = {
   "activityLog": []
 };
 // Clear any old browser-cached data so Firebase is always the source
-try { localStorage.removeItem('st-pos-v2'); } catch(e) {}
-try { localStorage.removeItem('st-pos-v2-fallback'); } catch(e) {}
+// Firebase is primary storage - localStorage not used for data
 try {
   var _idbReq = indexedDB.deleteDatabase('STPOSDB');
   _idbReq.onsuccess = function(){ console.log('✅ Old IndexedDB cleared — Firebase is now primary.'); };
@@ -4974,226 +4969,6 @@ function openOrdModal(){
 }
 
 // =========== SQLITE + INDEXEDDB STORAGE ===========
-var sqlDB = null;
-var SQL = null;
-var IDB_NAME = 'st-pos-idb';
-var IDB_STORE = 'sqlitedb';
-var IDB_KEY = 'main';
-
-// Open IndexedDB
-function openIDB() {
-  return new Promise(function(resolve, reject) {
-    var req = indexedDB.open(IDB_NAME, 1);
-    req.onupgradeneeded = function(e) {
-      e.target.result.createObjectStore(IDB_STORE);
-    };
-    req.onsuccess = function(e) { resolve(e.target.result); };
-    req.onerror = function(e) { reject(e); };
-  });
-}
-
-// Save SQLite binary to IndexedDB
-function persistSQLite() {
-  if (!sqlDB) return;
-  try {
-    var data = sqlDB.export();
-    openIDB().then(function(idb) {
-      var tx = idb.transaction(IDB_STORE, 'readwrite');
-      tx.objectStore(IDB_STORE).put(data, IDB_KEY);
-    }).catch(function(e) { console.warn('IDB persist error:', e); });
-  } catch(e) { console.warn('SQLite export error:', e); }
-}
-
-// Load SQLite binary from IndexedDB
-function loadFromIDB() {
-  return new Promise(function(resolve) {
-    openIDB().then(function(idb) {
-      var tx = idb.transaction(IDB_STORE, 'readonly');
-      var req = tx.objectStore(IDB_STORE).get(IDB_KEY);
-      req.onsuccess = function(e) { resolve(e.target.result || null); };
-      req.onerror = function() { resolve(null); };
-    }).catch(function() { resolve(null); });
-  });
-}
-
-// Create all tables
-function createTables() {
-  sqlDB.run("CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT);");
-  sqlDB.run("CREATE TABLE IF NOT EXISTS products (id INTEGER PRIMARY KEY, name TEXT, category TEXT, price REAL, cost REAL, stock INTEGER, minStock INTEGER, description TEXT, barcode TEXT DEFAULT '');");
-  // Migration: add barcode column if it doesn't exist (for existing DBs)
-  try { sqlDB.run("ALTER TABLE products ADD COLUMN barcode TEXT DEFAULT '';"); } catch(e) { /* column already exists */ }
-  sqlDB.run("CREATE TABLE IF NOT EXISTS repairs (id INTEGER PRIMARY KEY, customer TEXT, phone TEXT, device TEXT, imei TEXT, issue TEXT, cost REAL, advance REAL, status TEXT, date TEXT, dueDate TEXT, notes TEXT, techNotes TEXT)");
-  // Migration: add imei column if not exists
-  try { sqlDB.run("ALTER TABLE repairs ADD COLUMN imei TEXT DEFAULT ''"); } catch(e) {}
-  // Migration: add customerId to invoices if not exists
-  try { sqlDB.run("ALTER TABLE invoices ADD COLUMN customerId TEXT DEFAULT ''"); } catch(e) {}
-  sqlDB.run("CREATE TABLE IF NOT EXISTS orders (id INTEGER PRIMARY KEY, customer TEXT, phone TEXT, platform TEXT, service TEXT, amount REAL, delivery REAL, advance REAL, status TEXT, paymentStatus TEXT, date TEXT, dueDate TEXT, notes TEXT, items TEXT, payments TEXT);");
-  sqlDB.run("CREATE TABLE IF NOT EXISTS customers (id INTEGER PRIMARY KEY, name TEXT, phone TEXT, email TEXT, address TEXT, notes TEXT, joined TEXT);");
-  sqlDB.run("CREATE TABLE IF NOT EXISTS invoices (id INTEGER PRIMARY KEY, invNo TEXT, customer TEXT, customerId TEXT, items TEXT, subtotal REAL, discount REAL, tax REAL, total REAL, payment TEXT, date TEXT, note TEXT);");
-  sqlDB.run("CREATE TABLE IF NOT EXISTS credits (id INTEGER PRIMARY KEY, customer TEXT, phone TEXT, nic TEXT, item TEXT, total REAL, down REAL, balance REAL, perInst REAL, instCount INTEGER, freq TEXT, schedule TEXT, payments TEXT, status TEXT, date TEXT, notes TEXT);");
-  sqlDB.run("CREATE TABLE IF NOT EXISTS suppliers (id INTEGER PRIMARY KEY, name TEXT, phone TEXT, email TEXT, category TEXT, address TEXT, notes TEXT);");
-  sqlDB.run("CREATE TABLE IF NOT EXISTS purchases (id INTEGER PRIMARY KEY, supId INTEGER, supName TEXT, prodId INTEGER, prodName TEXT, qty INTEGER, cost REAL, date TEXT, status TEXT, notes TEXT);");
-  sqlDB.run("CREATE TABLE IF NOT EXISTS stock_log (id INTEGER PRIMARY KEY, prodId INTEGER, prodName TEXT, type TEXT, change INTEGER, stockAfter INTEGER, ref TEXT, date TEXT);");
-  sqlDB.run("CREATE TABLE IF NOT EXISTS pin_store (id INTEGER PRIMARY KEY, pin TEXT);");
-  sqlDB.run("CREATE TABLE IF NOT EXISTS expenses (id INTEGER PRIMARY KEY, date TEXT, category TEXT, description TEXT, amount REAL, paidBy TEXT, notes TEXT);");
-}
-
-// Read all tables into db object
-function sqlToDb() {
-  try {
-    // settings
-    var sRows = sqlDB.exec("SELECT key, value FROM settings;");
-    if (sRows.length) {
-      sRows[0].values.forEach(function(r) {
-        try { db.settings[r[0]] = JSON.parse(r[1]); } catch(e) { db.settings[r[0]] = r[1]; }
-      });
-    }
-    // products
-    var pRows = sqlDB.exec("SELECT * FROM products;");
-    if (pRows.length) {
-      db.products = pRows[0].values.map(function(r) {
-        return { id:r[0], name:r[1], category:r[2], price:r[3], cost:r[4], stock:r[5], minStock:r[6], desc:r[7], barcode:r[8]||'' };
-      });
-    }
-    // repairs
-    var repRows = sqlDB.exec("SELECT * FROM repairs;");
-    if (repRows.length) {
-      db.repairs = repRows[0].values.map(function(r) {
-        return { id:r[0], customer:r[1], phone:r[2], device:r[3], imei:r[4]||'', issue:r[5], cost:r[6], advance:r[7], status:r[8], date:r[9], dueDate:r[10], notes:r[11], techNotes:r[12] };
-      });
-    }
-    // orders
-    var ordRows = sqlDB.exec("SELECT * FROM orders;");
-    if (ordRows.length) {
-      db.orders = ordRows[0].values.map(function(r) {
-        return { id:r[0], customer:r[1], phone:r[2], platform:r[3], service:r[4], amount:r[5], delivery:r[6], advance:r[7], status:r[8], paymentStatus:r[9], date:r[10], dueDate:r[11], notes:r[12],
-          items: safeJSON(r[13],[]), payments: safeJSON(r[14],[]) };
-      });
-    }
-    // customers
-    var cRows = sqlDB.exec("SELECT * FROM customers;");
-    if (cRows.length) {
-      db.customers = cRows[0].values.map(function(r) {
-        return { id:r[0], name:r[1], phone:r[2], email:r[3], address:r[4], notes:r[5], joined:r[6] };
-      });
-    }
-    // invoices
-    var invRows = sqlDB.exec("SELECT * FROM invoices;");
-    if (invRows.length) {
-      db.invoices = invRows[0].values.map(function(r) {
-        return { id:r[0], invNo:r[1], customer:r[2], customerId:r[3]||'', items:safeJSON(r[4],[]), subtotal:r[5], discount:r[6], tax:r[7], total:r[8], payment:r[9], date:r[10], note:r[11] };
-      });
-    }
-    // credits
-    var crRows = sqlDB.exec("SELECT * FROM credits;");
-    if (crRows.length) {
-      db.credits = crRows[0].values.map(function(r) {
-        return { id:r[0], customer:r[1], phone:r[2], nic:r[3], item:r[4], total:r[5], down:r[6], balance:r[7], perInst:r[8], instCount:r[9], freq:r[10], schedule:safeJSON(r[11],[]), payments:safeJSON(r[12],[]), status:r[13], date:r[14], notes:r[15] };
-      });
-    }
-    // suppliers
-    var supRows = sqlDB.exec("SELECT * FROM suppliers;");
-    if (supRows.length) {
-      db.suppliers = supRows[0].values.map(function(r) {
-        return { id:r[0], name:r[1], phone:r[2], email:r[3], category:r[4], address:r[5], notes:r[6] };
-      });
-    }
-    // purchases
-    var poRows = sqlDB.exec("SELECT * FROM purchases;");
-    if (poRows.length) {
-      db.purchases = poRows[0].values.map(function(r) {
-        return { id:r[0], supId:r[1], supName:r[2], prodId:r[3], prodName:r[4], qty:r[5], cost:r[6], date:r[7], status:r[8], notes:r[9] };
-      });
-    }
-    // stock_log
-    var slRows = sqlDB.exec("SELECT * FROM stock_log;");
-    if (slRows.length) {
-      db.stockLog = slRows[0].values.map(function(r) {
-        return { id:r[0], prodId:r[1], prodName:r[2], type:r[3], change:r[4], stockAfter:r[5], ref:r[6], date:r[7] };
-      });
-    }
-    // expenses
-    var expRows = sqlDB.exec("SELECT * FROM expenses;");
-    if (expRows.length) {
-      db.expenses = expRows[0].values.map(function(r) {
-        return { id:r[0], date:r[1], category:r[2], description:r[3], amount:r[4], paidBy:r[5]||'Cash', notes:r[6]||'' };
-      });
-    }
-  } catch(e) { console.warn('sqlToDb error:', e); }
-}
-
-// Write db object into SQLite
-function dbToSql() {
-  if (!sqlDB) return;
-  try {
-    // settings
-    Object.keys(db.settings).forEach(function(k) {
-      sqlDB.run("INSERT OR REPLACE INTO settings(key,value) VALUES(?,?);", [k, JSON.stringify(db.settings[k])]);
-    });
-    // products
-    sqlDB.run("DELETE FROM products;");
-    db.products.forEach(function(p) {
-      sqlDB.run("INSERT INTO products VALUES(?,?,?,?,?,?,?,?,?);",
-        [p.id, p.name, p.category, p.price, p.cost||0, p.stock, p.minStock||2, p.desc||'', p.barcode||'']);
-    });
-    // repairs
-    sqlDB.run("DELETE FROM repairs;");
-    db.repairs.forEach(function(r) {
-      sqlDB.run("INSERT OR REPLACE INTO repairs VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?);",
-        [r.id, r.customer, r.phone||'', r.device, r.imei||'', r.issue||'', r.cost||0, r.advance||0, r.status, r.date||'', r.dueDate||'', r.notes||'', r.techNotes||'']);
-    });
-    // orders
-    sqlDB.run("DELETE FROM orders;");
-    db.orders.forEach(function(o) {
-      sqlDB.run("INSERT INTO orders VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);",
-        [o.id, o.customer, o.phone||'', o.platform||'', o.service||'', o.amount||0, o.delivery||0, o.advance||0, o.status||'', o.paymentStatus||'Unpaid', o.date||'', o.dueDate||'', o.notes||'',
-         JSON.stringify(o.items||[]), JSON.stringify(o.payments||[])]);
-    });
-    // customers
-    sqlDB.run("DELETE FROM customers;");
-    db.customers.forEach(function(c) {
-      sqlDB.run("INSERT INTO customers VALUES(?,?,?,?,?,?,?);",
-        [c.id, c.name, c.phone||'', c.email||'', c.address||'', c.notes||'', c.joined||'']);
-    });
-    // invoices
-    sqlDB.run("DELETE FROM invoices;");
-    db.invoices.forEach(function(i) {
-      sqlDB.run("INSERT INTO invoices VALUES(?,?,?,?,?,?,?,?,?,?,?,?);",
-        [i.id, i.invNo||'', i.customer||'', i.customerId||'', JSON.stringify(i.items||[]), i.subtotal||0, i.discount||0, i.tax||0, i.total||0, i.payment||'', i.date||'', i.note||'']);
-    });
-    // credits
-    sqlDB.run("DELETE FROM credits;");
-    (db.credits||[]).forEach(function(c) {
-      sqlDB.run("INSERT INTO credits VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);",
-        [c.id, c.customer, c.phone||'', c.nic||'', c.item||'', c.total||0, c.down||0, c.balance||0, c.perInst||0, c.instCount||1, c.freq||'monthly',
-         JSON.stringify(c.schedule||[]), JSON.stringify(c.payments||[]), c.status||'Active', c.date||'', c.notes||'']);
-    });
-    // suppliers
-    sqlDB.run("DELETE FROM suppliers;");
-    (db.suppliers||[]).forEach(function(s) {
-      sqlDB.run("INSERT INTO suppliers VALUES(?,?,?,?,?,?,?);",
-        [s.id, s.name, s.phone||'', s.email||'', s.category||'', s.address||'', s.notes||'']);
-    });
-    // purchases
-    sqlDB.run("DELETE FROM purchases;");
-    (db.purchases||[]).forEach(function(p) {
-      sqlDB.run("INSERT INTO purchases VALUES(?,?,?,?,?,?,?,?,?,?);",
-        [p.id, p.supId||0, p.supName||'', p.prodId||0, p.prodName||'', p.qty||0, p.cost||0, p.date||'', p.status||'', p.notes||'']);
-    });
-    // stock_log
-    sqlDB.run("DELETE FROM stock_log;");
-    (db.stockLog||[]).forEach(function(l) {
-      sqlDB.run("INSERT INTO stock_log VALUES(?,?,?,?,?,?,?,?);",
-        [l.id||Date.now(), l.prodId||0, l.prodName||'', l.type||'', l.change||0, l.stockAfter||0, l.ref||'', l.date||'']);
-    });
-    // expenses
-    sqlDB.run("DELETE FROM expenses;");
-    (db.expenses||[]).forEach(function(e) {
-      sqlDB.run("INSERT INTO expenses VALUES(?,?,?,?,?,?,?);",
-        [e.id, e.date||'', e.category||'', e.description||'', e.amount||0, e.paidBy||'Cash', e.notes||'']);
-    });
-  } catch(e) { console.warn('dbToSql error:', e); }
-}
 
 function safeJSON(str, def) { try { return str ? JSON.parse(str) : def; } catch(e) { return def; } }
 
@@ -5203,21 +4978,13 @@ var _saveDBTimer = null;
 var _saveDBPending = false;
 
 function saveDB() {
-  // Always keep localStorage in sync as backup immediately
-  try { localStorage.setItem('st-pos-v2-fallback', JSON.stringify(db)); } catch(e) {}
-  // Show auto-save indicator
-  _showSaveIndicator();
-  // ── Firebase Realtime Database sync — ALWAYS, even if SQLite not loaded ──
+  // ── Firebase Realtime Database sync (primary storage) ──
   window._lastLocalSave = Date.now();
   if (typeof window.firebaseSaveDB === 'function') {
     window.firebaseSaveDB(db);
   }
-  // SQLite local save (only if available)
-  if (!sqlDB) { return; }
-  try {
-    dbToSql();
-    persistSQLite();
-  } catch(e) { console.warn('saveDB SQLite error:', e); }
+  // Show auto-save indicator
+  _showSaveIndicator();
 }
 
 // Debounced save for auto-save scenarios (avoids too many rapid saves)
@@ -5249,126 +5016,10 @@ function _showSaveIndicator() {
 }
 
 // PIN functions via SQLite
-function getSQLPin() {
-  if (!sqlDB) return localStorage.getItem(PIN_KEY);
-  try {
-    var r = sqlDB.exec("SELECT pin FROM pin_store WHERE id=1;");
-    return (r.length && r[0].values.length) ? r[0].values[0][0] : null;
-  } catch(e) { return null; }
-}
-function setSQLPin(pin) {
-  if (!sqlDB) { localStorage.setItem(PIN_KEY, pin); return; }
-  try { sqlDB.run("INSERT OR REPLACE INTO pin_store(id,pin) VALUES(1,?);", [pin]); persistSQLite(); } catch(e) {}
-}
-function clearSQLPin() {
-  if (!sqlDB) { localStorage.removeItem(PIN_KEY); return; }
-  try { sqlDB.run("DELETE FROM pin_store WHERE id=1;"); persistSQLite(); } catch(e) {}
-}
 
-// Fallback to localStorage if SQLite not ready
-function fallbackSave() {
-  try { localStorage.setItem('st-pos-v2-fallback', JSON.stringify(db)); } catch(e) {}
-}
-
-// Export SQLite .db file
-function exportSQLiteFile() {
-  if (!sqlDB) { toast('❌ Database ready නෑ','var(--danger)'); return; }
-  try {
-    var data = sqlDB.export();
-    var blob = new Blob([data], { type: 'application/octet-stream' });
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    var stamp = new Date().toISOString().slice(0,10);
-    a.href = url; a.download = 'ST-POS-'+stamp+'.db';
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    setTimeout(function(){ URL.revokeObjectURL(url); }, 3000);
-    toast('✅ SQLite .db file downloaded!');
-  } catch(e) { toast('❌ Export error: '+e.message,'var(--danger)'); }
-}
-
-// Import SQLite .db file
-function importSQLiteFile(input) {
-  var file = input.files[0]; if (!file) return;
-  if (!confirm('⚠️ දැනට ඇති data replace වෙනවා! Continue?')) { input.value=''; return; }
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      var arr = new Uint8Array(e.target.result);
-      sqlDB = new SQL.Database(arr);
-      sqlToDb();
-      persistSQLite();
-      renderAll();
-      toast('✅ SQLite DB imported! 🎉');
-    } catch(ex) { toast('❌ Import error: '+ex.message,'var(--danger)'); }
-    input.value = '';
-  };
-  reader.readAsArrayBuffer(file);
-}
-
-// Initialize SQLite and load data
-async function loadDB() {
-  // Helper: race initSqlJs against a timeout (handles file:// CORS hang)
-  function initSqlJsWithTimeout(ms) {
-    return new Promise(function(resolve, reject) {
-      var timer = setTimeout(function() {
-        reject(new Error('sql.js WASM timeout - CDN unreachable (file:// mode)'));
-      }, ms);
-      initSqlJs({ locateFile: function(f) {
-        return 'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.2/' + f;
-      }}).then(function(sql) { clearTimeout(timer); resolve(sql); })
-        .catch(function(e) { clearTimeout(timer); reject(e); });
-    });
-  }
-
-  try {
-    // Load sql.js with 8s timeout (prevents hang on file:// CORS block)
-    SQL = await initSqlJsWithTimeout(8000);
-
-    // 🔥 Firebase is PRIMARY — always start fresh, ignore old IndexedDB cache
-    sqlDB = new SQL.Database();
-    createTables();
-    dbToSql(); // init empty tables in SQLite
-    console.log('✅ Fresh SQLite ready. Firebase will load all data.');
-
-    // Migrate PIN from localStorage if exists
-    var lsPin = localStorage.getItem(PIN_KEY);
-    if (lsPin) { setSQLPin(lsPin); localStorage.removeItem(PIN_KEY); }
-
-    console.log('✅ SQLite initialized (empty). Firebase sync pending...');
-  } catch(e) {
-    console.warn('SQLite init failed — Firebase will be the data source:', e);
-    sqlDB = null;
-    // 🔥 Firebase is primary — do NOT restore from localStorage or embedded data
-    console.log('✅ Clean db ready. Firebase will populate all data on startup.');
-  }
-}
 
 // =========== INIT ===========
-async function init() {
-  // Show loading indicator
-  document.body.insertAdjacentHTML('beforeend',
-    '<div id="db-loading" style="position:fixed;inset:0;background:var(--bg);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px">' +
-    '<div style="font-size:40px">🗄️</div>' +
-    '<div style="font-size:16px;font-weight:700;color:var(--primary)">SQLite Database Loading...</div>' +
-    '<div style="font-size:12px;color:var(--muted)" id="db-load-msg">Initializing...</div>' +
-    '<div id="db-load-warn" style="display:none;font-size:11px;color:var(--warning);text-align:center;max-width:320px;line-height:1.7">' +
-      '⚠️ CDN load slow...<br>Internet connection check කරන්න.<br>හෝ online (server) හරහා open කරන්න.' +
-    '</div>' +
-    '</div>');
-  var loadMsg = document.getElementById('db-load-msg');
-  if(loadMsg) loadMsg.textContent = 'Loading sql.js engine...';
-
-  // Show warning after 4s if still loading
-  var warnTimer = setTimeout(function(){
-    var w = document.getElementById('db-load-warn');
-    if(w) w.style.display='block';
-    if(loadMsg) loadMsg.textContent = 'CDN load slow... waiting (max 8s)...';
-  }, 4000);
-
-  await loadDB();
-  clearTimeout(warnTimer);
-
-  if(loadMsg) loadMsg.textContent = 'Rendering UI...';
+function init() {
   ordItems=[];
   initThemeMode();
   initPIN();
@@ -5389,14 +5040,9 @@ async function init() {
   applyTheme(db.settings.theme || '#6c63ff');
   updateNotifBadge();
 
-  // Remove loading screen
-  var ld = document.getElementById('db-loading');
-  if(ld) ld.remove();
-
-  // Show SQLite status
+  // Update status bar
   var dbStatusBar = document.getElementById('db-status-bar');
-  if(dbStatusBar) dbStatusBar.textContent = sqlDB ? '🗄️ SQLite Active ✅' : '⚠️ LocalStorage Mode (CDN offline)';
-  if(dbStatusBar && !sqlDB) dbStatusBar.style.color = 'var(--warning)';
+  if(dbStatusBar) { dbStatusBar.textContent = '🔥 Firebase Mode ✅'; dbStatusBar.style.color = 'var(--success)'; }
 
   // ── Firebase: Load cloud data on startup, then start live sync ──
   // Uses retry logic because Firebase is a type="module" script (deferred),
@@ -5426,7 +5072,6 @@ async function init() {
       if (cloudData.activityLog) db.activityLog = cloudData.activityLog || [];
       if (cloudData.settings)    db.settings    = Object.assign({}, db.settings, cloudData.settings);
       // Sync to SQLite for local queries
-      if (typeof dbToSql === 'function') { try { dbToSql(); persistSQLite(); } catch(se){} }
       renderAll();
       applyTheme(db.settings.theme || '#6c63ff');
       toast('🔥 Firebase data loaded! Products: ' + db.products.length + ' | Invoices: ' + db.invoices.length);
@@ -7090,7 +6735,7 @@ function showAutoBackupPopup(msg) {
   setTimeout(function() {
     var go = confirm('💾 AUTO BACKUP REMINDER\n\n' + msg + '\n\nDownload backup now?');
     if (go) {
-      exportSQLiteFile();
+      exportDB();
       db.settings.autoBackupLastDone = new Date().toISOString();
       saveDB();
       updateAutoBackupStatus();
@@ -7205,8 +6850,13 @@ function clrData(type){
 
 
 // =========== PIN LOCK ===========
-var pinEntry = '';
+
+// =========== PIN (localStorage) ===========
 var PIN_KEY = 'st-pos-pin';
+function getSQLPin() { return localStorage.getItem(PIN_KEY) || null; }
+function setSQLPin(pin) { localStorage.setItem(PIN_KEY, pin); }
+function clearSQLPin() { localStorage.removeItem(PIN_KEY); }
+var pinEntry = '';
 
 function initPIN(){
   var savedPin = getSQLPin();
