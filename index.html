@@ -2970,19 +2970,7 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
 <script>
 // =========== ADVANCED FEATURES MODULE v29 — NEW FEATURES ===========
 
-// DB extensions
-if(!db.batches) db.batches = [];
-if(!db.kits) db.kits = [];
-if(!db.followups) db.followups = [];
-if(!db.repTemplates) db.repTemplates = [];
-if(!db.upsellRules) db.upsellRules = [];
-if(!db.tasks) db.tasks = [];
-if(!db.rosterShifts) db.rosterShifts = [];
-if(!db.referrals) db.referrals = [];
-if(!db.timerLogs) db.timerLogs = [];
-if(!db.settings.openChecklist) db.settings.openChecklist = ['Unlock shop','Turn on lights','Boot computer','Count opening cash','Check repairs due today','Check low stock'];
-if(!db.settings.closeChecklist) db.settings.closeChecklist = ['Count cash','Close register','Back up data','Set alarm','Lock shop','Send daily summary'];
-if(!db.invDesign) db.invDesign = { template:'classic', color:'#6c63ff', footer:'Thank you for choosing ST Mobile!', showQr:false };
+// DB extensions moved below db definition (v29)
 
 var timerInterval = null, timerSeconds = 0, timerRunning = false, timerRepairId = null;
 var auditData = {}, fuFilter = 'all', taskFilter = 'all', rosterWeekOffset = 0, scMode = 'week';
@@ -3814,14 +3802,7 @@ setTimeout(function(){
 <script>
 // =========== ADVANCED FEATURES MODULE v28 ===========
 
-// ---- DATABASE EXTENSIONS ----
-if(!db.staff) db.staff = [];
-if(!db.shifts) db.shifts = [];
-if(!db.diagChecklists) db.diagChecklists = {};
-if(!db.repairParts) db.repairParts = {};
-if(!db.warrantyDays) db.warrantyDays = {};
-if(!db.productVariants) db.productVariants = {};
-if(!db.settings.splitPayEnabled) db.settings.splitPayEnabled = true;
+// DB extensions moved below db definition (v28)
 
 var currentShift = null;
 var splitRows = [];
@@ -4822,6 +4803,28 @@ var db = {
   "expenses":    [],
   "activityLog": []
 };
+// ---- DB FIELD EXTENSIONS (v28 + v29) ----
+// ---- DATABASE EXTENSIONS ----
+if(!db.staff) db.staff = [];
+if(!db.shifts) db.shifts = [];
+if(!db.diagChecklists) db.diagChecklists = {};
+if(!db.repairParts) db.repairParts = {};
+if(!db.warrantyDays) db.warrantyDays = {};
+if(!db.productVariants) db.productVariants = {};
+if(!db.settings.splitPayEnabled) db.settings.splitPayEnabled = true;
+// DB extensions
+if(!db.batches) db.batches = [];
+if(!db.kits) db.kits = [];
+if(!db.followups) db.followups = [];
+if(!db.repTemplates) db.repTemplates = [];
+if(!db.upsellRules) db.upsellRules = [];
+if(!db.tasks) db.tasks = [];
+if(!db.rosterShifts) db.rosterShifts = [];
+if(!db.referrals) db.referrals = [];
+if(!db.timerLogs) db.timerLogs = [];
+if(!db.settings.openChecklist) db.settings.openChecklist = ['Unlock shop','Turn on lights','Boot computer','Count opening cash','Check repairs due today','Check low stock'];
+if(!db.settings.closeChecklist) db.settings.closeChecklist = ['Count cash','Close register','Back up data','Set alarm','Lock shop','Send daily summary'];
+if(!db.invDesign) db.invDesign = { template:'classic', color:'#6c63ff', footer:'Thank you for choosing ST Mobile!', showQr:false };
 // Clear any old browser-cached data so Firebase is always the source
 // Firebase is primary storage - localStorage not used for data
 try {
