@@ -3780,7 +3780,7 @@ setTimeout(function(){
         <div class="fg"><label>Commission Base</label>
           <select id="staff-comm-base"><option value="revenue">On Revenue</option><option value="profit">On Profit</option></select>
         </div>
-        <div class="fg"><label>🔧 Repair Commission Rate (%)</label><input type="number" id="staff-repair-comm" placeholder="e.g. 10" min="0" max="100" step="0.5" value="0"></div>
+        <div class="fg"><label>🔧 Repair Commission Rate (%) <span style="color:var(--warning);font-size:10px">— repair cost ගෙන් %</span></label><input type="number" id="staff-repair-comm" placeholder="e.g. 10" min="0" max="100" step="0.5" value="0"></div>
         <div class="fg"><label>Status</label>
           <select id="staff-status"><option>Active</option><option>Inactive</option></select>
         </div>
@@ -4189,10 +4189,22 @@ function renderStaff() {
       '<td><span class="badge bp">'+s.role+'</span><br>'+statusBadge+'</td>'+
       '<td>'+staffInvs.length+'<br><span style="font-size:11px;color:var(--muted)">Rs. '+staffRevenue.toLocaleString()+'</span></td>'+
       '<td>'+staffRepsMonth.length+' <span style="font-size:10px;color:var(--muted)">('+staffRepsAll.length+' total)</span><br><span style="font-size:11px;color:var(--info)">Rs. '+repairRevenue.toLocaleString()+'</span></td>'+
-      '<td>'+(s.commRate||0)+'% '+((s.repairCommBase||s.commBase)==='profit'?'profit':'rev')+'<br><span style="font-size:11px;color:var(--warning)">Repair: '+(s.repairCommRate||0)+'%</span></td>'+
-      '<td><span style="color:var(--success);font-weight:700;font-size:14px">Rs. '+Math.round(commEarned).toLocaleString()+'</span><br>'+
-        '<span style="font-size:10px;color:var(--muted)">Sales: Rs.'+Math.round(salesComm).toLocaleString()+' + Rep: Rs.'+Math.round(repairComm).toLocaleString()+'</span></td>'+
-      '<td><button class="btn bo bsm" onclick="editStaff('+s.id+')">✏️</button> <button class="btn bd2 bsm" onclick="deleteStaff('+s.id+')">🗑️</button></td></tr>';
+      '<td>'+(s.commRate||0)+'% '+((s.commBase||'revenue')==='profit'?'profit':'rev')+
+        ((!s.commRate||s.commRate==0)?'<br><span style="font-size:10px;color:var(--muted)">Sales: not set</span>':'')+
+        '<br><span style="font-size:11px;color:'+(s.repairCommRate>0?'var(--warning)':'var(--danger)')+'">'+
+          '🔧 Repair: '+(s.repairCommRate||0)+'%'+
+          ((s.repairCommRate===0||!s.repairCommRate)?
+            ' <button class="btn bsm" style="background:rgba(255,171,0,0.2);color:var(--warning);border:1px solid rgba(255,171,0,0.4);padding:1px 7px;font-size:10px" onclick="editStaff('+s.id+')">⚠️ Set</button>':
+            '')+
+        '</span></td>'+
+      '<td>'+
+        (commEarned>0?
+          '<span style="color:var(--success);font-weight:700;font-size:15px">Rs. '+Math.round(commEarned).toLocaleString()+'</span>':
+          '<span style="color:var(--danger);font-weight:700;font-size:14px">Rs. 0</span>')+
+        '<br><span style="font-size:10px;color:var(--muted)">Sales: Rs.'+Math.round(salesComm).toLocaleString()+' + Rep: Rs.'+Math.round(repairComm).toLocaleString()+'</span>'+
+        (commEarned===0 && (staffRepsAll.length>0||staffInvs.length>0)?
+          '<br><span style="font-size:10px;color:var(--danger)">⚠️ Rate 0% — set kරන්න!</span>':'')+'</td>'+
+      '<td><button class="btn bo bsm" onclick="editStaff('+s.id+')" title="Edit">✏️</button> <button class="btn bd2 bsm" onclick="deleteStaff('+s.id+')" title="Delete">🗑️</button></td></tr>';
   }).join('') : '<tr><td colspan="7" class="empty" style="text-align:center;padding:20px;color:var(--muted)">No staff added yet</td></tr>';
   
   document.getElementById('staff-count').textContent = staff.filter(function(s){ return s.status!=='Inactive'; }).length;
@@ -4211,6 +4223,19 @@ function openStaffModal(id) {
   document.getElementById('staff-comm-base').value = s ? (s.commBase||'revenue') : 'revenue';
   document.getElementById('staff-repair-comm').value = s ? (s.repairCommRate||0) : 0;
   document.getElementById('staff-status').value = s ? (s.status||'Active') : 'Active';
+  // Highlight repair commission field if it's 0 and role is Technician
+  var rcField = document.getElementById('staff-repair-comm');
+  if (rcField) {
+    var isTech = s && (s.role==='Technician'||s.role==='Other');
+    var rateIsZero = !s || !s.repairCommRate || s.repairCommRate===0;
+    rcField.style.borderColor = (isTech && rateIsZero) ? 'var(--warning)' : '';
+    rcField.style.boxShadow = (isTech && rateIsZero) ? '0 0 0 3px rgba(255,171,0,0.18)' : '';
+    if (isTech && rateIsZero) {
+      rcField.placeholder = '⚠️ Set repair rate! e.g. 10';
+    } else {
+      rcField.placeholder = 'e.g. 10';
+    }
+  }
   openM('m-staff');
 }
 
