@@ -5207,16 +5207,17 @@ function saveDB() {
   try { localStorage.setItem('st-pos-v2-fallback', JSON.stringify(db)); } catch(e) {}
   // Show auto-save indicator
   _showSaveIndicator();
+  // ── Firebase Realtime Database sync — ALWAYS, even if SQLite not loaded ──
+  window._lastLocalSave = Date.now();
+  if (typeof window.firebaseSaveDB === 'function') {
+    window.firebaseSaveDB(db);
+  }
+  // SQLite local save (only if available)
   if (!sqlDB) { return; }
   try {
     dbToSql();
     persistSQLite();
   } catch(e) { console.warn('saveDB SQLite error:', e); }
-  // ── Firebase Realtime Database sync ──
-  window._lastLocalSave = Date.now();
-  if (typeof window.firebaseSaveDB === 'function') {
-    window.firebaseSaveDB(db);
-  }
 }
 
 // Debounced save for auto-save scenarios (avoids too many rapid saves)
