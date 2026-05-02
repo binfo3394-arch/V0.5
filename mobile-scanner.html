@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>ST Mobile Scanner</title>
+<style>
+  :root {
+    --primary: #6c63ff;
+    --success: #00e676;
+    --danger: #ff1744;
+    --warning: #ffab00;
+    --bg: #0a0a1a;
+    --card: #12122a;
+    --card2: #1a1a35;
+    --border: #2a2a4a;
+    --text: #e0e0ff;
+    --muted: #7070a0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-x: hidden;
+  }
+
+  /* ── Header ── */
+  .header {
+    width: 100%;
+    background: linear-gradient(135deg, rgba(108,99,255,0.25), rgba(0,180,255,0.1));
+    border-bottom: 1px solid var(--border);
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    backdrop-filter: blur(10px);
+  }
+  .header-logo { font-size: 15px; font-weight: 800; color: var(--primary); }
+  .header-logo span { font-size: 10px; color: var(--muted); display: block; font-weight: 400; margin-top: 1px; }
+  .status-pill {
+    font-size: 11px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-weight: 700;
+    transition: 0.3s;
+  }
+  .status-pill.connecting { background: rgba(255,171,0,0.15); color: var(--warning); border: 1px solid rgba(255,171,0,0.4); }
+  .status-pill.connected  { background: rgba(0,230,118,0.15); color: var(--success); border: 1px solid rgba(0,230,118,0.4); }
+  .status-pill.error      { background: rgba(255,23,68,0.15);  color: var(--danger);  border: 1px solid rgba(255,23,68,0.4); }
+
+  /* ── Session code entry ── */
+  #screen-connect {
+    width: 100%;
+    max-width: 420px;
+    padding: 24px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    flex: 1;
+    justify-content: center;
+  }
+  .connect-icon { font-size: 64px; margin-bottom: 4px; }
+  .connect-title { font-size: 20px; font-weight: 800; color: var(--primary); text-align: center; }
+  .connect-sub { font-size: 13px; color: var(--muted); text-align: center; line-height: 1.7; }
+  .code-input-wrap {
+    width: 100%;
+    background: var(--card2);
+    border: 2px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .code-input-wrap label { font-size: 12px; color: var(--muted); font-weight: 600; }
+  .code-input {
+    background: var(--bg);
+    border: 1.5px solid var(--primary);
+    color: var(--text);
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: 6px;
+    text-align: center;
+    padding: 12px;
+    border-radius: 10px;
+    width: 100%;
+    text-transform: uppercase;
+    outline: none;
+  }
+  .code-input::placeholder { color: var(--border); letter-spacing: 2px; font-size: 16px; }
+  .btn-connect {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, var(--primary), #00b4d8);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 800;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: 0.2s;
+    touch-action: manipulation;
+  }
+  .btn-connect:active { transform: scale(0.97); opacity: 0.9; }
+  .btn-connect:disabled { opacity: 0.5; }
+  .info-box {
+    width: 100%;
+    background: rgba(108,99,255,0.08);
+    border: 1px solid rgba(108,99,255,0.25);
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.8;
+  }
+  .info-box b { color: var(--primary); }
+
+  /* ── Scanner screen ── */
+  #screen-scanner {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    flex: 1;
+    padding-bottom: 24px;
+  }
+
+  /* Camera view */
+  .cam-wrap {
+    width: 100%;
+    max-width: 500px;
+    aspect-ratio: 1;
+    position: relative;
+    background: #000;
+    overflow: hidden;
+  }
+  #cam-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .scan-line {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--success), transparent);
+    animation: scanAnim 2s linear infinite;
+    z-index: 3;
+  }
+  @keyframes scanAnim { 0%{top:0} 50%{top:calc(100% - 3px)} 100%{top:0} }
+
+  /* Corner brackets */
+  .corner { position: absolute; width: 28px; height: 28px; border-color: var(--success); border-style: solid; z-index: 4; }
+  .c-tl { top:12px; left:12px; border-width:3px 0 0 3px; border-radius:4px 0 0 0; }
+  .c-tr { top:12px; right:12px; border-width:3px 3px 0 0; border-radius:0 4px 0 0; }
+  .c-bl { bottom:12px; left:12px; border-width:0 0 3px 3px; border-radius:0 0 0 4px; }
+  .c-br { bottom:12px; right:12px; border-width:0 3px 3px 0; border-radius:0 0 4px 0; }
+
+  /* Guide box overlay */
+  .scan-guide {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 65%; height: 30%;
+    border: 2px dashed rgba(0,230,118,0.35);
+    border-radius: 8px;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  /* Flash overlay */
+  .flash-overlay {
+    position: absolute;
+    inset: 0;
+    background: transparent;
+    z-index: 5;
+    pointer-events: none;
+    transition: background 0.15s;
+  }
+  .flash-overlay.green { background: rgba(0,230,118,0.3); }
+  .flash-overlay.red   { background: rgba(255,23,68,0.3); }
+
+  /* Controls bar */
+  .cam-controls {
+    display: flex;
+    gap: 10px;
+    padding: 12px 16px;
+    width: 100%;
+    max-width: 500px;
+    justify-content: center;
+  }
+  .ctrl-btn {
+    flex: 1;
+    padding: 11px 8px;
+    border-radius: 10px;
+    border: 1.5px solid var(--border);
+    background: var(--card2);
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.15s;
+    touch-action: manipulation;
+  }
+  .ctrl-btn:active { transform: scale(0.96); }
+  .ctrl-btn.active { background: rgba(255,171,0,0.15); color: var(--warning); border-color: rgba(255,171,0,0.5); }
+  .ctrl-btn.danger { background: rgba(255,23,68,0.12); color: var(--danger); border-color: rgba(255,23,68,0.4); }
+
+  /* Result card */
+  .result-area {
+    width: 100%;
+    max-width: 500px;
+    padding: 0 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  /* Last scan card */
+  .last-scan-card {
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 16px;
+    min-height: 72px;
+    transition: 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+  .last-scan-card.success { border-color: rgba(0,230,118,0.5); background: rgba(0,230,118,0.07); }
+  .last-scan-card.fail    { border-color: rgba(255,23,68,0.5);  background: rgba(255,23,68,0.07); }
+  .last-scan-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+  .last-scan-name  { font-size: 17px; font-weight: 800; color: var(--text); }
+  .last-scan-meta  { font-size: 12px; color: var(--muted); margin-top: 3px; }
+  .last-scan-price { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); font-size: 20px; font-weight: 800; color: var(--success); }
+
+  /* Cart count pill */
+  .cart-pill {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(108,99,255,0.1);
+    border: 1px solid rgba(108,99,255,0.3);
+    border-radius: 12px;
+    padding: 10px 14px;
+  }
+  .cart-pill-left { font-size: 13px; color: var(--muted); }
+  .cart-pill-count { font-size: 22px; font-weight: 900; color: var(--primary); }
+  .cart-pill-total { font-size: 14px; font-weight: 700; color: var(--success); }
+
+  /* Checkout button */
+  .checkout-btn {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, #00e676, #00b4d8);
+    color: #000;
+    border: none;
+    border-radius: 14px;
+    font-size: 17px;
+    font-weight: 900;
+    cursor: pointer;
+    letter-spacing: 0.3px;
+    transition: 0.2s;
+    touch-action: manipulation;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .checkout-btn:active { transform: scale(0.98); }
+
+  /* Manual input */
+  .manual-row {
+    display: flex;
+    gap: 8px;
+  }
+  .manual-input {
+    flex: 1;
+    background: var(--card2);
+    border: 1.5px solid var(--border);
+    color: var(--text);
+    padding: 11px 12px;
+    border-radius: 10px;
+    font-size: 14px;
+    outline: none;
+    min-width: 0;
+  }
+  .manual-input:focus { border-color: var(--primary); }
+  .manual-send {
+    padding: 11px 16px;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  /* Scanned items list */
+  .items-list-title {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 4px;
+  }
+  .items-list { display: flex; flex-direction: column; gap: 6px; }
+  .item-chip {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+  }
+  .item-chip-name { color: var(--text); font-weight: 600; }
+  .item-chip-qty  { color: var(--primary); font-weight: 700; font-size: 12px; }
+  .item-chip-price { color: var(--success); font-weight: 700; }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--card2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 20px;
+    border-radius: 30px;
+    font-size: 13px;
+    font-weight: 600;
+    z-index: 200;
+    transition: 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    white-space: nowrap;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* No cam fallback */
+  .no-cam {
+    display: none;
+    width: 100%;
+    max-width: 500px;
+    padding: 32px 16px;
+    text-align: center;
+    gap: 12px;
+    flex-direction: column;
+    align-items: center;
+  }
+  .no-cam.show { display: flex; }
+
+  /* Session info strip */
+  .session-strip {
+    width: 100%;
+    max-width: 500px;
+    background: rgba(0,230,118,0.06);
+    border-bottom: 1px solid rgba(0,230,118,0.2);
+    padding: 7px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+  }
+  .session-strip span { color: var(--muted); }
+  .session-strip b { color: var(--success); }
+  .disconnect-link { color: var(--danger); font-size: 11px; cursor: pointer; text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getDatabase, ref, set, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+  // ══ Same Firebase config as main app ══
+  const firebaseConfig = {
+    apiKey:            "AIzaSyA2EprDDYqnR1KTlA3nADdcCcVpi-HaDMk",
+    authDomain:        "stshop-8a875.firebaseapp.com",
+    databaseURL:       "https://stshop-8a875-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId:         "stshop-8a875",
+    storageBucket:     "stshop-8a875.firebasestorage.app",
+    messagingSenderId: "778408728987",
+    appId:             "1:778408728987:web:66153a512fd14531fda93e"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db  = getDatabase(app);
+
+  let sessionCode = '';
+  let sessionRef  = null;
+  let scannedItems = {};   // barcode → { name, price, qty }
+  let isConnected = false;
+  let _bd = null, _stream = null, _raf = null, _torchOn = false, _facingMode = 'environment';
+  let _lastCode = '', _lastTime = 0;
+
+  // ── Init BarcodeDetector ──
+  if ('BarcodeDetector' in window) {
+    try { _bd = new BarcodeDetector({ formats: ['ean_13','ean_8','code_128','code_39','upc_a','upc_e','qr_code','itf','codabar'] }); }
+    catch(e) {}
+  }
+
+  // ── Expose to global for inline handlers ──
+  window._msApp = {
+    connect, disconnect, sendBarcode, flipCam, toggleTorch, manualSend, checkout
+  };
+
+  // ─────────────────────────────────────────
+  //  CONNECT
+  // ─────────────────────────────────────────
+  function connect() {
+    const inp = document.getElementById('code-input');
+    const code = inp.value.trim().toUpperCase().replace(/[^A-Z0-9]/g,'');
+    if (code.length < 4) { showToast('❌ Code too short'); return; }
+
+    sessionCode = code;
+    sessionRef = ref(db, 'mobile-scanner/' + code);
+
+    setStatus('connecting', '⏳ Connecting...');
+    document.getElementById('btn-connect').disabled = true;
+
+    // Write presence
+    set(ref(db, 'mobile-scanner/' + code + '/mobile-presence'), {
+      connected: true, time: Date.now(), ua: navigator.userAgent.substring(0,60)
+    }).then(() => {
+      isConnected = true;
+      setStatus('connected', '🟢 Connected');
+      showScanner();
+      startCamera();
+      listenForAck();
+    }).catch(e => {
+      setStatus('error', '❌ Failed');
+      document.getElementById('btn-connect').disabled = false;
+      showToast('❌ Connect failed: ' + e.message);
+    });
+  }
+
+  function disconnect() {
+    if (sessionRef) {
+      set(ref(db, 'mobile-scanner/' + sessionCode + '/mobile-presence'), { connected: false });
+    }
+    stopCamera();
+    sessionCode = '';
+    isConnected = false;
+    scannedItems = {};
+    document.getElementById('screen-scanner').style.display = 'none';
+    document.getElementById('screen-connect').style.display = 'flex';
+    document.getElementById('code-input').value = '';
+    document.getElementById('btn-connect').disabled = false;
+    setStatus('connecting', '📱 Scanner');
+  }
+
+  // ─────────────────────────────────────────
+  //  SEND SCAN to Firebase
+  // ─────────────────────────────────────────
+  function sendBarcode(code) {
+    if (!isConnected || !code) return;
+    const payload = { barcode: code, time: Date.now(), id: Math.random().toString(36).slice(2) };
+    set(ref(db, 'mobile-scanner/' + sessionCode + '/scan'), payload)
+      .then(() => {})
+      .catch(e => showToast('⚠️ Send failed'));
+  }
+
+  // ─────────────────────────────────────────
+  //  LISTEN for desktop ACK (product name + price)
+  // ─────────────────────────────────────────
+  function listenForAck() {
+    onValue(ref(db, 'mobile-scanner/' + sessionCode + '/ack'), snap => {
+      if (!snap.exists()) return;
+      const ack = snap.val();
+      if (!ack || !ack.id) return;
+      if (ack.status === 'ok') {
+        // Track item locally
+        const key = ack.barcode || ack.name;
+        if (!scannedItems[key]) scannedItems[key] = { name: ack.name, price: ack.price, qty: 0 };
+        scannedItems[key].qty++;
+        showLastScan(ack.name, ack.price, ack.stock, true);
+        updateCart();
+        flashScreen('green');
+        vibrate(60);
+      } else if (ack.status === 'outofstock') {
+        showLastScan(ack.name, 0, 0, false, 'Out of stock');
+        flashScreen('red');
+        vibrate([80,40,80]);
+      } else if (ack.status === 'notfound') {
+        showLastScan(ack.barcode, 0, 0, false, 'Product not found');
+        flashScreen('red');
+        vibrate([80,40,80]);
+      }
+    });
+  }
+
+  // ─────────────────────────────────────────
+  //  CAMERA
+  // ─────────────────────────────────────────
+  function startCamera() {
+    const video = document.getElementById('cam-video');
+    const noCam = document.getElementById('no-cam');
+    const camWrap = document.querySelector('.cam-wrap');
+
+    navigator.mediaDevices.getUserMedia({
+      video: { facingMode: _facingMode, width:{ideal:1280}, height:{ideal:720} }
+    }).then(stream => {
+      _stream = stream;
+      video.srcObject = stream;
+      video.play();
+      video.addEventListener('loadedmetadata', startScanLoop, {once:true});
+      camWrap.style.display = '';
+      noCam.classList.remove('show');
+    }).catch(() => {
+      navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
+        _stream = stream; video.srcObject = stream; video.play();
+        video.addEventListener('loadedmetadata', startScanLoop, {once:true});
+        camWrap.style.display = ''; noCam.classList.remove('show');
+      }).catch(() => { camWrap.style.display='none'; noCam.classList.add('show'); });
+    });
+  }
+
+  function stopCamera() {
+    if (_raf) { cancelAnimationFrame(_raf); _raf = null; }
+    if (_stream) { _stream.getTracks().forEach(t => t.stop()); _stream = null; }
+  }
+
+  function startScanLoop() {
+    if (!_bd) { startHtml5QrFallback(); return; }
+    const video = document.getElementById('cam-video');
+    let busy = false;
+    function loop() {
+      _raf = requestAnimationFrame(loop);
+      if (busy || video.readyState < 2) return;
+      busy = true;
+      _bd.detect(video).then(codes => {
+        busy = false;
+        if (codes && codes.length) handleCode(codes[0].rawValue);
+      }).catch(() => { busy = false; });
+    }
+    loop();
+  }
+
+  function startHtml5QrFallback() {
+    if (typeof Html5Qrcode === 'undefined') {
+      document.querySelector('.cam-wrap').style.display = 'none';
+      document.getElementById('no-cam').classList.add('show');
+      return;
+    }
+    if (_stream) { _stream.getTracks().forEach(t=>t.stop()); _stream=null; }
+    const container = document.getElementById('qr-reader-fb');
+    const h5 = new Html5Qrcode('qr-reader-fb', {verbose:false});
+    const cfg = { fps:15, qrbox:{width:260,height:100},
+      experimentalFeatures:{useBarCodeDetectorIfSupported:true},
+      supportedScanTypes:[Html5QrcodeScanType.SCAN_TYPE_CAMERA] };
+    h5.start({facingMode:_facingMode}, cfg, code => handleCode(code), ()=>{}).catch(()=>{
+      document.querySelector('.cam-wrap').style.display='none';
+      document.getElementById('no-cam').classList.add('show');
+    });
+  }
+
+  function handleCode(code) {
+    if (!code || !isConnected) return;
+    code = code.trim();
+    const now = Date.now();
+    if (code === _lastCode && now - _lastTime < 2000) return;
+    _lastCode = code; _lastTime = now;
+    sendBarcode(code);
+    document.getElementById('last-scan-label').textContent = '⏳ Scanning...';
+    document.getElementById('last-scan-name').textContent = code;
+    document.getElementById('last-scan-meta').textContent = 'Sending to POS...';
+    document.getElementById('last-scan-price').textContent = '';
+    document.querySelector('.last-scan-card').className = 'last-scan-card';
+  }
+
+  window.flipCam = function() {
+    _facingMode = _facingMode === 'environment' ? 'user' : 'environment';
+    stopCamera();
+    setTimeout(startCamera, 300);
+    showToast(_facingMode === 'user' ? '🤳 Front camera' : '📷 Back camera');
+  };
+
+  window.toggleTorch = function() {
+    if (!_stream) return;
+    const track = _stream.getVideoTracks()[0];
+    if (!track) return;
+    _torchOn = !_torchOn;
+    track.applyConstraints({ advanced: [{ torch: _torchOn }] }).then(() => {
+      const btn = document.getElementById('torch-btn');
+      if (btn) { btn.textContent = _torchOn ? '🔦 ON' : '🔦 Torch'; btn.classList.toggle('active', _torchOn); }
+    }).catch(() => { showToast('⚠️ Torch not supported'); _torchOn=false; });
+  };
+
+  window.manualSend = function() {
+    const inp = document.getElementById('manual-inp');
+    const code = inp.value.trim();
+    if (!code) return;
+    handleCode(code);
+    inp.value = '';
+  };
+
+  window.checkout = function() {
+    showToast('🛒 Desktop POS ලෙස checkout කරන්න');
+  };
+
+  // ─────────────────────────────────────────
+  //  UI HELPERS
+  // ─────────────────────────────────────────
+  function showScanner() {
+    document.getElementById('screen-connect').style.display = 'none';
+    const ss = document.getElementById('screen-scanner');
+    ss.style.display = 'flex';
+    document.getElementById('session-code-display').textContent = sessionCode;
+  }
+
+  function setStatus(type, text) {
+    const el = document.getElementById('status-pill');
+    el.className = 'status-pill ' + type;
+    el.textContent = text;
+  }
+
+  function showLastScan(name, price, stock, ok, msg) {
+    const card = document.querySelector('.last-scan-card');
+    document.getElementById('last-scan-label').textContent = ok ? '✅ Added to cart' : '❌ ' + (msg||'Error');
+    document.getElementById('last-scan-name').textContent = name;
+    document.getElementById('last-scan-meta').textContent = ok ? 'Stock: ' + stock : (msg||'');
+    document.getElementById('last-scan-price').textContent = ok ? 'Rs.' + price.toFixed(0) : '';
+    card.className = 'last-scan-card ' + (ok ? 'success' : 'fail');
+  }
+
+  function updateCart() {
+    const items = Object.values(scannedItems);
+    const totalQty = items.reduce((s,i)=>s+i.qty,0);
+    const totalAmt = items.reduce((s,i)=>s+(i.price*i.qty),0);
+    document.getElementById('cart-qty').textContent = totalQty;
+    document.getElementById('cart-total').textContent = 'Rs.' + totalAmt.toFixed(0);
+    const list = document.getElementById('items-list');
+    list.innerHTML = items.slice().reverse().map(it =>
+      `<div class="item-chip">
+        <span class="item-chip-name">${it.name}</span>
+        <span class="item-chip-qty">×${it.qty}</span>
+        <span class="item-chip-price">Rs.${(it.price*it.qty).toFixed(0)}</span>
+      </div>`
+    ).join('');
+  }
+
+  function flashScreen(color) {
+    const fl = document.getElementById('flash-overlay');
+    fl.className = 'flash-overlay ' + color;
+    setTimeout(() => { fl.className = 'flash-overlay'; }, 220);
+  }
+
+  function vibrate(pattern) {
+    if (navigator.vibrate) navigator.vibrate(pattern);
+  }
+
+  let _toastTimer;
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(_toastTimer);
+    _toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+  }
+  window.showToast = showToast;
+
+  // Auto-connect if code in URL (?code=XXXX)
+  window.addEventListener('DOMContentLoaded', () => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    if (code) {
+      document.getElementById('code-input').value = code.toUpperCase();
+      setTimeout(connect, 500);
+    }
+  });
+
+  window._msConnect = connect;
+  window._msDisconnect = disconnect;
+</script>
+
+<!-- html5-qrcode fallback -->
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+<!-- ── HEADER ── -->
+<div class="header">
+  <div class="header-logo">
+    📱 ST Scanner
+    <span>Mobile Barcode Scanner</span>
+  </div>
+  <div id="status-pill" class="status-pill connecting">📱 Scanner</div>
+</div>
+
+<!-- ══ SCREEN 1: CONNECT ══ -->
+<div id="screen-connect" style="display:flex">
+  <div class="connect-icon">🔗</div>
+  <div class="connect-title">Desktop POS ට Connect කරන්න</div>
+  <div class="connect-sub">Desktop ලෙස "Connect Mobile" click කරලා<br>දෙන Session Code එක ඇතුලත් කරන්න</div>
+
+  <div class="code-input-wrap">
+    <label>SESSION CODE</label>
+    <input id="code-input" class="code-input" maxlength="6" placeholder="XXXXXX"
+      oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')"
+      onkeydown="if(event.key==='Enter') _msConnect()">
+    <button id="btn-connect" class="btn-connect" onclick="_msConnect()">
+      🔗 Connect to POS
+    </button>
+  </div>
+
+  <div class="info-box">
+    <b>1.</b> Desktop ලෙස topbar ලෙල <b>"📱 Connect Mobile"</b> click කරන්න<br>
+    <b>2.</b> QR code scan කරන්න <b>හෝ</b> Session Code type කරන්න<br>
+    <b>3.</b> Connect වූ පසු barcode scan කළාම cart add වෙනවා
+  </div>
+</div>
+
+<!-- ══ SCREEN 2: SCANNER ══ -->
+<div id="screen-scanner" style="display:none; flex-direction:column; align-items:center; width:100%; flex:1;">
+
+  <!-- Session strip -->
+  <div class="session-strip" style="width:100%; max-width:500px;">
+    <span>Session: <b id="session-code-display">------</b></span>
+    <span class="disconnect-link" onclick="_msDisconnect()">✕ Disconnect</span>
+  </div>
+
+  <!-- Camera -->
+  <div class="cam-wrap">
+    <video id="cam-video" playsinline autoplay muted></video>
+    <div id="qr-reader-fb" style="display:none"></div>
+    <div class="scan-line"></div>
+    <div class="corner c-tl"></div>
+    <div class="corner c-tr"></div>
+    <div class="corner c-bl"></div>
+    <div class="corner c-br"></div>
+    <div class="scan-guide"></div>
+    <div id="flash-overlay" class="flash-overlay"></div>
+  </div>
+
+  <!-- No cam -->
+  <div id="no-cam" class="no-cam">
+    <div style="font-size:48px">📵</div>
+    <div style="color:var(--warning);font-weight:700">Camera access නෑ</div>
+    <div style="color:var(--muted);font-size:12px;text-align:center;line-height:1.8">
+      HTTPS ළඟ host කළොත් camera work කරයි.<br>
+      Manual input box use කරන්න.
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="cam-controls">
+    <button class="ctrl-btn" onclick="flipCam()">🔄 Flip</button>
+    <button id="torch-btn" class="ctrl-btn" onclick="toggleTorch()">🔦 Torch</button>
+  </div>
+
+  <div class="result-area">
+
+    <!-- Last scan card -->
+    <div class="last-scan-card">
+      <div class="last-scan-label" id="last-scan-label">Barcode scan කරන්න...</div>
+      <div class="last-scan-name" id="last-scan-name" style="color:var(--muted);font-size:15px">Camera ලෙල product point කරන්න</div>
+      <div class="last-scan-meta" id="last-scan-meta"></div>
+      <div class="last-scan-price" id="last-scan-price"></div>
+    </div>
+
+    <!-- Cart summary -->
+    <div class="cart-pill">
+      <div>
+        <div class="cart-pill-left">Cart Items</div>
+        <div class="cart-pill-count"><span id="cart-qty">0</span> <span style="font-size:14px;font-weight:400;color:var(--muted)">items</span></div>
+      </div>
+      <div style="text-align:right">
+        <div class="cart-pill-left">Total</div>
+        <div class="cart-pill-total" id="cart-total">Rs.0</div>
+      </div>
+    </div>
+
+    <!-- Checkout -->
+    <button class="checkout-btn" onclick="showToast('🖥️ Desktop POS ලෙල Checkout කරන්න')">
+      🖥️ Desktop ලෙල Checkout කරන්න
+    </button>
+
+    <!-- Manual input -->
+    <div class="manual-row">
+      <input id="manual-inp" class="manual-input" placeholder="Manual barcode type..."
+        onkeydown="if(event.key==='Enter') manualSend()">
+      <button class="manual-send" onclick="manualSend()">Send</button>
+    </div>
+
+    <!-- Scanned items list -->
+    <div class="items-list-title">Scanned Items</div>
+    <div id="items-list" class="items-list">
+      <div style="color:var(--muted);font-size:12px;text-align:center;padding:10px">
+        Scan කළ products මෙහෙ appear වෙනවා
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast"></div>
+
+</body>
+</html>
