@@ -452,12 +452,14 @@
       db.ref('mobile-scanner/' + sessionCode + '/mobile-presence').set({ connected: false });
     }
     stopCamera();
+    const savedCode = localStorage.getItem('st_mobile_session_code') || '';
     sessionCode = '';
     isConnected = false;
     scannedItems = {};
     document.getElementById('screen-scanner').style.display = 'none';
     document.getElementById('screen-connect').style.display = 'flex';
-    document.getElementById('code-input').value = '';
+    // Saved code restore කරනවා — ආයෙ connect කරන්නෙ easy
+    document.getElementById('code-input').value = savedCode;
     document.getElementById('btn-connect').disabled = false;
     setStatus('connecting', '📱 Scanner');
   }
@@ -672,13 +674,25 @@
   }
   window.showToast = showToast;
 
-  // Auto-connect if code in URL (?code=XXXX)
+  // Auto-connect logic — permanent code localStorage ලෙල save කරලා auto-connect
   window.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
-    const code = params.get('code');
-    if (code) {
-      document.getElementById('code-input').value = code.toUpperCase();
+    const urlCode = params.get('code');
+
+    if (urlCode) {
+      // URL ලෙල code ආවොත් — save කරලා connect කරනවා
+      const upperCode = urlCode.toUpperCase();
+      localStorage.setItem('st_mobile_session_code', upperCode);
+      document.getElementById('code-input').value = upperCode;
       setTimeout(connect, 500);
+    } else {
+      // URL ලෙල code නෑ — localStorage ලෙල saved code check කරනවා
+      const savedCode = localStorage.getItem('st_mobile_session_code');
+      if (savedCode && savedCode.length === 6) {
+        document.getElementById('code-input').value = savedCode;
+        // Auto-connect — saved code use කරලා straight connect
+        setTimeout(connect, 800);
+      }
     }
   });
 
@@ -728,6 +742,7 @@
   <div class="session-strip" style="width:100%; max-width:500px;">
     <span>Session: <b id="session-code-display">------</b></span>
     <span class="disconnect-link" onclick="_msDisconnect()">✕ Disconnect</span>
+    <span class="disconnect-link" style="color:var(--muted);font-size:10px;margin-left:4px;" onclick="if(confirm('Saved code forget කරන්නද?')){localStorage.removeItem('st_mobile_session_code');_msDisconnect();}">🗑️ Forget</span>
   </div>
 
   <!-- Camera -->
