@@ -3737,8 +3737,9 @@ function updateChecklistItem(type,idx,val){
 function saveChecklistItems(){ saveDB(); toast('✅ Checklist items saved!'); renderOpenCloseChecklist(); }
 
 // =============================================
-// EXTEND goPage
+// EXTEND goPage — setTimeout so main goPage is ready
 // =============================================
+setTimeout(function(){
 var _v29GoPage=goPage;
 goPage=function(id){
   _v29GoPage(id);
@@ -3758,6 +3759,7 @@ goPage=function(id){
   else if(id==='tasks') renderTasks();
   else if(id==='open-close-checklist') renderOpenCloseChecklist();
 };
+}, 0); // end setTimeout for goPage patch
 
 // Open kit modal helper
 var _openKitM=openM;
@@ -4790,8 +4792,9 @@ function parseDate(str) {
 }
 
 // ============================================================
-// PAGE HOOKS - extend goPage
+// PAGE HOOKS - extend goPage (setTimeout so base goPage is ready)
 // ============================================================
+setTimeout(function(){
 var _advGoPage = goPage;
 goPage = function(id) {
   _advGoPage(id);
@@ -4804,6 +4807,7 @@ goPage = function(id) {
   else if (id==='cust-segments') { renderCustSegments(); }
   else if (id==='shift') { renderShift(); }
 };
+}, 0); // end setTimeout for goPage patch
 
 // Extend renderAll
 var _advRenderAll = renderAll;
