@@ -3852,7 +3852,6 @@ var segFilter = 'all';
 // ============================================================
 // 1. AI SALES FORECASTING
 // ============================================================
-// renderAdvancedAnalytics — alias for any direct calls / future hooks
 function renderAdvancedAnalytics() { runForecast(); }
 function runForecast() {
   var invoices = db.invoices || [];
@@ -8245,13 +8244,22 @@ function _startScanner(modeLabel){
   document.getElementById('scan-mode-label').textContent = modeLabel;
   scanLastCode = ''; scanLastTime = 0; _torchOn = false;
 
-  setTimeout(function(){ var inp=document.getElementById('scan-manual'); if(inp) inp.focus(); }, 300);
+  // Detect laptop/PC (no touch, no rear camera likely)
+  var isLaptop = !('ontouchstart' in window) && navigator.maxTouchPoints === 0;
+
+  // Always focus manual input
+  setTimeout(function(){ var inp=document.getElementById('scan-manual'); if(inp){ inp.focus(); inp.select(); } }, 200);
+
+  if(isLaptop){
+    // Laptop mode: skip camera, show manual entry prominently
+    _showManualMode();
+    return;
+  }
 
   if(typeof Html5Qrcode === 'undefined'){
     _showNoCam(); return;
   }
 
-  // Stop any existing scanner
   _stopQrScanner(function(){
     _initQrScanner();
   });
@@ -8277,25 +8285,18 @@ function _initQrScanner(){
 
     _html5QrCode = new Html5Qrcode('qr-reader', { verbose: false });
 
-    // Build formats list safely (library version differences)
     var fmts = [];
     try {
       var F = Html5QrcodeSupportedFormats;
-      fmts = [
-        F.EAN_13, F.EAN_8, F.CODE_128, F.CODE_39,
-        F.CODE_93, F.UPC_A, F.UPC_E, F.QR_CODE,
-        F.DATA_MATRIX, F.ITF, F.CODABAR
-      ].filter(function(f){ return f !== undefined; });
-    } catch(e){ fmts = []; } // empty = all formats supported
+      fmts = [F.EAN_13,F.EAN_8,F.CODE_128,F.CODE_39,F.CODE_93,F.UPC_A,F.UPC_E,F.QR_CODE,F.DATA_MATRIX,F.ITF,F.CODABAR].filter(function(f){ return f!==undefined; });
+    } catch(e){ fmts = []; }
 
     var config = {
-      fps: 25,                              // ↑ faster scan polling
-      qrbox: { width: 280, height: 120 },  // wide box — EAN-13 / barcode friendly
-      aspectRatio: 1.7778,                  // 16:9 landscape — wide barcodes visible
-      experimentalFeatures: { useBarCodeDetectorIfSupported: true }, // use native BarcodeDetector API
-      supportedScanTypes: [
-        Html5QrcodeScanType.SCAN_TYPE_CAMERA
-      ]
+      fps: 25,
+      qrbox: { width: 280, height: 120 },
+      aspectRatio: 1.7778,
+      experimentalFeatures: { useBarCodeDetectorIfSupported: true },
+      supportedScanTypes: [ Html5QrcodeScanType.SCAN_TYPE_CAMERA ]
     };
     if(fmts.length > 0) config.formatsToSupport = fmts;
 
@@ -8376,7 +8377,31 @@ function toggleTorch(){
 function _showNoCam(){
   document.getElementById('scan-box-wrap').style.display = 'none';
   document.getElementById('scan-no-cam').style.display = 'block';
-  setTimeout(function(){ var inp=document.getElementById('scan-manual'); if(inp) inp.focus(); }, 100);
+  setTimeout(function(){ var inp=document.getElementById('scan-manual'); if(inp){ inp.focus(); inp.select(); } }, 100);
+}
+
+function _showManualMode(){
+  // Hide camera view, show a laptop-friendly manual entry hint
+  document.getElementById('scan-box-wrap').style.display = 'none';
+  var nc = document.getElementById('scan-no-cam');
+  nc.style.display = 'block';
+  nc.innerHTML = '<div style="font-size:28px;margin-bottom:8px">💻</div>' +
+    '<div style="color:#fff;font-size:14px;font-weight:700;margin-bottom:6px">Laptop / PC Mode</div>' +
+    '<div style="color:rgba(255,255,255,0.6);font-size:12px;line-height:1.9">' +
+      'Barcode number type කරන්න 👇<br>' +
+      '<span style="color:rgba(255,210,80,0.9);font-weight:600">Physical USB scanner</span> connect නම්<br>' +
+      'scan කළාම auto-detect වේ ✅<br><br>' +
+      '<button onclick="_switchToCamera()" class="btn bo bsm" style="color:#fff;border-color:rgba(255,255,255,0.3);font-size:11px">📷 Camera try කරන්න</button>' +
+    '</div>';
+  setTimeout(function(){ var inp=document.getElementById('scan-manual'); if(inp){ inp.focus(); inp.select(); inp.style.borderColor='rgba(108,99,255,0.9)'; inp.style.boxShadow='0 0 0 3px rgba(108,99,255,0.25)'; } }, 150);
+}
+
+function _switchToCamera(){
+  var nc = document.getElementById('scan-no-cam');
+  nc.style.display = 'none';
+  document.getElementById('scan-box-wrap').style.display = '';
+  if(typeof Html5Qrcode === 'undefined'){ _showNoCam(); return; }
+  _stopQrScanner(function(){ _initQrScanner(); });
 }
 
 function _handleScannedCode(code){
@@ -8402,10 +8427,7 @@ function _handleScannedCode(code){
       res.style.color = 'var(--success)';
       res.textContent = '✅ Found: ' + existing.name;
       flash('var(--success)');
-      setTimeout(function(){
-        closeBarcodeScanner();
-        editProd(existing.id);
-      }, 700);
+      setTimeout(function(){ closeBarcodeScanner(); editProd(existing.id); }, 700);
       return;
     }
     _fillProductForm('', 'Accessories', '', '', '', code);
@@ -8465,15 +8487,30 @@ function _handleScannedCode(code){
   }
 }
 
-// Physical barcode scanner auto-submit (types fast then Enter)
+// Physical USB barcode scanner: types fast (< 50ms/char) then Enter
+var _scanLastKeyTime = 0;
+var _scanKeyCount = 0;
 function onScanInput(inp){
+  var now = Date.now();
+  var gap = now - _scanLastKeyTime;
+  _scanLastKeyTime = now;
+  // If chars arrive very fast (< 60ms gap) it's a USB scanner
+  if(gap < 60) _scanKeyCount++; else _scanKeyCount = 1;
+
   clearTimeout(_scanPhysicalTimer);
-  _scanPhysicalTimer = setTimeout(function(){
-    var val = inp.value.trim();
-    if(val.length >= 4 && val.indexOf(' ') === -1){
-      doManualScan();
-    }
-  }, 100);
+  if(_scanKeyCount >= 4){
+    // USB scanner detected — submit quickly
+    _scanPhysicalTimer = setTimeout(function(){
+      var val = inp.value.trim();
+      if(val.length >= 4){ doManualScan(); }
+    }, 80);
+  } else {
+    // Manual keyboard — wait longer before auto-submit
+    _scanPhysicalTimer = setTimeout(function(){
+      var val = inp.value.trim();
+      if(val.length >= 8 && val.indexOf(' ') === -1){ doManualScan(); }
+    }, 600);
+  }
 }
 
 function doManualScan(){
