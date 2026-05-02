@@ -208,6 +208,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary)
 select option{background:var(--card2);}
 /* Modal */
 .moverlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(4px);z-index:9000;display:none;align-items:center;justify-content:center;padding:16px 16px 16px 236px;}
+@media(max-width:768px){.moverlay{padding:16px!important;}}
 .moverlay.open{display:flex;animation:fadeIn 0.2s;}
 .modal{background:var(--card);border:1px solid var(--border);border-radius:18px;width:540px;max-width:100%;max-height:90vh;overflow-y:auto;animation:slideUp 0.25s;}
 .mhdr{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--card);z-index:10;}
@@ -300,7 +301,7 @@ body.light .inv-preview{border:1px solid #e0e0ee;}
 .thermal-receipt .tline{border-top:1px dashed #000;margin:4px 0;}
 .thermal-receipt .trow{display:flex;justify-content:space-between;}
 /* Barcode scan overlay */
-.scan-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9500;display:none;align-items:center;justify-content:center;flex-direction:column;gap:10px;}
+.scan-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9500;display:none;align-items:center;justify-content:center;flex-direction:column;gap:10px;padding:16px;}
 .scan-overlay.open{display:flex;}
 .scan-box{width:300px;height:300px;border-radius:14px;position:relative;overflow:hidden;background:#000;}
 #qr-reader{width:300px!important;height:300px!important;border:none!important;background:#000;overflow:hidden;}
@@ -2655,8 +2656,8 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
   <div id="scan-mode-label" style="color:var(--primary);font-size:12px;background:rgba(108,99,255,0.25);padding:4px 16px;border-radius:20px"></div>
 
   <!-- Camera view -->
-  <div id="scan-box-wrap" style="position:relative;width:300px;height:300px;border-radius:14px;overflow:hidden;border:2px solid var(--primary);box-shadow:0 0 30px rgba(108,99,255,0.4);">
-    <div id="qr-reader" style="width:300px;height:300px;"></div>
+  <div id="scan-box-wrap" style="position:relative;width:min(300px,90vw);height:min(300px,90vw);border-radius:14px;overflow:hidden;border:2px solid var(--primary);box-shadow:0 0 30px rgba(108,99,255,0.4);">
+    <div id="qr-reader" style="width:min(300px,90vw);height:min(300px,90vw);"></div>
     <div class="scan-line"></div>
     <div class="scan-corner sc-tl"></div>
     <div class="scan-corner sc-tr"></div>
@@ -2682,12 +2683,12 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
   </div>
 
   <!-- Result display -->
-  <div id="scan-result" style="font-size:13px;min-height:22px;color:var(--success);text-align:center;max-width:320px;font-weight:700;background:rgba(0,0,0,0.4);padding:6px 16px;border-radius:20px"></div>
+  <div id="scan-result" style="font-size:13px;min-height:22px;color:var(--success);text-align:center;max-width:min(320px,92vw);font-weight:700;background:rgba(0,0,0,0.4);padding:6px 16px;border-radius:20px"></div>
 
   <!-- Manual input + buttons -->
-  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center">
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;width:min(340px,96vw)">
     <input id="scan-manual" placeholder="Manual type / physical scanner..."
-      style="background:rgba(255,255,255,0.1);border:1.5px solid rgba(108,99,255,0.6);color:#fff;padding:10px 14px;border-radius:10px;font-size:14px;width:230px;outline:none"
+      style="background:rgba(255,255,255,0.1);border:1.5px solid rgba(108,99,255,0.6);color:#fff;padding:10px 14px;border-radius:10px;font-size:14px;flex:1;min-width:0;outline:none"
       onkeydown="if(event.key==='Enter')doManualScan()"
       oninput="onScanInput(this)">
     <button class="btn bp2" onclick="doManualScan()" style="padding:10px 14px">🔍</button>
@@ -8261,12 +8262,12 @@ function _startScanner(modeLabel){
 }
 
 function _initQrScanner(){
+  // Clean up any leftover qr-reader element content first
+  var rd = document.getElementById('qr-reader');
+  if(rd){ rd.innerHTML = ''; rd.style.width='300px'; rd.style.height='300px'; rd.style.minHeight='300px'; }
+
   document.getElementById('scan-box-wrap').style.display = '';
   document.getElementById('scan-no-cam').style.display = 'none';
-
-  // Force height before init — Android Chrome needs this
-  var rd = document.getElementById('qr-reader');
-  if(rd){ rd.style.width='300px'; rd.style.height='300px'; rd.style.minHeight='300px'; }
 
   // Safe formats
   var fmts = [];
@@ -8278,7 +8279,7 @@ function _initQrScanner(){
   } catch(e){ fmts = []; }
 
   var config = {
-    fps: 25,
+    fps: 15,
     qrbox: { width: 250, height: 110 },
     aspectRatio: 1.7778,
     experimentalFeatures: { useBarCodeDetectorIfSupported: true },
@@ -8290,6 +8291,7 @@ function _initQrScanner(){
   function onFail(){ }
 
   function styleReader(){
+    // Increased timeout for slow mobile devices
     setTimeout(function(){
       var r = document.getElementById('qr-reader');
       if(!r) return;
@@ -8313,20 +8315,23 @@ function _initQrScanner(){
           d.style.display='none';
         }
       });
-    }, 200);
+    }, 600);
   }
 
   _html5QrCode = new Html5Qrcode('qr-reader', { verbose: false });
 
-  // Android Chrome: try environment (non-exact first — safer)
+  // Use _currentCamera preference
+  var facingPref = _currentCamera || 'environment';
+
+  // Try preferred facing mode first
   _html5QrCode.start(
-    { facingMode: 'environment' },
+    { facingMode: facingPref },
     config, onSuccess, onFail
   ).then(styleReader).catch(function(e1){
     console.warn('S1 fail:', e1);
-    // Try exact environment
+    // Try exact facing
     _html5QrCode.start(
-      { facingMode: { exact: 'environment' } },
+      { facingMode: { exact: facingPref } },
       config, onSuccess, onFail
     ).then(styleReader).catch(function(e2){
       console.warn('S2 fail:', e2);
@@ -8334,11 +8339,15 @@ function _initQrScanner(){
       Html5Qrcode.getCameras().then(function(cams){
         if(!cams || !cams.length){ _tryNativeCamera(); return; }
         _cameraList = cams;
-        // Prefer back cam
+        // Prefer based on _currentCamera
         var id = cams[cams.length-1].id;
         for(var i=0;i<cams.length;i++){
           var l=(cams[i].label||'').toLowerCase();
-          if(l.includes('back')||l.includes('rear')||l.includes('environment')){ id=cams[i].id; break; }
+          if(facingPref === 'user'){
+            if(l.includes('front')||l.includes('user')||l.includes('selfie')){ id=cams[i].id; break; }
+          } else {
+            if(l.includes('back')||l.includes('rear')||l.includes('environment')){ id=cams[i].id; break; }
+          }
         }
         _html5QrCode.start(
           { deviceId: { exact: id } },
@@ -8354,7 +8363,7 @@ function _tryNativeCamera(){
   if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
     _showNoCam(); return;
   }
-  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: _currentCamera || 'environment' } })
     .then(function(stream){
       // Permission granted — now retry html5-qrcode
       stream.getTracks().forEach(function(t){ t.stop(); });
@@ -8363,17 +8372,22 @@ function _tryNativeCamera(){
           try{ _html5QrCode.clear(); }catch(e){}
           _html5QrCode = null;
         }
+        // Clean DOM before re-init
+        var rd = document.getElementById('qr-reader');
+        if(rd) rd.innerHTML = '';
         _html5QrCode = new Html5Qrcode('qr-reader', { verbose: false });
         _html5QrCode.start(
-          { facingMode: 'environment' },
-          { fps:25, qrbox:{width:250,height:110}, aspectRatio:1.7778,
+          { facingMode: _currentCamera || 'environment' },
+          { fps:15, qrbox:{width:250,height:110}, aspectRatio:1.7778,
             experimentalFeatures:{useBarCodeDetectorIfSupported:true},
             supportedScanTypes:[Html5QrcodeScanType.SCAN_TYPE_CAMERA] },
           function(code){ _handleScannedCode(code); },
           function(){}
         ).then(function(){
-          var r=document.getElementById('qr-reader');
-          if(r){ r.style.height='300px'; var v=r.querySelector('video'); if(v){v.style.height='300px';v.style.width='100%';} }
+          setTimeout(function(){
+            var r=document.getElementById('qr-reader');
+            if(r){ r.style.height='min(300px,90vw)'; var v=r.querySelector('video'); if(v){v.style.height='min(300px,90vw)';v.style.width='100%';} }
+          }, 600);
         }).catch(function(){ _showNoCam(); });
       }, 500);
     })
@@ -8400,12 +8414,9 @@ function _stopQrScanner(cb){
 }
 
 function flipCamera(){
-  if(!_html5QrCode || !_cameraList || _cameraList.length < 2){
-    toast('⚠️ Camera flip available නෑ','var(--warning)'); return;
-  }
   _currentCamera = _currentCamera === 'environment' ? 'user' : 'environment';
   _stopQrScanner(function(){
-    setTimeout(_initQrScanner, 300);
+    setTimeout(_initQrScanner, 400);
   });
   toast('🔄 Camera flipped');
 }
@@ -8523,7 +8534,7 @@ function onScanInput(inp){
     if(val.length >= 4 && val.indexOf(' ') === -1){
       doManualScan();
     }
-  }, 100);
+  }, 300);
 }
 
 function doManualScan(){
@@ -8536,7 +8547,11 @@ function doManualScan(){
 function closeBarcodeScanner(){
   document.getElementById('scan-overlay').classList.remove('open');
   _torchOn = false;
-  _stopQrScanner(null);
+  _stopQrScanner(function(){
+    // Clear the reader div so next open starts fresh
+    var rd = document.getElementById('qr-reader');
+    if(rd) rd.innerHTML = '';
+  });
   clearTimeout(_scanPhysicalTimer);
 }
 
