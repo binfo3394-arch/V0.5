@@ -152,21 +152,12 @@
     });
   };
 
-  // ── Mobile Scanner: active listener handle ──
   var _mcScanUnsub = null;
-
-  // ── Mobile Scanner: Start listening for incoming scans ──
   window.mobileScannerStartListen = function(sessionCode, onScan) {
     if (!sessionCode) return;
-    // 1. Unsubscribe previous listener
     if (_mcScanUnsub) { try { _mcScanUnsub(); } catch(e){} _mcScanUnsub = null; }
-    // 2. Clear stale scan data (onValue fires immediately with old data otherwise!)
     remove(ref(database, 'mobile-scanner/' + sessionCode + '/scan')).catch(function(){});
-    // 3. Mark desktop as ready
-    set(ref(database, 'mobile-scanner/' + sessionCode + '/desktop-presence'), {
-      connected: true, time: Date.now()
-    });
-    // 4. Attach fresh listener after stale data is cleared
+    set(ref(database, 'mobile-scanner/' + sessionCode + '/desktop-presence'), { connected: true, time: Date.now() });
     setTimeout(function() {
       _mcScanUnsub = onValue(ref(database, 'mobile-scanner/' + sessionCode + '/scan'), function(snap) {
         if (!snap.exists()) return;
@@ -280,8 +271,10 @@ select option{background:var(--card2);}
 .pname{font-size:12px;font-weight:600;}
 .pprice{font-size:13px;color:var(--primary);font-weight:700;margin-top:3px;}
 .pstock{font-size:10px;color:var(--muted);}
-.cpanel{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;position:sticky;top:72px;display:flex;flex-direction:column;height:calc(100vh - 100px);max-height:calc(100vh - 100px);}
-.citems{flex:1;overflow-y:auto;margin:8px 0;min-height:80px;}
+.cpanel{background:var(--card);border:1px solid var(--border);border-radius:14px;position:sticky;top:72px;display:flex;flex-direction:column;height:calc(100vh - 100px);overflow:hidden;}
+.cpanel-inner{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:0;}
+.citems{overflow-y:auto;margin:8px 0;min-height:60px;max-height:220px;}
+.ctotal{flex-shrink:0;}
 .citem{display:flex;align-items:center;gap:7px;padding:7px 0;border-bottom:1px solid var(--border);}
 .cname{flex:1;font-size:12px;}
 .cqty{display:flex;align-items:center;gap:5px;}
@@ -1094,6 +1087,7 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
             <div class="pgrid" id="pos-prods"></div>
           </div>
           <div class="cpanel">
+            <div class="cpanel-inner">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
               <h3 style="font-size:14px">🛒 Cart <span id="cart-cnt" style="background:var(--primary);color:#fff;font-size:10px;padding:2px 7px;border-radius:10px">0</span></h3>
               <button class="btn bd2 bsm" onclick="clearCart()">🗑️</button>
@@ -1159,6 +1153,7 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
               </div>
               <button class="btn bp2" style="width:100%;padding:11px;font-size:14px;margin-top:6px" onclick="completeSale()">✅ Complete Sale</button>
             </div>
+            </div><!-- /cpanel-inner -->
           </div>
         </div>
       </div>
@@ -6211,12 +6206,8 @@ function addToCart(id) {
   var p = db.products.find(function(x){ return x.id===id; }); if(!p) return;
   if(p.stock <= 0){ toast('🚫 '+p.name+' — Out of Stock!','var(--danger)'); return; }
   var ex = cart.find(function(c){ return c.id===id; });
-  var inCart = ex ? ex.qty : 0;
-  var available = p.stock - inCart;
-  if (ex) {
-    if(available > 0) ex.qty++;
-    else { toast('⚠️ '+p.name+' — Max stock ('+p.stock+')','var(--warning)'); return; }
-  }
+  var available = p.stock - (ex ? ex.qty : 0);
+  if (ex) { if(available > 0) ex.qty++; else { toast('⚠️ '+p.name+' — Max stock ('+p.stock+')','var(--warning)'); return; } }
   else cart.push({ id:id, name:p.name, price:p.price, qty:1 });
   renderCart();
 }
@@ -8567,10 +8558,7 @@ function _mcAddActivity(html) {
 }
 
 function _mcStartListen() {
-  if (typeof window.mobileScannerStartListen !== 'function') {
-    setTimeout(_mcStartListen, 300);
-    return;
-  }
+  if (typeof window.mobileScannerStartListen !== 'function') { setTimeout(_mcStartListen, 300); return; }
   window.mobileScannerStartListen(_mcSessionCode, function(barcode, scanId, code) {
     if (scanId === _mcLastScanId) return;
     _mcLastScanId = scanId;
