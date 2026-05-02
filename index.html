@@ -1116,7 +1116,7 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
           <div class="estitle">📦 Inventory</div>
           <div style="display:flex;gap:6px;flex-wrap:wrap">
             <button class="btn bo bsm" onclick="openBulkMarkup()" title="Bulk price update">📊 Bulk Markup</button>
-            <button class="btn bo bsm" onclick="openScannerForInventory()" title="Scan barcode">📷 Scan</button>
+            <button class="btn bo bsm" onclick="openScannerForInventoryList()" title="Scan barcode to search product">📷 Scan</button>
             <button class="btn bp2" onclick="openM('m-prod')">➕ Add Product</button>
           </div>
         </div>
@@ -3852,8 +3852,6 @@ var segFilter = 'all';
 // ============================================================
 // 1. AI SALES FORECASTING
 // ============================================================
-// renderAdvancedAnalytics — alias for any direct calls / future hooks
-function renderAdvancedAnalytics() { runForecast(); }
 function runForecast() {
   var invoices = db.invoices || [];
   var now = new Date();
@@ -4802,7 +4800,7 @@ setTimeout(function(){
 var _advGoPage = goPage;
 goPage = function(id) {
   _advGoPage(id);
-  if (id==='advanced-analytics') { renderAdvancedAnalytics(); }
+  if (id==='advanced-analytics') { runForecast(); }
   else if (id==='abc-analysis') { renderAbcAnalysis(); }
   else if (id==='pnl') { renderPnL(); }
   else if (id==='staff') { renderStaff(); }
@@ -8233,6 +8231,10 @@ function openScannerForInventory(){
   scanMode = 'inventory';
   _startScanner('📦 Inventory Mode — Barcode fill කරන්න');
 }
+function openScannerForInventoryList(){
+  scanMode = 'inventory-list';
+  _startScanner('🔍 Inventory Search — Barcode scan කරලා product හොයන්න');
+}
 
 function _startScanner(modeLabel){
   document.getElementById('scan-overlay').classList.add('open');
@@ -8395,18 +8397,51 @@ function _handleScannedCode(code){
   if(scanMode === 'inventory'){
     var existing = db.products.find(function(x){ return x.barcode === code; });
     if(existing){
-      _fillProductForm(existing.name, existing.category, existing.price, existing.cost, existing.desc||'', code);
       res.style.color = 'var(--success)';
       res.textContent = '✅ Found: ' + existing.name;
       flash('var(--success)');
-      setTimeout(function(){ closeBarcodeScanner(); }, 900);
+      setTimeout(function(){
+        closeBarcodeScanner();
+        editProd(existing.id); // ✅ p-id set වෙනවා → save = proper update
+      }, 700);
       return;
     }
+    // New product — barcode pre-fill කරලා form open
     _fillProductForm('', 'Accessories', '', '', '', code);
     res.style.color = 'var(--success)';
-    res.textContent = '✅ Barcode set: ' + code;
+    res.textContent = '✅ New product — Barcode set: ' + code;
     flash('var(--success)');
     setTimeout(function(){ closeBarcodeScanner(); }, 800);
+
+  } else if(scanMode === 'inventory-list'){
+    // Inventory page top scan button — list filter + highlight
+    var prod = db.products.find(function(x){ return x.barcode === code; });
+    if(prod){
+      res.style.color = 'var(--success)';
+      res.textContent = '✅ ' + prod.name;
+      flash('var(--success)');
+      var invQ = document.getElementById('inv-q');
+      if(invQ){ invQ.value = code; renderInv(); }
+      // Highlight matching row after render
+      setTimeout(function(){
+        closeBarcodeScanner();
+        // Scroll to product in list
+        var rows = document.querySelectorAll('#inv-tbl tr');
+        rows.forEach(function(row){
+          if(row.textContent.includes(code)){
+            row.style.background = 'rgba(108,99,255,0.2)';
+            row.scrollIntoView({ behavior:'smooth', block:'center' });
+            setTimeout(function(){ row.style.background=''; }, 2500);
+          }
+        });
+      }, 600);
+    } else {
+      res.style.color = 'var(--warning)';
+      res.textContent = '⚠️ Product නෑ: ' + code;
+      flash('var(--warning)');
+      var invQ2 = document.getElementById('inv-q');
+      if(invQ2){ invQ2.value = code; renderInv(); }
+    }
 
   } else {
     // POS mode — match by barcode
@@ -9888,19 +9923,11 @@ pageTitles.loyalty='⭐ Loyalty Points';
 pageTitles.reports='📑 Reports & Exports';
 pageTitles.activitylog='🔍 Activity Log';
 
-// ---- renderReports: initialises the Reports & Exports page ----
-function renderReports(){
-  renderBirthdayList();
-  // Clear any previous CSV import result
-  var csvRes = document.getElementById('csv-import-result');
-  if(csvRes) csvRes.textContent = '';
-}
-
 var _v26GoPage = goPage;
 goPage = function(id){
   _v26GoPage(id);
   if(id==='loyalty') renderLoyalty();
-  if(id==='reports') renderReports();
+  if(id==='reports') renderBirthdayList();
   if(id==='activitylog') renderActivityLog();
 };
 
