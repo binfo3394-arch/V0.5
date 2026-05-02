@@ -386,11 +386,10 @@
 </head>
 <body>
 
-<!-- Firebase SDK -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getDatabase, ref, set, onValue, serverTimestamp, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-
+<!-- Firebase SDK (compat - globally accessible, no module needed) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
   // ══ Same Firebase config as main app ══
   const firebaseConfig = {
     apiKey:            "AIzaSyA2EprDDYqnR1KTlA3nADdcCcVpi-HaDMk",
@@ -402,8 +401,8 @@
     appId:             "1:778408728987:web:66153a512fd14531fda93e"
   };
 
-  const app = initializeApp(firebaseConfig);
-  const db  = getDatabase(app);
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
 
   let sessionCode = '';
   let sessionRef  = null;
@@ -418,11 +417,6 @@
     catch(e) {}
   }
 
-  // ── Expose to global for inline handlers ──
-  window._msApp = {
-    connect, disconnect, sendBarcode, flipCam, toggleTorch, manualSend, checkout
-  };
-
   // ─────────────────────────────────────────
   //  CONNECT
   // ─────────────────────────────────────────
@@ -432,13 +426,13 @@
     if (code.length < 4) { showToast('❌ Code too short'); return; }
 
     sessionCode = code;
-    sessionRef = ref(db, 'mobile-scanner/' + code);
+    sessionRef = db.ref('mobile-scanner/' + code);
 
     setStatus('connecting', '⏳ Connecting...');
     document.getElementById('btn-connect').disabled = true;
 
     // Write presence
-    set(ref(db, 'mobile-scanner/' + code + '/mobile-presence'), {
+    db.ref('mobile-scanner/' + code + '/mobile-presence').set({
       connected: true, time: Date.now(), ua: navigator.userAgent.substring(0,60)
     }).then(() => {
       isConnected = true;
@@ -455,7 +449,7 @@
 
   function disconnect() {
     if (sessionRef) {
-      set(ref(db, 'mobile-scanner/' + sessionCode + '/mobile-presence'), { connected: false });
+      db.ref('mobile-scanner/' + sessionCode + '/mobile-presence').set({ connected: false });
     }
     stopCamera();
     sessionCode = '';
@@ -473,10 +467,8 @@
   // ─────────────────────────────────────────
   function sendBarcode(code) {
     if (!isConnected || !code) return;
-    // Clear previous ack so mobile UI resets cleanly
-    remove(ref(db, 'mobile-scanner/' + sessionCode + '/ack')).catch(()=>{});
     const payload = { barcode: code, time: Date.now(), id: Math.random().toString(36).slice(2) };
-    set(ref(db, 'mobile-scanner/' + sessionCode + '/scan'), payload)
+    db.ref('mobile-scanner/' + sessionCode + '/scan').set(payload)
       .then(() => {})
       .catch(e => showToast('⚠️ Send failed'));
   }
@@ -485,7 +477,7 @@
   //  LISTEN for desktop ACK (product name + price)
   // ─────────────────────────────────────────
   function listenForAck() {
-    onValue(ref(db, 'mobile-scanner/' + sessionCode + '/ack'), snap => {
+    db.ref('mobile-scanner/' + sessionCode + '/ack').on('value', snap => {
       if (!snap.exists()) return;
       const ack = snap.val();
       if (!ack || !ack.id) return;
@@ -692,16 +684,6 @@
 
   window._msConnect = connect;
   window._msDisconnect = disconnect;
-</script>
-
-<!-- ⚠️ IMPORTANT: type="module" scripts are deferred — inline onclick handlers need
-     these plain-script shims so they work immediately when user taps buttons -->
-<script>
-  function _msConnect()    { window._msConnect    ? window._msConnect()    : setTimeout(_msConnect, 150);    }
-  function _msDisconnect() { window._msDisconnect ? window._msDisconnect() : null; }
-  function flipCam()       { window.flipCam       ? window.flipCam()       : null; }
-  function toggleTorch()   { window.toggleTorch   ? window.toggleTorch()   : null; }
-  function manualSend()    { window.manualSend    ? window.manualSend()    : null; }
 </script>
 
 <!-- html5-qrcode fallback -->
