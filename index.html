@@ -321,157 +321,88 @@ body.light .inv-preview{border:1px solid #e0e0ee;}
 /* Mobile responsive */
 .mob-toggle{display:none;background:none;border:none;color:var(--text);font-size:22px;cursor:pointer;padding:4px 8px;}
 .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99;}
+@media(max-width:768px){
+  .mob-toggle{display:block;}
+  .sidebar{transform:translateX(-100%);transition:transform 0.3s;width:260px;}
+  .sidebar.open{transform:translateX(0);}
+  .sidebar-overlay.open{display:block;}
+  .main{margin-left:0;padding-bottom:70px;}
+  .moverlay{padding:8px;align-items:flex-end;}
+  .modal{width:100%!important;max-width:100%!important;border-radius:18px 18px 0 0!important;max-height:92vh;}
+  .pos-wrap{grid-template-columns:1fr;}
+  .pgrid{grid-template-columns:repeat(2,1fr);}
+  .sgrid{grid-template-columns:1fr 1fr;}
+  .g2{grid-template-columns:1fr;}
+  .fgrid{grid-template-columns:1fr;}
+  .content{padding:10px;}
+  .sval{font-size:17px;}
+  .topbar{padding:10px 12px;flex-wrap:nowrap;overflow:hidden;}
+  .topbar h2{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px;}
+  .tright{gap:5px;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .tright::-webkit-scrollbar{display:none;}
+  .clock{display:none;}
+  #autosave-indicator{display:none!important;}
+  #fb-sync-indicator{display:none!important;}
+  .theme-btn{display:none;}
+  .btn.bo.bsm[onclick*="toggleDark"]{display:none;}
+  .btn.bo.bsm[onclick*="shortcuts"]{display:none;}
+  #profit-strip{flex-direction:row;flex-wrap:wrap;gap:10px;padding:8px 10px;}
+  #profit-strip>div{min-width:70px;}
+  .sgrid{grid-template-columns:1fr 1fr;gap:10px;}
+  .scard{padding:12px 10px;}
+  .sval{font-size:16px;}
+  table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .thead2{flex-wrap:wrap;gap:6px;padding:10px 12px;}
+  .thead2 h3{font-size:13px;}
+  .tcard{margin-bottom:12px;border-radius:12px;}
+  td,th{padding:8px 10px;font-size:12px;white-space:nowrap;}
+  .badge{font-size:10px;padding:2px 7px;}
+  .cpanel{position:static;max-height:none;}
+  .dash-charts-grid{grid-template-columns:1fr;}
+  #fab{bottom:80px;right:16px;width:48px;height:48px;font-size:20px;}
+  #fab-menu{bottom:140px;right:16px;}
+  .toast{bottom:80px;right:12px;left:12px;max-width:none;font-size:12px;}
+  .sbar{padding:8px 10px;}
+  input,select,textarea{font-size:16px!important;padding:10px 12px;}
+  .btn{padding:8px 12px;font-size:12px;min-height:36px;-webkit-tap-highlight-color:transparent;}
+  .btn.bsm{padding:6px 10px;min-height:30px;}
+  .nitem{padding:12px 14px;min-height:44px;}
+  .pin-key{width:68px;height:68px;font-size:18px;}
 
-/* ===== MOBILE BOTTOM NAV ===== */
+  /* Bottom navigation bar for mobile */
+  #mobile-bottom-nav{display:flex!important;}
+}
+
+/* Mobile bottom nav bar */
 #mobile-bottom-nav{
   display:none;
-  position:fixed;bottom:0;left:0;right:0;
+  position:fixed;
+  bottom:0;left:0;right:0;
   background:var(--card);
   border-top:1px solid var(--border);
   z-index:200;
-  padding:0;
-  height:60px;
+  padding:6px 0 env(safe-area-inset-bottom, 6px);
+  justify-content:space-around;
+  align-items:center;
   box-shadow:0 -4px 20px rgba(0,0,0,0.3);
 }
-#mobile-bottom-nav .mbn-inner{
-  display:flex;
-  height:100%;
-  align-items:stretch;
-}
 #mobile-bottom-nav .mbn-item{
-  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:2px;cursor:pointer;transition:0.2s;
-  border:none;background:none;color:var(--muted);font-size:10px;padding:4px 2px;
+  display:flex;flex-direction:column;align-items:center;
+  gap:2px;padding:4px 8px;cursor:pointer;
+  color:var(--muted);font-size:10px;font-weight:600;
+  transition:color 0.2s;min-width:50px;
+  -webkit-tap-highlight-color:transparent;
 }
 #mobile-bottom-nav .mbn-item.active{color:var(--primary);}
-#mobile-bottom-nav .mbn-item .mbn-ic{font-size:20px;line-height:1;}
-#mobile-bottom-nav .mbn-item span{font-size:9px;font-weight:600;white-space:nowrap;}
-#mobile-bottom-nav .mbn-item.active .mbn-ic{
-  filter: drop-shadow(0 0 6px var(--primary));
+#mobile-bottom-nav .mbn-item .mbn-ic{font-size:22px;line-height:1;}
+#mobile-bottom-nav .mbn-badge{
+  position:absolute;top:-3px;right:2px;
+  background:var(--danger);color:#fff;
+  font-size:8px;width:14px;height:14px;
+  border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-weight:700;
 }
-#mobile-bottom-nav .mbn-more{
-  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:2px;cursor:pointer;color:var(--muted);font-size:10px;
-}
-#mobile-bottom-nav .mbn-more .mbn-ic{font-size:20px;}
-
-/* ===== MOBILE BREAKPOINT ===== */
-@media(max-width:768px){
-  /* Sidebar slides in from left */
-  .mob-toggle{display:block;}
-  .sidebar{
-    transform:translateX(-100%);
-    transition:transform 0.3s cubic-bezier(0.16,1,0.3,1);
-    width:260px;
-    z-index:300;
-  }
-  .sidebar.open{transform:translateX(0);box-shadow:8px 0 40px rgba(0,0,0,0.5);}
-  .sidebar-overlay.open{display:block;z-index:299;}
-
-  /* Main layout */
-  .main{margin-left:0;}
-  .content{padding:10px;padding-bottom:70px;} /* bottom padding for nav bar */
-
-  /* Topbar — compact on mobile */
-  .topbar{padding:8px 12px;gap:6px;}
-  .topbar h2{font-size:14px;}
-  .tright{gap:5px;flex-wrap:nowrap;overflow-x:auto;}
-  .tright::-webkit-scrollbar{display:none;}
-  /* Hide some topbar items on mobile */
-  .tright .clock{display:none;}
-  .tright #autosave-indicator{display:none!important;}
-  .tright #fb-sync-indicator{display:none!important;}
-  .tright button.btn.bo.bsm[onclick*="toggleDark"]{display:none;}
-  .tright button.btn.bo.bsm[onclick*="m-shortcuts"]{display:none;}
-  .tright div[title="Theme"]{display:none;}
-  .tright #role-badge{font-size:9px;padding:2px 7px;}
-
-  /* Modals - full screen on mobile */
-  .moverlay{padding:0;align-items:flex-end;}
-  .modal{
-    width:100%!important;max-width:100%!important;
-    border-radius:18px 18px 0 0!important;
-    max-height:92vh;
-  }
-  .moverlay.open .modal{animation:mobileModalIn 0.3s cubic-bezier(0.16,1,0.3,1);}
-  @keyframes mobileModalIn{
-    from{transform:translateY(100%);}
-    to{transform:translateY(0);}
-  }
-
-  /* Grids */
-  .pos-wrap{grid-template-columns:1fr;}
-  .pgrid{grid-template-columns:repeat(2,1fr);gap:8px;}
-  .sgrid{grid-template-columns:1fr 1fr;gap:10px;}
-  .g2{grid-template-columns:1fr;}
-  .fgrid{grid-template-columns:1fr;}
-  .dash-charts-grid{grid-template-columns:1fr;}
-  #profit-strip{gap:10px;padding:8px 12px;overflow-x:auto;}
-  #profit-strip>div{min-width:70px;}
-
-  /* Stat cards */
-  .sval{font-size:16px;}
-  .scard{padding:12px;}
-  .scard>div:first-child{font-size:20px;}
-
-  /* Tables — horizontal scroll */
-  .tcard{overflow-x:auto;}
-  table{min-width:500px;}
-  th,td{padding:8px 10px;font-size:11px;}
-
-  /* POS cart panel */
-  .cpanel{position:fixed;bottom:60px;left:0;right:0;border-radius:18px 18px 0 0;max-height:45vh;z-index:150;transform:translateY(calc(100% - 52px));transition:transform 0.3s ease;}
-  .cpanel.expanded{transform:translateY(0);}
-  .cpanel-handle{display:flex;justify-content:center;padding:8px;cursor:pointer;}
-  .cpanel-handle::after{content:'';width:36px;height:4px;border-radius:2px;background:var(--border);}
-
-  /* Forms */
-  input,select,textarea{font-size:16px!important;} /* prevent iOS zoom */
-
-  /* Buttons */
-  .btn{padding:8px 12px;font-size:12px;}
-  .bsm{padding:5px 10px;font-size:11px;}
-
-  /* Search bar */
-  .sbar{margin-bottom:10px;}
-
-  /* Bottom nav visible on mobile */
-  #mobile-bottom-nav{display:block;}
-
-  /* FAB position above bottom nav */
-  #fab{bottom:72px;right:16px;width:46px;height:46px;font-size:20px;}
-  #fab-menu{bottom:130px;right:16px;}
-
-  /* Toast */
-  .toast{bottom:70px;right:12px;left:12px;max-width:100%;font-size:12px;}
-
-  /* Hide topbar "New Sale" button — it's in bottom nav */
-  .tright .btn.bp2.bsm[onclick*="pos"]{display:none;}
-
-  /* Offline indicator compact */
-  #offline-indicator{font-size:9px;padding:2px 7px;}
-
-  /* Empty state */
-  .empty{padding:20px;}
-
-  /* Pin screen keys bigger on mobile */
-  .pin-key{width:78px;height:78px;font-size:22px;}
-
-  /* Settings sections full width */
-  .ssec{padding:14px;}
-}
-
-/* ===== EXTRA SMALL (phones < 400px) ===== */
-@media(max-width:400px){
-  .sgrid{grid-template-columns:1fr 1fr;}
-  .pgrid{grid-template-columns:1fr 1fr;}
-  .sval{font-size:14px;}
-  .topbar h2{font-size:13px;}
-  .content{padding:8px;padding-bottom:70px;}
-  #mobile-bottom-nav .mbn-item span{display:none;}
-  #mobile-bottom-nav .mbn-item .mbn-ic{font-size:22px;}
-  #mobile-bottom-nav{height:54px;}
-}
+#mobile-bottom-nav .mbn-item{position:relative;}
 
 /* ========== V27 NEW STYLES ========== */
 /* Theme variants */
@@ -805,7 +736,9 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
   border-bottom: 1px solid rgba(108,99,255,0.15) !important;
 }
 
-/* dash-charts-grid handled in main mobile section above */
+@media(max-width:768px){
+  .dash-charts-grid { grid-template-columns: 1fr; }
+}
 
 </style>
 </head>
@@ -891,32 +824,6 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
     <button onclick="dismissPWA()" class="btn" style="background:none;color:rgba(255,255,255,0.7);border:1px solid rgba(255,255,255,0.2)">✕</button>
   </div>
 </div>
-
-<!-- Mobile Bottom Navigation -->
-<nav id="mobile-bottom-nav">
-  <div class="mbn-inner">
-    <button class="mbn-item active" id="mbn-dashboard" onclick="goPage('dashboard');setMbnActive('mbn-dashboard')">
-      <div class="mbn-ic">📊</div>
-      <span>Dashboard</span>
-    </button>
-    <button class="mbn-item" id="mbn-pos" onclick="goPage('pos');setMbnActive('mbn-pos')">
-      <div class="mbn-ic">🛒</div>
-      <span>POS</span>
-    </button>
-    <button class="mbn-item" id="mbn-repairs" onclick="goPage('repairs');setMbnActive('mbn-repairs')">
-      <div class="mbn-ic">🔧</div>
-      <span>Repairs</span>
-    </button>
-    <button class="mbn-item" id="mbn-inventory" onclick="goPage('inventory');setMbnActive('mbn-inventory')">
-      <div class="mbn-ic">📦</div>
-      <span>Stock</span>
-    </button>
-    <button class="mbn-item" id="mbn-more" onclick="toggleSidebar()">
-      <div class="mbn-ic">☰</div>
-      <span>More</span>
-    </button>
-  </div>
-</nav>
 
 <!-- Floating Action Button -->
 <button id="fab" onclick="toggleFAB()" title="Quick Actions">⚡</button>
@@ -10628,25 +10535,63 @@ document.addEventListener('click', function(e){
 
 // ─────────────────────────────────────────────────
 
-// ── Mobile Bottom Nav helper ──
-function setMbnActive(id) {
-  document.querySelectorAll(".mbn-item").forEach(function(el){ el.classList.remove("active"); });
-  var el = document.getElementById(id);
-  if (el) el.classList.add("active");
+init();
+</script>
+
+<!-- MOBILE BOTTOM NAV BAR -->
+<nav id="mobile-bottom-nav" aria-label="Mobile Navigation">
+  <div class="mbn-item active" id="mbn-dashboard" onclick="goPage('dashboard');setMBN('dashboard')">
+    <span class="mbn-ic">🏠</span><span>Home</span>
+  </div>
+  <div class="mbn-item" id="mbn-pos" onclick="goPage('pos');setMBN('pos')">
+    <span class="mbn-ic">🛒</span><span>Sale</span>
+  </div>
+  <div class="mbn-item" id="mbn-inventory" onclick="goPage('inventory');setMBN('inventory')">
+    <span class="mbn-ic">📦</span><span>Stock</span>
+  </div>
+  <div class="mbn-item" id="mbn-repairs" onclick="goPage('repairs');setMBN('repairs')">
+    <span class="mbn-ic">🔧</span><span>Repairs</span>
+    <span class="mbn-badge" id="mbn-rep-badge" style="display:none">0</span>
+  </div>
+  <div class="mbn-item" id="mbn-menu" onclick="toggleSidebar()">
+    <span class="mbn-ic">☰</span><span>Menu</span>
+  </div>
+</nav>
+
+<script>
+// Mobile bottom nav sync
+function setMBN(page) {
+  document.querySelectorAll('.mbn-item').forEach(function(el){
+    el.classList.remove('active');
+  });
+  var el = document.getElementById('mbn-' + page);
+  if (el) el.classList.add('active');
 }
 
-// Hook into goPage to sync bottom nav
-var _origGoPage = typeof goPage === "function" ? goPage : null;
-(function(){
-  var _gp = window.goPage;
-  window.goPage = function(pg) {
-    _gp(pg);
-    var map = { dashboard:"mbn-dashboard", pos:"mbn-pos", repairs:"mbn-repairs", inventory:"mbn-inventory" };
-    if (map[pg]) setMbnActive(map[pg]);
+// Sync repair badge to mobile nav
+var _origRenderBadges = window.renderBadges;
+if (typeof renderBadges === 'function') {
+  var _mbnOrig = renderBadges;
+  renderBadges = function() {
+    _mbnOrig.apply(this, arguments);
+    var rb = document.getElementById('rbadge');
+    var mb = document.getElementById('mbn-rep-badge');
+    if (rb && mb) {
+      var cnt = rb.textContent;
+      if (cnt && cnt !== '0') { mb.textContent = cnt; mb.style.display = 'flex'; }
+      else { mb.style.display = 'none'; }
+    }
   };
-})();
+}
 
-init();
+// Patch goPage to update bottom nav
+var _origGoPage = window.goPage;
+if (typeof goPage === 'function') {
+  window.goPage = function(page) {
+    _origGoPage.apply(this, arguments);
+    setMBN(page);
+  };
+}
 </script>
 </body>
 </html>
