@@ -6469,8 +6469,12 @@ function saveCust(){
   if(id){ var i=db.customers.findIndex(function(x){ return x.id===c.id; }); if(i>=0) db.customers[i]=c; } else db.customers.push(c);
   saveDB(); renderCust(); refreshCustSel(); closeM('m-cust');
   if(isNewCust){
-    toast('✅ New Customer added! Loyalty points will be earned on next sale 🌟');
-    if(typeof logActivity==='function') logActivity('CUSTOMER','New customer added',c.name+' '+c.phone);
+    // Welcome bonus — 100 points on registration
+    if(!db.loyaltyLog) db.loyaltyLog=[];
+    db.loyaltyLog.push({ id:Date.now(), custId:c.id, custName:c.name, points:100, type:'welcome', ref:'Welcome Bonus 🎉', date:new Date().toLocaleDateString('en-GB') });
+    saveDB();
+    toast('✅ New Customer added! 🎉 Welcome 100 Points added!','var(--success)');
+    if(typeof logActivity==='function') logActivity('LOYALTY','Welcome points added',c.name+' — 100 pts (Registration Bonus)');
   } else {
     toast('✅ Customer saved!');
   }
