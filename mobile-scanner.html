@@ -389,7 +389,7 @@
 <!-- Firebase SDK -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getDatabase, ref, set, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+  import { getDatabase, ref, set, onValue, serverTimestamp, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
   // ══ Same Firebase config as main app ══
   const firebaseConfig = {
@@ -473,6 +473,8 @@
   // ─────────────────────────────────────────
   function sendBarcode(code) {
     if (!isConnected || !code) return;
+    // Clear previous ack so mobile UI resets properly
+    remove(ref(db, 'mobile-scanner/' + sessionCode + '/ack')).catch(function(){});
     const payload = { barcode: code, time: Date.now(), id: Math.random().toString(36).slice(2) };
     set(ref(db, 'mobile-scanner/' + sessionCode + '/scan'), payload)
       .then(() => {})
