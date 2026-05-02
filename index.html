@@ -6114,30 +6114,44 @@ function filterCustDrop(){
   var inp=document.getElementById('cart-cust-input'); if(!inp) return;
   var drop=document.getElementById('cart-cust-drop'); if(!drop) return;
   var q=inp.value.toLowerCase();
-  var custs=db.customers.filter(function(c){ return c.name.toLowerCase().includes(q)||c.phone.includes(q); });
+  var custs=db.customers.filter(function(c){ return c.name.toLowerCase().includes(q)||(c.phone&&c.phone.includes(q)); });
 
-  var html='';
-  // Walk-in option
-  html+='<div onmousedown="selectCust(\'\',\'\')" ontouchstart="selectCust(\'\',\'\')" style="padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px" onmouseover="this.style.background=\'rgba(108,99,255,0.1)\'" onmouseout="this.style.background=\'\'">'
-      +'<span style="font-size:15px">🚶</span><span style="color:var(--muted);font-size:13px">Walk-in Customer</span></div>';
+  // Clear and rebuild with DOM nodes (no inline event strings — avoids quote escaping bugs)
+  drop.innerHTML='';
+
+  function makeItem(icon, label, sublabel, onSelect){
+    var div=document.createElement('div');
+    div.style.cssText='padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;user-select:none;';
+    div.innerHTML='<span style="font-size:15px">'+icon+'</span><span style="flex:1"><span style="font-weight:600">'+label+'</span>'+(sublabel?' <span style="color:var(--muted);font-size:11px">'+sublabel+'</span>':'')+'</span>';
+    div.addEventListener('mouseover',function(){ div.style.background='rgba(108,99,255,0.13)'; });
+    div.addEventListener('mouseout',function(){ div.style.background=''; });
+    // Use pointerdown — works for both mouse AND touch, fires before blur
+    div.addEventListener('pointerdown',function(e){
+      e.preventDefault(); // prevent blur on input
+      onSelect();
+    });
+    return div;
+  }
+
+  // Walk-in
+  drop.appendChild(makeItem('🚶','Walk-in Customer','',function(){ selectCust('',''); }));
 
   // Matched customers
   custs.forEach(function(c){
-    var safeName = c.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-    html+='<div onmousedown="selectCust(\''+c.id+'\','+JSON.stringify(c.name)+')" ontouchstart="event.preventDefault();selectCust(\''+c.id+'\','+JSON.stringify(c.name)+')" style="padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px" onmouseover="this.style.background=\'rgba(108,99,255,0.1)\'" onmouseout="this.style.background=\'\'">'
-        +'<span style="font-size:15px">👤</span>'
-        +'<span style="flex:1"><span style="font-weight:600">'+c.name+'</span> <span style="color:var(--muted);font-size:11px">'+c.phone+'</span></span>'
-        +'</div>';
+    drop.appendChild(makeItem('👤', c.name, c.phone||'', function(){ selectCust(c.id, c.name); }));
   });
 
-  // Quick-add new customer button
+  // Quick-add button
   var qname=inp.value.trim();
-  html+='<div onmousedown="quickAddCust()" ontouchstart="event.preventDefault();quickAddCust()" style="padding:9px 12px;cursor:pointer;display:flex;align-items:center;gap:8px;background:rgba(108,99,255,0.06)" onmouseover="this.style.background=\'rgba(108,99,255,0.15)\'" onmouseout="this.style.background=\'rgba(108,99,255,0.06)\'">'
-      +'<span style="font-size:15px">➕</span>'
-      +'<span style="color:var(--primary);font-weight:600;font-size:13px">'+(qname?'Add "'+qname+'" as new customer':'New Customer Add කරන්න')+'</span>'
-      +'</div>';
+  var addLabel=qname?'Add "'+qname+'" as new customer':'New Customer Add කරන්න';
+  var addDiv=document.createElement('div');
+  addDiv.style.cssText='padding:9px 12px;cursor:pointer;display:flex;align-items:center;gap:8px;background:rgba(108,99,255,0.06);user-select:none;';
+  addDiv.innerHTML='<span style="font-size:15px">➕</span><span style="color:var(--primary);font-weight:600;font-size:13px">'+addLabel+'</span>';
+  addDiv.addEventListener('mouseover',function(){ addDiv.style.background='rgba(108,99,255,0.18)'; });
+  addDiv.addEventListener('mouseout',function(){ addDiv.style.background='rgba(108,99,255,0.06)'; });
+  addDiv.addEventListener('pointerdown',function(e){ e.preventDefault(); quickAddCust(); });
+  drop.appendChild(addDiv);
 
-  drop.innerHTML=html;
   var rect=inp.getBoundingClientRect();
   drop.style.top=(rect.bottom+4)+'px';
   drop.style.left=rect.left+'px';
