@@ -303,10 +303,14 @@ body.light .inv-preview{border:1px solid #e0e0ee;}
 .scan-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9500;display:none;align-items:center;justify-content:center;flex-direction:column;gap:10px;}
 .scan-overlay.open{display:flex;}
 .scan-box{width:300px;height:300px;border-radius:14px;position:relative;overflow:hidden;background:#000;}
-#qr-reader{width:300px!important;border:none!important;background:#000;}
-#qr-reader video{width:100%!important;height:100%!important;object-fit:cover;border-radius:10px;}
-#qr-reader__scan_region{border:none!important;}
+#qr-reader{width:300px!important;height:300px!important;border:none!important;background:#000;overflow:hidden;}
+#qr-reader video{width:100%!important;height:300px!important;object-fit:cover;border-radius:10px;display:block!important;}
+#qr-reader img{display:none!important;}
+#qr-reader__scan_region{border:none!important;height:300px!important;min-height:300px!important;}
+#qr-reader__scan_region video{height:300px!important;}
 #qr-reader__dashboard{display:none!important;}
+#qr-reader__dashboard_section{display:none!important;}
+#qr-reader__status_span{display:none!important;}
 .scan-line{position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,var(--primary),transparent);animation:scanAnim 2s linear infinite;z-index:2;}
 @keyframes scanAnim{0%{top:0}50%{top:calc(100% - 3px)}100%{top:0}}
 .scan-corner{position:absolute;width:22px;height:22px;border-color:var(--primary);border-style:solid;z-index:3;}
@@ -8260,9 +8264,11 @@ function _initQrScanner(){
   document.getElementById('scan-box-wrap').style.display = '';
   document.getElementById('scan-no-cam').style.display = 'none';
 
-  _html5QrCode = new Html5Qrcode('qr-reader', { verbose: false });
+  // Force height before init — Android Chrome needs this
+  var rd = document.getElementById('qr-reader');
+  if(rd){ rd.style.width='300px'; rd.style.height='300px'; rd.style.minHeight='300px'; }
 
-  // Safe formats list
+  // Safe formats
   var fmts = [];
   try {
     var F = Html5QrcodeSupportedFormats;
@@ -8273,7 +8279,7 @@ function _initQrScanner(){
 
   var config = {
     fps: 25,
-    qrbox: { width: 280, height: 120 },
+    qrbox: { width: 250, height: 110 },
     aspectRatio: 1.7778,
     experimentalFeatures: { useBarCodeDetectorIfSupported: true },
     supportedScanTypes: [ Html5QrcodeScanType.SCAN_TYPE_CAMERA ]
@@ -8281,65 +8287,100 @@ function _initQrScanner(){
   if(fmts.length > 0) config.formatsToSupport = fmts;
 
   function onSuccess(decodedText){ _handleScannedCode(decodedText); }
-  function onFail(){ /* ignore per-frame failures */ }
+  function onFail(){ }
 
   function styleReader(){
-    var rd = document.getElementById('qr-reader');
-    if(rd){
-      rd.style.height = '300px';
-      var btns = rd.querySelectorAll('button,select,img[alt="Info icon"]');
-      btns.forEach(function(b){ if(b.tagName!=='VIDEO') b.style.display='none'; });
-    }
+    setTimeout(function(){
+      var r = document.getElementById('qr-reader');
+      if(!r) return;
+      r.style.height = '300px';
+      r.style.minHeight = '300px';
+      // Force video visible
+      var vids = r.querySelectorAll('video');
+      vids.forEach(function(v){
+        v.style.display='block';
+        v.style.width='100%';
+        v.style.height='300px';
+        v.style.objectFit='cover';
+      });
+      // Hide all library UI
+      r.querySelectorAll('button,select,span,img,a').forEach(function(el){
+        if(el.tagName!=='VIDEO') el.style.display='none';
+      });
+      var divs = r.querySelectorAll('div');
+      divs.forEach(function(d){
+        if(d.id && (d.id.includes('dashboard') || d.id.includes('status'))){
+          d.style.display='none';
+        }
+      });
+    }, 200);
   }
 
-  // ── Strategy 1: facingMode:'environment' directly ──
-  // This works on Android Chrome WITHOUT getCameras() permission pre-check
+  _html5QrCode = new Html5Qrcode('qr-reader', { verbose: false });
+
+  // Android Chrome: try environment (non-exact first — safer)
   _html5QrCode.start(
-    { facingMode: { exact: 'environment' } },
+    { facingMode: 'environment' },
     config, onSuccess, onFail
-  ).then(function(){
-    styleReader();
-    // After success, cache camera list for flip
-    Html5Qrcode.getCameras().then(function(c){ _cameraList = c||[]; }).catch(function(){});
-  }).catch(function(e1){
-    console.warn('env exact fail:', e1);
-
-    // ── Strategy 2: facingMode:'environment' (non-exact) ──
+  ).then(styleReader).catch(function(e1){
+    console.warn('S1 fail:', e1);
+    // Try exact environment
     _html5QrCode.start(
-      { facingMode: 'environment' },
+      { facingMode: { exact: 'environment' } },
       config, onSuccess, onFail
-    ).then(function(){
-      styleReader();
-      Html5Qrcode.getCameras().then(function(c){ _cameraList = c||[]; }).catch(function(){});
-    }).catch(function(e2){
-      console.warn('env non-exact fail:', e2);
-
-      // ── Strategy 3: getCameras then pick back cam ──
-      Html5Qrcode.getCameras().then(function(cameras){
-        if(!cameras || cameras.length === 0){ _showNoCam(); return; }
-        _cameraList = cameras;
-        var camId = cameras[cameras.length - 1].id; // last = usually back
-        for(var i=0;i<cameras.length;i++){
-          var lbl=(cameras[i].label||'').toLowerCase();
-          if(lbl.indexOf('back')>=0||lbl.indexOf('rear')>=0||lbl.indexOf('environment')>=0){
-            camId=cameras[i].id; break;
-          }
+    ).then(styleReader).catch(function(e2){
+      console.warn('S2 fail:', e2);
+      // getCameras fallback
+      Html5Qrcode.getCameras().then(function(cams){
+        if(!cams || !cams.length){ _tryNativeCamera(); return; }
+        _cameraList = cams;
+        // Prefer back cam
+        var id = cams[cams.length-1].id;
+        for(var i=0;i<cams.length;i++){
+          var l=(cams[i].label||'').toLowerCase();
+          if(l.includes('back')||l.includes('rear')||l.includes('environment')){ id=cams[i].id; break; }
         }
         _html5QrCode.start(
-          { deviceId: { exact: camId } },
+          { deviceId: { exact: id } },
           config, onSuccess, onFail
-        ).then(styleReader).catch(function(e3){
-          console.warn('deviceId exact fail:', e3);
-
-          // ── Strategy 4: any camera ──
-          _html5QrCode.start(
-            { facingMode: 'user' },
-            config, onSuccess, onFail
-          ).then(styleReader).catch(function(){ _showNoCam(); });
-        });
-      }).catch(function(){ _showNoCam(); });
+        ).then(styleReader).catch(function(){ _tryNativeCamera(); });
+      }).catch(function(){ _tryNativeCamera(); });
     });
   });
+}
+
+// Native getUserMedia fallback — bypasses html5-qrcode permission issues
+function _tryNativeCamera(){
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    _showNoCam(); return;
+  }
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+    .then(function(stream){
+      // Permission granted — now retry html5-qrcode
+      stream.getTracks().forEach(function(t){ t.stop(); });
+      setTimeout(function(){
+        if(_html5QrCode){
+          try{ _html5QrCode.clear(); }catch(e){}
+          _html5QrCode = null;
+        }
+        _html5QrCode = new Html5Qrcode('qr-reader', { verbose: false });
+        _html5QrCode.start(
+          { facingMode: 'environment' },
+          { fps:25, qrbox:{width:250,height:110}, aspectRatio:1.7778,
+            experimentalFeatures:{useBarCodeDetectorIfSupported:true},
+            supportedScanTypes:[Html5QrcodeScanType.SCAN_TYPE_CAMERA] },
+          function(code){ _handleScannedCode(code); },
+          function(){}
+        ).then(function(){
+          var r=document.getElementById('qr-reader');
+          if(r){ r.style.height='300px'; var v=r.querySelector('video'); if(v){v.style.height='300px';v.style.width='100%';} }
+        }).catch(function(){ _showNoCam(); });
+      }, 500);
+    })
+    .catch(function(err){
+      console.warn('getUserMedia denied:', err);
+      _showNoCam();
+    });
 }
 
 function _stopQrScanner(cb){
