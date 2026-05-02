@@ -3852,6 +3852,8 @@ var segFilter = 'all';
 // ============================================================
 // 1. AI SALES FORECASTING
 // ============================================================
+// renderAdvancedAnalytics — alias for any direct calls / future hooks
+function renderAdvancedAnalytics() { runForecast(); }
 function runForecast() {
   var invoices = db.invoices || [];
   var now = new Date();
@@ -4800,7 +4802,7 @@ setTimeout(function(){
 var _advGoPage = goPage;
 goPage = function(id) {
   _advGoPage(id);
-  if (id==='advanced-analytics') { runForecast(); }
+  if (id==='advanced-analytics') { renderAdvancedAnalytics(); }
   else if (id==='abc-analysis') { renderAbcAnalysis(); }
   else if (id==='pnl') { renderPnL(); }
   else if (id==='staff') { renderStaff(); }
@@ -9886,11 +9888,19 @@ pageTitles.loyalty='⭐ Loyalty Points';
 pageTitles.reports='📑 Reports & Exports';
 pageTitles.activitylog='🔍 Activity Log';
 
+// ---- renderReports: initialises the Reports & Exports page ----
+function renderReports(){
+  renderBirthdayList();
+  // Clear any previous CSV import result
+  var csvRes = document.getElementById('csv-import-result');
+  if(csvRes) csvRes.textContent = '';
+}
+
 var _v26GoPage = goPage;
 goPage = function(id){
   _v26GoPage(id);
   if(id==='loyalty') renderLoyalty();
-  if(id==='reports') renderBirthdayList();
+  if(id==='reports') renderReports();
   if(id==='activitylog') renderActivityLog();
 };
 
