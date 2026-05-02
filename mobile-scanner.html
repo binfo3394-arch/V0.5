@@ -680,13 +680,13 @@
     const urlCode = params.get('code');
 
     if (urlCode) {
-      // URL ලෙල code ආවොත් — save කරලා connect කරනවා
+      // URL එක code ආවොත් — save කරලා connect කරනවා
       const upperCode = urlCode.toUpperCase();
       localStorage.setItem('st_mobile_session_code', upperCode);
       document.getElementById('code-input').value = upperCode;
       setTimeout(connect, 500);
     } else {
-      // URL ලෙල code නෑ — localStorage ලෙල saved code check කරනවා
+      // URL එක code නෑ — localStorage එක saved code check කරනවා
       const savedCode = localStorage.getItem('st_mobile_session_code');
       if (savedCode && savedCode.length === 6) {
         document.getElementById('code-input').value = savedCode;
@@ -729,7 +729,7 @@
   </div>
 
   <div class="info-box">
-    <b>1.</b> Desktop ලෙස topbar ලෙල <b>"📱 Connect Mobile"</b> click කරන්න<br>
+    <b>1.</b> Desktop ලෙස topbar එක <b>"📱 Connect Mobile"</b> click කරන්න<br>
     <b>2.</b> QR code scan කරන්න <b>හෝ</b> Session Code type කරන්න<br>
     <b>3.</b> Connect වූ පසු barcode scan කළාම cart add වෙනවා
   </div>
@@ -797,8 +797,8 @@
     </div>
 
     <!-- Checkout -->
-    <button class="checkout-btn" onclick="showToast('🖥️ Desktop POS ලෙල Checkout කරන්න')">
-      🖥️ Desktop ලෙල Checkout කරන්න
+    <button class="checkout-btn" onclick="showToast('🖥️ Desktop POS එක Checkout කරන්න')">
+      🖥️ Desktop එක Checkout කරන්න
     </button>
 
     <!-- Manual input -->
