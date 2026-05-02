@@ -152,43 +152,35 @@
     });
   };
 
-  // ── Mobile Scanner: active listener unsubscribe handle ──
+  // ── Mobile Scanner: active listener handle ──
   var _mcScanUnsub = null;
 
   // ── Mobile Scanner: Start listening for incoming scans ──
   window.mobileScannerStartListen = function(sessionCode, onScan) {
     if (!sessionCode) return;
-    console.log('🔗 mobileScannerStartListen called. Code:', sessionCode);
-    // 1. Unsubscribe previous listener (prevents duplicate listeners on re-open)
+    // 1. Unsubscribe previous listener
     if (_mcScanUnsub) { try { _mcScanUnsub(); } catch(e){} _mcScanUnsub = null; }
-    // 2. Clear any stale scan data from old sessions (onValue fires immediately with existing data!)
-    remove(ref(database, 'mobile-scanner/' + sessionCode + '/scan')).then(function(){
-      console.log('🗑️ Old scan data cleared');
-    }).catch(function(e){ console.warn('⚠️ Could not clear scan data:', e); });
+    // 2. Clear stale scan data (onValue fires immediately with old data otherwise!)
+    remove(ref(database, 'mobile-scanner/' + sessionCode + '/scan')).catch(function(){});
     // 3. Mark desktop as ready
     set(ref(database, 'mobile-scanner/' + sessionCode + '/desktop-presence'), {
       connected: true, time: Date.now()
-    }).then(function(){ console.log('✅ Desktop presence set'); })
-      .catch(function(e){ console.error('❌ Desktop presence failed:', e); });
-    // 4. Attach fresh listener AFTER clearing stale data (small delay to let remove propagate)
+    });
+    // 4. Attach fresh listener after stale data is cleared
     setTimeout(function() {
-      console.log('👂 Attaching onValue listener for:', sessionCode);
       _mcScanUnsub = onValue(ref(database, 'mobile-scanner/' + sessionCode + '/scan'), function(snap) {
         if (!snap.exists()) return;
         var data = snap.val();
         if (!data || !data.barcode) return;
-        console.log('📲 Scan received from mobile:', data.barcode, 'id:', data.id);
         onScan(data.barcode, data.id, sessionCode);
       });
     }, 400);
   };
 
   window.mobileScannerDisconnect = function(sessionCode) {
-    // Unsubscribe active scan listener
     if (_mcScanUnsub) { try { _mcScanUnsub(); } catch(e){} _mcScanUnsub = null; }
     if (!sessionCode) return;
     set(ref(database, 'mobile-scanner/' + sessionCode + '/desktop-presence'), { connected: false });
-    // Clean up session data
     remove(ref(database, 'mobile-scanner/' + sessionCode + '/scan')).catch(function(){});
     remove(ref(database, 'mobile-scanner/' + sessionCode + '/ack')).catch(function(){});
   };
@@ -288,8 +280,8 @@ select option{background:var(--card2);}
 .pname{font-size:12px;font-weight:600;}
 .pprice{font-size:13px;color:var(--primary);font-weight:700;margin-top:3px;}
 .pstock{font-size:10px;color:var(--muted);}
-.cpanel{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;position:sticky;top:72px;display:flex;flex-direction:column;max-height:calc(100vh - 100px);}
-.citems{flex:1;overflow-y:auto;margin:8px 0;}
+.cpanel{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;position:sticky;top:72px;display:flex;flex-direction:column;height:calc(100vh - 100px);max-height:calc(100vh - 100px);}
+.citems{flex:1;overflow-y:auto;margin:8px 0;min-height:80px;}
 .citem{display:flex;align-items:center;gap:7px;padding:7px 0;border-bottom:1px solid var(--border);}
 .cname{flex:1;font-size:12px;}
 .cqty{display:flex;align-items:center;gap:5px;}
@@ -2712,8 +2704,8 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
 <!-- ══════════════════════════════════════════════════════
      📱 MOBILE CONNECT MODAL
 ══════════════════════════════════════════════════════ -->
-<div id="m-mobile-connect" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9600;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(6px);">
-  <div style="background:var(--card);border:1px solid var(--border);border-radius:20px;width:100%;max-width:440px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
+<div id="m-mobile-connect" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9600;align-items:flex-start;justify-content:center;padding:12px;backdrop-filter:blur(6px);overflow-y:auto;">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:20px;width:100%;max-width:440px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.6);margin:auto;">
 
     <!-- Header -->
     <div style="padding:18px 20px 14px;border-bottom:1px solid var(--border);background:linear-gradient(135deg,rgba(108,99,255,0.15),rgba(0,180,255,0.08));display:flex;align-items:center;justify-content:space-between;">
@@ -6223,7 +6215,7 @@ function addToCart(id) {
   var available = p.stock - inCart;
   if (ex) {
     if(available > 0) ex.qty++;
-    else { toast('⚠️ '+p.name+' — Max stock reached ('+p.stock+')','var(--warning)'); return; }
+    else { toast('⚠️ '+p.name+' — Max stock ('+p.stock+')','var(--warning)'); return; }
   }
   else cart.push({ id:id, name:p.name, price:p.price, qty:1 });
   renderCart();
@@ -6251,9 +6243,7 @@ function renderCart() {
 function chgQty(i,d) {
   var p = cart[i].custom ? null : db.products.find(function(x){ return x.id===cart[i].id; });
   var mx = p ? p.stock : 999;
-  var newQty = Math.max(1, Math.min(mx, cart[i].qty+d));
-  if(d > 0 && newQty === cart[i].qty){ toast('⚠️ Max stock reached ('+mx+')','var(--warning)'); return; }
-  cart[i].qty = newQty;
+  cart[i].qty = Math.max(1, Math.min(mx, cart[i].qty+d));
   renderCart();
 }
 function remCart(i){ cart.splice(i,1); renderCart(); }
@@ -8578,12 +8568,9 @@ function _mcAddActivity(html) {
 
 function _mcStartListen() {
   if (typeof window.mobileScannerStartListen !== 'function') {
-    // Firebase module still loading — retry
-    console.warn('⏳ Firebase not ready yet, retrying _mcStartListen...');
     setTimeout(_mcStartListen, 300);
     return;
   }
-  console.log('📡 _mcStartListen called. Session code:', _mcSessionCode);
   window.mobileScannerStartListen(_mcSessionCode, function(barcode, scanId, code) {
     if (scanId === _mcLastScanId) return;
     _mcLastScanId = scanId;
