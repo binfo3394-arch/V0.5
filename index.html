@@ -14,7 +14,7 @@
 <!-- ===== FIREBASE REALTIME DATABASE ===== -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getDatabase, ref, set, onValue, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+  import { getDatabase, ref, set, onValue, get, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
   // ══════════════════════════════════════════════════
   //  🔥 ඔබේ Firebase config එක මෙතන දාන්න
@@ -152,30 +152,39 @@
     });
   };
 
+  // ── Mobile Scanner: active listener unsubscribe handle ──
+  var _mcScanUnsub = null;
+
   // ── Mobile Scanner: Start listening for incoming scans ──
-  var _mcUnsubscribe = null; // track active listener to prevent duplicates
   window.mobileScannerStartListen = function(sessionCode, onScan) {
     if (!sessionCode) return;
-    // Unsubscribe previous listener if any (prevents duplicate listeners on re-open)
-    if (_mcUnsubscribe) { try { _mcUnsubscribe(); } catch(e){} _mcUnsubscribe = null; }
-    // Listen for scan events from mobile
-    _mcUnsubscribe = onValue(ref(database, 'mobile-scanner/' + sessionCode + '/scan'), function(snap) {
-      if (!snap.exists()) return;
-      var data = snap.val();
-      if (!data || !data.barcode) return;
-      onScan(data.barcode, data.id, sessionCode);
-    });
-    // Mark desktop as ready
+    // 1. Unsubscribe previous listener (prevents duplicate listeners on re-open)
+    if (_mcScanUnsub) { try { _mcScanUnsub(); } catch(e){} _mcScanUnsub = null; }
+    // 2. Clear any stale scan data from old sessions (onValue fires immediately with existing data!)
+    remove(ref(database, 'mobile-scanner/' + sessionCode + '/scan')).catch(function(){});
+    // 3. Mark desktop as ready
     set(ref(database, 'mobile-scanner/' + sessionCode + '/desktop-presence'), {
       connected: true, time: Date.now()
     });
+    // 4. Attach fresh listener AFTER clearing stale data (small delay to let remove propagate)
+    setTimeout(function() {
+      _mcScanUnsub = onValue(ref(database, 'mobile-scanner/' + sessionCode + '/scan'), function(snap) {
+        if (!snap.exists()) return;
+        var data = snap.val();
+        if (!data || !data.barcode) return;
+        onScan(data.barcode, data.id, sessionCode);
+      });
+    }, 400);
   };
 
   window.mobileScannerDisconnect = function(sessionCode) {
     // Unsubscribe active scan listener
-    if (_mcUnsubscribe) { try { _mcUnsubscribe(); } catch(e){} _mcUnsubscribe = null; }
+    if (_mcScanUnsub) { try { _mcScanUnsub(); } catch(e){} _mcScanUnsub = null; }
     if (!sessionCode) return;
     set(ref(database, 'mobile-scanner/' + sessionCode + '/desktop-presence'), { connected: false });
+    // Clean up session data
+    remove(ref(database, 'mobile-scanner/' + sessionCode + '/scan')).catch(function(){});
+    remove(ref(database, 'mobile-scanner/' + sessionCode + '/ack')).catch(function(){});
   };
 
   console.log('🔥 Firebase module loaded');
@@ -6204,7 +6213,6 @@ function addToCart(id) {
   var p = db.products.find(function(x){ return x.id===id; }); if(!p) return;
   if(p.stock <= 0){ toast('🚫 '+p.name+' — Out of Stock!','var(--danger)'); return; }
   var ex = cart.find(function(c){ return c.id===id; });
-  // Available = DB stock minus qty already in cart
   var inCart = ex ? ex.qty : 0;
   var available = p.stock - inCart;
   if (ex) {
@@ -8564,7 +8572,7 @@ function _mcAddActivity(html) {
 
 function _mcStartListen() {
   if (typeof window.mobileScannerStartListen !== 'function') {
-    // Firebase module still loading — retry after short delay
+    // Firebase module still loading — retry
     setTimeout(_mcStartListen, 300);
     return;
   }
