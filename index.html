@@ -2353,10 +2353,12 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
         <div class="fg">
           <label>Customer *</label>
           <div style="display:flex;gap:6px;align-items:center">
-            <input id="r-cust" placeholder="Name" style="flex:1">
-            <button type="button" class="btn bo bsm" onclick="document.getElementById('r-cust').value='Walk-in';document.getElementById('r-phone').value='';document.getElementById('r-cust').focus();" style="white-space:nowrap;padding:8px 10px;font-size:12px;border:1px dashed rgba(108,99,255,0.5);color:var(--muted);" title="Walk-in Customer">🚶 Walk-in</button>
+            <input id="r-cust" placeholder="Name" style="flex:1" oninput="filterRepCustDrop()" onfocus="filterRepCustDrop()" autocomplete="off">
+            <button type="button" class="btn bo bsm" onclick="document.getElementById('r-cust').value='Walk-in';document.getElementById('r-phone').value='';document.getElementById('r-cust-id').value='';hideRepCustDrop();" style="white-space:nowrap;padding:8px 10px;font-size:12px;border:1px dashed rgba(108,99,255,0.5);color:var(--muted);" title="Walk-in Customer">🚶 Walk-in</button>
           </div>
+          <div id="rep-cust-drop" style="display:none;position:relative;z-index:9999;background:var(--card);border:1px solid var(--border);border-radius:0 0 8px 8px;max-height:160px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,0.3)"></div>
         </div>
+        <input type="hidden" id="r-cust-id">
         <div class="fg"><label>Phone</label><input id="r-phone" placeholder="07X XXX XXXX"></div>
 
         <!-- ══ Device Brand + Model Selector ══ -->
@@ -6171,6 +6173,33 @@ function clearCustSel(){
   document.getElementById('cart-cust-input').value='';
 }
 
+// =========== REPAIR CUSTOMER DROPDOWN ===========
+function filterRepCustDrop(){
+  var inp=document.getElementById('r-cust'); if(!inp) return;
+  var drop=document.getElementById('rep-cust-drop'); if(!drop) return;
+  var q=inp.value.toLowerCase().trim();
+  var custs=db.customers.filter(function(c){ return !q||c.name.toLowerCase().includes(q)||c.phone.includes(q); }).slice(0,8);
+  if(!custs.length){ drop.style.display='none'; return; }
+  drop.innerHTML=custs.map(function(c){
+    var pts=getLoyaltyPoints(c.id);
+    var ptsHtml=pts>0?' <small style="color:var(--warning)">⭐'+pts+'pts</small>':'';
+    return '<div onmousedown="selectRepCust(\''+c.id+'\','+JSON.stringify(c.name)+','+JSON.stringify(c.phone||'')+')\" style="padding:9px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border)" onmouseover="this.style.background=\'rgba(108,99,255,0.12)\'" onmouseout="this.style.background=\'\'">👤 <b>'+c.name+'</b> <span style="color:var(--muted);font-size:11px">'+c.phone+'</span>'+ptsHtml+'</div>';
+  }).join('');
+  drop.style.display='block';
+}
+function selectRepCust(id,name,phone){
+  var inp=document.getElementById('r-cust'); if(inp) inp.value=name;
+  var ph=document.getElementById('r-phone'); if(ph&&phone) ph.value=phone;
+  var ci=document.getElementById('r-cust-id'); if(ci) ci.value=id;
+  hideRepCustDrop();
+}
+function hideRepCustDrop(){
+  var drop=document.getElementById('rep-cust-drop'); if(drop) drop.style.display='none';
+}
+document.addEventListener('click',function(e){
+  if(!e.target.closest('#r-cust')&&!e.target.closest('#rep-cust-drop')) hideRepCustDrop();
+});
+
 // =========== REPAIRS ===========
 function setRepF(s){ repF=s; renderRep(); }
 function renderRep(){
@@ -6205,7 +6234,16 @@ function saveRep(){
   var existing = id ? db.repairs.find(function(x){ return x.id===parseInt(id); }) : null;
   var r={ id:id?parseInt(id):Date.now(), customer:document.getElementById('r-cust').value.trim(), phone:document.getElementById('r-phone').value.trim(), device:document.getElementById('r-dev').value.trim(), imei:document.getElementById('r-imei').value.trim(), issue:document.getElementById('r-issue').value.trim(), cost:parseFloat(document.getElementById('r-cost').value)||0, status:document.getElementById('r-status').value, notes:document.getElementById('r-notes').value.trim(), date: existing ? existing.date : new Date().toLocaleDateString('en-GB'), dueDate:document.getElementById('r-due').value, advance:parseFloat(document.getElementById('r-adv').value)||0, priority:document.getElementById('r-priority')?document.getElementById('r-priority').value:'Normal', tech:document.getElementById('r-tech')?document.getElementById('r-tech').value.trim():'', techNotes:document.getElementById('r-technotes')?document.getElementById('r-technotes').value.trim():'' };
   if(!r.customer||!r.device||!r.issue){ toast('❌ Fill required fields','var(--danger)'); return; }
+  var isNew = !id;
   if(id){ var i=db.repairs.findIndex(function(x){ return x.id===r.id; }); if(i>=0) db.repairs[i]=r; } else db.repairs.push(r);
+  // Add loyalty points for repairs (new repairs only, when cost > 0)
+  if(isNew && r.cost > 0){
+    var repCustId=document.getElementById('r-cust-id')?document.getElementById('r-cust-id').value:'';
+    var repCust = repCustId ? db.customers.find(function(c){ return c.id==repCustId; }) : null;
+    if(!repCust && r.phone) repCust = db.customers.find(function(c){ return c.phone===r.phone; });
+    if(!repCust && r.customer) repCust = db.customers.find(function(c){ return c.name.toLowerCase()===r.customer.toLowerCase(); });
+    if(repCust) addLoyaltyPointsForSale(repCust.id, repCust.name, r.cost, 'Repair #'+String(r.id).slice(-4));
+  }
   saveDB(); renderRep(); updateDash(); updateBadges(); closeM('m-rep'); toast('✅ Repair saved!');
 }
 function editRep(id){
@@ -6213,6 +6251,13 @@ function editRep(id){
   document.getElementById('r-id').value=r.id;
   document.getElementById('r-cust').value=r.customer;
   document.getElementById('r-phone').value=r.phone||'';
+  // Try to match customer ID by phone
+  var ci=document.getElementById('r-cust-id');
+  if(ci){
+    var matchC=r.phone?db.customers.find(function(c){ return c.phone===r.phone; }):null;
+    if(!matchC&&r.customer) matchC=db.customers.find(function(c){ return c.name.toLowerCase()===r.customer.toLowerCase(); });
+    ci.value=matchC?matchC.id:'';
+  }
   document.getElementById('r-dev').value=r.device;
   document.getElementById('r-imei').value=r.imei||'';
   document.getElementById('r-issue').value=r.issue;
@@ -6402,8 +6447,15 @@ function saveCust(){
   var existingCust = id ? db.customers.find(function(x){ return x.id===parseInt(id); }) : null;
   var c={ id:id?parseInt(id):Date.now(), name:document.getElementById('cu-name').value.trim(), phone:document.getElementById('cu-phone').value.trim(), email:document.getElementById('cu-email').value.trim(), address:document.getElementById('cu-addr').value.trim(), notes:document.getElementById('cu-notes').value.trim(), joined: existingCust ? existingCust.joined : new Date().toLocaleDateString('en-GB') };
   if(!c.name||!c.phone){ toast('❌ Name & phone required','var(--danger)'); return; }
+  var isNewCust = !id;
   if(id){ var i=db.customers.findIndex(function(x){ return x.id===c.id; }); if(i>=0) db.customers[i]=c; } else db.customers.push(c);
-  saveDB(); renderCust(); refreshCustSel(); closeM('m-cust'); toast('✅ Customer saved!');
+  saveDB(); renderCust(); refreshCustSel(); closeM('m-cust');
+  if(isNewCust){
+    toast('✅ New Customer added! Loyalty points will be earned on next sale 🌟');
+    if(typeof logActivity==='function') logActivity('CUSTOMER','New customer added',c.name+' '+c.phone);
+  } else {
+    toast('✅ Customer saved!');
+  }
   // Auto-select in POS cart if opened via quick-add
   if(!id && window._custSaveCallback) window._custSaveCallback(c.id, c.name);
 }
