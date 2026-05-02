@@ -1052,7 +1052,7 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
             <div class="fg" style="position:relative">
               <label>👤 Customer</label>
               <input id="cart-cust-input" placeholder="Walk-in (type to search...)" autocomplete="off"
-                oninput="filterCustDrop()" onfocus="filterCustDrop()" onblur="setTimeout(function(){hideCustDrop()},180)"
+                oninput="filterCustDrop()" onfocus="filterCustDrop()" onblur="setTimeout(function(){hideCustDrop()},350)"
                 style="padding-right:28px">
               <span style="position:absolute;right:8px;top:28px;color:var(--muted);font-size:12px;pointer-events:none">▾</span>
               <div id="cart-cust-drop" style="display:none;position:fixed;background:var(--card);border:1px solid var(--border);border-radius:9px;z-index:9999;min-width:220px;max-height:180px;overflow-y:auto;box-shadow:0 8px 30px rgba(0,0,0,0.3);font-size:13px"></div>
@@ -6118,13 +6118,13 @@ function filterCustDrop(){
 
   var html='';
   // Walk-in option
-  html+='<div onmousedown="selectCust(\'\',\'\')" style="padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px" onmouseover="this.style.background=\'rgba(108,99,255,0.1)\'" onmouseout="this.style.background=\'\'">'
+  html+='<div onmousedown="selectCust(\'\',\'\')" ontouchstart="selectCust(\'\',\'\')" style="padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px" onmouseover="this.style.background=\'rgba(108,99,255,0.1)\'" onmouseout="this.style.background=\'\'">'
       +'<span style="font-size:15px">🚶</span><span style="color:var(--muted);font-size:13px">Walk-in Customer</span></div>';
 
   // Matched customers
   custs.forEach(function(c){
     var safeName = c.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-    html+='<div onmousedown="selectCust(\''+c.id+'\','+JSON.stringify(c.name)+')" style="padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px" onmouseover="this.style.background=\'rgba(108,99,255,0.1)\'" onmouseout="this.style.background=\'\'">'
+    html+='<div onmousedown="selectCust(\''+c.id+'\','+JSON.stringify(c.name)+')" ontouchstart="event.preventDefault();selectCust(\''+c.id+'\','+JSON.stringify(c.name)+')" style="padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px" onmouseover="this.style.background=\'rgba(108,99,255,0.1)\'" onmouseout="this.style.background=\'\'">'
         +'<span style="font-size:15px">👤</span>'
         +'<span style="flex:1"><span style="font-weight:600">'+c.name+'</span> <span style="color:var(--muted);font-size:11px">'+c.phone+'</span></span>'
         +'</div>';
@@ -6132,7 +6132,7 @@ function filterCustDrop(){
 
   // Quick-add new customer button
   var qname=inp.value.trim();
-  html+='<div onmousedown="quickAddCust()" style="padding:9px 12px;cursor:pointer;display:flex;align-items:center;gap:8px;background:rgba(108,99,255,0.06)" onmouseover="this.style.background=\'rgba(108,99,255,0.15)\'" onmouseout="this.style.background=\'rgba(108,99,255,0.06)\'">'
+  html+='<div onmousedown="quickAddCust()" ontouchstart="event.preventDefault();quickAddCust()" style="padding:9px 12px;cursor:pointer;display:flex;align-items:center;gap:8px;background:rgba(108,99,255,0.06)" onmouseover="this.style.background=\'rgba(108,99,255,0.15)\'" onmouseout="this.style.background=\'rgba(108,99,255,0.06)\'">'
       +'<span style="font-size:15px">➕</span>'
       +'<span style="color:var(--primary);font-weight:600;font-size:13px">'+(qname?'Add "'+qname+'" as new customer':'New Customer Add කරන්න')+'</span>'
       +'</div>';
