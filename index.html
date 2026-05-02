@@ -8244,90 +8244,101 @@ function _startScanner(modeLabel){
   document.getElementById('scan-mode-label').textContent = modeLabel;
   scanLastCode = ''; scanLastTime = 0; _torchOn = false;
 
-  // Detect laptop/PC (no touch, no rear camera likely)
-  var isLaptop = !('ontouchstart' in window) && navigator.maxTouchPoints === 0;
-
-  // Always focus manual input
-  setTimeout(function(){ var inp=document.getElementById('scan-manual'); if(inp){ inp.focus(); inp.select(); } }, 200);
-
-  if(isLaptop){
-    // Laptop mode: skip camera, show manual entry prominently
-    _showManualMode();
-    return;
-  }
+  setTimeout(function(){ var inp=document.getElementById('scan-manual'); if(inp) inp.focus(); }, 300);
 
   if(typeof Html5Qrcode === 'undefined'){
     _showNoCam(); return;
   }
 
+  // Stop any existing scanner
   _stopQrScanner(function(){
     _initQrScanner();
   });
 }
 
 function _initQrScanner(){
-  // Get camera list first
-  Html5Qrcode.getCameras().then(function(cameras){
-    if(!cameras || cameras.length === 0){ _showNoCam(); return; }
-    _cameraList = cameras;
+  document.getElementById('scan-box-wrap').style.display = '';
+  document.getElementById('scan-no-cam').style.display = 'none';
 
-    // Prefer back camera (environment)
-    var camId = cameras[0].id;
-    for(var i=0;i<cameras.length;i++){
-      var lbl = (cameras[i].label||'').toLowerCase();
-      if(lbl.indexOf('back')>=0||lbl.indexOf('rear')>=0||lbl.indexOf('environment')>=0){
-        camId = cameras[i].id; break;
-      }
+  _html5QrCode = new Html5Qrcode('qr-reader', { verbose: false });
+
+  // Safe formats list
+  var fmts = [];
+  try {
+    var F = Html5QrcodeSupportedFormats;
+    fmts = [F.EAN_13,F.EAN_8,F.CODE_128,F.CODE_39,F.CODE_93,
+            F.UPC_A,F.UPC_E,F.QR_CODE,F.DATA_MATRIX,F.ITF,F.CODABAR
+           ].filter(function(f){ return f !== undefined; });
+  } catch(e){ fmts = []; }
+
+  var config = {
+    fps: 25,
+    qrbox: { width: 280, height: 120 },
+    aspectRatio: 1.7778,
+    experimentalFeatures: { useBarCodeDetectorIfSupported: true },
+    supportedScanTypes: [ Html5QrcodeScanType.SCAN_TYPE_CAMERA ]
+  };
+  if(fmts.length > 0) config.formatsToSupport = fmts;
+
+  function onSuccess(decodedText){ _handleScannedCode(decodedText); }
+  function onFail(){ /* ignore per-frame failures */ }
+
+  function styleReader(){
+    var rd = document.getElementById('qr-reader');
+    if(rd){
+      rd.style.height = '300px';
+      var btns = rd.querySelectorAll('button,select,img[alt="Info icon"]');
+      btns.forEach(function(b){ if(b.tagName!=='VIDEO') b.style.display='none'; });
     }
+  }
 
-    document.getElementById('scan-box-wrap').style.display = '';
-    document.getElementById('scan-no-cam').style.display = 'none';
+  // ── Strategy 1: facingMode:'environment' directly ──
+  // This works on Android Chrome WITHOUT getCameras() permission pre-check
+  _html5QrCode.start(
+    { facingMode: { exact: 'environment' } },
+    config, onSuccess, onFail
+  ).then(function(){
+    styleReader();
+    // After success, cache camera list for flip
+    Html5Qrcode.getCameras().then(function(c){ _cameraList = c||[]; }).catch(function(){});
+  }).catch(function(e1){
+    console.warn('env exact fail:', e1);
 
-    _html5QrCode = new Html5Qrcode('qr-reader', { verbose: false });
-
-    var fmts = [];
-    try {
-      var F = Html5QrcodeSupportedFormats;
-      fmts = [F.EAN_13,F.EAN_8,F.CODE_128,F.CODE_39,F.CODE_93,F.UPC_A,F.UPC_E,F.QR_CODE,F.DATA_MATRIX,F.ITF,F.CODABAR].filter(function(f){ return f!==undefined; });
-    } catch(e){ fmts = []; }
-
-    var config = {
-      fps: 25,
-      qrbox: { width: 280, height: 120 },
-      aspectRatio: 1.7778,
-      experimentalFeatures: { useBarCodeDetectorIfSupported: true },
-      supportedScanTypes: [ Html5QrcodeScanType.SCAN_TYPE_CAMERA ]
-    };
-    if(fmts.length > 0) config.formatsToSupport = fmts;
-
+    // ── Strategy 2: facingMode:'environment' (non-exact) ──
     _html5QrCode.start(
-      { deviceId: { exact: camId } },
-      config,
-      function(decodedText){ _handleScannedCode(decodedText); },
-      function(){ /* scan fail — ignore */ }
+      { facingMode: 'environment' },
+      config, onSuccess, onFail
     ).then(function(){
-      // Style the qr-reader div properly
-      var rd = document.getElementById('qr-reader');
-      if(rd){
-        rd.style.height = '300px';
-        // Hide html5-qrcode built-in UI elements we don't want
-        var btns = rd.querySelectorAll('button, select, img[alt="Info icon"]');
-        btns.forEach(function(b){ if(b.tagName!=='VIDEO') b.style.display='none'; });
-      }
-    }).catch(function(e){
-      console.warn('QR start err:', e);
-      // Fallback: try without exact deviceId
-      _html5QrCode.start(
-        { facingMode: 'environment' },
-        config,
-        function(decodedText){ _handleScannedCode(decodedText); },
-        function(){}
-      ).catch(function(){ _showNoCam(); });
-    });
+      styleReader();
+      Html5Qrcode.getCameras().then(function(c){ _cameraList = c||[]; }).catch(function(){});
+    }).catch(function(e2){
+      console.warn('env non-exact fail:', e2);
 
-  }).catch(function(e){
-    console.warn('getCameras err:', e);
-    _showNoCam();
+      // ── Strategy 3: getCameras then pick back cam ──
+      Html5Qrcode.getCameras().then(function(cameras){
+        if(!cameras || cameras.length === 0){ _showNoCam(); return; }
+        _cameraList = cameras;
+        var camId = cameras[cameras.length - 1].id; // last = usually back
+        for(var i=0;i<cameras.length;i++){
+          var lbl=(cameras[i].label||'').toLowerCase();
+          if(lbl.indexOf('back')>=0||lbl.indexOf('rear')>=0||lbl.indexOf('environment')>=0){
+            camId=cameras[i].id; break;
+          }
+        }
+        _html5QrCode.start(
+          { deviceId: { exact: camId } },
+          config, onSuccess, onFail
+        ).then(styleReader).catch(function(e3){
+          console.warn('deviceId exact fail:', e3);
+
+          // ── Strategy 4: any camera ──
+          _html5QrCode.start(
+            { facingMode: 'user' },
+            config, onSuccess, onFail
+          ).then(styleReader).catch(function(){ _showNoCam(); });
+        });
+      }).catch(function(){ _showNoCam(); });
+    });
   });
 }
 
@@ -8377,31 +8388,7 @@ function toggleTorch(){
 function _showNoCam(){
   document.getElementById('scan-box-wrap').style.display = 'none';
   document.getElementById('scan-no-cam').style.display = 'block';
-  setTimeout(function(){ var inp=document.getElementById('scan-manual'); if(inp){ inp.focus(); inp.select(); } }, 100);
-}
-
-function _showManualMode(){
-  // Hide camera view, show a laptop-friendly manual entry hint
-  document.getElementById('scan-box-wrap').style.display = 'none';
-  var nc = document.getElementById('scan-no-cam');
-  nc.style.display = 'block';
-  nc.innerHTML = '<div style="font-size:28px;margin-bottom:8px">💻</div>' +
-    '<div style="color:#fff;font-size:14px;font-weight:700;margin-bottom:6px">Laptop / PC Mode</div>' +
-    '<div style="color:rgba(255,255,255,0.6);font-size:12px;line-height:1.9">' +
-      'Barcode number type කරන්න 👇<br>' +
-      '<span style="color:rgba(255,210,80,0.9);font-weight:600">Physical USB scanner</span> connect නම්<br>' +
-      'scan කළාම auto-detect වේ ✅<br><br>' +
-      '<button onclick="_switchToCamera()" class="btn bo bsm" style="color:#fff;border-color:rgba(255,255,255,0.3);font-size:11px">📷 Camera try කරන්න</button>' +
-    '</div>';
-  setTimeout(function(){ var inp=document.getElementById('scan-manual'); if(inp){ inp.focus(); inp.select(); inp.style.borderColor='rgba(108,99,255,0.9)'; inp.style.boxShadow='0 0 0 3px rgba(108,99,255,0.25)'; } }, 150);
-}
-
-function _switchToCamera(){
-  var nc = document.getElementById('scan-no-cam');
-  nc.style.display = 'none';
-  document.getElementById('scan-box-wrap').style.display = '';
-  if(typeof Html5Qrcode === 'undefined'){ _showNoCam(); return; }
-  _stopQrScanner(function(){ _initQrScanner(); });
+  setTimeout(function(){ var inp=document.getElementById('scan-manual'); if(inp) inp.focus(); }, 100);
 }
 
 function _handleScannedCode(code){
@@ -8487,30 +8474,15 @@ function _handleScannedCode(code){
   }
 }
 
-// Physical USB barcode scanner: types fast (< 50ms/char) then Enter
-var _scanLastKeyTime = 0;
-var _scanKeyCount = 0;
+// Physical barcode scanner auto-submit (types fast then Enter)
 function onScanInput(inp){
-  var now = Date.now();
-  var gap = now - _scanLastKeyTime;
-  _scanLastKeyTime = now;
-  // If chars arrive very fast (< 60ms gap) it's a USB scanner
-  if(gap < 60) _scanKeyCount++; else _scanKeyCount = 1;
-
   clearTimeout(_scanPhysicalTimer);
-  if(_scanKeyCount >= 4){
-    // USB scanner detected — submit quickly
-    _scanPhysicalTimer = setTimeout(function(){
-      var val = inp.value.trim();
-      if(val.length >= 4){ doManualScan(); }
-    }, 80);
-  } else {
-    // Manual keyboard — wait longer before auto-submit
-    _scanPhysicalTimer = setTimeout(function(){
-      var val = inp.value.trim();
-      if(val.length >= 8 && val.indexOf(' ') === -1){ doManualScan(); }
-    }, 600);
-  }
+  _scanPhysicalTimer = setTimeout(function(){
+    var val = inp.value.trim();
+    if(val.length >= 4 && val.indexOf(' ') === -1){
+      doManualScan();
+    }
+  }, 100);
 }
 
 function doManualScan(){
