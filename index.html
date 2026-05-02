@@ -153,10 +153,13 @@
   };
 
   // ── Mobile Scanner: Start listening for incoming scans ──
+  var _mcUnsubscribe = null; // track active listener to prevent duplicates
   window.mobileScannerStartListen = function(sessionCode, onScan) {
     if (!sessionCode) return;
+    // Unsubscribe previous listener if any (prevents duplicate listeners on re-open)
+    if (_mcUnsubscribe) { try { _mcUnsubscribe(); } catch(e){} _mcUnsubscribe = null; }
     // Listen for scan events from mobile
-    onValue(ref(database, 'mobile-scanner/' + sessionCode + '/scan'), function(snap) {
+    _mcUnsubscribe = onValue(ref(database, 'mobile-scanner/' + sessionCode + '/scan'), function(snap) {
       if (!snap.exists()) return;
       var data = snap.val();
       if (!data || !data.barcode) return;
@@ -169,6 +172,8 @@
   };
 
   window.mobileScannerDisconnect = function(sessionCode) {
+    // Unsubscribe active scan listener
+    if (_mcUnsubscribe) { try { _mcUnsubscribe(); } catch(e){} _mcUnsubscribe = null; }
     if (!sessionCode) return;
     set(ref(database, 'mobile-scanner/' + sessionCode + '/desktop-presence'), { connected: false });
   };
@@ -6199,7 +6204,13 @@ function addToCart(id) {
   var p = db.products.find(function(x){ return x.id===id; }); if(!p) return;
   if(p.stock <= 0){ toast('🚫 '+p.name+' — Out of Stock!','var(--danger)'); return; }
   var ex = cart.find(function(c){ return c.id===id; });
-  if (ex) { if(ex.qty<p.stock) ex.qty++; else { toast('⚠️ Max stock','var(--warning)'); return; } }
+  // Available = DB stock minus qty already in cart
+  var inCart = ex ? ex.qty : 0;
+  var available = p.stock - inCart;
+  if (ex) {
+    if(available > 0) ex.qty++;
+    else { toast('⚠️ '+p.name+' — Max stock reached ('+p.stock+')','var(--warning)'); return; }
+  }
   else cart.push({ id:id, name:p.name, price:p.price, qty:1 });
   renderCart();
 }
@@ -6226,7 +6237,9 @@ function renderCart() {
 function chgQty(i,d) {
   var p = cart[i].custom ? null : db.products.find(function(x){ return x.id===cart[i].id; });
   var mx = p ? p.stock : 999;
-  cart[i].qty = Math.max(1, Math.min(mx, cart[i].qty+d));
+  var newQty = Math.max(1, Math.min(mx, cart[i].qty+d));
+  if(d > 0 && newQty === cart[i].qty){ toast('⚠️ Max stock reached ('+mx+')','var(--warning)'); return; }
+  cart[i].qty = newQty;
   renderCart();
 }
 function remCart(i){ cart.splice(i,1); renderCart(); }
@@ -8550,7 +8563,11 @@ function _mcAddActivity(html) {
 }
 
 function _mcStartListen() {
-  if (typeof window.mobileScannerStartListen !== 'function') return;
+  if (typeof window.mobileScannerStartListen !== 'function') {
+    // Firebase module still loading — retry after short delay
+    setTimeout(_mcStartListen, 300);
+    return;
+  }
   window.mobileScannerStartListen(_mcSessionCode, function(barcode, scanId, code) {
     if (scanId === _mcLastScanId) return;
     _mcLastScanId = scanId;
