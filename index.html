@@ -158,20 +158,26 @@
   // ── Mobile Scanner: Start listening for incoming scans ──
   window.mobileScannerStartListen = function(sessionCode, onScan) {
     if (!sessionCode) return;
+    console.log('🔗 mobileScannerStartListen called. Code:', sessionCode);
     // 1. Unsubscribe previous listener (prevents duplicate listeners on re-open)
     if (_mcScanUnsub) { try { _mcScanUnsub(); } catch(e){} _mcScanUnsub = null; }
     // 2. Clear any stale scan data from old sessions (onValue fires immediately with existing data!)
-    remove(ref(database, 'mobile-scanner/' + sessionCode + '/scan')).catch(function(){});
+    remove(ref(database, 'mobile-scanner/' + sessionCode + '/scan')).then(function(){
+      console.log('🗑️ Old scan data cleared');
+    }).catch(function(e){ console.warn('⚠️ Could not clear scan data:', e); });
     // 3. Mark desktop as ready
     set(ref(database, 'mobile-scanner/' + sessionCode + '/desktop-presence'), {
       connected: true, time: Date.now()
-    });
+    }).then(function(){ console.log('✅ Desktop presence set'); })
+      .catch(function(e){ console.error('❌ Desktop presence failed:', e); });
     // 4. Attach fresh listener AFTER clearing stale data (small delay to let remove propagate)
     setTimeout(function() {
+      console.log('👂 Attaching onValue listener for:', sessionCode);
       _mcScanUnsub = onValue(ref(database, 'mobile-scanner/' + sessionCode + '/scan'), function(snap) {
         if (!snap.exists()) return;
         var data = snap.val();
         if (!data || !data.barcode) return;
+        console.log('📲 Scan received from mobile:', data.barcode, 'id:', data.id);
         onScan(data.barcode, data.id, sessionCode);
       });
     }, 400);
@@ -8573,9 +8579,11 @@ function _mcAddActivity(html) {
 function _mcStartListen() {
   if (typeof window.mobileScannerStartListen !== 'function') {
     // Firebase module still loading — retry
+    console.warn('⏳ Firebase not ready yet, retrying _mcStartListen...');
     setTimeout(_mcStartListen, 300);
     return;
   }
+  console.log('📡 _mcStartListen called. Session code:', _mcSessionCode);
   window.mobileScannerStartListen(_mcSessionCode, function(barcode, scanId, code) {
     if (scanId === _mcLastScanId) return;
     _mcLastScanId = scanId;
