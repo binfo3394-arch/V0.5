@@ -61,6 +61,7 @@
       expenses:   dbObj.expenses   || [],
       suppliers:  dbObj.suppliers  || [],
       activityLog:dbObj.activityLog|| [],
+      loyaltyLog: dbObj.loyaltyLog || [],
       settings:   dbObj.settings   || {},
       staff:      dbObj.staff      || [],
       shifts:     dbObj.shifts     || [],
@@ -124,6 +125,7 @@
       if (remote.stockLog)    db.stockLog    = _fbArr(remote.stockLog);
       if (remote.credits)     db.credits     = _fbArr(remote.credits);
       if (remote.activityLog) db.activityLog = _fbArr(remote.activityLog);
+      if (remote.loyaltyLog)  db.loyaltyLog  = _fbArr(remote.loyaltyLog);
       if (remote.settings)    db.settings    = Object.assign({}, db.settings, remote.settings);
       if (remote.staff)       db.staff       = _fbArr(remote.staff);
       if (remote.shifts)      db.shifts      = _fbArr(remote.shifts);
@@ -5161,6 +5163,7 @@ function init() {
       if (cloudData.stockLog)    db.stockLog    = _fbArr(cloudData.stockLog);
       if (cloudData.credits)     db.credits     = _fbArr(cloudData.credits);
       if (cloudData.activityLog) db.activityLog = _fbArr(cloudData.activityLog);
+      if (cloudData.loyaltyLog)  db.loyaltyLog  = _fbArr(cloudData.loyaltyLog);
       if (cloudData.settings)    db.settings    = Object.assign({}, db.settings, cloudData.settings);
       if (cloudData.staff)       db.staff       = _fbArr(cloudData.staff);
       if (cloudData.shifts)      db.shifts      = _fbArr(cloudData.shifts);
