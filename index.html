@@ -139,6 +139,40 @@
     }, function(error){ console.error('Firebase listener error:', error); });
   };
 
+  // ── Mobile Scanner: Send ACK back to mobile ──
+  window.mobileScannerAck = function(sessionCode, barcode, status, productName, price, stock) {
+    if (!sessionCode) return;
+    set(ref(database, 'mobile-scanner/' + sessionCode + '/ack'), {
+      id: Date.now().toString(),
+      barcode: barcode,
+      status: status,        // 'ok' | 'outofstock' | 'notfound'
+      name: productName || barcode,
+      price: price || 0,
+      stock: stock || 0
+    });
+  };
+
+  // ── Mobile Scanner: Start listening for incoming scans ──
+  window.mobileScannerStartListen = function(sessionCode, onScan) {
+    if (!sessionCode) return;
+    // Listen for scan events from mobile
+    onValue(ref(database, 'mobile-scanner/' + sessionCode + '/scan'), function(snap) {
+      if (!snap.exists()) return;
+      var data = snap.val();
+      if (!data || !data.barcode) return;
+      onScan(data.barcode, data.id, sessionCode);
+    });
+    // Mark desktop as ready
+    set(ref(database, 'mobile-scanner/' + sessionCode + '/desktop-presence'), {
+      connected: true, time: Date.now()
+    });
+  };
+
+  window.mobileScannerDisconnect = function(sessionCode) {
+    if (!sessionCode) return;
+    set(ref(database, 'mobile-scanner/' + sessionCode + '/desktop-presence'), { connected: false });
+  };
+
   console.log('🔥 Firebase module loaded');
 </script>
 <style>
@@ -866,7 +900,8 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
           <button class="btn bo bsm" onclick="showNotifs()" title="Notifications [Alt+N]">🔔</button>
           <div class="notif-badge" id="notif-cnt" style="display:none">0</div>
         </div>
-        <button class="btn bsm" onclick="openScanToSale()" title="Scan barcode → Direct Sale" style="background:linear-gradient(135deg,rgba(0,230,118,0.18),rgba(0,176,255,0.18));color:#00e676;border:1px solid rgba(0,230,118,0.4);font-weight:700">📱 Scan to Sale</button>
+        <button class="btn bsm" onclick="openMobileConnect()" id="mobile-connect-btn" title="Connect mobile phone as barcode scanner" style="background:rgba(108,99,255,0.15);color:var(--primary);border:1px solid rgba(108,99,255,0.4);font-weight:700">📱 Connect Mobile</button>
+        <button class="btn bsm" onclick="openScanToSale()" title="Scan barcode → Direct Sale" style="background:linear-gradient(135deg,rgba(0,230,118,0.18),rgba(0,176,255,0.18));color:#00e676;border:1px solid rgba(0,230,118,0.4);font-weight:700">📷 Scan to Sale</button>
         <button class="btn bp2 bsm" onclick="goPage('pos')" title="New Sale [F2]">➕ New Sale</button>
       </div>
     </div>
@@ -1123,7 +1158,8 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
           <div style="display:flex;gap:6px;flex-wrap:wrap">
             <button class="btn bo bsm" onclick="openBulkMarkup()" title="Bulk price update">📊 Bulk Markup</button>
             <button class="btn bo bsm" onclick="openScannerForInventoryList()" title="Scan barcode to search product">📷 Scan</button>
-            <button class="btn bsm" onclick="openScanToSale()" title="Scan barcode and go to sale" style="background:linear-gradient(135deg,rgba(0,230,118,0.18),rgba(0,176,255,0.18));color:#00e676;border:1px solid rgba(0,230,118,0.4);font-weight:700">📱 Scan to Sale</button>
+            <button class="btn bsm" onclick="openScanToSale()" title="Scan barcode → cart" style="background:linear-gradient(135deg,rgba(0,230,118,0.15),rgba(0,176,255,0.12));color:#00e676;border:1px solid rgba(0,230,118,0.35);font-weight:700">📷 Scan to Sale</button>
+            <button class="btn bsm" onclick="openMobileConnect()" title="Connect mobile scanner" style="background:rgba(108,99,255,0.12);color:var(--primary);border:1px solid rgba(108,99,255,0.35);font-weight:700">📱 Mobile</button>
             <button class="btn bp2" onclick="openM('m-prod')">➕ Add Product</button>
           </div>
         </div>
@@ -2653,6 +2689,87 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
 </div>
 
 <!-- Barcode Scanner Overlay -->
+<!-- ══════════════════════════════════════════════════════
+     📱 MOBILE CONNECT MODAL
+══════════════════════════════════════════════════════ -->
+<div id="m-mobile-connect" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9600;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(6px);">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:20px;width:100%;max-width:440px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
+
+    <!-- Header -->
+    <div style="padding:18px 20px 14px;border-bottom:1px solid var(--border);background:linear-gradient(135deg,rgba(108,99,255,0.15),rgba(0,180,255,0.08));display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="font-size:16px;font-weight:800;color:var(--primary)">📱 Mobile Scanner Connect</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">Phone ලෙල scan කළාම POS cart ට add වෙනවා</div>
+      </div>
+      <button onclick="closeMobileConnect()" style="background:rgba(255,255,255,0.06);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 10px;cursor:pointer;font-size:16px">✕</button>
+    </div>
+
+    <!-- Status bar -->
+    <div id="mc-status-bar" style="padding:8px 20px;background:rgba(255,171,0,0.08);border-bottom:1px solid rgba(255,171,0,0.2);display:flex;align-items:center;gap:8px;">
+      <div id="mc-status-dot" style="width:8px;height:8px;border-radius:50%;background:var(--warning);flex-shrink:0;animation:pulse 1.5s infinite;"></div>
+      <span id="mc-status-text" style="font-size:12px;color:var(--warning);font-weight:600">Waiting for mobile to connect...</span>
+    </div>
+
+    <div style="padding:20px;display:flex;flex-direction:column;gap:16px;">
+
+      <!-- QR Code + Session Code side by side -->
+      <div style="display:flex;gap:16px;align-items:center;">
+        <!-- QR Code canvas -->
+        <div style="flex-shrink:0;background:#fff;border-radius:12px;padding:10px;width:130px;height:130px;display:flex;align-items:center;justify-content:center;">
+          <canvas id="mc-qr-canvas" width="110" height="110"></canvas>
+        </div>
+        <!-- Session code + instructions -->
+        <div style="flex:1;display:flex;flex-direction:column;gap:10px;">
+          <div>
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Session Code</div>
+            <div id="mc-session-code" style="font-size:30px;font-weight:900;color:var(--primary);letter-spacing:8px;font-family:monospace;">------</div>
+          </div>
+          <div style="font-size:11px;color:var(--muted);line-height:1.8;">
+            📲 QR scan කරන්න <b style="color:var(--text)">හෝ</b><br>
+            code type කරන්න mobile ලෙල
+          </div>
+          <button onclick="regenerateSessionCode()" style="background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.3);color:var(--primary);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:11px;font-weight:700;">🔄 New Code</button>
+        </div>
+      </div>
+
+      <!-- Mobile URL with copy button -->
+      <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;">
+        <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px">Mobile Scanner URL</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <div id="mc-mobile-url" style="font-size:11px;color:var(--info);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:monospace;"></div>
+          <button onclick="copyMobileUrl()" style="background:rgba(0,176,255,0.1);border:1px solid rgba(0,176,255,0.3);color:var(--info);border-radius:7px;padding:5px 10px;cursor:pointer;font-size:11px;white-space:nowrap;font-weight:700;">📋 Copy</button>
+          <a id="mc-mobile-link" href="#" target="_blank" style="background:rgba(0,230,118,0.1);border:1px solid rgba(0,230,118,0.3);color:var(--success);border-radius:7px;padding:5px 10px;font-size:11px;text-decoration:none;white-space:nowrap;font-weight:700;">🌐 Open</a>
+        </div>
+      </div>
+
+      <!-- Cart activity feed -->
+      <div>
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">📦 Scan Activity</div>
+        <div id="mc-activity-feed" style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px;min-height:60px;max-height:140px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;">
+          <div style="color:var(--muted);font-size:12px;text-align:center;padding:8px;">Mobile connect වූ පසු scan activity මෙහෙ දිස්වෙනවා</div>
+        </div>
+      </div>
+
+      <!-- Steps guide -->
+      <div style="background:rgba(108,99,255,0.06);border:1px solid rgba(108,99,255,0.2);border-radius:10px;padding:12px;font-size:12px;color:var(--muted);line-height:2;">
+        <b style="color:var(--primary)">📋 Steps:</b><br>
+        <b style="color:var(--text)">1.</b> Mobile browser ලෙල QR scan කරන්න හෝ URL open කරන්න<br>
+        <b style="color:var(--text)">2.</b> Session code enter කරලා connect<br>
+        <b style="color:var(--text)">3.</b> Phone camera ලෙල barcode point කරන්න<br>
+        <b style="color:var(--text)">4.</b> Product automatic ව POS cart ට add වෙනවා ✅
+      </div>
+
+      <button onclick="closeMobileConnect()" style="background:rgba(255,23,68,0.12);border:1px solid rgba(255,23,68,0.3);color:var(--danger);border-radius:10px;padding:11px;cursor:pointer;font-size:13px;font-weight:700;">✕ Session Close කරන්න</button>
+    </div>
+  </div>
+</div>
+
+<style>
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+#mc-activity-feed::-webkit-scrollbar{width:4px}
+#mc-activity-feed::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+</style>
+
 <div class="scan-overlay" id="scan-overlay">
   <div style="color:#fff;font-size:16px;font-weight:800;letter-spacing:0.5px;text-align:center">📷 Barcode / QR Scanner</div>
   <div id="scan-mode-label" style="color:var(--primary);font-size:12px;background:rgba(108,99,255,0.25);padding:4px 16px;border-radius:20px"></div>
@@ -2686,10 +2803,8 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
 
   <!-- Result display -->
   <div id="scan-result" style="font-size:13px;min-height:22px;color:var(--success);text-align:center;max-width:min(320px,92vw);font-weight:700;background:rgba(0,0,0,0.4);padding:6px 16px;border-radius:20px"></div>
-
-  <!-- Scan-to-Sale: checkout shortcut -->
   <div id="scan-to-sale-bar" style="display:none;text-align:center">
-    <button class="btn bsm" onclick="closeBarcodeScanner();goPage('pos');" style="background:linear-gradient(135deg,#00e676,#00b4d8);color:#000;font-weight:800;padding:10px 24px;border:none;font-size:14px;border-radius:12px;letter-spacing:0.3px">🛒 Checkout කරන්න →</button>
+    <button onclick="closeBarcodeScanner();goPage('pos');" style="background:linear-gradient(135deg,#00e676,#00b4d8);color:#000;font-weight:800;padding:10px 24px;border:none;font-size:14px;border-radius:12px;cursor:pointer;">🛒 Checkout කරන්න →</button>
   </div>
 
   <!-- Manual input + buttons -->
@@ -5914,12 +6029,12 @@ function updateBadges() {
 // =========== INVENTORY ===========
 var _invPage = 1;
 var _invPageSize = 50;
-var _invShowAll = false;
+var _invShowAll = true;
 
 function renderInv() {
   var q = (document.getElementById('inv-q') ? document.getElementById('inv-q').value : '').toLowerCase();
   // Reset to page 1 on new search
-  if(q !== renderInv._lastQ){ _invPage = 1; _invShowAll = false; }
+  if(q !== renderInv._lastQ){ _invPage = 1; _invShowAll = true; }
   renderInv._lastQ = q;
 
   var rows = db.products.filter(function(p){
@@ -8293,6 +8408,209 @@ if(!CanvasRenderingContext2D.prototype.roundRect){
 }
 
 // =========== BARCODE SCANNER (Native getUserMedia + BarcodeDetector) ===========
+// ══════════════════════════════════════════════════════
+//  📱 MOBILE SCANNER CONNECT
+// ══════════════════════════════════════════════════════
+var _mcSessionCode = '';
+var _mcListening   = false;
+var _mcLastScanId  = '';
+
+function _mcGenCode() {
+  var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  var code = '';
+  for (var i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+
+function _mcBuildUrl(code) {
+  // mobile-scanner.html should be in same directory as index.html
+  var base = window.location.href.replace(/[^/]*$/, '');
+  return base + 'mobile-scanner.html?code=' + code;
+}
+
+function _mcDrawQR(canvas, url) {
+  // Simple QR via Google Charts API
+  var img = new Image();
+  img.onload = function() {
+    var ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  };
+  img.onerror = function() {
+    // Fallback: draw text
+    var ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#000';
+    ctx.font = '9px monospace';
+    ctx.fillText('Scan URL or', 5, 20);
+    ctx.fillText('type code', 10, 35);
+  };
+  img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=' + encodeURIComponent(url) + '&bgcolor=ffffff&color=000000&margin=2';
+}
+
+function openMobileConnect() {
+  var modal = document.getElementById('m-mobile-connect');
+  modal.style.display = 'flex';
+
+  // Generate new session code
+  _mcSessionCode = _mcGenCode();
+  document.getElementById('mc-session-code').textContent = _mcSessionCode;
+
+  var url = _mcBuildUrl(_mcSessionCode);
+  document.getElementById('mc-mobile-url').textContent = url;
+  var link = document.getElementById('mc-mobile-link');
+  if (link) link.href = url;
+
+  // Draw QR
+  var canvas = document.getElementById('mc-qr-canvas');
+  _mcDrawQR(canvas, url);
+
+  // Reset activity feed
+  document.getElementById('mc-activity-feed').innerHTML =
+    '<div style="color:var(--muted);font-size:12px;text-align:center;padding:8px;">Mobile connect වූ පසු scan activity මෙහෙ දිස්වෙනවා</div>';
+
+  // Set status
+  _mcSetStatus('waiting');
+
+  // Start Firebase listener
+  _mcStartListen();
+}
+
+function closeMobileConnect() {
+  document.getElementById('m-mobile-connect').style.display = 'none';
+  _mcListening = false;
+  if (typeof window.mobileScannerDisconnect === 'function') {
+    window.mobileScannerDisconnect(_mcSessionCode);
+  }
+  _mcSessionCode = '';
+}
+
+function regenerateSessionCode() {
+  _mcSessionCode = _mcGenCode();
+  document.getElementById('mc-session-code').textContent = _mcSessionCode;
+  var url = _mcBuildUrl(_mcSessionCode);
+  document.getElementById('mc-mobile-url').textContent = url;
+  var link = document.getElementById('mc-mobile-link');
+  if (link) link.href = url;
+  var canvas = document.getElementById('mc-qr-canvas');
+  _mcDrawQR(canvas, url);
+  _mcSetStatus('waiting');
+  document.getElementById('mc-activity-feed').innerHTML =
+    '<div style="color:var(--muted);font-size:12px;text-align:center;padding:8px;">New session started — mobile connect කරන්න</div>';
+  _mcStartListen();
+}
+
+function copyMobileUrl() {
+  var url = document.getElementById('mc-mobile-url').textContent;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(function(){ toast('📋 URL copied!'); });
+  } else {
+    var ta = document.createElement('textarea');
+    ta.value = url; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    toast('📋 URL copied!');
+  }
+}
+
+function _mcSetStatus(state, msg) {
+  var dot  = document.getElementById('mc-status-dot');
+  var text = document.getElementById('mc-status-text');
+  var bar  = document.getElementById('mc-status-bar');
+  if (!dot || !text || !bar) return;
+
+  if (state === 'waiting') {
+    dot.style.background = 'var(--warning)';
+    dot.style.animation = 'pulse 1.5s infinite';
+    text.style.color = 'var(--warning)';
+    bar.style.background = 'rgba(255,171,0,0.08)';
+    bar.style.borderBottomColor = 'rgba(255,171,0,0.2)';
+    text.textContent = msg || '⏳ Mobile connect වීමට කාල් කරන්නේ...';
+  } else if (state === 'connected') {
+    dot.style.background = 'var(--success)';
+    dot.style.animation = 'none';
+    text.style.color = 'var(--success)';
+    bar.style.background = 'rgba(0,230,118,0.08)';
+    bar.style.borderBottomColor = 'rgba(0,230,118,0.2)';
+    text.textContent = msg || '🟢 Mobile connected — scanning ready!';
+  }
+}
+
+function _mcAddActivity(html) {
+  var feed = document.getElementById('mc-activity-feed');
+  if (!feed) return;
+  // Remove placeholder
+  var placeholder = feed.querySelector('div[style*="text-align:center"]');
+  if (placeholder && feed.children.length === 1) placeholder.remove();
+  var el = document.createElement('div');
+  el.innerHTML = html;
+  feed.insertBefore(el, feed.firstChild);
+  // Keep max 20 entries
+  while (feed.children.length > 20) feed.removeChild(feed.lastChild);
+}
+
+function _mcStartListen() {
+  if (typeof window.mobileScannerStartListen !== 'function') return;
+  window.mobileScannerStartListen(_mcSessionCode, function(barcode, scanId, code) {
+    if (scanId === _mcLastScanId) return;
+    _mcLastScanId = scanId;
+
+    // Set status connected
+    _mcSetStatus('connected', '🟢 Mobile connected & scanning');
+
+    // Match product
+    var p = db.products.find(function(x){ return x.barcode && x.barcode === barcode; });
+
+    if (p && p.stock > 0) {
+      // Navigate to POS if not there
+      var posPage = document.getElementById('pg-pos');
+      if (posPage && !posPage.classList.contains('active')) goPage('pos');
+
+      addToCart(p.id);
+
+      // ACK success
+      if (typeof window.mobileScannerAck === 'function') {
+        window.mobileScannerAck(code, barcode, 'ok', p.name, p.price, p.stock);
+      }
+
+      _mcAddActivity(
+        '<div style="display:flex;align-items:center;gap:8px;background:rgba(0,230,118,0.08);border:1px solid rgba(0,230,118,0.2);border-radius:8px;padding:7px 10px;">' +
+        '<span style="font-size:16px">✅</span>' +
+        '<div style="flex:1;min-width:0;">' +
+        '<div style="font-size:12px;font-weight:700;color:var(--success);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + p.name + '</div>' +
+        '<div style="font-size:10px;color:var(--muted)">Rs.' + p.price.toFixed(2) + ' · Stock: ' + p.stock + '</div>' +
+        '</div>' +
+        '<div style="font-size:14px;font-weight:800;color:var(--success)">+1</div>' +
+        '</div>'
+      );
+      toast('📱 ' + p.name + ' added from mobile!', 'var(--success)');
+
+    } else if (p) {
+      if (typeof window.mobileScannerAck === 'function') {
+        window.mobileScannerAck(code, barcode, 'outofstock', p.name, p.price, 0);
+      }
+      _mcAddActivity(
+        '<div style="display:flex;align-items:center;gap:8px;background:rgba(255,23,68,0.08);border:1px solid rgba(255,23,68,0.2);border-radius:8px;padding:7px 10px;">' +
+        '<span style="font-size:16px">❌</span>' +
+        '<div><div style="font-size:12px;font-weight:700;color:var(--danger)">' + p.name + '</div>' +
+        '<div style="font-size:10px;color:var(--muted)">Out of stock</div></div>' +
+        '</div>'
+      );
+    } else {
+      if (typeof window.mobileScannerAck === 'function') {
+        window.mobileScannerAck(code, barcode, 'notfound', barcode, 0, 0);
+      }
+      _mcAddActivity(
+        '<div style="display:flex;align-items:center;gap:8px;background:rgba(255,171,0,0.08);border:1px solid rgba(255,171,0,0.2);border-radius:8px;padding:7px 10px;">' +
+        '<span style="font-size:16px">⚠️</span>' +
+        '<div><div style="font-size:12px;font-weight:700;color:var(--warning)">' + barcode + '</div>' +
+        '<div style="font-size:10px;color:var(--muted)">Product not found</div></div>' +
+        '</div>'
+      );
+    }
+  });
+}
+
 var scanMode = 'pos';
 var scanLastCode = '';
 var scanLastTime = 0;
@@ -8344,7 +8662,6 @@ function _startScanner(modeLabel){
   document.getElementById('scan-mode-label').textContent = modeLabel;
   scanLastCode = ''; scanLastTime = 0; _torchOn = false;
 
-  // Show/hide the Scan-to-Sale checkout bar
   var s2sBar = document.getElementById('scan-to-sale-bar');
   if(s2sBar) s2sBar.style.display = (scanMode === 'scan-to-sale') ? 'block' : 'none';
 
@@ -8591,29 +8908,23 @@ function _handleScannedCode(code){
     }
 
   } else if(scanMode === 'scan-to-sale'){
-    // 📱 Scan to Sale mode — navigate to POS and add item directly
     var sp = db.products.find(function(x){ return x.barcode && x.barcode === code; });
     if(!sp) sp = db.products.find(function(x){ return x.name.toLowerCase() === code.toLowerCase(); });
-
     if(sp && sp.stock > 0){
       res.style.color = 'var(--success)';
       res.textContent = '✅ ' + sp.name + ' — POS ට add වෙනවා...';
       flash('var(--success)');
       document.getElementById('scan-manual').value = '';
-      // Navigate to POS page first if not already there
       var posPage = document.getElementById('pg-pos');
       var isOnPos = posPage && posPage.classList.contains('active');
-      if(!isOnPos){
-        goPage('pos');
-      }
-      // Add to cart (small delay to let page render if navigated)
+      if(!isOnPos) goPage('pos');
       setTimeout(function(){
         addToCart(sp.id);
-        // Update result label with cart count
-        var cartCount = (window.cart || []).reduce(function(s,i){ return s+i.qty; }, 0);
-        res.textContent = '✅ ' + sp.name + ' added! (Cart: ' + cartCount + ' items)';
+        var cartCount = (cart||[]).reduce(function(s,i){ return s+i.qty; }, 0);
+        res.textContent = '✅ ' + sp.name + ' added! (Cart: ' + cartCount + ')';
+        var s2sBar = document.getElementById('scan-to-sale-bar');
+        if(s2sBar) s2sBar.style.display = 'block';
       }, isOnPos ? 0 : 250);
-      // Keep scanner open for continuous scanning
     } else if(sp){
       res.style.color = 'var(--danger)';
       res.textContent = '❌ Out of stock: ' + sp.name;
