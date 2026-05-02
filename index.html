@@ -5905,22 +5905,90 @@ function updateBadges() {
 }
 
 // =========== INVENTORY ===========
+var _invPage = 1;
+var _invPageSize = 50;
+var _invShowAll = true;
+
 function renderInv() {
   var q = (document.getElementById('inv-q') ? document.getElementById('inv-q').value : '').toLowerCase();
+  // Reset to page 1 on new search
+  if(q !== renderInv._lastQ){ _invPage = 1; _invShowAll = true; }
+  renderInv._lastQ = q;
+
   var rows = db.products.filter(function(p){
     return p.name.toLowerCase().includes(q) ||
            (p.barcode && p.barcode.toLowerCase().includes(q)) ||
            (p.category && p.category.toLowerCase().includes(q));
   });
+
   var tb = document.getElementById('inv-tbl');
   if (!tb) return;
-  tb.innerHTML = rows.length ? rows.map(function(p){
+
+  if (!rows.length) {
+    tb.innerHTML = '<tr><td colspan="7" class="empty"><div class="ei">📦</div>No products</td></tr>';
+    _renderInvPager(0, 0); return;
+  }
+
+  var total = rows.length;
+  var displayRows;
+  if (_invShowAll) {
+    displayRows = rows;
+  } else {
+    var start = (_invPage - 1) * _invPageSize;
+    displayRows = rows.slice(start, start + _invPageSize);
+  }
+
+  tb.innerHTML = displayRows.map(function(p){
     var stockColor = p.stock === 0 ? 'var(--danger)' : p.stock <= p.minStock ? 'var(--warning)' : 'var(--success)';
     var margin = p.price > 0 && p.cost > 0 ? ((p.price - p.cost) / p.price * 100) : (p.cost === 0 && p.price > 0 ? 100 : 0);
     var profit = p.price > 0 ? (p.price - (p.cost||0)) : 0;
     var marginColor = margin >= 30 ? 'var(--success)' : margin >= 10 ? 'var(--warning)' : 'var(--danger)';
     return '<tr><td><b>'+p.name+'</b>'+(p.desc?'<br><small style="color:var(--muted)">'+p.desc+'</small>':'')+'</td><td><span class="badge bp">'+p.category+'</span></td><td><small style="color:var(--muted);font-family:monospace">'+(p.barcode||'—')+'</small></td><td>Rs. '+p.price.toFixed(2)+'<br><small style="color:var(--muted)">Cost: Rs.'+(p.cost||0).toFixed(2)+'</small></td><td style="color:'+marginColor+';font-weight:700">'+margin.toFixed(0)+'%<br><small style="color:var(--muted)">+Rs.'+profit.toFixed(0)+'</small></td><td style="color:'+stockColor+'"><b>'+p.stock+'</b><div style="display:flex;gap:3px;margin-top:3px"><button class="qbtn" onclick="quickStockAdj('+p.id+',-1)" title="Remove 1">−</button><button class="qbtn" onclick="quickStockAdj('+p.id+',1)" title="Add 1">+</button></div><div class="pbar"><div class="pfill" style="width:'+Math.min(100,p.stock*10)+'%;background:'+stockColor+'"></div></div></td><td><button class="btn bo bsm" onclick="editProd('+p.id+')" style="margin-right:4px">✏️</button><button class="btn bd2 bsm" onclick="delProd('+p.id+')">🗑️</button></td></tr>';
-  }).join('') : '<tr><td colspan="7" class="empty"><div class="ei">📦</div>No products</td></tr>';
+  }).join('');
+
+  _renderInvPager(total, displayRows.length);
+}
+
+function _renderInvPager(total, shown){
+  // Find or create pager row
+  var tb = document.getElementById('inv-tbl');
+  if(!tb) return;
+  if(total <= _invPageSize && !_invShowAll){ return; } // no pager needed for small lists
+
+  var totalPages = Math.ceil(total / _invPageSize);
+  var html = '<tr><td colspan="7" style="padding:10px;text-align:center;background:var(--card2)">';
+
+  if(_invShowAll){
+    html += '<span style="color:var(--muted);font-size:12px">Showing all <b>'+total+'</b> products &nbsp;</span>';
+    html += '<button class="btn bo bsm" onclick="_invShowAll=false;_invPage=1;renderInv()">📄 Paginate</button>';
+  } else {
+    var start = (_invPage-1)*_invPageSize+1;
+    var end = Math.min(_invPage*_invPageSize, total);
+    html += '<span style="color:var(--muted);font-size:12px">'+start+'–'+end+' of <b>'+total+'</b> &nbsp;</span>';
+    // Prev
+    html += '<button class="btn bo bsm" '+((_invPage<=1)?'disabled':'')+' onclick="invGotoPage('+(_invPage-1)+')">‹</button> ';
+    // Page numbers (show up to 5)
+    var pStart = Math.max(1, _invPage-2);
+    var pEnd   = Math.min(totalPages, pStart+4);
+    for(var i=pStart;i<=pEnd;i++){
+      html += '<button class="btn bsm '+(i===_invPage?'bp2':'bo')+'" onclick="invGotoPage('+i+')" style="min-width:30px">'+i+'</button> ';
+    }
+    // Next
+    html += '<button class="btn bo bsm" '+((_invPage>=totalPages)?'disabled':'')+' onclick="invGotoPage('+(_invPage+1)+')">›</button>';
+    html += ' &nbsp;<button class="btn bs2 bsm" onclick="_invShowAll=true;renderInv()">📋 Show All '+total+'</button>';
+  }
+
+  html += '</td></tr>';
+  tb.insertAdjacentHTML('beforeend', html);
+}
+
+function invGotoPage(p){
+  _invPage = p;
+  _invShowAll = false;
+  renderInv();
+  // Scroll inventory table into view
+  var el = document.getElementById('inv-tbl');
+  if(el) el.closest('.tcard').scrollIntoView({ behavior:'smooth', block:'start' });
 }
 function saveProd() {
   var id = document.getElementById('p-id').value;
