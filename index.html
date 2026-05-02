@@ -7019,6 +7019,12 @@ function autoSaveSettings(){
   s.accNo=document.getElementById('s-accno')?document.getElementById('s-accno').value:s.accNo;
   s.accName=document.getElementById('s-accname')?document.getElementById('s-accname').value:s.accName;
   s.branch=document.getElementById('s-branch')?document.getElementById('s-branch').value:s.branch;
+  // Loyalty settings
+  var sle=document.getElementById('s-loy-enabled'); if(sle) s.loyaltyEnabled=sle.checked;
+  var slr=document.getElementById('s-loy-rate'); if(slr&&slr.value) s.loyaltyRate=parseFloat(slr.value)||1;
+  var slrd=document.getElementById('s-loy-redeem'); if(slrd&&slrd.value) s.loyaltyRedeem=parseFloat(slrd.value)||0.5;
+  var slsv=document.getElementById('s-loy-silver'); if(slsv&&slsv.value) s.loyaltySilver=parseInt(slsv.value)||500;
+  var slgd=document.getElementById('s-loy-gold'); if(slgd&&slgd.value) s.loyaltyGold=parseInt(slgd.value)||2000;
   saveDBDebounced();
 }
 function setClr(clr,el){
@@ -9377,7 +9383,7 @@ if(!db.settings.loyaltyRate) db.settings.loyaltyRate=1;
 if(!db.settings.loyaltyRedeem) db.settings.loyaltyRedeem=0.5;
 if(!db.settings.loyaltySilver) db.settings.loyaltySilver=500;
 if(!db.settings.loyaltyGold) db.settings.loyaltyGold=2000;
-if(!db.settings.loyaltyEnabled) db.settings.loyaltyEnabled=false;
+if(!db.settings.loyaltyEnabled) db.settings.loyaltyEnabled=true;
 if(!db.settings.role) db.settings.role='admin';
 
 // ---- ACTIVITY LOG ----
