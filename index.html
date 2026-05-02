@@ -8430,6 +8430,16 @@ function _mcGenCode() {
   return code;
 }
 
+function _mcGetPermanentCode() {
+  // localStorage ලෙල save කළ permanent code use කරනවා
+  var saved = localStorage.getItem('st_permanent_session_code');
+  if (saved && saved.length === 6) return saved;
+  // First time — generate කරලා save කරනවා
+  var newCode = _mcGenCode();
+  localStorage.setItem('st_permanent_session_code', newCode);
+  return newCode;
+}
+
 function _mcBuildUrl(code) {
   // mobile-scanner.html should be in same directory as index.html
   var base = window.location.href.replace(/[^/]*$/, '');
@@ -8461,8 +8471,8 @@ function openMobileConnect() {
   var modal = document.getElementById('m-mobile-connect');
   modal.style.display = 'flex';
 
-  // Generate new session code
-  _mcSessionCode = _mcGenCode();
+  // Permanent session code — localStorage ලෙල save කළ code use කරනවා
+  _mcSessionCode = _mcGetPermanentCode();
   document.getElementById('mc-session-code').textContent = _mcSessionCode;
 
   var url = _mcBuildUrl(_mcSessionCode);
@@ -8495,7 +8505,10 @@ function closeMobileConnect() {
 }
 
 function regenerateSessionCode() {
-  _mcSessionCode = _mcGenCode();
+  if (!confirm('⚠️ Code change කළොත් mobile ලෙල ආයෙ connect කරන්න ඕනෑ!\nNew code generate කරන්නද?')) return;
+  var newCode = _mcGenCode();
+  localStorage.setItem('st_permanent_session_code', newCode);
+  _mcSessionCode = newCode;
   document.getElementById('mc-session-code').textContent = _mcSessionCode;
   var url = _mcBuildUrl(_mcSessionCode);
   document.getElementById('mc-mobile-url').textContent = url;
