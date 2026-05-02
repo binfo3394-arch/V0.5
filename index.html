@@ -866,6 +866,7 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
           <button class="btn bo bsm" onclick="showNotifs()" title="Notifications [Alt+N]">🔔</button>
           <div class="notif-badge" id="notif-cnt" style="display:none">0</div>
         </div>
+        <button class="btn bsm" onclick="openScanToSale()" title="Scan barcode → Direct Sale" style="background:linear-gradient(135deg,rgba(0,230,118,0.18),rgba(0,176,255,0.18));color:#00e676;border:1px solid rgba(0,230,118,0.4);font-weight:700">📱 Scan to Sale</button>
         <button class="btn bp2 bsm" onclick="goPage('pos')" title="New Sale [F2]">➕ New Sale</button>
       </div>
     </div>
@@ -1122,6 +1123,7 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
           <div style="display:flex;gap:6px;flex-wrap:wrap">
             <button class="btn bo bsm" onclick="openBulkMarkup()" title="Bulk price update">📊 Bulk Markup</button>
             <button class="btn bo bsm" onclick="openScannerForInventoryList()" title="Scan barcode to search product">📷 Scan</button>
+            <button class="btn bsm" onclick="openScanToSale()" title="Scan barcode and go to sale" style="background:linear-gradient(135deg,rgba(0,230,118,0.18),rgba(0,176,255,0.18));color:#00e676;border:1px solid rgba(0,230,118,0.4);font-weight:700">📱 Scan to Sale</button>
             <button class="btn bp2" onclick="openM('m-prod')">➕ Add Product</button>
           </div>
         </div>
@@ -2684,6 +2686,11 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
 
   <!-- Result display -->
   <div id="scan-result" style="font-size:13px;min-height:22px;color:var(--success);text-align:center;max-width:min(320px,92vw);font-weight:700;background:rgba(0,0,0,0.4);padding:6px 16px;border-radius:20px"></div>
+
+  <!-- Scan-to-Sale: checkout shortcut -->
+  <div id="scan-to-sale-bar" style="display:none;text-align:center">
+    <button class="btn bsm" onclick="closeBarcodeScanner();goPage('pos');" style="background:linear-gradient(135deg,#00e676,#00b4d8);color:#000;font-weight:800;padding:10px 24px;border:none;font-size:14px;border-radius:12px;letter-spacing:0.3px">🛒 Checkout කරන්න →</button>
+  </div>
 
   <!-- Manual input + buttons -->
   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;width:min(340px,96vw)">
@@ -5907,12 +5914,12 @@ function updateBadges() {
 // =========== INVENTORY ===========
 var _invPage = 1;
 var _invPageSize = 50;
-var _invShowAll = true;
+var _invShowAll = false;
 
 function renderInv() {
   var q = (document.getElementById('inv-q') ? document.getElementById('inv-q').value : '').toLowerCase();
   // Reset to page 1 on new search
-  if(q !== renderInv._lastQ){ _invPage = 1; _invShowAll = true; }
+  if(q !== renderInv._lastQ){ _invPage = 1; _invShowAll = false; }
   renderInv._lastQ = q;
 
   var rows = db.products.filter(function(p){
@@ -8325,6 +8332,10 @@ function openScannerForInventoryList(){
   scanMode = 'inventory-list';
   _startScanner('🔍 Inventory Search — Barcode scan කරලා product හොයන්න');
 }
+function openScanToSale(){
+  scanMode = 'scan-to-sale';
+  _startScanner('📱 Scan to Sale — Scan කළාම POS ට direct add වෙනවා');
+}
 
 function _startScanner(modeLabel){
   document.getElementById('scan-overlay').classList.add('open');
@@ -8332,6 +8343,10 @@ function _startScanner(modeLabel){
   document.getElementById('scan-manual').value = '';
   document.getElementById('scan-mode-label').textContent = modeLabel;
   scanLastCode = ''; scanLastTime = 0; _torchOn = false;
+
+  // Show/hide the Scan-to-Sale checkout bar
+  var s2sBar = document.getElementById('scan-to-sale-bar');
+  if(s2sBar) s2sBar.style.display = (scanMode === 'scan-to-sale') ? 'block' : 'none';
 
   _stopNativeScanner();
   _initNativeScanner();
@@ -8573,6 +8588,40 @@ function _handleScannedCode(code){
       flash('var(--warning)');
       var invQ2 = document.getElementById('inv-q');
       if(invQ2){ invQ2.value = code; renderInv(); }
+    }
+
+  } else if(scanMode === 'scan-to-sale'){
+    // 📱 Scan to Sale mode — navigate to POS and add item directly
+    var sp = db.products.find(function(x){ return x.barcode && x.barcode === code; });
+    if(!sp) sp = db.products.find(function(x){ return x.name.toLowerCase() === code.toLowerCase(); });
+
+    if(sp && sp.stock > 0){
+      res.style.color = 'var(--success)';
+      res.textContent = '✅ ' + sp.name + ' — POS ට add වෙනවා...';
+      flash('var(--success)');
+      document.getElementById('scan-manual').value = '';
+      // Navigate to POS page first if not already there
+      var posPage = document.getElementById('pg-pos');
+      var isOnPos = posPage && posPage.classList.contains('active');
+      if(!isOnPos){
+        goPage('pos');
+      }
+      // Add to cart (small delay to let page render if navigated)
+      setTimeout(function(){
+        addToCart(sp.id);
+        // Update result label with cart count
+        var cartCount = (window.cart || []).reduce(function(s,i){ return s+i.qty; }, 0);
+        res.textContent = '✅ ' + sp.name + ' added! (Cart: ' + cartCount + ' items)';
+      }, isOnPos ? 0 : 250);
+      // Keep scanner open for continuous scanning
+    } else if(sp){
+      res.style.color = 'var(--danger)';
+      res.textContent = '❌ Out of stock: ' + sp.name;
+      flash('var(--danger)');
+    } else {
+      res.style.color = 'var(--warning)';
+      res.textContent = '⚠️ Product නෑ: ' + code;
+      flash('var(--warning)');
     }
 
   } else {
