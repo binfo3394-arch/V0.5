@@ -473,8 +473,8 @@
   // ─────────────────────────────────────────
   function sendBarcode(code) {
     if (!isConnected || !code) return;
-    // Clear previous ack so mobile UI resets properly
-    remove(ref(db, 'mobile-scanner/' + sessionCode + '/ack')).catch(function(){});
+    // Clear previous ack so mobile UI resets cleanly
+    remove(ref(db, 'mobile-scanner/' + sessionCode + '/ack')).catch(()=>{});
     const payload = { barcode: code, time: Date.now(), id: Math.random().toString(36).slice(2) };
     set(ref(db, 'mobile-scanner/' + sessionCode + '/scan'), payload)
       .then(() => {})
@@ -692,6 +692,16 @@
 
   window._msConnect = connect;
   window._msDisconnect = disconnect;
+</script>
+
+<!-- ⚠️ IMPORTANT: type="module" scripts are deferred — inline onclick handlers need
+     these plain-script shims so they work immediately when user taps buttons -->
+<script>
+  function _msConnect()    { window._msConnect    ? window._msConnect()    : setTimeout(_msConnect, 150);    }
+  function _msDisconnect() { window._msDisconnect ? window._msDisconnect() : null; }
+  function flipCam()       { window.flipCam       ? window.flipCam()       : null; }
+  function toggleTorch()   { window.toggleTorch   ? window.toggleTorch()   : null; }
+  function manualSend()    { window.manualSend    ? window.manualSend()    : null; }
 </script>
 
 <!-- html5-qrcode fallback -->
