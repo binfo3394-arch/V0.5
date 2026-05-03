@@ -1191,6 +1191,34 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
   html, body { overscroll-behavior-x: none; overscroll-behavior-y: auto; }
   .main { overflow-x: hidden; }
   .content { overflow-x: hidden; }
+
+  /* ── Loyalty & Staff: force horizontal scroll like inventory ── */
+  #pg-loyalty .tcard,
+  #pg-staff .tcard {
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-x pan-y !important;
+    width: 100% !important;
+    display: block !important;
+  }
+  #pg-loyalty .tcard table,
+  #pg-staff .tcard table {
+    min-width: 700px !important;
+    width: max-content !important;
+    table-layout: auto !important;
+    font-size: 12px !important;
+  }
+  #pg-loyalty .tcard th,
+  #pg-loyalty .tcard td,
+  #pg-staff .tcard th,
+  #pg-staff .tcard td {
+    white-space: nowrap !important;
+    word-break: normal !important;
+    padding: 8px 10px !important;
+    font-size: 12px !important;
+    overflow: visible !important;
+  }
 }
 
 </style>
