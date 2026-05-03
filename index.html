@@ -105,6 +105,9 @@
       taxProfiles: dbObj.taxProfiles || [],
       stockTransfers:dbObj.stockTransfers||[],
       widgetPrefs: dbObj.widgetPrefs  || {},
+      investors:        dbObj.investors        || [],
+      investorTx:       dbObj.investorTx       || [],
+      investorPayouts:  dbObj.investorPayouts  || [],
       _lastSync:  Date.now()
     };
     set(ref(database, 'pos-data'), payload)
@@ -169,6 +172,9 @@
       if (remote.followups)   db.followups   = _fbArr(remote.followups);
       if (remote.timerLogs)   db.timerLogs   = _fbArr(remote.timerLogs);
       if (remote.repTemplates)db.repTemplates= _fbArr(remote.repTemplates);
+      if (remote.investors)        db.investors        = _fbArr(remote.investors);
+      if (remote.investorTx)       db.investorTx       = _fbArr(remote.investorTx);
+      if (remote.investorPayouts)  db.investorPayouts  = _fbArr(remote.investorPayouts);
       renderAll();
       setFBStatus('\uD83D\uDD04 Live synced', 'var(--info)');
     }, function(error){ console.error('Firebase listener error:', error); });
@@ -475,6 +481,7 @@ body {
   #pg-appointments .tcard,
   #pg-loyalty .tcard,
   #pg-staff .tcard,
+  #pg-investors .tcard,
   #pg-activitylog .tcard,
   #pg-abc-analysis .tcard,
   #pg-cust-segments .tcard,
@@ -512,6 +519,7 @@ body {
   #pg-appointments .tcard table,
   #pg-loyalty .tcard table,
   #pg-staff .tcard table,
+  #pg-investors .tcard table,
   #pg-activitylog .tcard table,
   #pg-abc-analysis .tcard table,
   #pg-cust-segments .tcard table,
@@ -1292,6 +1300,10 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
     <div class="mmore-item" data-mmr="pnl"><span class="mmore-ic">📋</span><span class="mmore-lbl">P&L</span></div>
     <div class="mmore-item" data-mmr="settings"><span class="mmore-ic">⚙️</span><span class="mmore-lbl">Settings</span></div>
   </div>
+  <div class="mmore-title">💼 Investors</div>
+  <div class="mmore-grid">
+    <div class="mmore-item" data-mmr="investors"><span class="mmore-ic">💼</span><span class="mmore-lbl">Investors</span></div>
+  </div>
 
   <div class="mmore-title">Advanced</div>
   <div class="mmore-grid">
@@ -1464,6 +1476,8 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
       <div class="nitem" data-page="roster"><span class="ic">📅</span><span>Staff Roster</span></div>
       <div class="nitem" data-page="tasks"><span class="ic">✅</span><span>Task Manager</span></div>
       <div class="nitem" data-page="open-close-checklist"><span class="ic">☑️</span><span>Open/Close Checklist</span></div>
+      <div class="nlabel">💼 Investors</div>
+      <div class="nitem" data-page="investors"><span class="ic">💼</span><span>Investor Management</span></div>
       <div class="nlabel">v28 New ✨</div>
       <div class="nitem" data-page="purchase-orders"><span class="ic">🛍️</span><span>Purchase Orders</span></div>
       <div class="nitem" data-page="multi-branch"><span class="ic">🏢</span><span>Multi-Branch</span></div>
@@ -2363,6 +2377,125 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
           <div class="scard s4"><div style="font-size:22px">🔧</div><div class="sval" id="staff-repairs-done">0</div><div class="slabel">Repairs Completed</div></div>
         </div>
         <div class="tcard"><table><thead><tr><th>Staff Name</th><th>Role / Status</th><th>Sales (This Month)</th><th>Repairs Done (This Month)</th><th>Commission Rate</th><th>Commission Earned</th><th>Actions</th></tr></thead><tbody id="staff-tbl"></tbody></table></div>
+      </div>
+
+      <!-- ===================== INVESTOR MANAGEMENT ===================== -->
+      <div id="pg-investors" class="page">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+          <div class="estitle">💼 Investor Management</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <button class="btn bo bsm" onclick="openInvestorReport()">📊 Monthly Report</button>
+            <button class="btn bp2" onclick="openInvestorModal()">➕ Add Investor</button>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="sgrid" style="margin-bottom:16px">
+          <div class="scard s1"><div style="font-size:22px">💼</div><div class="sval" id="inv-total-invested">Rs. 0</div><div class="slabel">Total Invested</div></div>
+          <div class="scard s2"><div style="font-size:22px">👥</div><div class="sval" id="inv-count">0</div><div class="slabel">Active Investors</div></div>
+          <div class="scard s3"><div style="font-size:22px">💸</div><div class="sval" id="inv-total-payout">Rs. 0</div><div class="slabel">Total Paid Out (8%/mo)</div></div>
+          <div class="scard s4"><div style="font-size:22px">⏳</div><div class="sval" id="inv-pending-payout">Rs. 0</div><div class="slabel">This Month Pending</div></div>
+        </div>
+
+        <!-- Investor Table -->
+        <div class="tcard" style="margin-bottom:16px">
+          <div class="thead2">
+            <h3>💼 Investors</h3>
+            <input id="inv-q" placeholder="🔍 Search investor..." oninput="renderInvestors()" style="font-size:12px;padding:5px 10px;width:180px;border-radius:7px;background:var(--card2);border:1px solid var(--border);color:var(--text)">
+          </div>
+          <table><thead><tr>
+            <th>Investor Name</th><th>Phone</th><th>Type</th><th>Invested Amount</th><th>Monthly Contribution</th><th>Total Invested</th><th>8% Monthly (Due)</th><th>Total Paid</th><th>Status</th><th>Actions</th>
+          </tr></thead><tbody id="inv-tbl"></tbody></table>
+        </div>
+
+        <!-- Investment Transactions -->
+        <div class="tcard" style="margin-bottom:16px">
+          <div class="thead2">
+            <h3>💳 Investment Transactions</h3>
+            <select id="inv-tx-filter" onchange="renderInvTransactions()" style="font-size:12px;padding:5px 8px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:7px">
+              <option value="">All Investors</option>
+            </select>
+          </div>
+          <table><thead><tr>
+            <th>Date</th><th>Investor</th><th>Type</th><th>Amount</th><th>Note</th>
+          </tr></thead><tbody id="inv-tx-tbl"></tbody></table>
+        </div>
+
+        <!-- Monthly Payout Panel -->
+        <div class="tcard">
+          <div class="thead2"><h3>📅 Monthly Payout Tracker</h3><button class="btn bs2 bsm" onclick="generateMonthlyPayouts()">🔄 Generate This Month</button></div>
+          <table><thead><tr>
+            <th>Month</th><th>Investor</th><th>Invested</th><th>8% Due</th><th>Status</th><th>Actions</th>
+          </tr></thead><tbody id="inv-payout-tbl"></tbody></table>
+        </div>
+      </div>
+
+      <!-- INVESTOR MODAL -->
+      <div class="moverlay" id="m-investor">
+        <div class="modal" style="width:560px">
+          <div class="mhdr"><h3 id="inv-modal-title">➕ Add Investor</h3><button class="xbtn" onclick="closeM('m-investor')">×</button></div>
+          <div class="mbody">
+            <div class="fgrid">
+              <div class="fg"><label>Investor Full Name *</label><input id="inv-name" placeholder="e.g. Amal Perera"></div>
+              <div class="fg"><label>Phone Number</label><input id="inv-phone" placeholder="+94 77 123 4567" type="tel"></div>
+              <div class="fg"><label>NIC / ID</label><input id="inv-nic" placeholder="200012345678V"></div>
+              <div class="fg"><label>Email</label><input id="inv-email" placeholder="investor@email.com" type="email"></div>
+              <div class="fg full"><label>Investment Type *</label>
+                <select id="inv-type" onchange="toggleInvType()">
+                  <option value="lump">💰 One-time Lump Sum</option>
+                  <option value="monthly">📅 Monthly Contribution</option>
+                  <option value="both">🔀 Both (Lump + Monthly)</option>
+                </select>
+              </div>
+              <div class="fg" id="inv-lump-row"><label>Lump Sum Amount (Rs.) *</label><input id="inv-lump" type="number" placeholder="0" min="0"></div>
+              <div class="fg" id="inv-monthly-row" style="display:none"><label>Monthly Contribution (Rs.)</label><input id="inv-monthly-amt" type="number" placeholder="0" min="0"></div>
+              <div class="fg"><label>Start Date *</label><input id="inv-start" type="date"></div>
+              <div class="fg"><label>Profit Share %</label><input id="inv-rate" type="number" value="8" min="1" max="100" step="0.5"></div>
+              <div class="fg full"><label>Notes</label><textarea id="inv-notes" rows="2" placeholder="Agreement details, bank info, etc..."></textarea></div>
+            </div>
+          </div>
+          <div class="mftr">
+            <button class="btn bo" onclick="closeM('m-investor')">Cancel</button>
+            <button class="btn bp2" onclick="saveInvestor()">💾 Save Investor</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ADD TRANSACTION MODAL -->
+      <div class="moverlay" id="m-inv-tx">
+        <div class="modal" style="width:440px">
+          <div class="mhdr"><h3>💳 Add Transaction</h3><button class="xbtn" onclick="closeM('m-inv-tx')">×</button></div>
+          <div class="mbody">
+            <div class="fg"><label>Investor</label><select id="inv-tx-investor" style="width:100%"></select></div>
+            <div class="fg"><label>Transaction Type</label>
+              <select id="inv-tx-type">
+                <option value="investment">💰 New Investment (Add to principal)</option>
+                <option value="monthly_contrib">📅 Monthly Contribution</option>
+                <option value="payout">💸 Profit Payout (8%)</option>
+                <option value="withdrawal">📤 Withdrawal</option>
+              </select>
+            </div>
+            <div class="fg"><label>Amount (Rs.) *</label><input id="inv-tx-amount" type="number" placeholder="0" min="0"></div>
+            <div class="fg"><label>Date</label><input id="inv-tx-date" type="date"></div>
+            <div class="fg"><label>Note</label><input id="inv-tx-note" placeholder="Payment reference, bank transfer ID..."></div>
+          </div>
+          <div class="mftr">
+            <button class="btn bo" onclick="closeM('m-inv-tx')">Cancel</button>
+            <button class="btn bp2" onclick="saveInvTransaction()">✅ Save</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MONTHLY REPORT MODAL -->
+      <div class="moverlay" id="m-inv-report">
+        <div class="modal" style="width:600px">
+          <div class="mhdr"><h3>📊 Monthly Investor Report</h3><button class="xbtn" onclick="closeM('m-inv-report')">×</button></div>
+          <div class="mbody" id="inv-report-body"></div>
+          <div class="mftr">
+            <button class="btn bo" onclick="closeM('m-inv-report')">Close</button>
+            <button class="btn bp2" onclick="printInvReport()">🖨️ Print</button>
+          </div>
+        </div>
       </div>
 
       <!-- ===================== REPAIR DIAGNOSTICS ===================== -->
@@ -12477,6 +12610,371 @@ goPage = function(id) {
 };
 
 console.log('✅ V28 Upgrade loaded — Purchase Orders, Multi-Branch, VAT, Advanced Reports, Dashboard Builder');
+
+// ============================================================
+// INVESTOR MANAGEMENT — v29
+// ============================================================
+
+// ── DB init ──
+if (!db.investors)       db.investors = [];
+if (!db.investorTx)      db.investorTx = [];
+if (!db.investorPayouts) db.investorPayouts = [];
+
+// ── Helpers ──
+function fmtRs(n){ return 'Rs. ' + Number(n||0).toLocaleString('en-LK', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+function fmtDate(d){ if(!d) return '—'; var dt = new Date(d); return dt.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}); }
+function todayStr(){ return new Date().toISOString().split('T')[0]; }
+function thisMonthKey(){ var d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1).toString().padStart(2,'0'); }
+
+// ── Get total invested for an investor (lump + all monthly_contrib tx) ──
+function investorTotalInvested(inv) {
+  var base = Number(inv.lump || 0);
+  var monthly = (db.investorTx||[]).filter(function(t){ return t.invId===inv.id && t.type==='monthly_contrib'; }).reduce(function(s,t){ return s+Number(t.amount||0); }, 0);
+  return base + monthly;
+}
+
+// ── 8% monthly due ──
+function investorMonthlyDue(inv) {
+  return investorTotalInvested(inv) * (Number(inv.rate||8) / 100);
+}
+
+// ── Total paid out ──
+function investorTotalPaid(inv) {
+  return (db.investorTx||[]).filter(function(t){ return t.invId===inv.id && t.type==='payout'; }).reduce(function(s,t){ return s+Number(t.amount||0); }, 0);
+}
+
+// ── Render Investors ──
+function renderInvestors() {
+  if(!db.investors) db.investors=[];
+  if(!db.investorTx) db.investorTx=[];
+
+  // Stats
+  var totalInv=0, totalPaid=0, pendingPay=0, mKey=thisMonthKey();
+  db.investors.forEach(function(inv){
+    if(inv.status==='inactive') return;
+    totalInv += investorTotalInvested(inv);
+    totalPaid += investorTotalPaid(inv);
+    var due = investorMonthlyDue(inv);
+    var paidThisMonth = (db.investorPayouts||[]).filter(function(p){ return p.invId===inv.id && p.month===mKey && p.status==='paid'; }).length > 0;
+    if(!paidThisMonth) pendingPay += due;
+  });
+  var el=function(id){return document.getElementById(id);};
+  if(el('inv-total-invested')) el('inv-total-invested').textContent = fmtRs(totalInv);
+  if(el('inv-count')) el('inv-count').textContent = db.investors.filter(function(i){return i.status!=='inactive';}).length;
+  if(el('inv-total-payout')) el('inv-total-payout').textContent = fmtRs(totalPaid);
+  if(el('inv-pending-payout')) el('inv-pending-payout').textContent = fmtRs(pendingPay);
+
+  // Table
+  var q = (el('inv-q')||{}).value||'';
+  var list = db.investors.filter(function(i){ return !q || i.name.toLowerCase().includes(q.toLowerCase()) || (i.phone||'').includes(q); });
+  var tbody = el('inv-tbl');
+  if(!tbody) return;
+  if(!list.length){ tbody.innerHTML='<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:24px">No investors yet. Add your first investor!</td></tr>'; }
+  else {
+    tbody.innerHTML = list.map(function(inv){
+      var total = investorTotalInvested(inv);
+      var due = investorMonthlyDue(inv);
+      var paid = investorTotalPaid(inv);
+      var typeLabel = inv.type==='lump'?'💰 Lump Sum': inv.type==='monthly'?'📅 Monthly': '🔀 Both';
+      var statusBadge = inv.status==='inactive'?'<span class="badge bd">Inactive</span>':'<span class="badge bs">Active</span>';
+      return '<tr>'+
+        '<td><strong>'+inv.name+'</strong><br><span style="font-size:10px;color:var(--muted)">'+( inv.nic||'')+'</span></td>'+
+        '<td>'+(inv.phone||'—')+'</td>'+
+        '<td>'+typeLabel+'</td>'+
+        '<td><strong>'+fmtRs(Number(inv.lump||0))+'</strong>'+(inv.type!=='lump'?'<br><span style="font-size:10px;color:var(--muted)">+'+fmtRs(Number(inv.monthlyAmt||0))+'/mo</span>':'')+'</td>'+
+        '<td style="color:var(--info)">'+fmtRs(Number(inv.monthlyAmt||0))+'</td>'+
+        '<td><strong style="color:var(--primary)">'+fmtRs(total)+'</strong></td>'+
+        '<td><strong style="color:var(--success)">'+fmtRs(due)+'</strong><br><span style="font-size:10px;color:var(--muted)">'+(inv.rate||8)+'% / month</span></td>'+
+        '<td style="color:var(--warning)">'+fmtRs(paid)+'</td>'+
+        '<td>'+statusBadge+'</td>'+
+        '<td style="white-space:nowrap">'+
+          '<button class="btn bsm bs2" onclick="openInvTxModal(\''+inv.id+'\')">💳 Transaction</button> '+
+          '<button class="btn bsm bo" onclick="editInvestor(\''+inv.id+'\')">✏️</button> '+
+          '<button class="btn bsm bd2" onclick="deleteInvestor(\''+inv.id+'\')">🗑️</button>'+
+        '</td>'+
+      '</tr>';
+    }).join('');
+  }
+
+  renderInvTransactions();
+  renderInvPayouts();
+  populateInvTxFilter();
+}
+
+// ── Render Transactions ──
+function renderInvTransactions() {
+  var filter = (document.getElementById('inv-tx-filter')||{}).value||'';
+  var list = (db.investorTx||[]).filter(function(t){ return !filter || t.invId===filter; });
+  list = list.slice().sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
+  var tbody = document.getElementById('inv-tx-tbl');
+  if(!tbody) return;
+  var typeMap = {investment:'💰 Investment',monthly_contrib:'📅 Monthly Contrib',payout:'💸 Payout',withdrawal:'📤 Withdrawal'};
+  var colorMap = {investment:'var(--primary)',monthly_contrib:'var(--info)',payout:'var(--danger)',withdrawal:'var(--warning)'};
+  if(!list.length){ tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:18px">No transactions yet.</td></tr>'; return; }
+  tbody.innerHTML = list.map(function(t){
+    var inv = (db.investors||[]).find(function(i){return i.id===t.invId;})||{};
+    return '<tr>'+
+      '<td>'+fmtDate(t.date)+'</td>'+
+      '<td><strong>'+( inv.name||'Unknown')+'</strong></td>'+
+      '<td><span style="color:'+colorMap[t.type]+'">'+( typeMap[t.type]||t.type)+'</span></td>'+
+      '<td><strong style="color:'+colorMap[t.type]+'">'+fmtRs(t.amount)+'</strong></td>'+
+      '<td style="color:var(--muted);font-size:12px">'+(t.note||'—')+'</td>'+
+    '</tr>';
+  }).join('');
+}
+
+// ── Render Monthly Payouts ──
+function renderInvPayouts() {
+  var tbody = document.getElementById('inv-payout-tbl');
+  if(!tbody) return;
+  var payouts = (db.investorPayouts||[]).slice().sort(function(a,b){ return (b.month||'').localeCompare(a.month||''); });
+  if(!payouts.length){ tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:18px">No payouts yet. Click "Generate This Month" to create payout records.</td></tr>'; return; }
+  tbody.innerHTML = payouts.map(function(p){
+    var inv = (db.investors||[]).find(function(i){return i.id===p.invId;})||{};
+    var statusBadge = p.status==='paid'?'<span class="badge bs">✅ Paid</span>':'<span class="badge bw">⏳ Pending</span>';
+    var btn = p.status==='paid'?
+      '<button class="btn bsm bo" onclick="markPayout(\''+p.id+'\',\'pending\')">↩️ Unmark</button>':
+      '<button class="btn bsm bs2" onclick="markPayout(\''+p.id+'\',\'paid\')">✅ Mark Paid</button>';
+    return '<tr>'+
+      '<td><strong>'+p.month+'</strong></td>'+
+      '<td>'+(inv.name||'Unknown')+'</td>'+
+      '<td>'+fmtRs(p.invested)+'</td>'+
+      '<td><strong style="color:var(--success)">'+fmtRs(p.amount)+'</strong></td>'+
+      '<td>'+statusBadge+'</td>'+
+      '<td>'+btn+'</td>'+
+    '</tr>';
+  }).join('');
+}
+
+// ── Populate investor filter dropdowns ──
+function populateInvTxFilter() {
+  var sel = document.getElementById('inv-tx-filter');
+  if(!sel) return;
+  var prev = sel.value;
+  sel.innerHTML = '<option value="">All Investors</option>' +
+    (db.investors||[]).map(function(i){ return '<option value="'+i.id+'">'+ i.name+'</option>'; }).join('');
+  sel.value = prev;
+}
+
+// ── Open Add Investor Modal ──
+function openInvestorModal(id) {
+  var isEdit = !!id;
+  document.getElementById('inv-modal-title').textContent = isEdit ? '✏️ Edit Investor' : '➕ Add Investor';
+  var inv = isEdit ? (db.investors||[]).find(function(i){return i.id===id;}) : {};
+  if(!inv) return;
+  document.getElementById('inv-name').value = inv.name||'';
+  document.getElementById('inv-phone').value = inv.phone||'';
+  document.getElementById('inv-nic').value = inv.nic||'';
+  document.getElementById('inv-email').value = inv.email||'';
+  document.getElementById('inv-type').value = inv.type||'lump';
+  document.getElementById('inv-lump').value = inv.lump||'';
+  document.getElementById('inv-monthly-amt').value = inv.monthlyAmt||'';
+  document.getElementById('inv-start').value = inv.startDate||todayStr();
+  document.getElementById('inv-rate').value = inv.rate||8;
+  document.getElementById('inv-notes').value = inv.notes||'';
+  document.getElementById('m-investor').dataset.editId = id||'';
+  toggleInvType();
+  openM('m-investor');
+}
+
+function editInvestor(id){ openInvestorModal(id); }
+
+function toggleInvType() {
+  var t = document.getElementById('inv-type').value;
+  document.getElementById('inv-lump-row').style.display = (t==='monthly')?'none':'';
+  document.getElementById('inv-monthly-row').style.display = (t==='lump')?'none':'';
+}
+
+// ── Save Investor ──
+function saveInvestor() {
+  var name = document.getElementById('inv-name').value.trim();
+  if(!name){ toast('❌ Investor name required', 'var(--danger)'); return; }
+  var type = document.getElementById('inv-type').value;
+  var lump = parseFloat(document.getElementById('inv-lump').value)||0;
+  var monthlyAmt = parseFloat(document.getElementById('inv-monthly-amt').value)||0;
+  if(type!=='monthly' && lump<=0){ toast('❌ Enter lump sum amount', 'var(--danger)'); return; }
+  if(type!=='lump' && monthlyAmt<0){ toast('❌ Invalid monthly amount', 'var(--danger)'); return; }
+
+  var editId = document.getElementById('m-investor').dataset.editId;
+  if(editId) {
+    var inv = (db.investors||[]).find(function(i){return i.id===editId;});
+    if(inv){
+      inv.name=name; inv.phone=document.getElementById('inv-phone').value.trim();
+      inv.nic=document.getElementById('inv-nic').value.trim();
+      inv.email=document.getElementById('inv-email').value.trim();
+      inv.type=type; inv.lump=lump; inv.monthlyAmt=monthlyAmt;
+      inv.startDate=document.getElementById('inv-start').value;
+      inv.rate=parseFloat(document.getElementById('inv-rate').value)||8;
+      inv.notes=document.getElementById('inv-notes').value.trim();
+    }
+    toast('✅ Investor updated!');
+  } else {
+    if(!db.investors) db.investors=[];
+    var newInv = {
+      id: 'inv-'+Date.now(),
+      name:name, phone:document.getElementById('inv-phone').value.trim(),
+      nic:document.getElementById('inv-nic').value.trim(),
+      email:document.getElementById('inv-email').value.trim(),
+      type:type, lump:lump, monthlyAmt:monthlyAmt,
+      startDate:document.getElementById('inv-start').value||todayStr(),
+      rate:parseFloat(document.getElementById('inv-rate').value)||8,
+      notes:document.getElementById('inv-notes').value.trim(),
+      status:'active', createdAt:Date.now()
+    };
+    db.investors.push(newInv);
+    // Auto-create initial investment transaction if lump sum
+    if(lump>0){
+      if(!db.investorTx) db.investorTx=[];
+      db.investorTx.push({id:'tx-'+Date.now(), invId:newInv.id, type:'investment', amount:lump, date:newInv.startDate, note:'Initial lump sum investment'});
+    }
+    toast('✅ Investor added!');
+  }
+  saveDB(); closeM('m-investor'); renderInvestors();
+}
+
+// ── Delete Investor ──
+function deleteInvestor(id) {
+  if(!confirm('Delete this investor? All transactions will also be removed.')) return;
+  db.investors = (db.investors||[]).filter(function(i){return i.id!==id;});
+  db.investorTx = (db.investorTx||[]).filter(function(t){return t.invId!==id;});
+  db.investorPayouts = (db.investorPayouts||[]).filter(function(p){return p.invId!==id;});
+  saveDB(); renderInvestors(); toast('🗑️ Investor removed', 'var(--danger)');
+}
+
+// ── Open Transaction Modal ──
+function openInvTxModal(invId) {
+  var sel = document.getElementById('inv-tx-investor');
+  sel.innerHTML = (db.investors||[]).map(function(i){ return '<option value="'+i.id+'">'+ i.name+'</option>'; }).join('');
+  if(invId) sel.value = invId;
+  document.getElementById('inv-tx-date').value = todayStr();
+  document.getElementById('inv-tx-amount').value = '';
+  document.getElementById('inv-tx-note').value = '';
+  document.getElementById('inv-tx-type').value = 'payout';
+  openM('m-inv-tx');
+}
+
+// ── Save Transaction ──
+function saveInvTransaction() {
+  var invId = document.getElementById('inv-tx-investor').value;
+  var type = document.getElementById('inv-tx-type').value;
+  var amount = parseFloat(document.getElementById('inv-tx-amount').value)||0;
+  var date = document.getElementById('inv-tx-date').value||todayStr();
+  var note = document.getElementById('inv-tx-note').value.trim();
+  if(!invId){ toast('❌ Select investor', 'var(--danger)'); return; }
+  if(amount<=0){ toast('❌ Enter amount', 'var(--danger)'); return; }
+  if(!db.investorTx) db.investorTx=[];
+  db.investorTx.push({id:'tx-'+Date.now(), invId:invId, type:type, amount:amount, date:date, note:note});
+  // If it's a monthly contribution, update investor base?
+  // (We compute dynamically so no update needed)
+  saveDB(); closeM('m-inv-tx'); renderInvestors();
+  toast('✅ Transaction saved!');
+}
+
+// ── Generate Monthly Payouts ──
+function generateMonthlyPayouts() {
+  if(!db.investors||!db.investors.length){ toast('❌ No investors found', 'var(--danger)'); return; }
+  if(!db.investorPayouts) db.investorPayouts=[];
+  var mKey = thisMonthKey();
+  var added = 0;
+  db.investors.filter(function(i){return i.status!=='inactive';}).forEach(function(inv){
+    var exists = db.investorPayouts.find(function(p){return p.invId===inv.id && p.month===mKey;});
+    if(!exists){
+      var invested = investorTotalInvested(inv);
+      var due = investorMonthlyDue(inv);
+      db.investorPayouts.push({id:'pay-'+Date.now()+'-'+inv.id, invId:inv.id, month:mKey, invested:invested, amount:due, status:'pending', createdAt:Date.now()});
+      added++;
+    }
+  });
+  saveDB(); renderInvestors();
+  toast(added>0 ? '✅ '+added+' payout record(s) generated for '+mKey : '⚠️ Already generated for '+mKey, added>0?'var(--success)':'var(--warning)');
+}
+
+// ── Mark Payout ──
+function markPayout(payId, status) {
+  var p = (db.investorPayouts||[]).find(function(x){return x.id===payId;});
+  if(!p) return;
+  p.status = status;
+  if(status==='paid'){
+    // Auto-add payout transaction
+    if(!db.investorTx) db.investorTx=[];
+    var already = db.investorTx.find(function(t){return t.refPayId===payId;});
+    if(!already){
+      db.investorTx.push({id:'tx-'+Date.now(), invId:p.invId, type:'payout', amount:p.amount, date:todayStr(), note:'Monthly profit payout — '+p.month, refPayId:payId});
+    }
+    toast('✅ Payout marked as paid!');
+  } else {
+    // Remove auto-added transaction
+    db.investorTx = (db.investorTx||[]).filter(function(t){return t.refPayId!==payId;});
+    toast('↩️ Payout unmarked');
+  }
+  saveDB(); renderInvestors();
+}
+
+// ── Monthly Report Modal ──
+function openInvestorReport() {
+  var mKey = thisMonthKey();
+  var html = '<div style="font-size:13px">';
+  html += '<div style="font-size:14px;font-weight:700;margin-bottom:14px;color:var(--primary)">📅 Report for: '+mKey+'</div>';
+  var totalDue=0, totalPaid=0, totalInv=0;
+  (db.investors||[]).filter(function(i){return i.status!=='inactive';}).forEach(function(inv){
+    var invested = investorTotalInvested(inv);
+    var due = investorMonthlyDue(inv);
+    var paid = investorTotalPaid(inv);
+    var payout = (db.investorPayouts||[]).find(function(p){return p.invId===inv.id && p.month===mKey;});
+    totalDue+=due; totalPaid+=paid; totalInv+=invested;
+    html += '<div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center">';
+    html += '<div><strong>'+inv.name+'</strong><br><span style="font-size:11px;color:var(--muted)">'+(inv.phone||'')+'</span></div>';
+    html += '<div style="text-align:right"><div style="font-size:12px;color:var(--muted)">Total Invested</div><strong style="color:var(--primary)">'+fmtRs(invested)+'</strong></div>';
+    html += '</div>';
+    html += '<div style="display:flex;gap:12px;margin-top:10px;flex-wrap:wrap">';
+    html += '<div style="flex:1;background:rgba(0,230,118,0.08);border-radius:7px;padding:8px;text-align:center"><div style="font-size:11px;color:var(--muted)">This Month Due ('+(inv.rate||8)+'%)</div><strong style="color:var(--success)">'+fmtRs(due)+'</strong></div>';
+    html += '<div style="flex:1;background:rgba(255,171,0,0.08);border-radius:7px;padding:8px;text-align:center"><div style="font-size:11px;color:var(--muted)">Total Paid To Date</div><strong style="color:var(--warning)">'+fmtRs(paid)+'</strong></div>';
+    html += '<div style="flex:1;background:rgba(108,99,255,0.08);border-radius:7px;padding:8px;text-align:center"><div style="font-size:11px;color:var(--muted)">This Month Status</div><strong>'+(payout ? (payout.status==='paid'?'<span style="color:var(--success)">✅ Paid</span>':'<span style="color:var(--warning)">⏳ Pending</span>') : '<span style="color:var(--muted)">Not Generated</span>')+'</strong></div>';
+    html += '</div></div>';
+  });
+  html += '<div style="background:var(--card);border:1px solid var(--primary);border-radius:10px;padding:14px;margin-top:14px">';
+  html += '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px">';
+  html += '<div><span style="font-size:12px;color:var(--muted)">Total Capital</span><br><strong style="color:var(--primary);font-size:16px">'+fmtRs(totalInv)+'</strong></div>';
+  html += '<div><span style="font-size:12px;color:var(--muted)">This Month Payout Due</span><br><strong style="color:var(--success);font-size:16px">'+fmtRs(totalDue)+'</strong></div>';
+  html += '<div><span style="font-size:12px;color:var(--muted)">All-time Total Paid</span><br><strong style="color:var(--warning);font-size:16px">'+fmtRs(totalPaid)+'</strong></div>';
+  html += '</div></div></div>';
+  document.getElementById('inv-report-body').innerHTML = html;
+  openM('m-inv-report');
+}
+
+function printInvReport() {
+  var body = document.getElementById('inv-report-body').innerHTML;
+  var w = window.open('','_blank');
+  w.document.write('<html><head><title>Investor Report</title><style>body{font-family:Arial,sans-serif;padding:20px;color:#111;font-size:13px}strong{font-weight:700}</style></head><body>'+body+'</body></html>');
+  w.document.close(); w.print();
+}
+
+// ── Hook into renderAll & goPage ──
+var _invRenderAll = renderAll;
+renderAll = function(){
+  _invRenderAll();
+  if(document.getElementById('pg-investors') && document.getElementById('pg-investors').classList.contains('active')){
+    renderInvestors();
+  }
+};
+
+var _invGoPage = goPage;
+goPage = function(id){
+  _invGoPage(id);
+  if(id==='investors'){ renderInvestors(); }
+};
+
+// ── Firebase sync: include investor data ──
+var _origFirebaseSaveDB = window.firebaseSaveDB;
+window.firebaseSaveDB = function(dbObj){
+  dbObj.investors       = dbObj.investors       || [];
+  dbObj.investorTx      = dbObj.investorTx      || [];
+  dbObj.investorPayouts = dbObj.investorPayouts  || [];
+  if(_origFirebaseSaveDB) _origFirebaseSaveDB(dbObj);
+};
+
+console.log('✅ Investor Management loaded');
 
 init();
 </script>
