@@ -7,16 +7,45 @@
 <meta name="theme-color" content="#6c63ff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="ST Mobile POS">
-<link rel="manifest" href="/V0.5/manifest.json">
 <link rel="apple-touch-icon" sizes="192x192" href="/V0.5/icons/icon-192.png">
+<link rel="icon" type="image/png" href="/V0.5/icons/icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <script>
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", function() {
-    navigator.serviceWorker.register("/V0.5/sw.js", {scope: "/V0.5/"})
-      .then(function(r){ console.log("✅ SW registered", r.scope); })
-      .catch(function(e){ console.warn("SW failed:", e); });
-  });
-}
+(function() {
+  // Build manifest dynamically with correct absolute URLs
+  var base = window.location.origin + '/V0.5/';
+  var manifest = {
+    name: "ST Mobile & Designing POS",
+    short_name: "ST POS",
+    description: "ST Mobile & Designing Point of Sale",
+    start_url: base,
+    scope: base,
+    display: "standalone",
+    orientation: "portrait-primary",
+    background_color: "#0a0a1a",
+    theme_color: "#6c63ff",
+    icons: [
+      { src: base + "icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any maskable" },
+      { src: base + "icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any maskable" }
+    ]
+  };
+  var blob = new Blob([JSON.stringify(manifest)], {type: 'application/manifest+json'});
+  var url  = URL.createObjectURL(blob);
+  var link = document.createElement('link');
+  link.rel  = 'manifest';
+  link.href = url;
+  document.head.appendChild(link);
+
+  // Service Worker
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+      navigator.serviceWorker.register('/V0.5/sw.js', {scope: '/V0.5/'})
+        .then(function(r) { console.log('✅ SW registered', r.scope); })
+        .catch(function(e) { console.warn('SW failed:', e); });
+    });
+  }
+})();
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
