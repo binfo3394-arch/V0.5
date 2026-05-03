@@ -257,7 +257,7 @@ body {
     </div>
     <button class="login-btn" onclick="doLogin()">🔐 Login to Editor</button>
     <div class="login-err" id="l-err"></div>
-    <div style="text-align:center;font-size:11px;color:var(--muted);margin-top:14px">Default: admin / admin1234</div>
+    <div style="text-align:center;font-size:11px;color:var(--muted);margin-top:14px">Default credentials: admin / admin1234</div>
   </div>
 </div>
 
@@ -505,16 +505,26 @@ body {
 // ════════════════════════════════
 // AUTH
 // ════════════════════════════════
-var ADMIN_USERS_KEY = 'st-admin-users';
-var SESSION_KEY     = 'st-editor-session';
+var SESSION_KEY = 'st-editor-session';
+
+// Default credentials — always work even if localStorage empty
+var DEFAULT_USERS = [
+  { username: 'admin', password: 'admin1234', displayName: 'Administrator', role: 'admin' }
+];
 
 function getAdminUsers() {
-  try {
-    var u = JSON.parse(localStorage.getItem(ADMIN_USERS_KEY));
-    if (!u || !u.length)
-      u = [{ username:'admin', password:'admin1234', displayName:'Administrator', role:'admin' }];
-    return u;
-  } catch(e) { return [{ username:'admin', password:'admin1234', displayName:'Administrator', role:'admin' }]; }
+  // Try to get from admin panel's localStorage key first
+  var sources = ['st-admin-users', 'stpos-admin-users', 'admin-users'];
+  for (var i = 0; i < sources.length; i++) {
+    try {
+      var raw = localStorage.getItem(sources[i]);
+      if (raw) {
+        var u = JSON.parse(raw);
+        if (Array.isArray(u) && u.length) return u;
+      }
+    } catch(e) {}
+  }
+  return DEFAULT_USERS;
 }
 
 function doLogin() {
@@ -522,11 +532,30 @@ function doLogin() {
   var pass = document.getElementById('l-pass').value;
   var err  = document.getElementById('l-err');
   err.textContent = '';
-  if (!user || !pass) { err.textContent = '❌ Username & Password ඕනේ!'; return; }
+
+  if (!user || !pass) { err.textContent = '❌ Username සහ Password දෙකම ඕනේ!'; return; }
+
+  // Check against stored users + always allow default
   var users = getAdminUsers();
-  var found = users.find(function(u){ return u.username === user && u.password === pass; });
-  if (!found) { err.textContent = '❌ Invalid credentials!'; return; }
-  sessionStorage.setItem(SESSION_KEY, JSON.stringify({ username: found.username, role: found.role }));
+  // Merge default so it always works
+  var allUsers = DEFAULT_USERS.concat(users.filter(function(u){ return u.username !== 'admin'; }));
+
+  var found = allUsers.find(function(u){
+    return u.username.toLowerCase() === user.toLowerCase() && u.password === pass;
+  });
+
+  if (!found) {
+    err.textContent = '❌ Invalid credentials! Try: admin / admin1234';
+    return;
+  }
+
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify({
+    username: found.username,
+    displayName: found.displayName || found.username,
+    role: found.role || 'admin',
+    loginTime: Date.now()
+  }));
+
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'flex';
   initEditor();
@@ -536,20 +565,22 @@ function doLogout() {
   sessionStorage.removeItem(SESSION_KEY);
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('l-pass').value = '';
 }
 
+// Auto-restore session
 (function() {
-  var sess = sessionStorage.getItem(SESSION_KEY);
-  if (sess) {
-    try {
+  try {
+    var sess = sessionStorage.getItem(SESSION_KEY);
+    if (sess) {
       var s = JSON.parse(sess);
       if (s && s.username) {
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('app').style.display = 'flex';
         initEditor();
       }
-    } catch(e) {}
-  }
+    }
+  } catch(e) {}
 })();
 
 // ════════════════════════════════
