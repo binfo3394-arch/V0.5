@@ -13,36 +13,27 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <script>
 (function() {
-  // Build manifest dynamically with correct absolute URLs
   var base = window.location.origin + '/V0.5/';
   var manifest = {
     name: "ST Mobile & Designing POS",
     short_name: "ST POS",
-    description: "ST Mobile & Designing Point of Sale",
-    start_url: base,
-    scope: base,
-    display: "standalone",
-    orientation: "portrait-primary",
-    background_color: "#0a0a1a",
-    theme_color: "#6c63ff",
+    start_url: base, scope: base,
+    display: "standalone", orientation: "portrait-primary",
+    background_color: "#0a0a1a", theme_color: "#6c63ff",
     icons: [
-      { src: base + "icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any maskable" },
-      { src: base + "icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any maskable" }
+      { src: base+"icons/icon-192.png", sizes:"192x192", type:"image/png", purpose:"any maskable" },
+      { src: base+"icons/icon-512.png", sizes:"512x512", type:"image/png", purpose:"any maskable" }
     ]
   };
-  var blob = new Blob([JSON.stringify(manifest)], {type: 'application/manifest+json'});
-  var url  = URL.createObjectURL(blob);
+  var blob = new Blob([JSON.stringify(manifest)], {type:'application/manifest+json'});
   var link = document.createElement('link');
-  link.rel  = 'manifest';
-  link.href = url;
+  link.rel = 'manifest'; link.href = URL.createObjectURL(blob);
   document.head.appendChild(link);
-
-  // Service Worker
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
-      navigator.serviceWorker.register('/V0.5/sw.js', {scope: '/V0.5/'})
-        .then(function(r) { console.log('✅ SW registered', r.scope); })
-        .catch(function(e) { console.warn('SW failed:', e); });
+      navigator.serviceWorker.register('/V0.5/sw.js', {scope:'/V0.5/'})
+        .then(function(r){ console.log('✅ SW registered', r.scope); })
+        .catch(function(e){ console.warn('SW failed:', e); });
     });
   }
 })();
@@ -5759,6 +5750,11 @@ function init() {
   });
   initBG();
   renderAll();
+  // Set Today as default dashboard period
+  setTimeout(function(){
+    var todayBtn = document.getElementById('period-today');
+    if(todayBtn) setDashPeriod('today', todayBtn);
+  }, 100);
   applyTheme(db.settings.theme || '#6c63ff');
   updateNotifBadge();
 
@@ -6185,7 +6181,7 @@ function renderDashCharts() {
 }
 
 // =========== DASHBOARD PERIOD FILTER ===========
-var dashPeriod = 'all';
+var dashPeriod = 'today';
 function setDashPeriod(p, el) {
   dashPeriod = p;
   document.querySelectorAll('.dash-period-btn').forEach(function(b){ b.className='btn bo bsm dash-period-btn'; });
