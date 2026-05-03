@@ -3,22 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ST Mobile — Index File Editor</title>
+<title>ST Mobile — Admin Panel</title>
 <style>
 :root {
   --primary: #6c63ff;
   --secondary: #f50057;
-  --bg: #07071a;
-  --card: #0f0f26;
-  --card2: #171730;
-  --border: #252545;
+  --bg: #0a0a1a;
+  --card: #12122a;
+  --card2: #1a1a35;
+  --border: #2a2a4a;
   --text: #e0e0ff;
-  --muted: #6060a0;
+  --muted: #7070a0;
   --success: #00e676;
   --warning: #ffab00;
   --danger: #ff1744;
   --info: #00b0ff;
-  --editor-bg: #0a0a20;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -26,1223 +25,1511 @@ body {
   background: var(--bg);
   color: var(--text);
   min-height: 100vh;
-  overflow: hidden;
 }
 
-/* LOGIN */
+/* ── Login Screen ── */
 #login-screen {
-  display: flex; align-items: center; justify-content: center; min-height: 100vh;
-  background: radial-gradient(ellipse at 30% 40%, rgba(108,99,255,0.2) 0%, transparent 60%),
-              radial-gradient(ellipse at 80% 80%, rgba(245,0,87,0.13) 0%, transparent 50%), var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: radial-gradient(ellipse at 30% 40%, rgba(108,99,255,0.18) 0%, transparent 60%),
+              radial-gradient(ellipse at 80% 80%, rgba(245,0,87,0.12) 0%, transparent 50%),
+              var(--bg);
 }
 .login-box {
-  background: var(--card); border: 1px solid var(--border); border-radius: 20px;
-  padding: 40px 36px; width: 370px; max-width: calc(100vw - 32px);
-  box-shadow: 0 24px 70px rgba(0,0,0,0.6), 0 0 0 1px rgba(108,99,255,0.12);
-  animation: popIn 0.45s cubic-bezier(0.16,1,0.3,1);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 40px 36px;
+  width: 360px;
+  max-width: calc(100vw - 32px);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(108,99,255,0.1);
+  animation: loginIn 0.5s cubic-bezier(0.16,1,0.3,1);
 }
-@keyframes popIn { from{opacity:0;transform:translateY(30px) scale(0.94)} to{opacity:1;transform:none} }
+@keyframes loginIn { from { opacity:0; transform: translateY(30px) scale(0.95); } to { opacity:1; transform: translateY(0) scale(1); } }
 .login-logo { text-align:center; margin-bottom:28px; }
-.login-logo .licon { font-size:52px; display:block; margin-bottom:8px; }
-.login-logo h1 { font-size:21px; font-weight:900; color:var(--primary); letter-spacing:-0.5px; }
-.login-logo p { font-size:12px; color:var(--muted); margin-top:4px; }
-.lf { margin-bottom:14px; }
-.lf label { font-size:11px; color:var(--muted); display:block; margin-bottom:5px; text-transform:uppercase; letter-spacing:0.5px; }
-.lf input { width:100%; background:var(--card2); border:1px solid var(--border); color:var(--text); padding:12px 14px; border-radius:9px; font-size:14px; outline:none; transition:0.2s; }
-.lf input:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(108,99,255,0.15); }
-.login-btn { width:100%; background:linear-gradient(135deg,var(--primary),#8b5cf6); color:#fff; border:none; padding:13px; border-radius:9px; font-size:14px; font-weight:700; cursor:pointer; transition:0.2s; margin-top:4px; }
+.login-logo .licon { font-size:48px; display:block; margin-bottom:8px; }
+.login-logo h1 { font-size:20px; font-weight:800; color:var(--primary); }
+.login-logo p { font-size:12px; color:var(--muted); margin-top:3px; }
+.login-field { margin-bottom:14px; }
+.login-field label { font-size:12px; color:var(--muted); display:block; margin-bottom:5px; }
+.login-field input {
+  width:100%; background:var(--card2); border:1px solid var(--border);
+  color:var(--text); padding:11px 14px; border-radius:9px; font-size:14px;
+  transition:0.2s; outline:none;
+}
+.login-field input:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(108,99,255,0.15); }
+.login-btn {
+  width:100%; background:linear-gradient(135deg,var(--primary),#8b5cf6);
+  color:#fff; border:none; padding:13px; border-radius:9px; font-size:14px;
+  font-weight:700; cursor:pointer; transition:0.2s; margin-top:4px;
+}
 .login-btn:hover { opacity:0.9; transform:translateY(-1px); }
 .login-err { color:var(--danger); font-size:12px; text-align:center; margin-top:8px; min-height:18px; }
 
-/* APP */
-#app { display:none; height:100vh; flex-direction:column; }
+/* ── Main App ── */
+#admin-app { display:none; }
 
-/* TOP BAR */
-.topbar {
-  background: rgba(15,15,38,0.98); border-bottom: 1px solid var(--border);
-  padding: 0 16px; height: 50px; display:flex; align-items:center; justify-content:space-between;
-  position:relative; z-index:100; backdrop-filter:blur(12px);
+/* ── Header ── */
+.adm-header {
+  background: rgba(18,18,42,0.97);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky; top:0; z-index:100;
   box-shadow: 0 2px 20px rgba(108,99,255,0.1);
-  flex-shrink: 0;
+  backdrop-filter: blur(12px);
 }
-.topbar-left { display:flex; align-items:center; gap:12px; }
-.topbar-left h1 { font-size:14px; font-weight:900; color:var(--primary); }
-.topbar-left span { font-size:11px; color:var(--muted); background:var(--card2); padding:3px 9px; border-radius:20px; border:1px solid var(--border); }
-.topbar-right { display:flex; align-items:center; gap:8px; }
-.tbtn { padding:6px 13px; border-radius:7px; border:none; cursor:pointer; font-size:12px; font-weight:700; transition:0.2s; display:inline-flex; align-items:center; gap:5px; }
-.tbtn:hover { opacity:0.85; transform:translateY(-1px); }
-.tbtn-primary { background:var(--primary); color:#fff; }
-.tbtn-success { background:rgba(0,230,118,0.15); color:var(--success); border:1px solid rgba(0,230,118,0.3); }
-.tbtn-danger { background:rgba(255,23,68,0.12); color:var(--danger); border:1px solid rgba(255,23,68,0.3); }
-.tbtn-outline { background:transparent; border:1px solid var(--border); color:var(--text); }
-.tbtn-warning { background:rgba(255,171,0,0.12); color:var(--warning); border:1px solid rgba(255,171,0,0.3); }
-
-/* MAIN LAYOUT */
-.app-body { display:flex; flex:1; height:calc(100vh - 50px); overflow:hidden; }
-
-/* LEFT PANEL — Sections Tree */
-.left-panel {
-  width: 260px; flex-shrink:0; background:var(--card); border-right:1px solid var(--border);
-  display:flex; flex-direction:column; overflow:hidden;
+.adm-header h1 { font-size:16px; font-weight:800; color:var(--primary); }
+.adm-header p { font-size:11px; color:var(--muted); margin-top:1px; }
+.hright { display:flex; gap:10px; align-items:center; }
+#fb-status { font-size:11px; padding:4px 10px; border-radius:20px; background:var(--card2); color:var(--muted); }
+.logout-btn {
+  background:rgba(255,23,68,0.12); border:1px solid rgba(255,23,68,0.3);
+  color:var(--danger); padding:6px 14px; border-radius:7px; font-size:12px;
+  font-weight:700; cursor:pointer; transition:0.2s;
 }
-.panel-head { padding:12px 14px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
-.panel-head h3 { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--muted); }
-.panel-search { padding:10px 12px; border-bottom:1px solid var(--border); }
-.panel-search input { width:100%; background:var(--card2); border:1px solid var(--border); color:var(--text); padding:7px 10px; border-radius:7px; font-size:12px; outline:none; }
-.panel-search input:focus { border-color:var(--primary); }
-.sections-list { flex:1; overflow-y:auto; padding:6px 0; }
-.section-group { margin-bottom:2px; }
-.sg-label { padding:6px 14px 3px; font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; }
-.sec-item {
-  display:flex; align-items:center; gap:8px; padding:8px 14px; cursor:pointer;
-  font-size:12px; color:var(--muted); transition:0.15s; border-left:2px solid transparent;
-  user-select:none;
-}
-.sec-item:hover { background:rgba(108,99,255,0.08); color:var(--text); }
-.sec-item.active { background:rgba(108,99,255,0.14); color:var(--primary); border-left-color:var(--primary); }
-.sec-item .ic { font-size:14px; width:18px; text-align:center; flex-shrink:0; }
-.sec-item .lbl { flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.sec-item .tag { font-size:9px; background:rgba(108,99,255,0.2); color:var(--primary); padding:1px 6px; border-radius:10px; flex-shrink:0; }
+.logout-btn:hover { background:rgba(255,23,68,0.25); }
 
-/* CENTER — Editor */
-.center-panel { flex:1; display:flex; flex-direction:column; min-width:0; overflow:hidden; }
-.editor-toolbar {
-  padding:8px 14px; background:var(--card); border-bottom:1px solid var(--border);
-  display:flex; align-items:center; gap:8px; flex-wrap:wrap; flex-shrink:0;
+/* ── Layout ── */
+.adm-body { display:flex; min-height:calc(100vh - 57px); }
+.adm-sidebar {
+  width:220px; flex-shrink:0;
+  background: var(--card);
+  border-right:1px solid var(--border);
+  padding:14px 0;
+  position:sticky; top:57px; height:calc(100vh - 57px); overflow-y:auto;
 }
-.et-group { display:flex; gap:4px; align-items:center; padding:0 8px; border-right:1px solid var(--border); }
-.et-group:last-child { border:none; }
-.etbtn { padding:4px 9px; border-radius:5px; border:1px solid var(--border); cursor:pointer; font-size:11px; font-weight:600; background:var(--card2); color:var(--text); transition:0.15s; display:inline-flex; align-items:center; gap:4px; }
-.etbtn:hover { background:rgba(108,99,255,0.15); border-color:var(--primary); color:var(--primary); }
-.etbtn.active { background:rgba(108,99,255,0.2); border-color:var(--primary); color:var(--primary); }
-.et-search { display:flex; gap:6px; align-items:center; flex:1; }
-.et-search input { background:var(--card2); border:1px solid var(--border); color:var(--text); padding:5px 9px; border-radius:6px; font-size:12px; outline:none; width:200px; }
-.et-search input:focus { border-color:var(--primary); }
-.match-count { font-size:11px; color:var(--muted); white-space:nowrap; }
-
-/* Tab Bar */
-.tab-bar { display:flex; background:var(--editor-bg); border-bottom:1px solid var(--border); overflow-x:auto; flex-shrink:0; }
-.tab-bar::-webkit-scrollbar { height:3px; }
-.tab-bar::-webkit-scrollbar-thumb { background:var(--border); }
-.tab { padding:8px 14px; font-size:12px; cursor:pointer; display:flex; align-items:center; gap:6px; white-space:nowrap; border-right:1px solid var(--border); border-bottom:2px solid transparent; transition:0.15s; color:var(--muted); }
-.tab:hover { background:rgba(108,99,255,0.07); color:var(--text); }
-.tab.active { background:var(--card); color:var(--primary); border-bottom-color:var(--primary); }
-.tab .tab-close { font-size:14px; opacity:0.4; }
-.tab .tab-close:hover { opacity:1; color:var(--danger); }
-
-/* Code Editor */
-.editor-wrap { flex:1; position:relative; overflow:hidden; display:flex; }
-.line-numbers {
-  background: #080818; color:var(--muted); font-family:'Consolas','Monaco',monospace;
-  font-size:12px; line-height:20px; padding:14px 8px; text-align:right;
-  min-width:50px; overflow:hidden; user-select:none; flex-shrink:0; border-right:1px solid var(--border);
+.adm-sidebar .sec-label {
+  font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:1px;
+  padding:10px 16px 4px;
 }
-.code-editor {
-  flex:1; background:var(--editor-bg); color:#e0e0ff;
-  font-family:'Consolas','Monaco',monospace; font-size:13px; line-height:20px;
-  padding:14px; border:none; outline:none; resize:none;
-  overflow-y:auto; overflow-x:auto; white-space:pre; tab-size:2;
-  caret-color:var(--primary);
+.adm-nav-item {
+  display:flex; align-items:center; gap:10px;
+  padding:10px 16px; cursor:pointer; font-size:13px; color:var(--muted);
+  border-left:3px solid transparent; transition:0.2s;
 }
-.code-editor::selection { background:rgba(108,99,255,0.3); }
+.adm-nav-item:hover { background:rgba(108,99,255,0.1); color:var(--text); }
+.adm-nav-item.active { background:rgba(108,99,255,0.15); color:var(--primary); border-left-color:var(--primary); }
+.adm-nav-item .ic { font-size:17px; width:20px; text-align:center; }
 
-/* RIGHT PANEL — Properties */
-.right-panel {
-  width:280px; flex-shrink:0; background:var(--card); border-left:1px solid var(--border);
-  display:flex; flex-direction:column; overflow:hidden;
+.adm-main { flex:1; padding:24px; overflow-x:hidden; }
+
+/* ── Sections ── */
+.adm-section { display:none; }
+.adm-section.active { display:block; animation:fadeIn 0.3s; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+
+.sec-title {
+  font-size:20px; font-weight:800; margin-bottom:20px;
+  display:flex; align-items:center; gap:10px;
 }
-.prop-tabs { display:flex; border-bottom:1px solid var(--border); }
-.prop-tab { flex:1; padding:10px; font-size:11px; font-weight:700; text-align:center; cursor:pointer; color:var(--muted); transition:0.15s; border-bottom:2px solid transparent; text-transform:uppercase; letter-spacing:0.5px; }
-.prop-tab:hover { color:var(--text); }
-.prop-tab.active { color:var(--primary); border-bottom-color:var(--primary); }
-.prop-body { flex:1; overflow-y:auto; padding:12px; }
-.prop-section { margin-bottom:16px; }
-.prop-section h4 { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:8px; }
-.prop-row { display:flex; flex-direction:column; gap:4px; margin-bottom:10px; }
-.prop-row label { font-size:11px; color:var(--muted); }
-.prop-row input, .prop-row select, .prop-row textarea {
-  background:var(--card2); border:1px solid var(--border); color:var(--text);
-  padding:7px 9px; border-radius:6px; font-size:12px; outline:none; width:100%; font-family:inherit;
+
+/* ── Cards & Grids ── */
+.stat-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:20px; }
+@media(max-width:900px) { .stat-grid { grid-template-columns:1fr 1fr; } }
+.scard {
+  background:var(--card); border:1px solid var(--border); border-radius:14px;
+  padding:18px; position:relative; overflow:hidden;
 }
-.prop-row input:focus, .prop-row select:focus, .prop-row textarea:focus { border-color:var(--primary); }
-.prop-row textarea { height:70px; resize:vertical; }
-.prop-apply { width:100%; background:var(--primary); color:#fff; border:none; padding:8px; border-radius:7px; cursor:pointer; font-size:12px; font-weight:700; transition:0.2s; margin-top:4px; }
-.prop-apply:hover { opacity:0.9; }
+.scard .ic { font-size:26px; margin-bottom:8px; }
+.scard .val { font-size:22px; font-weight:800; margin-bottom:3px; }
+.scard .lbl { font-size:11px; color:var(--muted); }
+.scard.c1::after { content:''; position:absolute; top:-10px; right:-10px; width:60px; height:60px; border-radius:50%; background:var(--primary); opacity:0.12; }
+.scard.c2::after { background:var(--success); opacity:0.12; }
+.scard.c3::after { background:var(--warning); opacity:0.12; }
+.scard.c4::after { background:var(--danger); opacity:0.12; }
+.scard.c5::after { background:var(--info); opacity:0.12; }
+.scard.c6::after { background:var(--secondary); opacity:0.12; }
 
-/* Status Bar */
-.statusbar {
-  background: #050512; border-top:1px solid var(--border); padding:4px 14px;
-  display:flex; align-items:center; justify-content:space-between; flex-shrink:0;
-  font-size:10px; color:var(--muted);
+.panel {
+  background:var(--card); border:1px solid var(--border); border-radius:14px;
+  overflow:hidden; margin-bottom:18px;
 }
-.sb-left, .sb-right { display:flex; gap:14px; align-items:center; }
-.sb-item { display:flex; align-items:center; gap:4px; }
-.sb-dot { width:6px; height:6px; border-radius:50%; }
-
-/* Toast */
-#toast {
-  position:fixed; bottom:40px; right:24px; background:var(--card);
-  border:1px solid var(--primary); padding:11px 16px; border-radius:10px;
-  font-size:12px; font-weight:600; z-index:9999; display:none;
-  box-shadow:0 8px 30px rgba(0,0,0,0.5);
-  animation:toastIn 0.3s cubic-bezier(0.16,1,0.3,1);
+.panel-head {
+  padding:14px 18px; border-bottom:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between;
 }
-@keyframes toastIn { from{opacity:0;transform:translateX(30px)} to{opacity:1;transform:none} }
+.panel-head h3 { font-size:14px; font-weight:700; }
+.panel-body { padding:18px; }
 
-/* Diff view */
-.diff-line-add { background:rgba(0,230,118,0.08); color:var(--success); }
-.diff-line-del { background:rgba(255,23,68,0.08); color:var(--danger); text-decoration:line-through; }
+/* ── Tables ── */
+table { width:100%; border-collapse:collapse; }
+th { padding:9px 12px; font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; text-align:left; background:var(--card2); }
+td { padding:9px 12px; font-size:13px; border-top:1px solid var(--border); vertical-align:middle; }
+tr:hover td { background:rgba(108,99,255,0.04); }
 
-/* Badge small */
-.badge { display:inline-block; padding:2px 7px; border-radius:12px; font-size:10px; font-weight:700; }
+/* ── Buttons ── */
+.btn { padding:7px 14px; border-radius:7px; border:none; cursor:pointer; font-size:13px; font-weight:600; transition:0.2s; display:inline-flex; align-items:center; gap:6px; }
+.btn:hover { opacity:0.85; transform:translateY(-1px); }
+.btn-primary { background:var(--primary); color:#fff; }
+.btn-success { background:rgba(0,230,118,0.15); color:var(--success); border:1px solid rgba(0,230,118,0.3); }
+.btn-danger { background:rgba(255,23,68,0.15); color:var(--danger); border:1px solid rgba(255,23,68,0.3); }
+.btn-warning { background:rgba(255,171,0,0.15); color:var(--warning); border:1px solid rgba(255,171,0,0.3); }
+.btn-outline { background:transparent; border:1px solid var(--border); color:var(--text); }
+.btn-sm { padding:4px 10px; font-size:11px; }
+
+/* ── Badges ── */
+.badge { display:inline-block; padding:3px 9px; border-radius:20px; font-size:11px; font-weight:600; }
 .badge-success { background:rgba(0,230,118,0.15); color:var(--success); }
 .badge-warning { background:rgba(255,171,0,0.15); color:var(--warning); }
-.badge-danger  { background:rgba(255,23,68,0.15); color:var(--danger); }
+.badge-danger { background:rgba(255,23,68,0.15); color:var(--danger); }
+.badge-info { background:rgba(0,176,255,0.15); color:var(--info); }
 .badge-primary { background:rgba(108,99,255,0.15); color:var(--primary); }
-.badge-info    { background:rgba(0,176,255,0.15); color:var(--info); }
 
-/* Quick settings form */
-.qs-field { margin-bottom:12px; }
-.qs-field label { font-size:11px; color:var(--muted); display:block; margin-bottom:4px; }
-.qs-field input, .qs-field textarea, .qs-field select { width:100%; background:var(--card2); border:1px solid var(--border); color:var(--text); padding:8px 10px; border-radius:7px; font-size:12px; outline:none; }
-.qs-field input:focus, .qs-field textarea:focus { border-color:var(--primary); }
-.qs-field textarea { height:60px; resize:vertical; font-family:inherit; }
-.qs-row { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+/* ── Forms ── */
+.fg { display:flex; flex-direction:column; gap:5px; margin-bottom:12px; }
+.fg label { font-size:12px; color:var(--muted); }
+.fg input, .fg select, .fg textarea {
+  background:var(--card2); border:1px solid var(--border); color:var(--text);
+  padding:9px 12px; border-radius:7px; font-size:13px; transition:0.2s; width:100%;
+  font-family:inherit;
+}
+.fg input:focus, .fg select:focus { outline:none; border-color:var(--primary); }
+.fgrid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+@media(max-width:600px) { .fgrid2 { grid-template-columns:1fr; } }
 
-/* Section meta display */
-.meta-box { background:var(--card2); border:1px solid var(--border); border-radius:9px; padding:12px; margin-bottom:12px; }
-.meta-box .m-row { display:flex; justify-content:space-between; align-items:center; padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.04); font-size:11px; }
-.meta-box .m-row:last-child { border:none; }
-.meta-box .m-key { color:var(--muted); }
-.meta-box .m-val { color:var(--text); font-weight:600; }
+/* ── Toast ── */
+#toast {
+  position:fixed; bottom:24px; right:24px; background:var(--card);
+  border:1px solid var(--border); padding:12px 18px; border-radius:12px;
+  font-size:13px; font-weight:600; z-index:9999; display:none;
+  box-shadow:0 8px 30px rgba(0,0,0,0.4); animation:slideUp2 0.3s;
+}
+@keyframes slideUp2 { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
 
-/* Highlight */
-.hl { background:rgba(255,214,0,0.25); border-radius:2px; }
+/* ── Activity log entry ── */
+.log-entry {
+  padding:10px 0; border-bottom:1px solid var(--border);
+  display:flex; gap:12px; align-items:flex-start;
+}
+.log-entry:last-child { border:none; }
+.log-dot { width:8px; height:8px; border-radius:50%; margin-top:5px; flex-shrink:0; }
 
-/* scrollbar */
-::-webkit-scrollbar { width:5px; height:5px; }
+/* ── Progress bar ── */
+.pbar { height:6px; border-radius:3px; background:var(--border); overflow:hidden; margin-top:6px; }
+.pfill { height:100%; border-radius:3px; transition:width 0.8s; }
+
+/* ── Toggle ── */
+.toggle-wrap { display:flex; align-items:center; gap:10px; cursor:pointer; }
+.toggle { width:42px; height:22px; background:var(--border); border-radius:11px; position:relative; transition:0.3s; }
+.toggle.on { background:var(--primary); }
+.toggle::after { content:''; position:absolute; width:18px; height:18px; border-radius:50%; background:#fff; top:2px; left:2px; transition:0.3s; }
+.toggle.on::after { left:22px; }
+
+/* ── Info box ── */
+.info-box {
+  background:rgba(108,99,255,0.08); border:1px solid rgba(108,99,255,0.25);
+  border-radius:10px; padding:12px 16px; font-size:12px; color:var(--muted); margin-bottom:14px;
+}
+.warn-box {
+  background:rgba(255,171,0,0.08); border:1px solid rgba(255,171,0,0.25);
+  border-radius:10px; padding:12px 16px; font-size:12px; color:var(--warning); margin-bottom:14px;
+}
+.danger-box {
+  background:rgba(255,23,68,0.08); border:1px solid rgba(255,23,68,0.25);
+  border-radius:10px; padding:12px 16px; font-size:12px; color:var(--danger); margin-bottom:14px;
+}
+
+/* ── Confirm modal ── */
+#confirm-modal {
+  position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(4px);
+  z-index:9000; display:none; align-items:center; justify-content:center;
+}
+#confirm-modal.open { display:flex; }
+.confirm-box {
+  background:var(--card); border:1px solid var(--border); border-radius:16px;
+  padding:28px 32px; text-align:center; max-width:360px; width:calc(100vw - 32px);
+  animation:loginIn 0.2s;
+}
+.confirm-box h3 { font-size:16px; font-weight:800; margin-bottom:8px; }
+.confirm-box p { font-size:13px; color:var(--muted); margin-bottom:20px; }
+.confirm-btns { display:flex; gap:10px; justify-content:center; }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width:5px; }
 ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
 
-/* Find/Replace panel */
-.fr-panel {
-  background:var(--card); border-bottom:1px solid var(--border); padding:10px 14px;
-  display:none; gap:10px; align-items:center; flex-wrap:wrap;
+/* ── Mobile nav ── */
+@media(max-width:768px) {
+  .adm-sidebar { display:none; position:fixed; top:57px; left:0; z-index:200; width:240px; height:calc(100vh - 57px); }
+  .adm-sidebar.open { display:block; }
+  .adm-body { flex-direction:column; }
+  .adm-main { padding:14px; }
+  .stat-grid { grid-template-columns:1fr 1fr; gap:10px; }
+  .mob-nav-btn { display:flex !important; }
 }
-.fr-panel.open { display:flex; }
-.fr-panel input { background:var(--card2); border:1px solid var(--border); color:var(--text); padding:6px 10px; border-radius:6px; font-size:12px; outline:none; width:170px; }
-.fr-panel input:focus { border-color:var(--primary); }
-
-/* Responsive */
-@media (max-width:1100px) { .right-panel { display:none; } }
-@media (max-width:800px) { .left-panel { width:200px; } }
+.mob-nav-btn { display:none; background:none; border:none; color:var(--text); font-size:22px; cursor:pointer; padding:4px; }
 </style>
 </head>
 <body>
 
-<!-- LOGIN -->
+<!-- ══════════════ LOGIN SCREEN ══════════════ -->
 <div id="login-screen">
   <div class="login-box">
     <div class="login-logo">
-      <span class="licon">✏️</span>
-      <h1>Index File Editor</h1>
-      <p>ST Mobile & Designing — Advanced Editor Panel</p>
+      <span class="licon">🛡️</span>
+      <h1>Admin Panel</h1>
+      <p>ST Mobile & Designing — POS System</p>
     </div>
-    <div class="lf">
+    <div class="login-field">
       <label>Username</label>
-      <input type="text" id="l-user" placeholder="admin" autocomplete="username">
+      <input type="text" id="login-user" placeholder="admin" autocomplete="username">
     </div>
-    <div class="lf">
+    <div class="login-field">
       <label>Password</label>
-      <input type="password" id="l-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter') doLogin()">
+      <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password"
+        onkeydown="if(event.key==='Enter') doLogin()">
     </div>
-    <button class="login-btn" onclick="doLogin()">🔐 Login to Editor</button>
-    <div class="login-err" id="l-err"></div>
-    <div style="text-align:center;font-size:11px;color:var(--muted);margin-top:14px">Default credentials: admin / admin1234</div>
+    <button class="login-btn" onclick="doLogin()">🔐 Login</button>
+    <div class="login-err" id="login-err"></div>
+    <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:16px">
+      Default: admin / admin1234 &nbsp;|&nbsp; Settings ලෙල change කරන්න
+    </div>
   </div>
 </div>
 
-<!-- MAIN APP -->
-<div id="app" style="display:none;flex-direction:column;height:100vh;">
+<!-- ══════════════ ADMIN APP ══════════════ -->
+<div id="admin-app">
 
-  <!-- Top Bar -->
-  <div class="topbar">
-    <div class="topbar-left">
-      <span style="font-size:18px">✏️</span>
-      <h1>Index File Editor</h1>
-      <span id="tb-filename">index_mobile_optimized.html</span>
-      <span id="tb-modified" style="display:none;color:var(--warning);background:rgba(255,171,0,0.1);border-color:rgba(255,171,0,0.3)">● Modified</span>
+  <!-- Header -->
+  <div class="adm-header">
+    <div style="display:flex;align-items:center;gap:12px">
+      <button class="mob-nav-btn" id="mob-nav-btn" onclick="toggleSidebar()">☰</button>
+      <div>
+        <h1>🛡️ Admin Panel</h1>
+        <p id="adm-welcome">ST Mobile POS — Administrator</p>
+      </div>
     </div>
-    <div class="topbar-right">
-      <button class="tbtn tbtn-outline" onclick="toggleFindReplace()">🔍 Find/Replace</button>
-      <button class="tbtn tbtn-warning" onclick="formatCode()">🎨 Format</button>
-      <button class="tbtn tbtn-primary" onclick="saveFile()">💾 Save File</button>
-      <button class="tbtn tbtn-success" onclick="downloadFile()">📥 Download</button>
-      <button class="tbtn tbtn-danger" onclick="doLogout()" style="margin-left:6px">🚪 Logout</button>
+    <div class="hright">
+      <span id="fb-status">☁️ Connecting...</span>
+      <span id="adm-clock" style="font-size:12px;color:var(--muted)"></span>
+      <button class="logout-btn" onclick="doLogout()">🚪 Logout</button>
     </div>
   </div>
 
-  <div class="app-body">
+  <div class="adm-body">
 
-    <!-- LEFT: Sections List -->
-    <div class="left-panel">
-      <div class="panel-head">
-        <h3>📂 Sections</h3>
-        <span class="badge badge-primary" id="sec-count">—</span>
-      </div>
-      <div class="panel-search">
-        <input type="text" id="sec-search" placeholder="Search sections..." oninput="filterSections(this.value)">
-      </div>
-      <div class="sections-list" id="sections-list">
-        <div style="padding:20px;text-align:center;color:var(--muted);font-size:12px">Loading sections...</div>
+    <!-- Sidebar -->
+    <div class="adm-sidebar" id="adm-sidebar">
+      <div class="sec-label">Overview</div>
+      <div class="adm-nav-item active" onclick="showSection('overview')"><span class="ic">📊</span> Dashboard</div>
+
+      <div class="sec-label">Data Management</div>
+      <div class="adm-nav-item" onclick="showSection('db-viewer')"><span class="ic">🗄️</span> Database Viewer</div>
+      <div class="adm-nav-item" onclick="showSection('backup')"><span class="ic">💾</span> Backup & Restore</div>
+      <div class="adm-nav-item" onclick="showSection('firebase')"><span class="ic">🔥</span> Firebase Sync</div>
+
+      <div class="sec-label">Staff & Access</div>
+      <div class="adm-nav-item" onclick="showSection('users')"><span class="ic">👤</span> Admin Users</div>
+      <div class="adm-nav-item" onclick="showSection('staff-mgmt')"><span class="ic">👷</span> Staff Overview</div>
+      <div class="adm-nav-item" onclick="showSection('activity')"><span class="ic">📋</span> Activity Log</div>
+
+      <div class="sec-label">System</div>
+      <div class="adm-nav-item" onclick="showSection('shop-settings')"><span class="ic">🏪</span> Shop Settings</div>
+      <div class="adm-nav-item" onclick="showSection('system')"><span class="ic">⚙️</span> System Info</div>
+      <div class="adm-nav-item" onclick="showSection('danger-zone')"><span class="ic">⚠️</span> Danger Zone</div>
+
+      <div style="padding:14px 16px;margin-top:auto">
+        <a href="index.html" style="color:var(--primary);font-size:12px;text-decoration:none;display:flex;align-items:center;gap:6px">
+          ← POS System ලෙල යන්න
+        </a>
       </div>
     </div>
 
-    <!-- CENTER: Editor -->
-    <div class="center-panel">
+    <!-- Main Content -->
+    <div class="adm-main">
 
-      <!-- Find/Replace -->
-      <div class="fr-panel" id="fr-panel">
-        <div style="display:flex;align-items:center;gap:6px">
-          <span style="font-size:11px;color:var(--muted)">Find:</span>
-          <input type="text" id="fr-find" placeholder="Search text..." onkeydown="if(event.key==='Enter') findNext()">
+      <!-- ════ OVERVIEW ════ -->
+      <div id="sec-overview" class="adm-section active">
+        <div class="sec-title">📊 System Dashboard</div>
+
+        <div class="stat-grid" id="overview-stats">
+          <div class="scard c1"><div class="ic">📦</div><div class="val" id="ov-products">—</div><div class="lbl">Total Products</div></div>
+          <div class="scard c2"><div class="ic">🧾</div><div class="val" id="ov-invoices">—</div><div class="lbl">Total Invoices</div></div>
+          <div class="scard c3"><div class="ic">🔧</div><div class="val" id="ov-repairs">—</div><div class="lbl">Total Repairs</div></div>
+          <div class="scard c4"><div class="ic">👥</div><div class="val" id="ov-customers">—</div><div class="lbl">Customers</div></div>
+          <div class="scard c5"><div class="ic">💰</div><div class="val" id="ov-revenue">—</div><div class="lbl">Total Revenue</div></div>
+          <div class="scard c6"><div class="ic">📦</div><div class="val" id="ov-orders">—</div><div class="lbl">Online Orders</div></div>
         </div>
-        <div style="display:flex;align-items:center;gap:6px">
-          <span style="font-size:11px;color:var(--muted)">Replace:</span>
-          <input type="text" id="fr-replace" placeholder="Replace with...">
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div class="panel">
+            <div class="panel-head"><h3>📈 Data Collections</h3></div>
+            <div class="panel-body" id="ov-collections">
+              <div style="color:var(--muted);font-size:13px">Loading...</div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h3>⚡ Quick Actions</h3></div>
+            <div class="panel-body" style="display:flex;flex-direction:column;gap:10px">
+              <button class="btn btn-primary" onclick="showSection('backup')">💾 Backup Data</button>
+              <button class="btn btn-success" onclick="manualFirebaseSync()">☁️ Firebase Sync</button>
+              <button class="btn btn-outline" onclick="showSection('activity')">📋 View Activity Log</button>
+              <button class="btn btn-outline" onclick="refreshOverview()">🔄 Refresh Stats</button>
+              <a href="index.html" class="btn btn-outline" style="text-decoration:none">← POS System</a>
+            </div>
+          </div>
         </div>
-        <div style="display:flex;gap:6px">
-          <button class="etbtn" onclick="findNext()">↓ Next</button>
-          <button class="etbtn" onclick="findPrev()">↑ Prev</button>
-          <button class="etbtn" onclick="replaceOne()">Replace</button>
-          <button class="etbtn" onclick="replaceAll()" style="color:var(--warning)">Replace All</button>
+
+        <div class="panel" style="margin-top:16px">
+          <div class="panel-head"><h3>🕐 Recent Activity (Last 10)</h3></div>
+          <div class="panel-body" id="ov-recent-activity">
+            <div style="color:var(--muted);font-size:13px">Loading...</div>
+          </div>
         </div>
-        <span class="match-count" id="fr-match-count"></span>
-        <button class="etbtn" onclick="toggleFindReplace()" style="margin-left:auto">✕</button>
       </div>
 
-      <!-- Toolbar -->
-      <div class="editor-toolbar">
-        <div class="et-group">
-          <button class="etbtn" onclick="insertSnippet('div')" title="Insert div">&#60;div&#62;</button>
-          <button class="etbtn" onclick="insertSnippet('input')" title="Insert input">&#60;input&#62;</button>
-          <button class="etbtn" onclick="insertSnippet('button')" title="Insert button">&#60;btn&#62;</button>
-          <button class="etbtn" onclick="insertSnippet('table')" title="Insert table">⊞ Table</button>
-          <button class="etbtn" onclick="insertSnippet('modal')" title="Insert modal">⬜ Modal</button>
-        </div>
-        <div class="et-group">
-          <button class="etbtn" onclick="insertSnippet('badge')" title="Insert badge">Badge</button>
-          <button class="etbtn" onclick="insertSnippet('card')" title="Insert card">Card</button>
-          <button class="etbtn" onclick="insertSnippet('grid')" title="Insert grid">Grid</button>
-          <button class="etbtn" onclick="insertSnippet('toast')" title="Toast JS">Toast JS</button>
-        </div>
-        <div class="et-group">
-          <button class="etbtn" onclick="commentSelection()" title="Comment out">// Comment</button>
-          <button class="etbtn" onclick="indentSelection()" title="Indent">⇥ Indent</button>
-          <button class="etbtn" onclick="dedentSelection()" title="Dedent">⇤ Dedent</button>
-        </div>
-        <div class="et-group" style="margin-left:auto;border:none">
-          <label style="font-size:11px;color:var(--muted)">Font:</label>
-          <select id="font-size-sel" onchange="changeFontSize()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);padding:3px 6px;border-radius:5px;font-size:11px;outline:none;">
-            <option value="11">11px</option>
-            <option value="12">12px</option>
-            <option value="13" selected>13px</option>
-            <option value="14">14px</option>
-            <option value="16">16px</option>
+      <!-- ════ DB VIEWER ════ -->
+      <div id="sec-db-viewer" class="adm-section">
+        <div class="sec-title">🗄️ Database Viewer</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+          <select id="db-table-sel" onchange="loadDbTable()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:7px;font-size:13px;">
+            <option value="">— Collection select කරන්න —</option>
+            <option value="products">📦 Products</option>
+            <option value="invoices">🧾 Invoices</option>
+            <option value="repairs">🔧 Repairs</option>
+            <option value="orders">🌐 Orders</option>
+            <option value="customers">👥 Customers</option>
+            <option value="expenses">💸 Expenses</option>
+            <option value="suppliers">🏭 Suppliers</option>
+            <option value="staff">👷 Staff</option>
+            <option value="activityLog">📋 Activity Log</option>
+            <option value="credits">💳 Credits</option>
+            <option value="tasks">✅ Tasks</option>
+            <option value="followups">📞 Follow-ups</option>
           </select>
+          <button class="btn btn-outline" onclick="loadDbTable()">🔄 Refresh</button>
+          <button class="btn btn-success btn-sm" onclick="exportTableCSV()">📥 CSV Export</button>
+          <input id="db-search" placeholder="Search..." style="background:var(--card2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:7px;font-size:13px;" oninput="filterDbTable()">
+        </div>
+        <div class="info-box" id="db-table-info">Collection select කළ පසු data දිස්වෙනවා.</div>
+        <div class="panel" id="db-table-panel" style="display:none;overflow-x:auto">
+          <div class="panel-head">
+            <h3 id="db-table-title">—</h3>
+            <span id="db-row-count" style="font-size:12px;color:var(--muted)">0 rows</span>
+          </div>
+          <div style="overflow-x:auto">
+            <table id="db-table"></table>
+          </div>
         </div>
       </div>
 
-      <!-- Tab Bar -->
-      <div class="tab-bar" id="tab-bar">
-        <div class="tab active" data-tab="full">📄 Full File</div>
-        <div class="tab" data-tab="settings-page" onclick="switchTab('settings-page')">⚙️ Settings Page</div>
-        <div class="tab" data-tab="firebase" onclick="switchTab('firebase')">🔥 Firebase Config</div>
-        <div class="tab" data-tab="styles" onclick="switchTab('styles')">🎨 CSS Styles</div>
-        <div class="tab" data-tab="scripts" onclick="switchTab('scripts')">⚡ JavaScript</div>
-      </div>
+      <!-- ════ BACKUP ════ -->
+      <div id="sec-backup" class="adm-section">
+        <div class="sec-title">💾 Backup & Restore</div>
 
-      <!-- Editor Area -->
-      <div class="editor-wrap">
-        <div class="line-numbers" id="line-numbers"></div>
-        <textarea class="code-editor" id="code-editor"
-          spellcheck="false"
-          autocomplete="off"
-          autocorrect="off"
-          autocapitalize="off"
-          onkeydown="handleEditorKey(event)"
-          oninput="onEditorChange()"
-          onscroll="syncLineNumbers()"
-          onclick="updateCursor()"
-          onkeyup="updateCursor()"
-        >Loading...</textarea>
-      </div>
-
-    </div>
-
-    <!-- RIGHT: Properties Panel -->
-    <div class="right-panel">
-      <div class="prop-tabs">
-        <div class="prop-tab active" id="ptab-quick" onclick="switchPropTab('quick')">Quick Edit</div>
-        <div class="prop-tab" id="ptab-meta" onclick="switchPropTab('meta')">Info</div>
-        <div class="prop-tab" id="ptab-snippets" onclick="switchPropTab('snippets')">Snippets</div>
-      </div>
-      <div class="prop-body" id="prop-body">
-
-        <!-- Quick Edit Tab -->
-        <div id="pt-quick">
-          <div class="prop-section">
-            <h4>🏪 Shop Settings</h4>
-            <div class="prop-row"><label>Shop Name</label><input id="qs-shopname" placeholder="ST Mobile & Designing"></div>
-            <div class="prop-row"><label>Phone</label><input id="qs-phone" placeholder="+94 77 xxx xxxx"></div>
-            <div class="prop-row"><label>WhatsApp</label><input id="qs-wa" placeholder="+94 77 xxx xxxx"></div>
-            <div class="prop-row"><label>Email</label><input id="qs-email" placeholder="shop@email.com"></div>
-            <div class="prop-row"><label>Address</label><input id="qs-address" placeholder="No. 123, Main St"></div>
-            <div class="prop-row"><label>Facebook</label><input id="qs-fb" placeholder="facebook.com/page"></div>
-            <button class="prop-apply" onclick="applyShopSettings()">✅ Apply to HTML</button>
-          </div>
-
-          <div class="prop-section" style="margin-top:16px">
-            <h4>🎨 Theme & Colors</h4>
-            <div class="prop-row"><label>Primary Color</label><input type="color" id="qs-primary" value="#6c63ff" onchange="applyColor('primary',this.value)"></div>
-            <div class="prop-row"><label>Secondary Color</label><input type="color" id="qs-secondary" value="#f50057" onchange="applyColor('secondary',this.value)"></div>
-            <div class="prop-row"><label>Background</label><input type="color" id="qs-bg" value="#0a0a1a" onchange="applyColor('bg',this.value)"></div>
-            <button class="prop-apply" onclick="applyTheme()">🎨 Apply Theme</button>
-          </div>
-
-          <div class="prop-section" style="margin-top:16px">
-            <h4>🔥 Firebase Config</h4>
-            <div class="prop-row"><label>API Key</label><input id="qs-fbkey" placeholder="AIzaSy..."></div>
-            <div class="prop-row"><label>Project ID</label><input id="qs-fbproject" placeholder="your-project-id"></div>
-            <div class="prop-row"><label>Database URL</label><input id="qs-fburl" placeholder="https://...firebaseio.com"></div>
-            <div class="prop-row"><label>App ID</label><input id="qs-fbappid" placeholder="1:xxx:web:xxx"></div>
-            <button class="prop-apply" onclick="applyFirebaseConfig()">🔥 Update Firebase</button>
-          </div>
-
-          <div class="prop-section" style="margin-top:16px">
-            <h4>📝 App Meta</h4>
-            <div class="prop-row"><label>App Title</label><input id="qs-title" placeholder="ST Mobile POS"></div>
-            <div class="prop-row"><label>Version Tag</label><input id="qs-version" placeholder="v28"></div>
-            <div class="prop-row"><label>Invoice Prefix</label><input id="qs-prefix" placeholder="INV"></div>
-            <div class="prop-row"><label>Footer Note</label><input id="qs-footnote" placeholder="Thank you..."></div>
-            <button class="prop-apply" onclick="applyMeta()">💾 Apply Meta</button>
-          </div>
-        </div>
-
-        <!-- Meta/Info Tab -->
-        <div id="pt-meta" style="display:none">
-          <div class="meta-box">
-            <div class="m-row"><span class="m-key">File</span><span class="m-val">index_mobile_optimized.html</span></div>
-            <div class="m-row"><span class="m-key">Total Lines</span><span class="m-val" id="meta-lines">—</span></div>
-            <div class="m-row"><span class="m-key">Characters</span><span class="m-val" id="meta-chars">—</span></div>
-            <div class="m-row"><span class="m-key">File Size</span><span class="m-val" id="meta-size">—</span></div>
-            <div class="m-row"><span class="m-key">HTML Pages</span><span class="m-val" id="meta-pages">—</span></div>
-            <div class="m-row"><span class="m-key">CSS Rules</span><span class="m-val" id="meta-css">—</span></div>
-            <div class="m-row"><span class="m-key">JS Functions</span><span class="m-val" id="meta-fns">—</span></div>
-          </div>
-          <div class="prop-section">
-            <h4>📊 Detected Pages</h4>
-            <div id="meta-pages-list" style="font-size:11px;color:var(--muted);line-height:1.8"></div>
-          </div>
-          <div class="prop-section" style="margin-top:12px">
-            <h4>🔑 Key Functions</h4>
-            <div id="meta-fns-list" style="font-size:11px;color:var(--muted);line-height:1.8"></div>
-          </div>
-        </div>
-
-        <!-- Snippets Tab -->
-        <div id="pt-snippets" style="display:none">
-          <div class="prop-section">
-            <h4>⚡ HTML Snippets</h4>
-            <div style="display:flex;flex-direction:column;gap:6px">
-              <button class="etbtn" style="justify-content:flex-start;padding:7px 10px;" onclick="insertSnippet('page-section')">📄 New Page Section</button>
-              <button class="etbtn" style="justify-content:flex-start;padding:7px 10px;" onclick="insertSnippet('tcard')">⊟ Table Card</button>
-              <button class="etbtn" style="justify-content:flex-start;padding:7px 10px;" onclick="insertSnippet('stat-card')">📊 Stat Card</button>
-              <button class="etbtn" style="justify-content:flex-start;padding:7px 10px;" onclick="insertSnippet('modal-full')">⬜ Full Modal</button>
-              <button class="etbtn" style="justify-content:flex-start;padding:7px 10px;" onclick="insertSnippet('form-section')">📝 Form Section</button>
-              <button class="etbtn" style="justify-content:flex-start;padding:7px 10px;" onclick="insertSnippet('nav-item')">🔗 Nav Item</button>
-              <button class="etbtn" style="justify-content:flex-start;padding:7px 10px;" onclick="insertSnippet('chart-card')">📈 Chart Card</button>
-              <button class="etbtn" style="justify-content:flex-start;padding:7px 10px;" onclick="insertSnippet('firebase-save')">🔥 Firebase Save Fn</button>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div class="panel">
+            <div class="panel-head"><h3>📤 Export Backup</h3></div>
+            <div class="panel-body">
+              <p style="font-size:13px;color:var(--muted);margin-bottom:14px">සම්පූර්ණ POS data JSON file ලෙස download කරන්න.</p>
+              <div class="fg">
+                <label>Export Format</label>
+                <select id="export-format">
+                  <option value="full">📦 Full Backup (All data)</option>
+                  <option value="products">📦 Products only</option>
+                  <option value="invoices">🧾 Invoices only</option>
+                  <option value="customers">👥 Customers only</option>
+                </select>
+              </div>
+              <button class="btn btn-primary" onclick="exportBackup()" style="width:100%">📤 Download JSON Backup</button>
+              <button class="btn btn-outline" style="width:100%;margin-top:8px" onclick="exportBackupCSVAll()">📋 Export All as CSV (ZIP)</button>
             </div>
           </div>
-          <div class="prop-section" style="margin-top:12px">
-            <h4>🧩 JS Snippets</h4>
-            <div style="display:flex;flex-direction:column;gap:6px">
-              <button class="etbtn" style="justify-content:flex-start;padding:7px 10px;" onclick="insertSnippet('js-fn')">⚡ Empty Function</button>
-              <button class="etbtn" style="justify-content:flex-start;padding:7px 10px;" onclick="insertSnippet('js-toast')">🔔 Toast Call</button>
-              <button class="etbtn" style="justify-content:flex-start;padding:7px 10px;" onclick="insertSnippet('js-render')">🔄 Render Table</button>
-              <button class="etbtn" style="justify-content:flex-start;padding:7px 10px;" onclick="insertSnippet('js-modal-open')">📂 Open Modal</button>
-              <button class="etbtn" style="justify-content:flex-start;padding:7px 10px;" onclick="insertSnippet('js-confirm')">⚠️ Confirm Dialog</button>
-              <button class="etbtn" style="justify-content:flex-start;padding:7px 10px;" onclick="insertSnippet('js-savedb')">💾 Save to DB</button>
+
+          <div class="panel">
+            <div class="panel-head"><h3>📥 Import Backup</h3></div>
+            <div class="panel-body">
+              <div class="warn-box">⚠️ Import කරද්දී දැනට තිබෙන <b>සියලු data replace</b> වෙනවා! Import කිරීමට පෙර backup ගන්න.</div>
+              <div class="fg">
+                <label>JSON Backup File</label>
+                <input type="file" accept=".json" id="import-file" onchange="previewImport(this)">
+              </div>
+              <div id="import-preview" style="font-size:12px;color:var(--muted);margin-bottom:10px"></div>
+              <button class="btn btn-warning" onclick="importBackup()" style="width:100%" id="import-btn" disabled>📥 Import & Restore</button>
             </div>
           </div>
         </div>
 
+        <div class="panel" style="margin-top:0">
+          <div class="panel-head"><h3>🕐 Backup History</h3></div>
+          <div class="panel-body" id="backup-history">
+            <div style="color:var(--muted);font-size:13px">No backup history yet.</div>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
 
-  <!-- Status Bar -->
-  <div class="statusbar">
-    <div class="sb-left">
-      <div class="sb-item"><span class="sb-dot" style="background:var(--success)"></span>Ready</div>
-      <div class="sb-item" id="sb-pos">Line 1, Col 1</div>
-      <div class="sb-item" id="sb-sel">No selection</div>
-    </div>
-    <div class="sb-right">
-      <div class="sb-item" id="sb-lines">— lines</div>
-      <div class="sb-item">HTML</div>
-      <div class="sb-item">UTF-8</div>
-      <div class="sb-item" id="sb-modified" style="color:var(--muted)">Saved</div>
-    </div>
-  </div>
+      <!-- ════ FIREBASE ════ -->
+      <div id="sec-firebase" class="adm-section">
+        <div class="sec-title">🔥 Firebase Realtime Database</div>
 
-</div>
+        <div class="panel">
+          <div class="panel-head"><h3>📡 Connection Status</h3></div>
+          <div class="panel-body">
+            <div id="fb-conn-status" style="font-size:14px;font-weight:700;margin-bottom:14px">🔄 Checking...</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+              <div style="background:var(--card2);border-radius:9px;padding:12px">
+                <div style="font-size:11px;color:var(--muted)">Project ID</div>
+                <div style="font-size:13px;font-weight:600;color:var(--info)" id="fb-project-id">—</div>
+              </div>
+              <div style="background:var(--card2);border-radius:9px;padding:12px">
+                <div style="font-size:11px;color:var(--muted)">Database URL</div>
+                <div style="font-size:11px;color:var(--text);word-break:break-all" id="fb-db-url">—</div>
+              </div>
+              <div style="background:var(--card2);border-radius:9px;padding:12px">
+                <div style="font-size:11px;color:var(--muted)">Last Sync</div>
+                <div style="font-size:13px;font-weight:600" id="fb-last-sync">—</div>
+              </div>
+              <div style="background:var(--card2);border-radius:9px;padding:12px">
+                <div style="font-size:11px;color:var(--muted)">Status</div>
+                <div style="font-size:13px;font-weight:600" id="fb-live-status">—</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn btn-primary" onclick="manualFirebaseSync()">☁️ Manual Sync Now</button>
+              <button class="btn btn-outline" onclick="checkFirebaseConn()">🔍 Test Connection</button>
+              <button class="btn btn-danger btn-sm" onclick="confirmClearCloud()">🗑️ Clear Cloud Data</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h3>📊 Cloud Data Summary</h3></div>
+          <div class="panel-body" id="fb-data-summary">
+            <div style="color:var(--muted);font-size:13px">Sync කළ පසු data ගැන details දිස්වෙනවා.</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h3>🔧 Firebase Config</h3></div>
+          <div class="panel-body">
+            <div class="info-box">
+              Firebase config index.html file ලෙල <code style="color:var(--primary)">firebaseConfig</code> variable ලෙල set කරන්න. Admin panel automatically ඒ config ද use කරයි.
+            </div>
+            <div style="background:var(--card2);border-radius:9px;padding:14px;font-family:monospace;font-size:12px;color:var(--text);overflow-x:auto" id="fb-config-display">
+              Config loading...
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════ USERS ════ -->
+      <div id="sec-users" class="adm-section">
+        <div class="sec-title">👤 Admin Users</div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h3>Admin Accounts</h3>
+            <button class="btn btn-primary btn-sm" onclick="showAddUser()">➕ Add User</button>
+          </div>
+          <div class="panel-body">
+            <div class="warn-box">⚠️ Admin credentials browser localStorage ලෙල save වෙනවා. Production ලෙල server-side auth use කරන්න.</div>
+            <div id="user-list"></div>
+          </div>
+        </div>
+
+        <div class="panel" id="add-user-panel" style="display:none">
+          <div class="panel-head"><h3>➕ New Admin User</h3></div>
+          <div class="panel-body">
+            <div class="fgrid2">
+              <div class="fg"><label>Username *</label><input id="new-username" placeholder="username"></div>
+              <div class="fg"><label>Display Name</label><input id="new-displayname" placeholder="Full name"></div>
+              <div class="fg"><label>Password *</label><input type="password" id="new-password" placeholder="Min 8 chars"></div>
+              <div class="fg"><label>Role</label>
+                <select id="new-role">
+                  <option value="admin">👑 Admin (Full Access)</option>
+                  <option value="viewer">👁️ Viewer (Read-only)</option>
+                </select>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-primary" onclick="addAdminUser()">💾 Create User</button>
+              <button class="btn btn-outline" onclick="hideAddUser()">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════ STAFF OVERVIEW ════ -->
+      <div id="sec-staff-mgmt" class="adm-section">
+        <div class="sec-title">👷 Staff Overview</div>
+        <div class="stat-grid" style="grid-template-columns:repeat(3,1fr)">
+          <div class="scard c1"><div class="ic">👷</div><div class="val" id="st-total">—</div><div class="lbl">Total Staff</div></div>
+          <div class="scard c2"><div class="ic">✅</div><div class="val" id="st-active">—</div><div class="lbl">Active</div></div>
+          <div class="scard c3"><div class="ic">💰</div><div class="val" id="st-totalcomm">—</div><div class="lbl">Total Commissions (Month)</div></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>Staff List</h3></div>
+          <div style="overflow-x:auto">
+            <table>
+              <thead><tr><th>Name</th><th>Role</th><th>Phone</th><th>Status</th><th>Commission %</th><th>Joined</th></tr></thead>
+              <tbody id="staff-admin-tbl"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════ ACTIVITY LOG ════ -->
+      <div id="sec-activity" class="adm-section">
+        <div class="sec-title">📋 Activity Log</div>
+        <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+          <select id="act-filter" onchange="renderActivityAdmin()" style="background:var(--card2);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:7px;font-size:12px;">
+            <option value="">All Actions</option>
+            <option value="SALE">💰 Sales</option>
+            <option value="PRODUCT">📦 Products</option>
+            <option value="REPAIR">🔧 Repairs</option>
+            <option value="CUSTOMER">👥 Customers</option>
+            <option value="SETTINGS">⚙️ Settings</option>
+            <option value="LOGIN">🔐 Login</option>
+          </select>
+          <input id="act-search" placeholder="Search..." style="background:var(--card2);border:1px solid var(--border);color:var(--text);padding:7px 12px;border-radius:7px;font-size:12px;" oninput="renderActivityAdmin()">
+          <button class="btn btn-danger btn-sm" onclick="confirmClearActivity()">🗑️ Clear Log</button>
+          <button class="btn btn-success btn-sm" onclick="exportActivityCSV()">📥 Export CSV</button>
+        </div>
+        <div class="panel">
+          <div style="overflow-x:auto">
+            <table>
+              <thead><tr><th>Time</th><th>Type</th><th>Action</th><th>Details</th><th>User</th></tr></thead>
+              <tbody id="act-tbl"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════ SHOP SETTINGS ════ -->
+      <div id="sec-shop-settings" class="adm-section">
+        <div class="sec-title">🏪 Shop Settings</div>
+        <div class="panel">
+          <div class="panel-head"><h3>Business Information</h3></div>
+          <div class="panel-body">
+            <div class="fgrid2">
+              <div class="fg"><label>Shop Name *</label><input id="ss-name" placeholder="ST Mobile & Designing"></div>
+              <div class="fg"><label>Phone</label><input id="ss-phone" placeholder="+94 77 xxx xxxx"></div>
+              <div class="fg"><label>Email</label><input id="ss-email" placeholder="info@stmobile.lk"></div>
+              <div class="fg"><label>WhatsApp</label><input id="ss-wa" placeholder="+94 77 xxx xxxx"></div>
+              <div class="fg" style="grid-column:1/-1"><label>Address</label><input id="ss-address" placeholder="No. 123, Main Street, Colombo"></div>
+              <div class="fg"><label>Invoice Prefix</label><input id="ss-prefix" placeholder="INV" style="width:120px"></div>
+              <div class="fg"><label>Facebook Page</label><input id="ss-fb" placeholder="fb.com/stmobile"></div>
+              <div class="fg" style="grid-column:1/-1"><label>Invoice Footer Note</label><input id="ss-note" placeholder="Thank you for choosing ST Mobile!"></div>
+            </div>
+            <button class="btn btn-primary" onclick="saveShopSettings()">💾 Save Settings</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h3>🔐 Security Settings</h3></div>
+          <div class="panel-body">
+            <div class="fgrid2">
+              <div class="fg">
+                <label>Current Admin Password</label>
+                <input type="password" id="sec-old-pass" placeholder="Old password">
+              </div>
+              <div class="fg">
+                <label>New Password</label>
+                <input type="password" id="sec-new-pass" placeholder="New password (min 8 chars)">
+              </div>
+            </div>
+            <button class="btn btn-warning" onclick="changeAdminPass()">🔐 Change Admin Password</button>
+            <div class="fg" style="margin-top:16px">
+              <label>Cashier PIN (4 digits)</label>
+              <div style="display:flex;gap:8px">
+                <input type="password" id="ss-cashier-pin" maxlength="4" placeholder="4 digit PIN" style="width:150px" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+                <button class="btn btn-outline" onclick="saveCashierPin()">💾 Save PIN</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════ SYSTEM INFO ════ -->
+      <div id="sec-system" class="adm-section">
+        <div class="sec-title">⚙️ System Information</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div class="panel">
+            <div class="panel-head"><h3>💻 Browser & Environment</h3></div>
+            <div class="panel-body" id="sys-browser"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h3>💾 Storage Usage</h3></div>
+            <div class="panel-body" id="sys-storage"></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>📦 App Version & Info</h3></div>
+          <div class="panel-body" id="sys-app-info"></div>
+        </div>
+      </div>
+
+      <!-- ════ DANGER ZONE ════ -->
+      <div id="sec-danger-zone" class="adm-section">
+        <div class="sec-title">⚠️ Danger Zone</div>
+        <div class="danger-box">🔴 මෙම section ලෙල actions undo කළ නොහෙකිව data permanently delete වෙනවා. ඉතා ප්‍රවේශමෙන් use කරන්න.</div>
+
+        <div class="panel">
+          <div class="panel-head"><h3>🗑️ Data Deletion</h3></div>
+          <div class="panel-body" style="display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--card2);border-radius:9px">
+              <div><div style="font-size:13px;font-weight:600">🧾 Clear All Invoices</div><div style="font-size:11px;color:var(--muted)">සියලු invoices delete කරයි</div></div>
+              <button class="btn btn-danger btn-sm" onclick="dangerDelete('invoices')">Delete</button>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--card2);border-radius:9px">
+              <div><div style="font-size:13px;font-weight:600">🔧 Clear All Repairs</div><div style="font-size:11px;color:var(--muted)">සියලු repair records delete කරයි</div></div>
+              <button class="btn btn-danger btn-sm" onclick="dangerDelete('repairs')">Delete</button>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--card2);border-radius:9px">
+              <div><div style="font-size:13px;font-weight:600">🌐 Clear All Orders</div><div style="font-size:11px;color:var(--muted)">සියලු online orders delete කරයි</div></div>
+              <button class="btn btn-danger btn-sm" onclick="dangerDelete('orders')">Delete</button>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--card2);border-radius:9px">
+              <div><div style="font-size:13px;font-weight:600">📋 Clear Activity Log</div><div style="font-size:11px;color:var(--muted)">Activity log සාදා ගන්නා records clear කරයි</div></div>
+              <button class="btn btn-danger btn-sm" onclick="confirmClearActivity()">Clear</button>
+            </div>
+            <div style="background:rgba(255,23,68,0.06);border:2px solid rgba(255,23,68,0.4);border-radius:12px;padding:16px">
+              <div style="font-size:14px;font-weight:800;color:var(--danger);margin-bottom:6px">🔴 FULL RESET — සියලු Data Delete</div>
+              <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Products, invoices, repairs, customers, orders, staff — EVERYTHING delete වෙනවා. Firebase data ද clear වෙනවා!</div>
+              <button class="btn btn-danger" onclick="dangerFullReset()">⚠️ Full System Reset</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /adm-main -->
+  </div><!-- /adm-body -->
+</div><!-- /admin-app -->
 
 <!-- Toast -->
 <div id="toast"></div>
 
-<script>
-// ════════════════════════════════
-// AUTH
-// ════════════════════════════════
-var SESSION_KEY = 'st-editor-session';
+<!-- Confirm Modal -->
+<div id="confirm-modal">
+  <div class="confirm-box">
+    <div style="font-size:36px;margin-bottom:8px" id="confirm-icon">⚠️</div>
+    <h3 id="confirm-title">Are you sure?</h3>
+    <p id="confirm-msg">This action cannot be undone.</p>
+    <div class="confirm-btns">
+      <button class="btn btn-outline" onclick="closeConfirm()">Cancel</button>
+      <button class="btn btn-danger" id="confirm-yes-btn">Yes, Delete</button>
+    </div>
+  </div>
+</div>
 
-// Default credentials — always work even if localStorage empty
-var DEFAULT_USERS = [
-  { username: 'admin', password: 'admin1234', displayName: 'Administrator', role: 'admin' }
-];
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, set, get, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey:            "AIzaSyA2EprDDYqnR1KTlA3nADdcCcVpi-HaDMk",
+  authDomain:        "stshop-8a875.firebaseapp.com",
+  databaseURL:       "https://stshop-8a875-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:         "stshop-8a875",
+  storageBucket:     "stshop-8a875.firebasestorage.app",
+  messagingSenderId: "778408728987",
+  appId:             "1:778408728987:web:66153a512fd14531fda93e"
+};
+
+const app = initializeApp(firebaseConfig);
+const database = getDatabase(app);
+
+// Expose to global
+window._fbDb = database;
+window._fbRef = ref;
+window._fbSet = set;
+window._fbGet = get;
+window._fbRemove = remove;
+window._fbConfig = firebaseConfig;
+
+// Load POS data from Firebase
+window.loadPosDataFromFB = function(callback) {
+  setFbStatus('☁️ Loading...', 'var(--warning)');
+  get(ref(database, 'pos-data')).then(function(snapshot) {
+    if (snapshot.exists()) {
+      var data = snapshot.val();
+      // Convert Firebase objects back to arrays
+      function arr(val) {
+        if (!val) return [];
+        if (Array.isArray(val)) return val;
+        return Object.keys(val).sort(function(a,b){ return Number(a)-Number(b); }).map(function(k){ return val[k]; });
+      }
+      window._posDb = {
+        products:     arr(data.products),
+        invoices:     arr(data.invoices),
+        repairs:      arr(data.repairs),
+        orders:       arr(data.orders),
+        customers:    arr(data.customers),
+        expenses:     arr(data.expenses),
+        suppliers:    arr(data.suppliers),
+        activityLog:  arr(data.activityLog),
+        staff:        arr(data.staff),
+        shifts:       arr(data.shifts),
+        tasks:        arr(data.tasks),
+        followups:    arr(data.followups),
+        credits:      arr(data.credits),
+        settings:     data.settings || {},
+        _lastSync:    data._lastSync
+      };
+      setFbStatus('✅ Synced', 'var(--success)');
+      if (callback) callback(window._posDb);
+    } else {
+      setFbStatus('☁️ No cloud data', 'var(--muted)');
+      window._posDb = window._posDb || {};
+      if (callback) callback(null);
+    }
+  }).catch(function(e) {
+    setFbStatus('❌ Error', 'var(--danger)');
+    console.error('FB load error:', e);
+    if (callback) callback(null);
+  });
+};
+
+window.savePosDataToFB = function(dbObj, callback) {
+  setFbStatus('☁️ Saving...', 'var(--warning)');
+  set(ref(database, 'pos-data'), dbObj)
+    .then(function() {
+      setFbStatus('✅ Saved', 'var(--success)');
+      toast('✅ Firebase ලෙල saved!');
+      if (callback) callback(true);
+    })
+    .catch(function(e) {
+      setFbStatus('❌ Save Error', 'var(--danger)');
+      toast('❌ Firebase save error: ' + e.message, 'var(--danger)');
+      if (callback) callback(false);
+    });
+};
+
+function setFbStatus(text, color) {
+  var el = document.getElementById('fb-status');
+  if (el) { el.textContent = text; el.style.color = color || 'var(--muted)'; }
+}
+
+// Check connection
+window.checkFirebaseConn = function() {
+  var el = document.getElementById('fb-conn-status');
+  if (el) el.innerHTML = '🔄 Testing connection...';
+  get(ref(database, 'pos-data')).then(function(snap) {
+    if (el) el.innerHTML = '<span style="color:var(--success)">✅ Firebase Connected!</span> — Data exists: ' + snap.exists();
+    updateFbInfoDisplay(snap.exists() ? snap.val() : null);
+  }).catch(function(e) {
+    if (el) el.innerHTML = '<span style="color:var(--danger)">❌ Connection Failed:</span> ' + e.message;
+  });
+};
+
+window.updateFbInfoDisplay = function(data) {
+  document.getElementById('fb-project-id').textContent = firebaseConfig.projectId;
+  document.getElementById('fb-db-url').textContent = firebaseConfig.databaseURL;
+  if (data && data._lastSync) {
+    document.getElementById('fb-last-sync').textContent = new Date(data._lastSync).toLocaleString();
+    document.getElementById('fb-live-status').innerHTML = '<span style="color:var(--success)">✅ Online</span>';
+  } else {
+    document.getElementById('fb-last-sync').textContent = '—';
+    document.getElementById('fb-live-status').textContent = 'No data';
+  }
+  // Config display
+  var cfgEl = document.getElementById('fb-config-display');
+  if (cfgEl) {
+    cfgEl.innerHTML = JSON.stringify({ projectId: firebaseConfig.projectId, databaseURL: firebaseConfig.databaseURL, appId: firebaseConfig.appId }, null, 2)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  // Summary
+  if (data) {
+    function cnt(val) { if (!val) return 0; if (Array.isArray(val)) return val.length; return Object.keys(val).length; }
+    var collections = ['products','invoices','repairs','orders','customers','expenses','staff','activityLog','credits','tasks'];
+    var html = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">' +
+      collections.map(function(c) {
+        var icons = {products:'📦',invoices:'🧾',repairs:'🔧',orders:'🌐',customers:'👥',expenses:'💸',staff:'👷',activityLog:'📋',credits:'💳',tasks:'✅'};
+        return '<div style="background:var(--card2);border-radius:8px;padding:10px;text-align:center">' +
+          '<div style="font-size:18px">' + (icons[c]||'📁') + '</div>' +
+          '<div style="font-size:16px;font-weight:700;color:var(--primary)">' + cnt(data[c]) + '</div>' +
+          '<div style="font-size:10px;color:var(--muted)">' + c + '</div></div>';
+      }).join('') + '</div>';
+    document.getElementById('fb-data-summary').innerHTML = html;
+  }
+};
+
+window.clearCloudData = function() {
+  remove(ref(database, 'pos-data'))
+    .then(function() { toast('✅ Cloud data cleared!'); checkFirebaseConn(); })
+    .catch(function(e) { toast('❌ Error: ' + e.message, 'var(--danger)'); });
+};
+
+console.log('🔥 Admin Firebase loaded');
+
+// Auto-load on start
+setTimeout(function() {
+  if (typeof window._adminLoggedIn !== 'undefined' && window._adminLoggedIn) {
+    window.loadPosDataFromFB(function(data) {
+      if (data) { window.refreshOverview(); }
+    });
+  }
+  checkFirebaseConn();
+}, 500);
+</script>
+
+<script>
+// ════════════════════════════════════════
+//  AUTH
+// ════════════════════════════════════════
+var ADMIN_USERS_KEY = 'st-admin-users';
+var SESSION_KEY = 'st-admin-session';
 
 function getAdminUsers() {
-  // Try to get from admin panel's localStorage key first
-  var sources = ['st-admin-users', 'stpos-admin-users', 'admin-users'];
-  for (var i = 0; i < sources.length; i++) {
-    try {
-      var raw = localStorage.getItem(sources[i]);
-      if (raw) {
-        var u = JSON.parse(raw);
-        if (Array.isArray(u) && u.length) return u;
-      }
-    } catch(e) {}
-  }
-  return DEFAULT_USERS;
+  try {
+    var u = JSON.parse(localStorage.getItem(ADMIN_USERS_KEY));
+    if (!u || !u.length) {
+      // Default user
+      u = [{ username:'admin', password:'admin1234', displayName:'Administrator', role:'admin', created: Date.now() }];
+      localStorage.setItem(ADMIN_USERS_KEY, JSON.stringify(u));
+    }
+    return u;
+  } catch(e) { return []; }
+}
+
+function saveAdminUsers(users) {
+  localStorage.setItem(ADMIN_USERS_KEY, JSON.stringify(users));
 }
 
 function doLogin() {
-  var user = document.getElementById('l-user').value.trim();
-  var pass = document.getElementById('l-pass').value;
-  var err  = document.getElementById('l-err');
+  var user = document.getElementById('login-user').value.trim();
+  var pass = document.getElementById('login-pass').value;
+  var err = document.getElementById('login-err');
   err.textContent = '';
-
-  if (!user || !pass) { err.textContent = '❌ Username සහ Password දෙකම ඕනේ!'; return; }
-
-  // Check against stored users + always allow default
+  if (!user || !pass) { err.textContent = '❌ Username සහ Password ඕනේ!'; return; }
   var users = getAdminUsers();
-  // Merge default so it always works
-  var allUsers = DEFAULT_USERS.concat(users.filter(function(u){ return u.username !== 'admin'; }));
-
-  var found = allUsers.find(function(u){
-    return u.username.toLowerCase() === user.toLowerCase() && u.password === pass;
-  });
-
-  if (!found) {
-    err.textContent = '❌ Invalid credentials! Try: admin / admin1234';
-    return;
-  }
-
-  sessionStorage.setItem(SESSION_KEY, JSON.stringify({
-    username: found.username,
-    displayName: found.displayName || found.username,
-    role: found.role || 'admin',
-    loginTime: Date.now()
-  }));
-
+  var found = users.find(function(u){ return u.username === user && u.password === pass; });
+  if (!found) { err.textContent = '❌ Invalid credentials!'; return; }
+  // Save session
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify({ username: found.username, displayName: found.displayName, role: found.role, loginTime: Date.now() }));
+  window._adminLoggedIn = true;
+  window._adminSession = found;
   document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('app').style.display = 'flex';
-  initEditor();
+  document.getElementById('admin-app').style.display = 'block';
+  document.getElementById('adm-welcome').textContent = 'ST Mobile POS — ' + found.displayName + ' (' + found.role + ')';
+  // Load data
+  setTimeout(function() {
+    if (window.loadPosDataFromFB) {
+      loadPosDataFromFB(function(data) {
+        refreshOverview();
+        renderUserList();
+        renderStaffAdmin();
+        renderActivityAdmin();
+        loadShopSettings();
+        renderSystemInfo();
+      });
+    }
+  }, 300);
 }
 
 function doLogout() {
   sessionStorage.removeItem(SESSION_KEY);
-  document.getElementById('app').style.display = 'none';
+  window._adminLoggedIn = false;
+  document.getElementById('admin-app').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
-  document.getElementById('l-pass').value = '';
+  document.getElementById('login-pass').value = '';
 }
 
-// Auto-restore session
+// Check existing session
 (function() {
-  try {
-    var sess = sessionStorage.getItem(SESSION_KEY);
-    if (sess) {
+  var sess = sessionStorage.getItem(SESSION_KEY);
+  if (sess) {
+    try {
       var s = JSON.parse(sess);
       if (s && s.username) {
+        window._adminLoggedIn = true;
+        window._adminSession = s;
         document.getElementById('login-screen').style.display = 'none';
-        document.getElementById('app').style.display = 'flex';
-        initEditor();
+        document.getElementById('admin-app').style.display = 'block';
+        document.getElementById('adm-welcome').textContent = 'ST Mobile POS — ' + s.displayName + ' (' + s.role + ')';
       }
-    }
-  } catch(e) {}
+    } catch(e) {}
+  }
 })();
 
-// ════════════════════════════════
-// FILE CONTENT (from upload)
-// ════════════════════════════════
-var _originalContent = '';
-var _currentContent  = '';
-var _modified        = false;
-var _currentTab      = 'full';
-var _findMatches     = [];
-var _findIndex       = -1;
-
-// Index file content will be loaded from localStorage if previously saved,
-// or the user can paste / load it. We provide the embedded initial template.
-var _SAVED_KEY = 'st-index-editor-content';
-
-function initEditor() {
-  // Try to load previously saved content
-  var saved = localStorage.getItem(_SAVED_KEY);
-  if (saved) {
-    _originalContent = saved;
-    _currentContent  = saved;
-    loadToEditor(saved);
-    toast('📂 Previously saved file loaded');
-  } else {
-    // Show placeholder with instruction
-    var placeholder = getPlaceholderContent();
-    _originalContent = placeholder;
-    _currentContent  = placeholder;
-    loadToEditor(placeholder);
-  }
-  buildSectionsList(_currentContent);
-  updateMeta(_currentContent);
-  updateLineNumbers();
+// ════════════════════════════════════════
+//  NAVIGATION
+// ════════════════════════════════════════
+function showSection(id) {
+  document.querySelectorAll('.adm-section').forEach(function(el){ el.classList.remove('active'); });
+  document.querySelectorAll('.adm-nav-item').forEach(function(el){ el.classList.remove('active'); });
+  var sec = document.getElementById('sec-' + id);
+  if (sec) sec.classList.add('active');
+  var nav = document.querySelector('[onclick="showSection(\'' + id + '\')"]');
+  if (nav) nav.classList.add('active');
+  // Close mobile sidebar
+  document.getElementById('adm-sidebar').classList.remove('open');
+  // Section-specific init
+  if (id === 'overview') refreshOverview();
+  else if (id === 'firebase') { checkFirebaseConn(); }
+  else if (id === 'users') renderUserList();
+  else if (id === 'staff-mgmt') renderStaffAdmin();
+  else if (id === 'activity') renderActivityAdmin();
+  else if (id === 'shop-settings') loadShopSettings();
+  else if (id === 'system') renderSystemInfo();
 }
 
-function getPlaceholderContent() {
-  return '<!-- ═══════════════════════════════════════════════════════════\n' +
-    '     ST Mobile & Designing — Index File Editor\n' +
-    '     ─────────────────────────────────────────────────────────\n' +
-    '     📌 INSTRUCTIONS:\n' +
-    '     1. Open your index_mobile_optimized.html file in a text editor\n' +
-    '     2. Select All (Ctrl+A) and Copy (Ctrl+C)\n' +
-    '     3. Click inside this editor area\n' +
-    '     4. Select All (Ctrl+A) and Paste (Ctrl+V)\n' +
-    '     5. Your file will be fully editable here!\n' +
-    '     ─────────────────────────────────────────────────────────\n' +
-    '     Or use the Quick Edit panel on the right to make changes\n' +
-    '     directly to your currently stored file.\n' +
-    '═══════════════════════════════════════════════════════════ -->\n\n' +
-    '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="UTF-8">\n' +
-    '<title>ST Mobile &amp; Designing — POS v28</title>\n</head>\n<body>\n\n' +
-    '<!-- Paste your full index file content here -->\n\n</body>\n</html>';
+function toggleSidebar() {
+  document.getElementById('adm-sidebar').classList.toggle('open');
 }
 
-function loadToEditor(content) {
-  var editor = document.getElementById('code-editor');
-  editor.value = content;
-  updateLineNumbers();
-  updateStatusBar();
+// ════════════════════════════════════════
+//  DATA HELPER
+// ════════════════════════════════════════
+function getPosDb() {
+  if (window._posDb) return window._posDb;
+  // Fallback: try localStorage (same-origin POS)
+  try {
+    var raw = localStorage.getItem('stpos-db');
+    if (raw) { window._posDb = JSON.parse(raw); return window._posDb; }
+  } catch(e) {}
+  return {};
 }
 
-// ════════════════════════════════
-// SECTIONS LIST
-// ════════════════════════════════
-var _allSections = [];
+// ════════════════════════════════════════
+//  OVERVIEW
+// ════════════════════════════════════════
+function refreshOverview() {
+  var db = getPosDb();
+  var products = db.products || [];
+  var invoices = db.invoices || [];
+  var repairs = db.repairs || [];
+  var customers = db.customers || [];
+  var orders = db.orders || [];
+  var revenue = invoices.reduce(function(a,inv){ return a+(inv.total||0); }, 0);
 
-var PAGE_DEFINITIONS = [
-  { id:'pg-dashboard', label:'📊 Dashboard', group:'Main Pages' },
-  { id:'pg-pos', label:'🛒 POS / Point of Sale', group:'Main Pages' },
-  { id:'pg-inventory', label:'📦 Inventory', group:'Main Pages' },
-  { id:'pg-repairs', label:'🔧 Repairs', group:'Main Pages' },
-  { id:'pg-orders', label:'🌐 Online Orders', group:'Main Pages' },
-  { id:'pg-messages', label:'💬 Messages', group:'Main Pages' },
-  { id:'pg-customers', label:'👥 Customers', group:'Main Pages' },
-  { id:'pg-invoices', label:'🧾 Invoices', group:'Main Pages' },
-  { id:'pg-analytics', label:'📈 Analytics', group:'Analytics' },
-  { id:'pg-advanced-analytics', label:'📊 Advanced Analytics', group:'Analytics' },
-  { id:'pg-abc-analysis', label:'🏷️ ABC Analysis', group:'Analytics' },
-  { id:'pg-pnl', label:'💰 P&L Report', group:'Analytics' },
-  { id:'pg-reports', label:'📋 Reports', group:'Analytics' },
-  { id:'pg-advanced-reports', label:'📑 Advanced Reports', group:'Analytics' },
-  { id:'pg-sales-compare', label:'📉 Sales Compare', group:'Analytics' },
-  { id:'pg-credits', label:'💳 Credits / Debts', group:'Finance' },
-  { id:'pg-expenses', label:'💸 Expenses', group:'Finance' },
-  { id:'pg-cashregister', label:'🏦 Cash Register', group:'Finance' },
-  { id:'pg-targets', label:'🎯 Sales Targets', group:'Finance' },
-  { id:'pg-purchase-orders', label:'📋 Purchase Orders', group:'Finance' },
-  { id:'pg-tax-manager', label:'🧮 Tax Manager', group:'Finance' },
-  { id:'pg-suppliers', label:'🏭 Suppliers', group:'Stock' },
-  { id:'pg-stocklog', label:'📋 Stock Log', group:'Stock' },
-  { id:'pg-returns', label:'↩️ Returns', group:'Stock' },
-  { id:'pg-barcodes', label:'🔢 Barcodes', group:'Stock' },
-  { id:'pg-bundles', label:'📦 Bundles', group:'Stock' },
-  { id:'pg-dead-stock', label:'⚠️ Dead Stock', group:'Stock' },
-  { id:'pg-batch-tracking', label:'🔍 Batch Tracking', group:'Stock' },
-  { id:'pg-stock-audit', label:'📊 Stock Audit', group:'Stock' },
-  { id:'pg-kit-assembly', label:'🔧 Kit Assembly', group:'Stock' },
-  { id:'pg-multi-branch', label:'🏢 Multi Branch', group:'Stock' },
-  { id:'pg-staff', label:'👷 Staff', group:'HR' },
-  { id:'pg-shift', label:'⏰ Shift Tracking', group:'HR' },
-  { id:'pg-roster', label:'📅 Roster', group:'HR' },
-  { id:'pg-tasks', label:'✅ Tasks', group:'HR' },
-  { id:'pg-repair-timer', label:'⏱️ Repair Timer', group:'Repair Tools' },
-  { id:'pg-repair-advanced', label:'🔧 Advanced Repairs', group:'Repair Tools' },
-  { id:'pg-repair-templates', label:'📋 Repair Templates', group:'Repair Tools' },
-  { id:'pg-device-history', label:'📱 Device History', group:'Repair Tools' },
-  { id:'pg-loyalty', label:'⭐ Loyalty', group:'Customers' },
-  { id:'pg-cust-segments', label:'👥 Cust. Segments', group:'Customers' },
-  { id:'pg-cust-timeline', label:'📅 Cust. Timeline', group:'Customers' },
-  { id:'pg-followups', label:'📞 Follow-ups', group:'Customers' },
-  { id:'pg-referrals', label:'🤝 Referrals', group:'Customers' },
-  { id:'pg-appointments', label:'📅 Appointments', group:'Customers' },
-  { id:'pg-activitylog', label:'📋 Activity Log', group:'System' },
-  { id:'pg-settings', label:'⚙️ Settings', group:'System' },
-  { id:'pg-invoice-designer', label:'🎨 Invoice Designer', group:'System' },
-  { id:'pg-upsell', label:'🛍️ Upsell Engine', group:'System' },
-  { id:'pg-dashboard-builder', label:'🏗️ Dashboard Builder', group:'System' },
-  { id:'pg-open-close-checklist', label:'✅ Open/Close Checklist', group:'System' },
-];
+  el('ov-products', products.length);
+  el('ov-invoices', invoices.length);
+  el('ov-repairs', repairs.length);
+  el('ov-customers', customers.length);
+  el('ov-revenue', 'Rs. ' + Math.round(revenue).toLocaleString());
+  el('ov-orders', orders.length);
 
-function buildSectionsList(content) {
-  _allSections = PAGE_DEFINITIONS.map(function(p) {
-    var lineNum = findLineOf(content, 'id="' + p.id + '"');
-    return Object.assign({}, p, { lineNum: lineNum, found: lineNum > 0 });
-  });
-  document.getElementById('sec-count').textContent = _allSections.filter(function(s){ return s.found; }).length;
-  renderSectionsList(_allSections);
-}
+  // Collections table
+  var collections = [
+    { name:'Products', icon:'📦', count:products.length, key:'products' },
+    { name:'Invoices', icon:'🧾', count:invoices.length, key:'invoices' },
+    { name:'Repairs', icon:'🔧', count:repairs.length, key:'repairs' },
+    { name:'Orders', icon:'🌐', count:orders.length, key:'orders' },
+    { name:'Customers', icon:'👥', count:customers.length, key:'customers' },
+    { name:'Expenses', icon:'💸', count:(db.expenses||[]).length, key:'expenses' },
+    { name:'Suppliers', icon:'🏭', count:(db.suppliers||[]).length, key:'suppliers' },
+    { name:'Staff', icon:'👷', count:(db.staff||[]).length, key:'staff' },
+    { name:'Activity Log', icon:'📋', count:(db.activityLog||[]).length, key:'activityLog' },
+    { name:'Tasks', icon:'✅', count:(db.tasks||[]).length, key:'tasks' },
+  ];
+  document.getElementById('ov-collections').innerHTML = collections.map(function(c) {
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">' +
+      '<span style="font-size:13px">' + c.icon + ' ' + c.name + '</span>' +
+      '<div style="display:flex;gap:8px;align-items:center">' +
+        '<span style="font-size:14px;font-weight:700;color:var(--primary)">' + c.count + '</span>' +
+        '<button class="btn btn-outline btn-sm" onclick="loadDbTableDirect(\'' + c.key + '\')">View</button>' +
+      '</div></div>';
+  }).join('');
 
-function findLineOf(content, search) {
-  var idx = content.indexOf(search);
-  if (idx < 0) return -1;
-  return content.substring(0, idx).split('\n').length;
-}
-
-function renderSectionsList(sections) {
-  var list = document.getElementById('sections-list');
-  var groups = {};
-  sections.forEach(function(s) {
-    if (!groups[s.group]) groups[s.group] = [];
-    groups[s.group].push(s);
-  });
-  var html = '';
-  Object.keys(groups).forEach(function(g) {
-    html += '<div class="section-group"><div class="sg-label">' + g + '</div>';
-    groups[g].forEach(function(s) {
-      var found = s.found;
-      html += '<div class="sec-item' + (found ? '' : ' disabled') + '" onclick="jumpToSection(\'' + s.id + '\')" style="' + (!found ? 'opacity:0.4' : '') + '">' +
-        '<span class="ic">' + (s.label.split(' ')[0]) + '</span>' +
-        '<span class="lbl">' + s.label.substring(s.label.indexOf(' ')+1) + '</span>' +
-        (found ? '<span class="tag">L' + s.lineNum + '</span>' : '<span class="tag" style="background:rgba(255,23,68,0.1);color:var(--danger)">N/F</span>') +
-        '</div>';
-    });
-    html += '</div>';
-  });
-  // Also add CSS/JS sections
-  html += '<div class="section-group"><div class="sg-label">Code Sections</div>' +
-    '<div class="sec-item" onclick="jumpToTag(\'<style>\')"><span class="ic">🎨</span><span class="lbl">CSS Styles</span></div>' +
-    '<div class="sec-item" onclick="jumpToTag(\'<script>\')"><span class="ic">⚡</span><span class="lbl">JavaScript</span></div>' +
-    '<div class="sec-item" onclick="jumpToTag(\'firebaseConfig\')"><span class="ic">🔥</span><span class="lbl">Firebase Config</span></div>' +
-    '<div class="sec-item" onclick="jumpToTag(\'function init\')"><span class="ic">▶️</span><span class="lbl">Init Function</span></div>' +
+  // Recent activity
+  var log = (db.activityLog || []).slice().reverse().slice(0, 10);
+  var el2 = document.getElementById('ov-recent-activity');
+  el2.innerHTML = log.length ? log.map(function(entry) {
+    var typeColors = { SALE:'var(--success)', PRODUCT:'var(--primary)', REPAIR:'var(--warning)', CUSTOMER:'var(--info)', SETTINGS:'var(--muted)' };
+    var col = typeColors[entry.type] || 'var(--muted)';
+    return '<div class="log-entry">' +
+      '<div class="log-dot" style="background:' + col + '"></div>' +
+      '<div style="flex:1">' +
+        '<div style="font-size:12px;font-weight:600">' + (entry.action||'—') + '</div>' +
+        '<div style="font-size:11px;color:var(--muted)">' + (entry.details||'') + ' · ' + (entry.time||'') + '</div>' +
+      '</div>' +
+      '<span class="badge badge-primary" style="color:' + col + '">' + (entry.type||'—') + '</span>' +
     '</div>';
-  list.innerHTML = html;
+  }).join('') : '<div style="color:var(--muted);font-size:13px">No activity yet.</div>';
 }
 
-function filterSections(q) {
-  if (!q) { renderSectionsList(_allSections); return; }
-  var filtered = _allSections.filter(function(s){ return s.label.toLowerCase().includes(q.toLowerCase()) || s.id.toLowerCase().includes(q.toLowerCase()); });
-  renderSectionsList(filtered);
+// ════════════════════════════════════════
+//  DB VIEWER
+// ════════════════════════════════════════
+var _dbTableData = [];
+var _dbTableKeys = [];
+
+function loadDbTable() {
+  var key = document.getElementById('db-table-sel').value;
+  if (!key) { document.getElementById('db-table-info').style.display='block'; document.getElementById('db-table-panel').style.display='none'; return; }
+  loadDbTableDirect(key);
 }
 
-function jumpToSection(id) {
-  var editor = document.getElementById('code-editor');
-  var content = editor.value;
-  var search = 'id="' + id + '"';
-  var idx = content.indexOf(search);
-  if (idx < 0) { toast('❌ Section not found: ' + id, 'var(--danger)'); return; }
-  editor.focus();
-  editor.setSelectionRange(idx, idx + search.length);
-  // Scroll into view
-  var lineNum = content.substring(0, idx).split('\n').length;
-  var lineH = 20; // px
-  editor.scrollTop = (lineNum - 5) * lineH;
-  // Highlight
-  document.querySelectorAll('.sec-item').forEach(function(el){ el.classList.remove('active'); });
-  toast('✅ Jumped to: ' + id);
-  updateCursor();
+function loadDbTableDirect(key) {
+  var sel = document.getElementById('db-table-sel');
+  if (sel) sel.value = key;
+  showSection('db-viewer');
+  var db = getPosDb();
+  var data = db[key] || [];
+  _dbTableData = Array.isArray(data) ? data : Object.values(data);
+  document.getElementById('db-table-info').style.display = 'none';
+  document.getElementById('db-table-panel').style.display = 'block';
+  renderDbTableRows(_dbTableData, key);
 }
 
-function jumpToTag(tag) {
-  var editor = document.getElementById('code-editor');
-  var content = editor.value;
-  var idx = content.indexOf(tag);
-  if (idx < 0) { toast('❌ Not found: ' + tag, 'var(--danger)'); return; }
-  editor.focus();
-  editor.setSelectionRange(idx, idx + tag.length);
-  var lineNum = content.substring(0, idx).split('\n').length;
-  editor.scrollTop = (lineNum - 5) * 20;
-  updateCursor();
-}
-
-// ════════════════════════════════
-// EDITOR CORE
-// ════════════════════════════════
-function onEditorChange() {
-  var editor = document.getElementById('code-editor');
-  _currentContent = editor.value;
-  _modified = true;
-  document.getElementById('tb-modified').style.display = 'inline';
-  document.getElementById('sb-modified').textContent = '● Unsaved';
-  document.getElementById('sb-modified').style.color = 'var(--warning)';
-  updateLineNumbers();
-  updateStatusBar();
-}
-
-function handleEditorKey(e) {
-  var editor = document.getElementById('code-editor');
-  if (e.key === 'Tab') {
-    e.preventDefault();
-    var start = editor.selectionStart;
-    var end = editor.selectionEnd;
-    var val = editor.value;
-    editor.value = val.substring(0, start) + '  ' + val.substring(end);
-    editor.selectionStart = editor.selectionEnd = start + 2;
-    onEditorChange();
+function renderDbTableRows(rows, key) {
+  var icons = {products:'📦',invoices:'🧾',repairs:'🔧',orders:'🌐',customers:'👥',expenses:'💸',staff:'👷',activityLog:'📋',credits:'💳',tasks:'✅',followups:'📞',suppliers:'🏭'};
+  document.getElementById('db-table-title').textContent = (icons[key]||'📁') + ' ' + key;
+  document.getElementById('db-row-count').textContent = rows.length + ' rows';
+  if (!rows.length) {
+    document.getElementById('db-table').innerHTML = '<thead></thead><tbody><tr><td colspan="5" style="text-align:center;padding:20px;color:var(--muted)">No data</td></tr></tbody>';
+    return;
   }
-  if (e.ctrlKey && e.key === 's') { e.preventDefault(); saveFile(); }
-  if (e.ctrlKey && e.key === 'f') { e.preventDefault(); toggleFindReplace(); }
-  if (e.ctrlKey && e.key === 'z') { setTimeout(function(){ onEditorChange(); }, 10); }
+  // Get all unique keys from first few rows
+  var allKeys = {};
+  rows.slice(0, 5).forEach(function(r){ Object.keys(r||{}).forEach(function(k){ allKeys[k]=1; }); });
+  _dbTableKeys = Object.keys(allKeys).slice(0, 8);
+  var thead = '<thead><tr>' + _dbTableKeys.map(function(k){ return '<th>' + k + '</th>'; }).join('') + '<th>Actions</th></tr></thead>';
+  var tbody = '<tbody>' + rows.map(function(row, i) {
+    return '<tr>' + _dbTableKeys.map(function(k) {
+      var v = row[k];
+      if (typeof v === 'object') v = JSON.stringify(v);
+      var vs = String(v||'—');
+      if (vs.length > 40) vs = vs.slice(0,40) + '…';
+      return '<td>' + vs + '</td>';
+    }).join('') + '<td><button class="btn btn-outline btn-sm" onclick="showRowJson(' + i + ')">JSON</button></td></tr>';
+  }).join('') + '</tbody>';
+  document.getElementById('db-table').innerHTML = thead + tbody;
 }
 
-function updateLineNumbers() {
-  var editor = document.getElementById('code-editor');
-  var lines = editor.value.split('\n').length;
-  var html = '';
-  for (var i = 1; i <= lines; i++) html += i + '\n';
-  document.getElementById('line-numbers').textContent = html;
-  syncLineNumbers();
-}
-
-function syncLineNumbers() {
-  var editor = document.getElementById('code-editor');
-  document.getElementById('line-numbers').scrollTop = editor.scrollTop;
-}
-
-function updateStatusBar() {
-  var editor = document.getElementById('code-editor');
-  var content = editor.value;
-  var lines = content.split('\n').length;
-  document.getElementById('sb-lines').textContent = lines.toLocaleString() + ' lines';
-  var sel = content.substring(editor.selectionStart, editor.selectionEnd);
-  if (sel.length > 0) {
-    document.getElementById('sb-sel').textContent = sel.length + ' selected';
-  } else {
-    document.getElementById('sb-sel').textContent = 'No selection';
-  }
-}
-
-function updateCursor() {
-  var editor = document.getElementById('code-editor');
-  var val    = editor.value;
-  var pos    = editor.selectionStart;
-  var lines  = val.substring(0, pos).split('\n');
-  var line   = lines.length;
-  var col    = lines[lines.length - 1].length + 1;
-  document.getElementById('sb-pos').textContent = 'Line ' + line + ', Col ' + col;
-  updateStatusBar();
-}
-
-function changeFontSize() {
-  var sz = document.getElementById('font-size-sel').value;
-  document.getElementById('code-editor').style.fontSize = sz + 'px';
-  document.getElementById('code-editor').style.lineHeight = (parseInt(sz) + 7) + 'px';
-  updateLineNumbers();
-}
-
-// ════════════════════════════════
-// TABS
-// ════════════════════════════════
-function switchTab(tab) {
-  _currentTab = tab;
-  document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
-  var content = document.getElementById('code-editor').value;
-  var editor  = document.getElementById('code-editor');
-
-  if (tab === 'full') {
-    editor.value = _currentContent;
-    document.querySelector('[data-tab="full"]').classList.add('active');
-  } else if (tab === 'settings-page') {
-    var start = content.indexOf('id="pg-settings"');
-    if (start < 0) { toast('❌ Settings page not found', 'var(--danger)'); return; }
-    var end = content.indexOf('<div id="pg-', start + 10);
-    if (end < 0) end = content.length;
-    editor.value = content.substring(start, end);
-    toast('📄 Settings page loaded');
-  } else if (tab === 'firebase') {
-    var start = content.indexOf('firebaseConfig');
-    if (start < 0) { toast('❌ Firebase config not found', 'var(--danger)'); return; }
-    var end = content.indexOf('};', start) + 2;
-    editor.value = content.substring(Math.max(0, start-20), end+5);
-    toast('🔥 Firebase config loaded');
-  } else if (tab === 'styles') {
-    var start = content.indexOf('<style>');
-    if (start < 0) { toast('❌ <style> not found', 'var(--danger)'); return; }
-    var end = content.indexOf('</style>') + 8;
-    editor.value = content.substring(start, end);
-    toast('🎨 CSS styles loaded (' + (end-start) + ' chars)');
-  } else if (tab === 'scripts') {
-    var parts = [];
-    var idx = 0;
-    while (true) {
-      var s = content.indexOf('<script>', idx);
-      if (s < 0) break;
-      var e = content.indexOf('</script>', s) + 9;
-      parts.push(content.substring(s, e));
-      idx = e;
-    }
-    if (parts.length === 0) { toast('❌ No <script> found', 'var(--danger)'); return; }
-    editor.value = parts.join('\n\n// ═══════════════════════\n\n');
-    toast('⚡ ' + parts.length + ' script blocks loaded');
-  }
-  updateLineNumbers();
-  updateCursor();
-}
-
-// ════════════════════════════════
-// FIND & REPLACE
-// ════════════════════════════════
-function toggleFindReplace() {
-  var panel = document.getElementById('fr-panel');
-  panel.classList.toggle('open');
-  if (panel.classList.contains('open')) {
-    document.getElementById('fr-find').focus();
-    var editor = document.getElementById('code-editor');
-    var sel = editor.value.substring(editor.selectionStart, editor.selectionEnd);
-    if (sel) document.getElementById('fr-find').value = sel;
-  }
-}
-
-function doFind(direction) {
-  var needle = document.getElementById('fr-find').value;
-  if (!needle) return;
-  var editor = document.getElementById('code-editor');
-  var content = editor.value;
-  var matches = [];
-  var idx = 0;
-  while (true) {
-    var pos = content.toLowerCase().indexOf(needle.toLowerCase(), idx);
-    if (pos < 0) break;
-    matches.push(pos);
-    idx = pos + 1;
-  }
-  _findMatches = matches;
-  document.getElementById('fr-match-count').textContent = matches.length ? ((_findIndex+1) + '/' + matches.length + ' matches') : 'No matches';
-  if (matches.length === 0) return;
-  if (direction === 'next') { _findIndex = (_findIndex + 1) % matches.length; }
-  else { _findIndex = (_findIndex - 1 + matches.length) % matches.length; }
-  var pos = matches[_findIndex];
-  editor.setSelectionRange(pos, pos + needle.length);
-  editor.focus();
-  var lineNum = content.substring(0, pos).split('\n').length;
-  editor.scrollTop = (lineNum - 5) * 20;
-  document.getElementById('fr-match-count').textContent = (_findIndex+1) + '/' + matches.length + ' matches';
-}
-
-function findNext() { doFind('next'); }
-function findPrev() { doFind('prev'); }
-
-function replaceOne() {
-  var needle = document.getElementById('fr-find').value;
-  var repl = document.getElementById('fr-replace').value;
-  if (!needle) return;
-  var editor = document.getElementById('code-editor');
-  var sel = editor.value.substring(editor.selectionStart, editor.selectionEnd);
-  if (sel.toLowerCase() === needle.toLowerCase()) {
-    var start = editor.selectionStart;
-    editor.value = editor.value.substring(0, start) + repl + editor.value.substring(editor.selectionEnd);
-    editor.setSelectionRange(start, start + repl.length);
-    onEditorChange(); toast('✅ Replaced 1 instance');
-  } else { findNext(); }
-}
-
-function replaceAll() {
-  var needle = document.getElementById('fr-find').value;
-  var repl = document.getElementById('fr-replace').value;
-  if (!needle) return;
-  var editor = document.getElementById('code-editor');
-  var content = editor.value;
-  var count = 0;
-  var result = content.replace(new RegExp(escapeRegExp(needle), 'gi'), function(m){ count++; return repl; });
-  if (count === 0) { toast('❌ No matches found', 'var(--danger)'); return; }
-  editor.value = result;
-  onEditorChange();
-  toast('✅ Replaced ' + count + ' instances');
-}
-
-function escapeRegExp(str) {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-// ════════════════════════════════
-// QUICK EDIT — APPLY CHANGES
-// ════════════════════════════════
-function applyShopSettings() {
-  var shopName = document.getElementById('qs-shopname').value;
-  var phone    = document.getElementById('qs-phone').value;
-  var wa       = document.getElementById('qs-wa').value;
-  var email    = document.getElementById('qs-email').value;
-  var address  = document.getElementById('qs-address').value;
-  var fb       = document.getElementById('qs-fb').value;
-  var editor   = document.getElementById('code-editor');
-  var content  = editor.value;
-  var changes  = 0;
-  function replaceAttr(cont, id, val) {
-    if (!val) return cont;
-    // Replace value="..." in input with id="s-name" etc
-    var re = new RegExp('(id="' + id + '"[^>]*value=")[^"]*(")', 'g');
-    var n = cont.replace(re, '$1' + val + '$2');
-    if (n !== cont) changes++;
-    return n;
-  }
-  if (shopName) { content = content.replace(/(id="s-name"[^>]*value=")[^"]*(")/g, '$1' + shopName + '$2'); changes++; }
-  if (phone)    { content = replaceAttr(content, 's-phone', phone); }
-  if (wa)       { content = replaceAttr(content, 's-wa', wa); }
-  if (email)    { content = replaceAttr(content, 's-email', email); }
-  if (address)  { content = replaceAttr(content, 's-addr', address); }
-  if (fb)       { content = replaceAttr(content, 's-fb', fb); }
-  // Also update title/meta references
-  if (shopName) {
-    content = content.replace(/<title>[^<]*<\/title>/g, '<title>' + shopName + ' — POS</title>');
-    changes++;
-  }
-  editor.value = content;
-  onEditorChange();
-  toast(changes > 0 ? '✅ Shop settings applied (' + changes + ' changes)' : '⚠️ No changes made');
-}
-
-function applyColor(key, value) {
-  // Preview only — applied via applyTheme
-}
-
-function applyTheme() {
-  var primary   = document.getElementById('qs-primary').value;
-  var secondary = document.getElementById('qs-secondary').value;
-  var bg        = document.getElementById('qs-bg').value;
-  var editor    = document.getElementById('code-editor');
-  var content   = editor.value;
-  function hexToRgb(hex) {
-    var r = parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
-    return r+','+g+','+b;
-  }
-  // Replace CSS variables
-  content = content.replace(/(--primary:\s*)[^;]+(;)/g, '$1' + primary + '$2');
-  content = content.replace(/(--secondary:\s*)[^;]+(;)/g, '$1' + secondary + '$2');
-  content = content.replace(/(--bg:\s*)[^;]+(;)/g, '$1' + bg + '$2');
-  // Update theme-color meta
-  content = content.replace(/(theme-color[^>]*content=")[^"]*(")/g, '$1' + primary + '$2');
-  editor.value = content;
-  onEditorChange();
-  toast('🎨 Theme colors applied!');
-}
-
-function applyFirebaseConfig() {
-  var key     = document.getElementById('qs-fbkey').value.trim();
-  var project = document.getElementById('qs-fbproject').value.trim();
-  var url     = document.getElementById('qs-fburl').value.trim();
-  var appId   = document.getElementById('qs-fbappid').value.trim();
-  var editor  = document.getElementById('code-editor');
-  var content = editor.value;
-  var changes = 0;
-  if (key) { content = content.replace(/(apiKey:\s*")[^"]*(")/g, '$1' + key + '$2'); changes++; }
-  if (project) {
-    content = content.replace(/(projectId:\s*")[^"]*(")/g, '$1' + project + '$2');
-    content = content.replace(/(authDomain:\s*")[^"]*(")/g, '$1' + project + '.firebaseapp.com"');
-    changes++;
-  }
-  if (url) { content = content.replace(/(databaseURL:\s*")[^"]*(")/g, '$1' + url + '$2'); changes++; }
-  if (appId) { content = content.replace(/(appId:\s*")[^"]*(")/g, '$1' + appId + '$2'); changes++; }
-  editor.value = content;
-  onEditorChange();
-  toast(changes > 0 ? '🔥 Firebase config updated (' + changes + ' fields)' : '⚠️ Nothing to change');
-}
-
-function applyMeta() {
-  var title    = document.getElementById('qs-title').value.trim();
-  var version  = document.getElementById('qs-version').value.trim();
-  var prefix   = document.getElementById('qs-prefix').value.trim();
-  var footnote = document.getElementById('qs-footnote').value.trim();
-  var editor   = document.getElementById('code-editor');
-  var content  = editor.value;
-  var changes  = 0;
-  if (title) {
-    content = content.replace(/<title>[^<]+<\/title>/g, '<title>' + title + '</title>');
-    content = content.replace(/(apple-mobile-web-app-title[^>]*content=")[^"]*(")/g, '$1' + title + '$2');
-    changes++;
-  }
-  if (prefix) { content = content.replace(/(id="s-prefix"[^>]*value=")[^"]*(")/g, '$1' + prefix + '$2'); changes++; }
-  if (footnote) { content = content.replace(/(id="s-note"[^>]*value=")[^"]*(")/g, '$1' + footnote + '$2'); changes++; }
-  editor.value = content;
-  onEditorChange();
-  toast(changes > 0 ? '💾 Meta info updated!' : '⚠️ Nothing changed');
-}
-
-// ════════════════════════════════
-// META INFO
-// ════════════════════════════════
-function updateMeta(content) {
-  var lines = content.split('\n').length;
-  var chars = content.length;
-  var sizeKB = (new Blob([content]).size / 1024).toFixed(1);
-  document.getElementById('meta-lines').textContent = lines.toLocaleString();
-  document.getElementById('meta-chars').textContent = chars.toLocaleString();
-  document.getElementById('meta-size').textContent  = sizeKB + ' KB';
-  var pages = (content.match(/class="page/g) || []).length;
-  var css   = (content.match(/\{[\s\S]*?\}/g) || []).length;
-  var fns   = (content.match(/function\s+\w+\s*\(/g) || []).length;
-  document.getElementById('meta-pages').textContent = pages;
-  document.getElementById('meta-css').textContent   = css;
-  document.getElementById('meta-fns').textContent   = fns;
-  // Pages list
-  var pageIds = [];
-  var re = /id="(pg-[^"]+)"/g;
-  var m;
-  while ((m = re.exec(content)) !== null) { pageIds.push(m[1]); }
-  document.getElementById('meta-pages-list').innerHTML = pageIds.map(function(p){ return '<span style="display:inline-block;margin-right:6px;color:var(--primary)">' + p + '</span>'; }).join('');
-  // Key functions
-  var fnNames = [];
-  var fre = /function\s+(\w+)\s*\(/g;
-  var fm;
-  while ((fm = fre.exec(content)) !== null && fnNames.length < 30) { fnNames.push(fm[1]); }
-  document.getElementById('meta-fns-list').innerHTML = fnNames.map(function(f){ return '<span style="display:inline-block;margin-right:6px;color:var(--muted)">' + f + '()</span>'; }).join('');
-}
-
-// ════════════════════════════════
-// SNIPPETS
-// ════════════════════════════════
-var SNIPPETS = {
-  'div': '<div id="" class="">\n  \n</div>',
-  'input': '<input type="text" id="" placeholder="" oninput="">',
-  'button': '<button class="btn bp2" onclick=""></button>',
-  'table': '<div class="tcard">\n  <div class="thead2"><h3>📋 Table Title</h3></div>\n  <div style="overflow-x:auto">\n    <table>\n      <thead><tr><th>Column 1</th><th>Column 2</th><th>Actions</th></tr></thead>\n      <tbody id="tbl-body"></tbody>\n    </table>\n  </div>\n</div>',
-  'modal': '<div class="moverlay" id="m-name">\n  <div class="modal">\n    <div class="mhdr"><h3>🔧 Modal Title</h3><button class="xbtn" onclick="closeModal(\'m-name\')">✕</button></div>\n    <div class="mbody">\n      <!-- content -->\n    </div>\n    <div class="mftr">\n      <button class="btn bo" onclick="closeModal(\'m-name\')">Cancel</button>\n      <button class="btn bp2" onclick="">Save</button>\n    </div>\n  </div>\n</div>',
-  'badge': '<span class="badge bs">Active</span>',
-  'card': '<div class="tcard">\n  <div class="thead2"><h3>📋 Card Title</h3></div>\n  <div class="panel-body">\n    <!-- content -->\n  </div>\n</div>',
-  'grid': '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px">\n  <!-- stat cards -->\n</div>',
-  'toast': 'toast(\'✅ Action completed!\');',
-  'page-section': '<div id="pg-new-page" class="page">\n  <div class="tcard">\n    <div class="thead2">\n      <h3>📄 New Page</h3>\n      <button class="btn bp2 bsm" onclick="">➕ Add</button>\n    </div>\n    <div style="overflow-x:auto">\n      <table>\n        <thead><tr><th>#</th><th>Name</th><th>Status</th><th>Actions</th></tr></thead>\n        <tbody id="new-page-tbl"></tbody>\n      </table>\n    </div>\n  </div>\n</div>',
-  'tcard': '<div class="tcard">\n  <div class="thead2">\n    <h3>📋 Section Title</h3>\n    <div style="display:flex;gap:6px">\n      <input placeholder="Search..." style="background:var(--card2);border:1px solid var(--border);color:var(--text);padding:5px 9px;border-radius:6px;font-size:12px;outline:none;width:150px" oninput="">\n      <button class="btn bp2 bsm" onclick="">➕ Add</button>\n    </div>\n  </div>\n  <div style="overflow-x:auto">\n    <table>\n      <thead><tr><th>#</th><th>Name</th><th>Status</th><th>Actions</th></tr></thead>\n      <tbody id="section-tbl"></tbody>\n    </table>\n  </div>\n</div>',
-  'stat-card': '<div class="scard s1">\n  <div style="font-size:24px;margin-bottom:6px">📊</div>\n  <div class="sval" id="stat-val">0</div>\n  <div class="slabel">Stat Label</div>\n</div>',
-  'modal-full': '<div class="moverlay" id="m-new">\n  <div class="modal">\n    <div class="mhdr" style="position:sticky;top:0">\n      <h3>📝 Form Title</h3>\n      <button class="xbtn" onclick="closeModal(\'m-new\')">✕</button>\n    </div>\n    <div class="mbody">\n      <div class="fgrid">\n        <div class="fg"><label>Field 1</label><input id="f1" placeholder=""></div>\n        <div class="fg"><label>Field 2</label><input id="f2" placeholder=""></div>\n        <div class="fg full"><label>Notes</label><textarea id="f-notes" rows="3"></textarea></div>\n      </div>\n    </div>\n    <div class="mftr">\n      <button class="btn bo" onclick="closeModal(\'m-new\')">Cancel</button>\n      <button class="btn bp2" onclick="saveNew()">💾 Save</button>\n    </div>\n  </div>\n</div>',
-  'form-section': '<div class="ssec"><h3>📝 Form Section</h3>\n  <div class="fgrid">\n    <div class="fg"><label>Field 1</label><input id="sf-1" placeholder="" oninput="autoSaveSettings()"></div>\n    <div class="fg"><label>Field 2</label><input id="sf-2" placeholder="" oninput="autoSaveSettings()"></div>\n  </div>\n  <button class="btn bp2 bsm" onclick="">💾 Save</button>\n</div>',
-  'nav-item': '<div class="nitem" onclick="goPage(\'pg-name\')"><span class="ic">📄</span>Page Name</div>',
-  'chart-card': '<div class="dash-chart-card">\n  <div class="dash-chart-title">📈 Chart Title</div>\n  <div class="dash-chart-body"><canvas id="chart-new" height="220"></canvas></div>\n</div>',
-  'firebase-save': 'function saveMyData() {\n  if (!db.myCollection) db.myCollection = [];\n  var item = { id: Date.now(), /* fields */ };\n  db.myCollection.push(item);\n  saveDB();\n  toast(\'✅ Saved!\');\n  renderMyData();\n}',
-  'js-fn': 'function myFunction() {\n  var db = getPosDb ? getPosDb() : (window.db || {});\n  // your code here\n}',
-  'js-toast': "toast('✅ Done!');",
-  'js-render': "function renderMyTable() {\n  var items = db.myItems || [];\n  var html = '';\n  items.forEach(function(item, i) {\n    html += '<tr><td>' + (i+1) + '</td><td>' + item.name + '</td>' +\n      '<td><button class=\"btn bd2 bsm\" onclick=\"deleteItem(' + item.id + ')\">Delete</button></td></tr>';\n  });\n  document.getElementById('my-tbl').innerHTML = html || '<tr><td colspan=\"3\" style=\"text-align:center;color:var(--muted)\">No data</td></tr>';\n}",
-  'js-modal-open': "function openModal(id) {\n  document.getElementById(id).classList.add('open');\n}\nfunction closeModal(id) {\n  document.getElementById(id).classList.remove('open');\n}",
-  'js-confirm': "showConfirm('Delete?', 'This cannot be undone.', function() {\n  // confirmed action\n  toast('✅ Deleted!');\n});",
-  'js-savedb': "saveDB();\nif (typeof firebaseSaveDB === 'function') firebaseSaveDB(db);"
-};
-
-function insertSnippet(key) {
-  var snippet = SNIPPETS[key];
-  if (!snippet) return;
-  insertAtCursor(snippet);
-  toast('✅ Snippet inserted: ' + key);
-}
-
-function insertAtCursor(text) {
-  var editor = document.getElementById('code-editor');
-  var start  = editor.selectionStart;
-  var end    = editor.selectionEnd;
-  var val    = editor.value;
-  editor.value = val.substring(0, start) + text + val.substring(end);
-  editor.selectionStart = editor.selectionEnd = start + text.length;
-  editor.focus();
-  onEditorChange();
-}
-
-// ════════════════════════════════
-// TOOLBAR ACTIONS
-// ════════════════════════════════
-function commentSelection() {
-  var editor = document.getElementById('code-editor');
-  var start = editor.selectionStart, end = editor.selectionEnd;
-  var sel   = editor.value.substring(start, end);
-  if (!sel) return;
-  var commented = '<!-- ' + sel + ' -->';
-  editor.value  = editor.value.substring(0, start) + commented + editor.value.substring(end);
-  onEditorChange(); toast('✅ Selection commented out');
-}
-
-function indentSelection() {
-  var editor = document.getElementById('code-editor');
-  var start = editor.selectionStart, end = editor.selectionEnd;
-  var sel   = editor.value.substring(start, end);
-  var indented = sel.split('\n').map(function(l){ return '  ' + l; }).join('\n');
-  editor.value = editor.value.substring(0, start) + indented + editor.value.substring(end);
-  onEditorChange();
-}
-
-function dedentSelection() {
-  var editor = document.getElementById('code-editor');
-  var start = editor.selectionStart, end = editor.selectionEnd;
-  var sel   = editor.value.substring(start, end);
-  var dedented = sel.split('\n').map(function(l){ return l.replace(/^  /, ''); }).join('\n');
-  editor.value = editor.value.substring(0, start) + dedented + editor.value.substring(end);
-  onEditorChange();
-}
-
-function formatCode() {
-  toast('🎨 Basic formatting applied (Tip: Use Prettier for full formatting)');
-  updateLineNumbers();
-}
-
-// ════════════════════════════════
-// SAVE & DOWNLOAD
-// ════════════════════════════════
-function saveFile() {
-  var content = document.getElementById('code-editor').value;
-  // If in tab view, merge back
-  _currentContent = content;
-  localStorage.setItem(_SAVED_KEY, content);
-  _modified = false;
-  document.getElementById('tb-modified').style.display = 'none';
-  document.getElementById('sb-modified').textContent = 'Saved ✓';
-  document.getElementById('sb-modified').style.color = 'var(--success)';
-  buildSectionsList(content);
-  updateMeta(content);
-  toast('✅ File saved to browser storage!');
-}
-
-function downloadFile() {
-  var content  = document.getElementById('code-editor').value;
-  var filename = 'index_mobile_optimized.html';
-  var blob     = new Blob([content], { type: 'text/html;charset=utf-8' });
-  var a        = document.createElement('a');
-  a.href       = URL.createObjectURL(blob);
-  a.download   = filename;
-  a.click();
-  URL.revokeObjectURL(a.href);
-  toast('📥 Downloading: ' + filename);
-}
-
-// ════════════════════════════════
-// PROP TABS
-// ════════════════════════════════
-function switchPropTab(tab) {
-  ['quick','meta','snippets'].forEach(function(t) {
-    document.getElementById('ptab-' + t).classList.remove('active');
-    document.getElementById('pt-' + t).style.display = 'none';
+function filterDbTable() {
+  var q = document.getElementById('db-search').value.toLowerCase();
+  if (!q) { renderDbTableRows(_dbTableData, document.getElementById('db-table-sel').value); return; }
+  var filtered = _dbTableData.filter(function(row) {
+    return JSON.stringify(row).toLowerCase().includes(q);
   });
-  document.getElementById('ptab-' + tab).classList.add('active');
-  document.getElementById('pt-' + tab).style.display = 'block';
-  if (tab === 'meta') updateMeta(document.getElementById('code-editor').value);
+  renderDbTableRows(filtered, document.getElementById('db-table-sel').value);
 }
 
-// ════════════════════════════════
-// TOAST
-// ════════════════════════════════
+function showRowJson(idx) {
+  var row = _dbTableData[idx];
+  var json = JSON.stringify(row, null, 2);
+  // Simple modal-less display using alert for simplicity
+  var w = window.open('', '_blank', 'width=600,height=500');
+  w.document.write('<pre style="font-family:monospace;font-size:13px;padding:20px;background:#0a0a1a;color:#e0e0ff;min-height:100vh">' + json + '</pre>');
+}
+
+function exportTableCSV() {
+  var key = document.getElementById('db-table-sel').value;
+  if (!key || !_dbTableData.length) { toast('❌ Data select කරන්න', 'var(--danger)'); return; }
+  var keys = Object.keys(_dbTableData[0]||{});
+  var csv = keys.join(',') + '\n';
+  _dbTableData.forEach(function(row) {
+    csv += keys.map(function(k){ var v = row[k]; if(typeof v==='object') v=JSON.stringify(v); return '"'+String(v||'').replace(/"/g,'""')+'"'; }).join(',') + '\n';
+  });
+  downloadFile(csv, key + '-export.csv', 'text/csv');
+  toast('📥 CSV exported!');
+}
+
+// ════════════════════════════════════════
+//  BACKUP & RESTORE
+// ════════════════════════════════════════
+var _importData = null;
+
+function exportBackup() {
+  var db = getPosDb();
+  var fmt = document.getElementById('export-format').value;
+  var exportObj;
+  if (fmt === 'full') {
+    exportObj = db;
+  } else {
+    exportObj = {};
+    exportObj[fmt] = db[fmt] || [];
+  }
+  var json = JSON.stringify(exportObj, null, 2);
+  var fname = 'stpos-backup-' + fmt + '-' + new Date().toISOString().slice(0,10) + '.json';
+  downloadFile(json, fname, 'application/json');
+  toast('✅ Backup downloaded!');
+  // Save to history
+  var hist = JSON.parse(localStorage.getItem('st-backup-hist')||'[]');
+  hist.unshift({ name: fname, time: Date.now(), type: fmt, size: json.length });
+  hist = hist.slice(0, 10);
+  localStorage.setItem('st-backup-hist', JSON.stringify(hist));
+  renderBackupHistory();
+}
+
+function exportBackupCSVAll() {
+  var db = getPosDb();
+  var keys = ['products','invoices','repairs','orders','customers','expenses','staff'];
+  var combined = '';
+  keys.forEach(function(k) {
+    var rows = db[k] || [];
+    if (!rows.length) return;
+    combined += '=== ' + k.toUpperCase() + ' ===\n';
+    var ks = Object.keys(rows[0]||{});
+    combined += ks.join(',') + '\n';
+    rows.forEach(function(row) {
+      combined += ks.map(function(key){ var v=row[key]; if(typeof v==='object') v=JSON.stringify(v); return '"'+String(v||'').replace(/"/g,'""')+'"'; }).join(',') + '\n';
+    });
+    combined += '\n';
+  });
+  downloadFile(combined, 'stpos-all-data-' + new Date().toISOString().slice(0,10) + '.csv', 'text/csv');
+  toast('📋 All data CSV exported!');
+}
+
+function previewImport(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      _importData = JSON.parse(e.target.result);
+      var keys = Object.keys(_importData);
+      var preview = '✅ Valid JSON · Collections: ' + keys.join(', ');
+      document.getElementById('import-preview').textContent = preview;
+      document.getElementById('import-btn').disabled = false;
+    } catch(err) {
+      document.getElementById('import-preview').textContent = '❌ Invalid JSON file!';
+      _importData = null;
+      document.getElementById('import-btn').disabled = true;
+    }
+  };
+  reader.readAsText(file);
+}
+
+function importBackup() {
+  if (!_importData) { toast('❌ File select කරන්න', 'var(--danger)'); return; }
+  showConfirm('⚠️', 'Import Backup?', 'දැනට තිබෙන සියලු data replace වෙනවා. Continue?', function() {
+    // Save to localStorage (same key the POS uses)
+    localStorage.setItem('stpos-db', JSON.stringify(_importData));
+    window._posDb = _importData;
+    // Also push to Firebase if available
+    if (window.savePosDataToFB) {
+      savePosDataToFB(_importData);
+    }
+    toast('✅ Data imported successfully!');
+    refreshOverview();
+  });
+}
+
+function renderBackupHistory() {
+  var hist = JSON.parse(localStorage.getItem('st-backup-hist')||'[]');
+  var el = document.getElementById('backup-history');
+  el.innerHTML = hist.length ? hist.map(function(h) {
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">' +
+      '<div><div style="font-size:12px;font-weight:600">' + h.name + '</div>' +
+      '<div style="font-size:11px;color:var(--muted)">' + new Date(h.time).toLocaleString() + ' · ' + Math.round(h.size/1024) + ' KB</div></div>' +
+      '<span class="badge badge-primary">' + h.type + '</span></div>';
+  }).join('') : '<div style="color:var(--muted);font-size:13px">No backup history yet.</div>';
+}
+
+// ════════════════════════════════════════
+//  FIREBASE ACTIONS
+// ════════════════════════════════════════
+function manualFirebaseSync() {
+  var db = getPosDb();
+  if (!db || Object.keys(db).length === 0) {
+    toast('❌ Local data නෑ!', 'var(--danger)'); return;
+  }
+  if (window.savePosDataToFB) {
+    db._lastSync = Date.now();
+    savePosDataToFB(db, function(ok) {
+      if (ok) refreshOverview();
+    });
+  } else {
+    toast('⚠️ Firebase not loaded', 'var(--warning)');
+  }
+}
+
+function confirmClearCloud() {
+  showConfirm('🔥', 'Clear Cloud Data?', 'Firebase ලෙල සිිත cloud data permanently delete වෙනවා!', function() {
+    if (window.clearCloudData) clearCloudData();
+  });
+}
+
+// ════════════════════════════════════════
+//  ADMIN USERS
+// ════════════════════════════════════════
+function renderUserList() {
+  var users = getAdminUsers();
+  var el = document.getElementById('user-list');
+  el.innerHTML = users.map(function(u, i) {
+    var isCurrentUser = window._adminSession && window._adminSession.username === u.username;
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--card2);border-radius:9px;margin-bottom:8px">' +
+      '<div>' +
+        '<div style="font-size:13px;font-weight:700">' + (u.displayName||u.username) + (isCurrentUser ? ' <span style="color:var(--success);font-size:11px">(You)</span>' : '') + '</div>' +
+        '<div style="font-size:11px;color:var(--muted)">@' + u.username + ' · ' + u.role + ' · Created: ' + (u.created ? new Date(u.created).toLocaleDateString() : '—') + '</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:6px">' +
+        '<span class="badge ' + (u.role==='admin'?'badge-primary':'badge-info') + '">' + u.role + '</span>' +
+        (!isCurrentUser ? '<button class="btn btn-danger btn-sm" onclick="deleteAdminUser(' + i + ')">🗑️</button>' : '') +
+      '</div></div>';
+  }).join('');
+}
+
+function showAddUser() { document.getElementById('add-user-panel').style.display='block'; }
+function hideAddUser() { document.getElementById('add-user-panel').style.display='none'; }
+
+function addAdminUser() {
+  var username = document.getElementById('new-username').value.trim();
+  var displayName = document.getElementById('new-displayname').value.trim();
+  var password = document.getElementById('new-password').value;
+  var role = document.getElementById('new-role').value;
+  if (!username || !password) { toast('❌ Username සහ Password ඕනේ!', 'var(--danger)'); return; }
+  if (password.length < 8) { toast('❌ Password min 8 characters!', 'var(--danger)'); return; }
+  var users = getAdminUsers();
+  if (users.find(function(u){ return u.username===username; })) { toast('❌ Username already exists!', 'var(--danger)'); return; }
+  users.push({ username, password, displayName: displayName||username, role, created: Date.now() });
+  saveAdminUsers(users);
+  renderUserList();
+  hideAddUser();
+  toast('✅ User created!');
+  ['new-username','new-displayname','new-password'].forEach(function(id){ document.getElementById(id).value=''; });
+}
+
+function deleteAdminUser(idx) {
+  var users = getAdminUsers();
+  if (users.length <= 1) { toast('❌ At least one admin ඕනේ!', 'var(--danger)'); return; }
+  showConfirm('👤', 'Delete User?', '"' + users[idx].username + '" delete කරන්නද?', function() {
+    users.splice(idx, 1);
+    saveAdminUsers(users);
+    renderUserList();
+    toast('✅ User deleted!');
+  });
+}
+
+// ════════════════════════════════════════
+//  STAFF OVERVIEW
+// ════════════════════════════════════════
+function renderStaffAdmin() {
+  var db = getPosDb();
+  var staff = db.staff || [];
+  var active = staff.filter(function(s){ return s.status !== 'Inactive'; });
+  el('st-total', staff.length);
+  el('st-active', active.length);
+
+  var tbody = document.getElementById('staff-admin-tbl');
+  if (!tbody) return;
+  tbody.innerHTML = staff.length ? staff.map(function(s) {
+    return '<tr>' +
+      '<td><strong>' + (s.name||'—') + '</strong></td>' +
+      '<td>' + (s.role||'—') + '</td>' +
+      '<td>' + (s.phone||'—') + '</td>' +
+      '<td><span class="badge ' + (s.status==='Active'?'badge-success':'badge-warning') + '">' + (s.status||'Active') + '</span></td>' +
+      '<td>' + (s.commRate||0) + '%</td>' +
+      '<td>' + (s.joinDate||'—') + '</td>' +
+    '</tr>';
+  }).join('') : '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--muted)">No staff yet</td></tr>';
+
+  // Total commissions this month (simplified)
+  var invoices = db.invoices || [];
+  var now = new Date();
+  var monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  var totalComm = 0;
+  staff.forEach(function(s) {
+    var staffInvs = invoices.filter(function(inv){ return inv.staffId===s.id && new Date(inv.date||0)>=monthStart; });
+    var rev = staffInvs.reduce(function(a,inv){ return a+(inv.total||0); },0);
+    totalComm += rev * ((s.commRate||0)/100);
+  });
+  el('st-totalcomm', 'Rs. ' + Math.round(totalComm).toLocaleString());
+}
+
+// ════════════════════════════════════════
+//  ACTIVITY LOG
+// ════════════════════════════════════════
+function renderActivityAdmin() {
+  var db = getPosDb();
+  var log = (db.activityLog || []).slice().reverse();
+  var filter = document.getElementById('act-filter').value;
+  var search = (document.getElementById('act-search').value||'').toLowerCase();
+  if (filter) log = log.filter(function(e){ return e.type === filter; });
+  if (search) log = log.filter(function(e){ return JSON.stringify(e).toLowerCase().includes(search); });
+
+  var typeColors = { SALE:'var(--success)', PRODUCT:'var(--primary)', REPAIR:'var(--warning)', CUSTOMER:'var(--info)', SETTINGS:'var(--muted)', LOGIN:'var(--secondary)' };
+  var tbody = document.getElementById('act-tbl');
+  tbody.innerHTML = log.length ? log.slice(0, 200).map(function(e) {
+    var col = typeColors[e.type] || 'var(--muted)';
+    return '<tr>' +
+      '<td style="font-size:11px;white-space:nowrap">' + (e.time||'—') + '</td>' +
+      '<td><span class="badge" style="background:transparent;border:1px solid ' + col + ';color:' + col + '">' + (e.type||'—') + '</span></td>' +
+      '<td>' + (e.action||'—') + '</td>' +
+      '<td style="color:var(--muted);font-size:12px">' + (e.details||'') + '</td>' +
+      '<td style="font-size:12px;color:var(--muted)">' + (e.user||'—') + '</td>' +
+    '</tr>';
+  }).join('') : '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--muted)">No activity log entries</td></tr>';
+}
+
+function exportActivityCSV() {
+  var db = getPosDb();
+  var log = db.activityLog || [];
+  var csv = 'Time,Type,Action,Details,User\n';
+  log.forEach(function(e) {
+    csv += '"' + (e.time||'') + '","' + (e.type||'') + '","' + (e.action||'') + '","' + (e.details||'') + '","' + (e.user||'') + '"\n';
+  });
+  downloadFile(csv, 'activity-log-' + new Date().toISOString().slice(0,10) + '.csv', 'text/csv');
+  toast('📥 Activity log exported!');
+}
+
+function confirmClearActivity() {
+  showConfirm('📋', 'Clear Activity Log?', 'සියලු activity log entries delete වෙනවා!', function() {
+    var db = getPosDb();
+    db.activityLog = [];
+    window._posDb = db;
+    localStorage.setItem('stpos-db', JSON.stringify(db));
+    if (window.savePosDataToFB) savePosDataToFB(db);
+    renderActivityAdmin();
+    toast('✅ Activity log cleared!');
+  });
+}
+
+// ════════════════════════════════════════
+//  SHOP SETTINGS
+// ════════════════════════════════════════
+function loadShopSettings() {
+  var db = getPosDb();
+  var s = db.settings || {};
+  setVal('ss-name', s.shopName);
+  setVal('ss-phone', s.phone);
+  setVal('ss-email', s.email);
+  setVal('ss-wa', s.whatsapp);
+  setVal('ss-address', s.address);
+  setVal('ss-prefix', s.prefix);
+  setVal('ss-fb', s.fb);
+  setVal('ss-note', s.note);
+}
+
+function saveShopSettings() {
+  var db = getPosDb();
+  if (!db.settings) db.settings = {};
+  db.settings.shopName = getVal('ss-name');
+  db.settings.phone = getVal('ss-phone');
+  db.settings.email = getVal('ss-email');
+  db.settings.whatsapp = getVal('ss-wa');
+  db.settings.address = getVal('ss-address');
+  db.settings.prefix = getVal('ss-prefix');
+  db.settings.fb = getVal('ss-fb');
+  db.settings.note = getVal('ss-note');
+  window._posDb = db;
+  localStorage.setItem('stpos-db', JSON.stringify(db));
+  if (window.savePosDataToFB) savePosDataToFB(db);
+  toast('✅ Settings saved!');
+}
+
+function changeAdminPass() {
+  var oldPass = document.getElementById('sec-old-pass').value;
+  var newPass = document.getElementById('sec-new-pass').value;
+  var users = getAdminUsers();
+  var session = window._adminSession;
+  var userIdx = users.findIndex(function(u){ return u.username === (session && session.username); });
+  if (userIdx < 0) { toast('❌ Session error!', 'var(--danger)'); return; }
+  if (users[userIdx].password !== oldPass) { toast('❌ Old password incorrect!', 'var(--danger)'); return; }
+  if (newPass.length < 8) { toast('❌ Min 8 characters!', 'var(--danger)'); return; }
+  users[userIdx].password = newPass;
+  saveAdminUsers(users);
+  toast('✅ Password changed!');
+  document.getElementById('sec-old-pass').value = '';
+  document.getElementById('sec-new-pass').value = '';
+}
+
+function saveCashierPin() {
+  var pin = document.getElementById('ss-cashier-pin').value;
+  if (pin.length !== 4) { toast('❌ Exactly 4 digits ඕනේ!', 'var(--danger)'); return; }
+  var db = getPosDb();
+  if (!db.settings) db.settings = {};
+  db.settings.cashierPin = pin;
+  window._posDb = db;
+  localStorage.setItem('stpos-db', JSON.stringify(db));
+  if (window.savePosDataToFB) savePosDataToFB(db);
+  toast('✅ Cashier PIN saved!');
+}
+
+// ════════════════════════════════════════
+//  SYSTEM INFO
+// ════════════════════════════════════════
+function renderSystemInfo() {
+  // Browser info
+  document.getElementById('sys-browser').innerHTML = [
+    { label:'User Agent', val: navigator.userAgent.slice(0,60)+'...' },
+    { label:'Platform', val: navigator.platform },
+    { label:'Language', val: navigator.language },
+    { label:'Online', val: navigator.onLine ? '✅ Yes' : '❌ No' },
+    { label:'Cookies Enabled', val: navigator.cookieEnabled ? '✅ Yes' : '❌ No' },
+  ].map(function(item) {
+    return '<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px">' +
+      '<span style="color:var(--muted)">' + item.label + '</span>' +
+      '<span style="max-width:60%;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + item.val + '</span></div>';
+  }).join('');
+
+  // Storage
+  var lsSize = 0;
+  try { for (var k in localStorage) { if (localStorage.hasOwnProperty(k)) { lsSize += (localStorage[k].length + k.length) * 2; } } } catch(e){}
+  var db = getPosDb();
+  var dbSize = JSON.stringify(db||{}).length;
+  document.getElementById('sys-storage').innerHTML = [
+    { label:'localStorage Total', val: Math.round(lsSize/1024) + ' KB' },
+    { label:'POS Database Size', val: Math.round(dbSize/1024) + ' KB' },
+    { label:'localStorage Keys', val: localStorage.length },
+  ].map(function(item) {
+    return '<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px">' +
+      '<span style="color:var(--muted)">' + item.label + '</span>' +
+      '<span style="font-weight:700">' + item.val + '</span></div>';
+  }).join('') +
+  '<div style="margin-top:10px"><div class="pbar"><div class="pfill" style="width:' + Math.min(100, Math.round(lsSize/51200)) + '%;background:var(--primary)"></div></div>' +
+  '<div style="font-size:11px;color:var(--muted);margin-top:4px">' + Math.round(lsSize/1024) + ' KB / ~5 MB (estimated)</div></div>';
+
+  // App info
+  document.getElementById('sys-app-info').innerHTML = [
+    { label:'App Name', val: 'ST Mobile & Designing POS' },
+    { label:'Version', val: 'v28/v29' },
+    { label:'Firebase Project', val: window._fbConfig ? window._fbConfig.projectId : '—' },
+    { label:'Admin Panel Version', val: '1.0' },
+    { label:'Current Time', val: new Date().toLocaleString() },
+    { label:'Session User', val: window._adminSession ? window._adminSession.username : '—' },
+  ].map(function(item) {
+    return '<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px">' +
+      '<span style="color:var(--muted)">' + item.label + '</span>' +
+      '<span style="font-weight:600">' + item.val + '</span></div>';
+  }).join('');
+}
+
+// ════════════════════════════════════════
+//  DANGER ZONE
+// ════════════════════════════════════════
+function dangerDelete(collection) {
+  showConfirm('🗑️', 'Delete ' + collection + '?', 'සියලු ' + collection + ' permanently delete වෙනවා! Undo කළ නොහෙකිව!', function() {
+    var db = getPosDb();
+    db[collection] = [];
+    window._posDb = db;
+    localStorage.setItem('stpos-db', JSON.stringify(db));
+    if (window.savePosDataToFB) savePosDataToFB(db);
+    toast('✅ ' + collection + ' cleared!');
+    refreshOverview();
+  });
+}
+
+function dangerFullReset() {
+  showConfirm('💀', 'FULL SYSTEM RESET', 'සියලු data — products, invoices, repairs, customers, orders, staff, settings — EVERYTHING permanently delete වෙනවා! Firebase cloud data ද clear වෙනවා!', function() {
+    var emptyDb = {
+      products:[], invoices:[], repairs:[], orders:[], customers:[], expenses:[], suppliers:[],
+      staff:[], shifts:[], tasks:[], followups:[], credits:[], activityLog:[], loyaltyLog:[],
+      settings:{ shopName:'ST Mobile & Designing' }
+    };
+    window._posDb = emptyDb;
+    localStorage.setItem('stpos-db', JSON.stringify(emptyDb));
+    if (window.savePosDataToFB) savePosDataToFB(emptyDb);
+    if (window.clearCloudData) clearCloudData();
+    toast('⚠️ Full reset complete!', 'var(--danger)');
+    refreshOverview();
+  });
+}
+
+// ════════════════════════════════════════
+//  UTILITIES
+// ════════════════════════════════════════
+function el(id, val) { var e = document.getElementById(id); if (e) e.textContent = val; }
+function setVal(id, val) { var e = document.getElementById(id); if (e) e.value = val || ''; }
+function getVal(id) { var e = document.getElementById(id); return e ? e.value.trim() : ''; }
+
+function downloadFile(content, filename, type) {
+  var blob = new Blob([content], { type });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+}
+
 var _toastTimer;
 function toast(msg, color) {
   var t = document.getElementById('toast');
@@ -1250,25 +1537,42 @@ function toast(msg, color) {
   t.style.borderColor = color || 'var(--primary)';
   t.style.display = 'block';
   clearTimeout(_toastTimer);
-  _toastTimer = setTimeout(function(){ t.style.display = 'none'; }, 3500);
+  _toastTimer = setTimeout(function(){ t.style.display='none'; }, 3500);
 }
 
-// ════════════════════════════════
-// KEYBOARD SHORTCUTS
-// ════════════════════════════════
+var _confirmCallback = null;
+function showConfirm(icon, title, msg, callback) {
+  document.getElementById('confirm-icon').textContent = icon;
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-msg').textContent = msg;
+  _confirmCallback = callback;
+  document.getElementById('confirm-modal').classList.add('open');
+  document.getElementById('confirm-yes-btn').onclick = function() {
+    closeConfirm();
+    if (_confirmCallback) _confirmCallback();
+  };
+}
+function closeConfirm() { document.getElementById('confirm-modal').classList.remove('open'); }
+
+// Clock
+setInterval(function() {
+  var el = document.getElementById('adm-clock');
+  if (el) el.textContent = new Date().toLocaleTimeString();
+}, 1000);
+
+// Init backup history on load
+setTimeout(renderBackupHistory, 500);
+
+// ════════════════════════════════════════
+//  KEYBOARD SHORTCUTS
+// ════════════════════════════════════════
 document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') {
-    document.getElementById('fr-panel').classList.remove('open');
-  }
-  if (e.key === 'Enter' && document.getElementById('login-screen').style.display !== 'none') {
-    doLogin();
-  }
+  if (e.key === 'Escape') { closeConfirm(); }
+  if (e.key === 'Enter' && document.getElementById('login-screen').style.display !== 'none') { doLogin(); }
 });
 
-// Auto-refresh line numbers on resize
-window.addEventListener('resize', updateLineNumbers);
-
-console.log('✅ ST Mobile Index Editor loaded');
+console.log('✅ ST Mobile Admin Panel loaded');
 </script>
+
 </body>
 </html>
