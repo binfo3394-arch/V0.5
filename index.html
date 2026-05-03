@@ -5979,6 +5979,9 @@ if(!db.tasks) db.tasks = [];
 if(!db.rosterShifts) db.rosterShifts = [];
 if(!db.referrals) db.referrals = [];
 if(!db.timerLogs) db.timerLogs = [];
+if(!db.investors)        db.investors        = [];
+if(!db.investorTx)       db.investorTx       = [];
+if(!db.investorPayouts)  db.investorPayouts  = [];
 if(!db.settings.openChecklist) db.settings.openChecklist = ['Unlock shop','Turn on lights','Boot computer','Count opening cash','Check repairs due today','Check low stock'];
 if(!db.settings.closeChecklist) db.settings.closeChecklist = ['Count cash','Close register','Back up data','Set alarm','Lock shop','Send daily summary'];
 if(!db.invDesign) db.invDesign = { template:'classic', color:'#6c63ff', footer:'Thank you for choosing ST Mobile!', showQr:false };
@@ -6261,6 +6264,9 @@ function init() {
       if (cloudData.taxProfiles)   db.taxProfiles   = _fbArr(cloudData.taxProfiles);
       if (cloudData.stockTransfers)db.stockTransfers= _fbArr(cloudData.stockTransfers);
       if (cloudData.widgetPrefs)   db.widgetPrefs   = cloudData.widgetPrefs;
+      if (cloudData.investors)       db.investors       = _fbArr(cloudData.investors);
+      if (cloudData.investorTx)      db.investorTx      = _fbArr(cloudData.investorTx);
+      if (cloudData.investorPayouts) db.investorPayouts = _fbArr(cloudData.investorPayouts);
       // Sync to SQLite for local queries
       renderAll();
       applyTheme(db.settings.theme || '#6c63ff');
@@ -12614,11 +12620,6 @@ console.log('✅ V28 Upgrade loaded — Purchase Orders, Multi-Branch, VAT, Adva
 // ============================================================
 // INVESTOR MANAGEMENT — v29
 // ============================================================
-
-// ── DB init ──
-if (!db.investors)       db.investors = [];
-if (!db.investorTx)      db.investorTx = [];
-if (!db.investorPayouts) db.investorPayouts = [];
 
 // ── Helpers ──
 function fmtRs(n){ return 'Rs. ' + Number(n||0).toLocaleString('en-LK', {minimumFractionDigits:2, maximumFractionDigits:2}); }
