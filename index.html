@@ -108,6 +108,9 @@
       investors:        dbObj.investors        || [],
       investorTx:       dbObj.investorTx       || [],
       investorPayouts:  dbObj.investorPayouts  || [],
+      sharePriceHistory:dbObj.sharePriceHistory|| [],
+      dividends:        dbObj.dividends        || [],
+      secondaryTrades:  dbObj.secondaryTrades  || [],
       _lastSync:  Date.now()
     };
     set(ref(database, 'pos-data'), payload)
@@ -175,6 +178,9 @@
       if (remote.investors)        db.investors        = _fbArr(remote.investors);
       if (remote.investorTx)       db.investorTx       = _fbArr(remote.investorTx);
       if (remote.investorPayouts)  db.investorPayouts  = _fbArr(remote.investorPayouts);
+      if (remote.sharePriceHistory)db.sharePriceHistory= _fbArr(remote.sharePriceHistory);
+      if (remote.dividends)        db.dividends        = _fbArr(remote.dividends);
+      if (remote.secondaryTrades)  db.secondaryTrades  = _fbArr(remote.secondaryTrades);
       renderAll();
       setFBStatus('\uD83D\uDD04 Live synced', 'var(--info)');
     }, function(error){ console.error('Firebase listener error:', error); });
@@ -2382,55 +2388,86 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
       <!-- ===================== INVESTOR MANAGEMENT ===================== -->
       <div id="pg-investors" class="page">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
-          <div class="estitle">💼 Investor Management</div>
+          <div class="estitle">📈 Investor Management</div>
           <div style="display:flex;gap:6px;flex-wrap:wrap">
-            <button class="btn bo bsm" onclick="openInvestorReport()">📊 Monthly Report</button>
+            <button class="btn bo bsm" onclick="openSharePriceModal()">💹 Update Share Price</button>
+            <button class="btn bs2 bsm" onclick="openDividendModal()">💰 Declare Dividend</button>
+            <button class="btn bo bsm" onclick="openInvestorReport()">📊 Report</button>
             <button class="btn bp2" onclick="openInvestorModal()">➕ Add Investor</button>
           </div>
         </div>
 
         <!-- Stats -->
         <div class="sgrid" style="margin-bottom:16px">
-          <div class="scard s1"><div style="font-size:22px">💼</div><div class="sval" id="inv-total-invested">Rs. 0</div><div class="slabel">Total Invested</div></div>
-          <div class="scard s2"><div style="font-size:22px">👥</div><div class="sval" id="inv-count">0</div><div class="slabel">Active Investors</div></div>
-          <div class="scard s3"><div style="font-size:22px">💸</div><div class="sval" id="inv-total-payout">Rs. 0</div><div class="slabel">Total Paid Out (8%/mo)</div></div>
-          <div class="scard s4"><div style="font-size:22px">⏳</div><div class="sval" id="inv-pending-payout">Rs. 0</div><div class="slabel">This Month Pending</div></div>
+          <div class="scard s1"><div style="font-size:22px">📊</div><div class="sval" id="inv-total-shares">0</div><div class="slabel">Total Shares Issued</div></div>
+          <div class="scard s2"><div style="font-size:22px">💹</div><div class="sval" id="inv-share-price">Rs. 0.00</div><div class="slabel">Current Share Price</div></div>
+          <div class="scard s3"><div style="font-size:22px">💼</div><div class="sval" id="inv-market-cap">Rs. 0</div><div class="slabel">Total Market Value</div></div>
+          <div class="scard s4"><div style="font-size:22px">👥</div><div class="sval" id="inv-count">0</div><div class="slabel">Active Investors</div></div>
         </div>
 
-        <!-- Investor Table -->
+        <!-- Share Price History -->
+        <div class="tcard" style="margin-bottom:16px">
+          <div class="thead2"><h3>💹 Share Price History</h3><span id="inv-price-change" style="font-size:13px;font-weight:600"></span></div>
+          <div style="padding:10px 14px;overflow-x:auto">
+            <table style="min-width:500px"><thead><tr>
+              <th>Date</th><th>Price (Rs.)</th><th>Change</th><th>Changed By</th><th>Note</th>
+            </tr></thead><tbody id="inv-price-tbl"></tbody></table>
+          </div>
+        </div>
+
+        <!-- Investor Holdings Table -->
         <div class="tcard" style="margin-bottom:16px">
           <div class="thead2">
-            <h3>💼 Investors</h3>
+            <h3>💼 Investor Holdings</h3>
             <input id="inv-q" placeholder="🔍 Search investor..." oninput="renderInvestors()" style="font-size:12px;padding:5px 10px;width:180px;border-radius:7px;background:var(--card2);border:1px solid var(--border);color:var(--text)">
           </div>
-          <table><thead><tr>
-            <th>Investor Name</th><th>Phone</th><th>Type</th><th>Invested Amount</th><th>Monthly Contribution</th><th>Total Invested</th><th>8% Monthly (Due)</th><th>Total Paid</th><th>Status</th><th>Actions</th>
+          <div style="overflow-x:auto">
+          <table style="min-width:700px"><thead><tr>
+            <th>Investor Name</th><th>Phone</th><th>Shares Held</th><th>Avg Buy Price</th><th>Current Value</th><th>Gain/Loss</th><th>Dividends Received</th><th>Status</th><th>Actions</th>
           </tr></thead><tbody id="inv-tbl"></tbody></table>
+          </div>
+        </div>
+
+        <!-- Secondary Market Trades -->
+        <div class="tcard" style="margin-bottom:16px">
+          <div class="thead2">
+            <h3>🔄 Secondary Market Trades</h3>
+            <button class="btn bs2 bsm" onclick="openSecondaryTradeModal()">🔄 Record Trade</button>
+          </div>
+          <div style="overflow-x:auto">
+          <table style="min-width:600px"><thead><tr>
+            <th>Date</th><th>Seller</th><th>Buyer</th><th>Shares</th><th>Price/Share</th><th>Total Value</th><th>Note</th>
+          </tr></thead><tbody id="inv-trade-tbl"></tbody></table>
+          </div>
+        </div>
+
+        <!-- Dividend History -->
+        <div class="tcard" style="margin-bottom:16px">
+          <div class="thead2"><h3>💰 Dividend History</h3></div>
+          <div style="overflow-x:auto">
+          <table style="min-width:600px"><thead><tr>
+            <th>Declared Date</th><th>Per Share (Rs.)</th><th>Total Payout</th><th>Reason / Note</th><th>Status</th><th>Actions</th>
+          </tr></thead><tbody id="inv-div-tbl"></tbody></table>
+          </div>
         </div>
 
         <!-- Investment Transactions -->
         <div class="tcard" style="margin-bottom:16px">
           <div class="thead2">
-            <h3>💳 Investment Transactions</h3>
+            <h3>💳 All Transactions</h3>
             <select id="inv-tx-filter" onchange="renderInvTransactions()" style="font-size:12px;padding:5px 8px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:7px">
               <option value="">All Investors</option>
             </select>
           </div>
-          <table><thead><tr>
-            <th>Date</th><th>Investor</th><th>Type</th><th>Amount</th><th>Note</th>
+          <div style="overflow-x:auto">
+          <table style="min-width:600px"><thead><tr>
+            <th>Date</th><th>Investor</th><th>Type</th><th>Shares</th><th>Price</th><th>Amount</th><th>Note</th>
           </tr></thead><tbody id="inv-tx-tbl"></tbody></table>
-        </div>
-
-        <!-- Monthly Payout Panel -->
-        <div class="tcard">
-          <div class="thead2"><h3>📅 Monthly Payout Tracker</h3><button class="btn bs2 bsm" onclick="generateMonthlyPayouts()">🔄 Generate This Month</button></div>
-          <table><thead><tr>
-            <th>Month</th><th>Investor</th><th>Invested</th><th>8% Due</th><th>Status</th><th>Actions</th>
-          </tr></thead><tbody id="inv-payout-tbl"></tbody></table>
+          </div>
         </div>
       </div>
 
-      <!-- INVESTOR MODAL -->
+      <!-- ADD INVESTOR MODAL -->
       <div class="moverlay" id="m-investor">
         <div class="modal" style="width:560px">
           <div class="mhdr"><h3 id="inv-modal-title">➕ Add Investor</h3><button class="xbtn" onclick="closeM('m-investor')">×</button></div>
@@ -2440,18 +2477,13 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
               <div class="fg"><label>Phone Number</label><input id="inv-phone" placeholder="+94 77 123 4567" type="tel"></div>
               <div class="fg"><label>NIC / ID</label><input id="inv-nic" placeholder="200012345678V"></div>
               <div class="fg"><label>Email</label><input id="inv-email" placeholder="investor@email.com" type="email"></div>
-              <div class="fg full"><label>Investment Type *</label>
-                <select id="inv-type" onchange="toggleInvType()">
-                  <option value="lump">💰 One-time Lump Sum</option>
-                  <option value="monthly">📅 Monthly Contribution</option>
-                  <option value="both">🔀 Both (Lump + Monthly)</option>
-                </select>
-              </div>
-              <div class="fg" id="inv-lump-row"><label>Lump Sum Amount (Rs.) *</label><input id="inv-lump" type="number" placeholder="0" min="0"></div>
-              <div class="fg" id="inv-monthly-row" style="display:none"><label>Monthly Contribution (Rs.)</label><input id="inv-monthly-amt" type="number" placeholder="0" min="0"></div>
-              <div class="fg"><label>Start Date *</label><input id="inv-start" type="date"></div>
-              <div class="fg"><label>Profit Share %</label><input id="inv-rate" type="number" value="8" min="1" max="100" step="0.5"></div>
+              <div class="fg"><label>Shares to Issue *</label><input id="inv-shares" type="number" placeholder="e.g. 100" min="1" step="1"></div>
+              <div class="fg"><label>Price Per Share (Rs.) *</label><input id="inv-buy-price" type="number" placeholder="e.g. 1000" min="0" step="0.01"></div>
+              <div class="fg"><label>Purchase Date *</label><input id="inv-start" type="date"></div>
               <div class="fg full"><label>Notes</label><textarea id="inv-notes" rows="2" placeholder="Agreement details, bank info, etc..."></textarea></div>
+            </div>
+            <div style="background:rgba(108,99,255,0.08);border:1px solid rgba(108,99,255,0.25);border-radius:9px;padding:12px;margin-top:8px;font-size:13px">
+              💡 <strong>Total Investment:</strong> <span id="inv-total-calc">Rs. 0.00</span>
             </div>
           </div>
           <div class="mftr">
@@ -2461,35 +2493,86 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
         </div>
       </div>
 
-      <!-- ADD TRANSACTION MODAL -->
-      <div class="moverlay" id="m-inv-tx">
-        <div class="modal" style="width:440px">
-          <div class="mhdr"><h3>💳 Add Transaction</h3><button class="xbtn" onclick="closeM('m-inv-tx')">×</button></div>
+      <!-- UPDATE SHARE PRICE MODAL -->
+      <div class="moverlay" id="m-share-price">
+        <div class="modal" style="width:420px">
+          <div class="mhdr"><h3>💹 Update Share Price</h3><button class="xbtn" onclick="closeM('m-share-price')">×</button></div>
           <div class="mbody">
-            <div class="fg"><label>Investor</label><select id="inv-tx-investor" style="width:100%"></select></div>
-            <div class="fg"><label>Transaction Type</label>
-              <select id="inv-tx-type">
-                <option value="investment">💰 New Investment (Add to principal)</option>
-                <option value="monthly_contrib">📅 Monthly Contribution</option>
-                <option value="payout">💸 Profit Payout (8%)</option>
-                <option value="withdrawal">📤 Withdrawal</option>
-              </select>
+            <div style="background:var(--card2);border-radius:9px;padding:12px;margin-bottom:14px;font-size:13px">
+              Current Price: <strong id="sp-current" style="color:var(--primary)">Rs. 0.00</strong>
             </div>
-            <div class="fg"><label>Amount (Rs.) *</label><input id="inv-tx-amount" type="number" placeholder="0" min="0"></div>
-            <div class="fg"><label>Date</label><input id="inv-tx-date" type="date"></div>
-            <div class="fg"><label>Note</label><input id="inv-tx-note" placeholder="Payment reference, bank transfer ID..."></div>
+            <div class="fg"><label>New Share Price (Rs.) *</label><input id="sp-new-price" type="number" placeholder="Enter new price" min="0" step="0.01" oninput="calcPriceChange()"></div>
+            <div id="sp-change-preview" style="font-size:13px;margin:8px 0;min-height:20px"></div>
+            <div class="fg"><label>Effective Date</label><input id="sp-date" type="date"></div>
+            <div class="fg"><label>Updated By</label><input id="sp-by" placeholder="e.g. Owner Name"></div>
+            <div class="fg"><label>Note / Reason</label><input id="sp-note" placeholder="e.g. End of Q1, business growth..."></div>
           </div>
           <div class="mftr">
-            <button class="btn bo" onclick="closeM('m-inv-tx')">Cancel</button>
-            <button class="btn bp2" onclick="saveInvTransaction()">✅ Save</button>
+            <button class="btn bo" onclick="closeM('m-share-price')">Cancel</button>
+            <button class="btn bp2" onclick="saveSharePrice()">✅ Update Price</button>
           </div>
         </div>
       </div>
 
-      <!-- MONTHLY REPORT MODAL -->
+      <!-- DECLARE DIVIDEND MODAL -->
+      <div class="moverlay" id="m-dividend">
+        <div class="modal" style="width:480px">
+          <div class="mhdr"><h3>💰 Declare Dividend</h3><button class="xbtn" onclick="closeM('m-dividend')">×</button></div>
+          <div class="mbody">
+            <div style="background:var(--card2);border-radius:9px;padding:12px;margin-bottom:14px;font-size:13px">
+              Total Shares Issued: <strong id="div-total-shares" style="color:var(--primary)">0</strong>
+            </div>
+            <div class="fg"><label>Dividend Per Share (Rs.) *</label><input id="div-per-share" type="number" placeholder="e.g. 50.00" min="0" step="0.01" oninput="calcDividendTotal()"></div>
+            <div id="div-total-preview" style="font-size:13px;background:rgba(0,230,118,0.08);border:1px solid rgba(0,230,118,0.2);border-radius:8px;padding:10px;margin:8px 0;display:none">
+              📊 Total Payout: <strong id="div-total-amt" style="color:var(--success)">Rs. 0.00</strong>
+            </div>
+            <div class="fg"><label>Declaration Date</label><input id="div-date" type="date"></div>
+            <div class="fg"><label>Reason / Note</label><input id="div-note" placeholder="e.g. Q4 Profit Share, Annual Dividend..."></div>
+          </div>
+          <div class="mftr">
+            <button class="btn bo" onclick="closeM('m-dividend')">Cancel</button>
+            <button class="btn bs2" onclick="saveDividend()">💰 Declare & Issue</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECONDARY MARKET TRADE MODAL -->
+      <div class="moverlay" id="m-sec-trade">
+        <div class="modal" style="width:480px">
+          <div class="mhdr"><h3>🔄 Record Secondary Trade</h3><button class="xbtn" onclick="closeM('m-sec-trade')">×</button></div>
+          <div class="mbody">
+            <div style="background:rgba(255,171,0,0.08);border:1px solid rgba(255,171,0,0.2);border-radius:9px;padding:11px;margin-bottom:14px;font-size:12px;color:var(--warning)">
+              ⚠️ Investor-to-investor share transfer. Share count remains the same; only ownership changes.
+            </div>
+            <div class="fg"><label>Seller (From Investor) *</label><select id="trade-seller" onchange="updateSellerShares()" style="width:100%"><option value="">-- Select Seller --</option></select></div>
+            <div id="trade-seller-shares" style="font-size:12px;color:var(--muted);margin:-10px 0 10px 4px"></div>
+            <div class="fg"><label>Buyer *</label>
+              <select id="trade-buyer-type" onchange="toggleBuyerType()" style="width:100%;margin-bottom:6px">
+                <option value="existing">Existing Investor</option>
+                <option value="new">New Buyer (Enter name)</option>
+              </select>
+              <select id="trade-buyer-existing" style="width:100%"><option value="">-- Select Buyer --</option></select>
+              <input id="trade-buyer-new" placeholder="New buyer name" style="display:none;width:100%;margin-top:6px;padding:8px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:7px">
+            </div>
+            <div class="fg"><label>Number of Shares *</label><input id="trade-shares" type="number" placeholder="0" min="1" step="1" oninput="calcTradeTotal()"></div>
+            <div class="fg"><label>Price Per Share (Rs.) *</label><input id="trade-price" type="number" placeholder="0" min="0" step="0.01" oninput="calcTradeTotal()"></div>
+            <div id="trade-total-preview" style="font-size:13px;background:rgba(108,99,255,0.08);border:1px solid rgba(108,99,255,0.2);border-radius:8px;padding:10px;margin:6px 0;display:none">
+              💰 Trade Value: <strong id="trade-total-val" style="color:var(--primary)">Rs. 0.00</strong>
+            </div>
+            <div class="fg"><label>Trade Date</label><input id="trade-date" type="date"></div>
+            <div class="fg"><label>Note</label><input id="trade-note" placeholder="Optional note..."></div>
+          </div>
+          <div class="mftr">
+            <button class="btn bo" onclick="closeM('m-sec-trade')">Cancel</button>
+            <button class="btn bp2" onclick="saveSecondaryTrade()">✅ Record Trade</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- INVESTOR REPORT MODAL -->
       <div class="moverlay" id="m-inv-report">
-        <div class="modal" style="width:600px">
-          <div class="mhdr"><h3>📊 Monthly Investor Report</h3><button class="xbtn" onclick="closeM('m-inv-report')">×</button></div>
+        <div class="modal" style="width:640px">
+          <div class="mhdr"><h3>📊 Investor Report</h3><button class="xbtn" onclick="closeM('m-inv-report')">×</button></div>
           <div class="mbody" id="inv-report-body"></div>
           <div class="mftr">
             <button class="btn bo" onclick="closeM('m-inv-report')">Close</button>
@@ -6264,9 +6347,12 @@ function init() {
       if (cloudData.taxProfiles)   db.taxProfiles   = _fbArr(cloudData.taxProfiles);
       if (cloudData.stockTransfers)db.stockTransfers= _fbArr(cloudData.stockTransfers);
       if (cloudData.widgetPrefs)   db.widgetPrefs   = cloudData.widgetPrefs;
-      if (cloudData.investors)       db.investors       = _fbArr(cloudData.investors);
-      if (cloudData.investorTx)      db.investorTx      = _fbArr(cloudData.investorTx);
-      if (cloudData.investorPayouts) db.investorPayouts = _fbArr(cloudData.investorPayouts);
+      if (cloudData.investors)        db.investors        = _fbArr(cloudData.investors);
+      if (cloudData.investorTx)       db.investorTx       = _fbArr(cloudData.investorTx);
+      if (cloudData.investorPayouts)  db.investorPayouts  = _fbArr(cloudData.investorPayouts);
+      if (cloudData.sharePriceHistory)db.sharePriceHistory= _fbArr(cloudData.sharePriceHistory);
+      if (cloudData.dividends)        db.dividends        = _fbArr(cloudData.dividends);
+      if (cloudData.secondaryTrades)  db.secondaryTrades  = _fbArr(cloudData.secondaryTrades);
       // Sync to SQLite for local queries
       renderAll();
       applyTheme(db.settings.theme || '#6c63ff');
@@ -12618,7 +12704,7 @@ goPage = function(id) {
 console.log('✅ V28 Upgrade loaded — Purchase Orders, Multi-Branch, VAT, Advanced Reports, Dashboard Builder');
 
 // ============================================================
-// INVESTOR MANAGEMENT — v29
+// INVESTOR MANAGEMENT — v30 (Share/Quota Based)
 // ============================================================
 
 // ── Helpers ──
@@ -12627,79 +12713,211 @@ function fmtDate(d){ if(!d) return '—'; var dt = new Date(d); return dt.toLoca
 function todayStr(){ return new Date().toISOString().split('T')[0]; }
 function thisMonthKey(){ var d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1).toString().padStart(2,'0'); }
 
-// ── Get total invested for an investor (lump + all monthly_contrib tx) ──
-function investorTotalInvested(inv) {
-  var base = Number(inv.lump || 0);
-  var monthly = (db.investorTx||[]).filter(function(t){ return t.invId===inv.id && t.type==='monthly_contrib'; }).reduce(function(s,t){ return s+Number(t.amount||0); }, 0);
-  return base + monthly;
+// ── DB init ──
+function invDbInit(){
+  if(!db.investors)         db.investors=[];
+  if(!db.investorTx)        db.investorTx=[];
+  if(!db.sharePriceHistory) db.sharePriceHistory=[];
+  if(!db.dividends)         db.dividends=[];
+  if(!db.secondaryTrades)   db.secondaryTrades=[];
+  // Legacy compat — keep these so Firebase load doesn't break
+  if(!db.investorPayouts)   db.investorPayouts=[];
 }
 
-// ── 8% monthly due ──
-function investorMonthlyDue(inv) {
-  return investorTotalInvested(inv) * (Number(inv.rate||8) / 100);
+// ── Current share price ──
+function currentSharePrice(){
+  invDbInit();
+  if(!db.sharePriceHistory.length) return 0;
+  var sorted = db.sharePriceHistory.slice().sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
+  return Number(sorted[0].price||0);
 }
 
-// ── Total paid out ──
-function investorTotalPaid(inv) {
-  return (db.investorTx||[]).filter(function(t){ return t.invId===inv.id && t.type==='payout'; }).reduce(function(s,t){ return s+Number(t.amount||0); }, 0);
+// ── Shares held by an investor (considering secondary trades) ──
+function investorSharesHeld(inv){
+  var base = Number(inv.shares||0);
+  // Shares received in secondary trades
+  var received = (db.secondaryTrades||[]).filter(function(t){ return t.buyerId===inv.id; }).reduce(function(s,t){ return s+Number(t.shares||0); },0);
+  // Shares sold in secondary trades
+  var sold = (db.secondaryTrades||[]).filter(function(t){ return t.sellerId===inv.id; }).reduce(function(s,t){ return s+Number(t.shares||0); },0);
+  return base + received - sold;
 }
 
-// ── Render Investors ──
-function renderInvestors() {
-  if(!db.investors) db.investors=[];
-  if(!db.investorTx) db.investorTx=[];
-
-  // Stats
-  var totalInv=0, totalPaid=0, pendingPay=0, mKey=thisMonthKey();
-  db.investors.forEach(function(inv){
-    if(inv.status==='inactive') return;
-    totalInv += investorTotalInvested(inv);
-    totalPaid += investorTotalPaid(inv);
-    var due = investorMonthlyDue(inv);
-    var paidThisMonth = (db.investorPayouts||[]).filter(function(p){ return p.invId===inv.id && p.month===mKey && p.status==='paid'; }).length > 0;
-    if(!paidThisMonth) pendingPay += due;
+// ── Weighted average buy price ──
+function investorAvgBuyPrice(inv){
+  var baseShares = Number(inv.shares||0);
+  var basePrice  = Number(inv.buyPrice||0);
+  var cost = baseShares * basePrice;
+  var totalShares = baseShares;
+  // Secondary trades where this investor bought
+  (db.secondaryTrades||[]).filter(function(t){ return t.buyerId===inv.id; }).forEach(function(t){
+    cost += Number(t.shares||0) * Number(t.pricePerShare||0);
+    totalShares += Number(t.shares||0);
   });
-  var el=function(id){return document.getElementById(id);};
-  if(el('inv-total-invested')) el('inv-total-invested').textContent = fmtRs(totalInv);
-  if(el('inv-count')) el('inv-count').textContent = db.investors.filter(function(i){return i.status!=='inactive';}).length;
-  if(el('inv-total-payout')) el('inv-total-payout').textContent = fmtRs(totalPaid);
-  if(el('inv-pending-payout')) el('inv-pending-payout').textContent = fmtRs(pendingPay);
+  // Secondary trades where this investor sold (reduce cost basis)
+  (db.secondaryTrades||[]).filter(function(t){ return t.sellerId===inv.id; }).forEach(function(t){
+    var avgSoFar = totalShares>0 ? cost/totalShares : 0;
+    cost -= Number(t.shares||0) * avgSoFar;
+    totalShares -= Number(t.shares||0);
+  });
+  return totalShares>0 ? cost/totalShares : 0;
+}
 
-  // Table
+// ── Total dividends received ──
+function investorDividendsReceived(inv){
+  var total = 0;
+  (db.dividends||[]).filter(function(d){ return d.status==='paid'; }).forEach(function(div){
+    var shares = investorSharesHeldAt(inv, div.date);
+    total += shares * Number(div.perShare||0);
+  });
+  return total;
+}
+
+// Shares held at a specific date (approximate — uses current minus future trades)
+function investorSharesHeldAt(inv, dateStr){
+  var base = Number(inv.shares||0);
+  var received = (db.secondaryTrades||[]).filter(function(t){ return t.buyerId===inv.id && (t.date||'')<=dateStr; }).reduce(function(s,t){ return s+Number(t.shares||0); },0);
+  var sold = (db.secondaryTrades||[]).filter(function(t){ return t.sellerId===inv.id && (t.date||'')<=dateStr; }).reduce(function(s,t){ return s+Number(t.shares||0); },0);
+  return base + received - sold;
+}
+
+// ── Total shares issued ──
+function totalSharesIssued(){
+  return (db.investors||[]).filter(function(i){ return i.status!=='inactive'; }).reduce(function(s,i){ return s + investorSharesHeld(i); }, 0);
+}
+
+// ── Render All Investors ──
+function renderInvestors() {
+  invDbInit();
+  var el=function(id){ return document.getElementById(id); };
+  var curPrice = currentSharePrice();
+  var totShares = totalSharesIssued();
+  var activeCount = (db.investors||[]).filter(function(i){ return i.status!=='inactive'; }).length;
+
+  if(el('inv-total-shares'))  el('inv-total-shares').textContent = totShares.toLocaleString();
+  if(el('inv-share-price'))   el('inv-share-price').textContent = fmtRs(curPrice);
+  if(el('inv-market-cap'))    el('inv-market-cap').textContent = fmtRs(totShares * curPrice);
+  if(el('inv-count'))         el('inv-count').textContent = activeCount;
+
+  // Share price history
+  renderSharePriceHistory();
+
+  // Holdings table
   var q = (el('inv-q')||{}).value||'';
-  var list = db.investors.filter(function(i){ return !q || i.name.toLowerCase().includes(q.toLowerCase()) || (i.phone||'').includes(q); });
+  var list = (db.investors||[]).filter(function(i){ return !q || i.name.toLowerCase().includes(q.toLowerCase()) || (i.phone||'').includes(q); });
   var tbody = el('inv-tbl');
-  if(!tbody) return;
-  if(!list.length){ tbody.innerHTML='<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:24px">No investors yet. Add your first investor!</td></tr>'; }
-  else {
-    tbody.innerHTML = list.map(function(inv){
-      var total = investorTotalInvested(inv);
-      var due = investorMonthlyDue(inv);
-      var paid = investorTotalPaid(inv);
-      var typeLabel = inv.type==='lump'?'💰 Lump Sum': inv.type==='monthly'?'📅 Monthly': '🔀 Both';
-      var statusBadge = inv.status==='inactive'?'<span class="badge bd">Inactive</span>':'<span class="badge bs">Active</span>';
-      return '<tr>'+
-        '<td><strong>'+inv.name+'</strong><br><span style="font-size:10px;color:var(--muted)">'+( inv.nic||'')+'</span></td>'+
-        '<td>'+(inv.phone||'—')+'</td>'+
-        '<td>'+typeLabel+'</td>'+
-        '<td><strong>'+fmtRs(Number(inv.lump||0))+'</strong>'+(inv.type!=='lump'?'<br><span style="font-size:10px;color:var(--muted)">+'+fmtRs(Number(inv.monthlyAmt||0))+'/mo</span>':'')+'</td>'+
-        '<td style="color:var(--info)">'+fmtRs(Number(inv.monthlyAmt||0))+'</td>'+
-        '<td><strong style="color:var(--primary)">'+fmtRs(total)+'</strong></td>'+
-        '<td><strong style="color:var(--success)">'+fmtRs(due)+'</strong><br><span style="font-size:10px;color:var(--muted)">'+(inv.rate||8)+'% / month</span></td>'+
-        '<td style="color:var(--warning)">'+fmtRs(paid)+'</td>'+
-        '<td>'+statusBadge+'</td>'+
-        '<td style="white-space:nowrap">'+
-          '<button class="btn bsm bs2" onclick="openInvTxModal(\''+inv.id+'\')">💳 Transaction</button> '+
-          '<button class="btn bsm bo" onclick="editInvestor(\''+inv.id+'\')">✏️</button> '+
-          '<button class="btn bsm bd2" onclick="deleteInvestor(\''+inv.id+'\')">🗑️</button>'+
-        '</td>'+
-      '</tr>';
-    }).join('');
+  if(tbody){
+    if(!list.length){ tbody.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px">No investors yet. Add your first investor!</td></tr>'; }
+    else {
+      tbody.innerHTML = list.map(function(inv){
+        var shares = investorSharesHeld(inv);
+        var avgBuy = investorAvgBuyPrice(inv);
+        var curVal  = shares * curPrice;
+        var cost    = shares * avgBuy;
+        var gain    = curVal - cost;
+        var gainPct = cost>0 ? (gain/cost*100).toFixed(1) : '0.0';
+        var gainColor = gain>=0 ? 'var(--success)' : 'var(--danger)';
+        var gainSign  = gain>=0 ? '+' : '';
+        var divRec  = investorDividendsReceived(inv);
+        var badge   = inv.status==='inactive'?'<span class="badge bd">Inactive</span>':'<span class="badge bs">Active</span>';
+        return '<tr>'+
+          '<td><strong>'+inv.name+'</strong><br><span style="font-size:10px;color:var(--muted)">'+(inv.nic||'')+'</span></td>'+
+          '<td>'+(inv.phone||'—')+'</td>'+
+          '<td><strong style="font-size:15px">'+shares.toLocaleString()+'</strong></td>'+
+          '<td>'+fmtRs(avgBuy)+'</td>'+
+          '<td><strong style="color:var(--primary)">'+fmtRs(curVal)+'</strong></td>'+
+          '<td><strong style="color:'+gainColor+'">'+gainSign+fmtRs(gain)+'<br><span style="font-size:10px">'+gainSign+gainPct+'%</span></strong></td>'+
+          '<td style="color:var(--warning)">'+fmtRs(divRec)+'</td>'+
+          '<td>'+badge+'</td>'+
+          '<td style="white-space:nowrap">'+
+            '<button class="btn bsm bs2" onclick="openSecondaryTradeModal(\''+inv.id+'\')">🔄 Trade</button> '+
+            '<button class="btn bsm bo" onclick="editInvestor(\''+inv.id+'\')">✏️</button> '+
+            '<button class="btn bsm bd2" onclick="deleteInvestor(\''+inv.id+'\')">🗑️</button>'+
+          '</td>'+
+        '</tr>';
+      }).join('');
+    }
   }
 
+  renderSecondaryTrades();
+  renderDividendHistory();
   renderInvTransactions();
-  renderInvPayouts();
   populateInvTxFilter();
+}
+
+// ── Render Share Price History ──
+function renderSharePriceHistory(){
+  var tbody = document.getElementById('inv-price-tbl');
+  if(!tbody) return;
+  var hist = (db.sharePriceHistory||[]).slice().sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
+  if(!hist.length){ tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:18px">No price history yet. Click "Update Share Price" to begin.</td></tr>'; return; }
+  tbody.innerHTML = hist.map(function(h, idx, arr){
+    var prev = arr[idx+1];
+    var change = prev ? Number(h.price) - Number(prev.price) : 0;
+    var pct = prev && prev.price>0 ? (change/prev.price*100).toFixed(1) : null;
+    var changeHtml = prev ? '<span style="color:'+(change>=0?'var(--success)':'var(--danger)')+';">'+(change>=0?'▲':'▼')+' '+fmtRs(Math.abs(change))+(pct?' ('+Math.abs(pct)+'%)':'')+'</span>' : '<span style="color:var(--muted)">—</span>';
+    return '<tr>'+
+      '<td>'+fmtDate(h.date)+'</td>'+
+      '<td><strong style="color:var(--primary);font-size:14px">'+fmtRs(Number(h.price))+'</strong></td>'+
+      '<td>'+changeHtml+'</td>'+
+      '<td style="color:var(--muted)">'+(h.by||'—')+'</td>'+
+      '<td style="color:var(--muted);font-size:12px">'+(h.note||'—')+'</td>'+
+    '</tr>';
+  }).join('');
+  // Price change indicator
+  var pc = document.getElementById('inv-price-change');
+  if(pc && hist.length>=2){
+    var latest = Number(hist[0].price), prev2 = Number(hist[1].price);
+    var diff = latest - prev2;
+    var diffPct = prev2>0 ? (diff/prev2*100).toFixed(1) : 0;
+    pc.innerHTML = diff>=0
+      ? '<span style="color:var(--success)">▲ +'+fmtRs(Math.abs(diff))+' (+'+Math.abs(diffPct)+'%) from last update</span>'
+      : '<span style="color:var(--danger)">▼ '+fmtRs(Math.abs(diff))+' (-'+Math.abs(diffPct)+'%) from last update</span>';
+  }
+}
+
+// ── Render Secondary Trades ──
+function renderSecondaryTrades(){
+  var tbody = document.getElementById('inv-trade-tbl');
+  if(!tbody) return;
+  var trades = (db.secondaryTrades||[]).slice().sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
+  if(!trades.length){ tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:18px">No secondary trades yet.</td></tr>'; return; }
+  tbody.innerHTML = trades.map(function(t){
+    var seller = (db.investors||[]).find(function(i){ return i.id===t.sellerId; })||{};
+    var buyer  = (db.investors||[]).find(function(i){ return i.id===t.buyerId;  })||{};
+    var sellerName = seller.name || (t.sellerName||'External');
+    var buyerName  = buyer.name  || (t.buyerName ||'External');
+    return '<tr>'+
+      '<td>'+fmtDate(t.date)+'</td>'+
+      '<td style="color:var(--danger)">'+sellerName+'</td>'+
+      '<td style="color:var(--success)">'+buyerName+'</td>'+
+      '<td><strong>'+Number(t.shares).toLocaleString()+'</strong></td>'+
+      '<td>'+fmtRs(Number(t.pricePerShare))+'</td>'+
+      '<td><strong style="color:var(--primary)">'+fmtRs(Number(t.shares)*Number(t.pricePerShare))+'</strong></td>'+
+      '<td style="color:var(--muted);font-size:12px">'+(t.note||'—')+'</td>'+
+    '</tr>';
+  }).join('');
+}
+
+// ── Render Dividend History ──
+function renderDividendHistory(){
+  var tbody = document.getElementById('inv-div-tbl');
+  if(!tbody) return;
+  var divs = (db.dividends||[]).slice().sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
+  if(!divs.length){ tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:18px">No dividends declared yet.</td></tr>'; return; }
+  tbody.innerHTML = divs.map(function(d){
+    var badge = d.status==='paid'?'<span class="badge bs">✅ Paid</span>':'<span class="badge bw">⏳ Pending</span>';
+    var btn = d.status==='paid'
+      ? '<button class="btn bsm bo" onclick="markDividendStatus(\''+d.id+'\',\'pending\')">↩️ Unmark</button>'
+      : '<button class="btn bsm bs2" onclick="markDividendStatus(\''+d.id+'\',\'paid\')">✅ Mark Paid</button>';
+    return '<tr>'+
+      '<td>'+fmtDate(d.date)+'</td>'+
+      '<td><strong style="color:var(--success)">'+fmtRs(Number(d.perShare))+'</strong> / share</td>'+
+      '<td><strong style="color:var(--primary)">'+fmtRs(Number(d.totalPayout||0))+'</strong></td>'+
+      '<td style="font-size:12px;color:var(--muted)">'+(d.note||'—')+'</td>'+
+      '<td>'+badge+'</td>'+
+      '<td>'+btn+'</td>'+
+    '</tr>';
+  }).join('');
 }
 
 // ── Render Transactions ──
@@ -12709,45 +12927,24 @@ function renderInvTransactions() {
   list = list.slice().sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
   var tbody = document.getElementById('inv-tx-tbl');
   if(!tbody) return;
-  var typeMap = {investment:'💰 Investment',monthly_contrib:'📅 Monthly Contrib',payout:'💸 Payout',withdrawal:'📤 Withdrawal'};
-  var colorMap = {investment:'var(--primary)',monthly_contrib:'var(--info)',payout:'var(--danger)',withdrawal:'var(--warning)'};
-  if(!list.length){ tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:18px">No transactions yet.</td></tr>'; return; }
+  var typeMap  = {buy:'📈 Share Purchase', sell:'📉 Share Sale', dividend:'💰 Dividend', secondary_buy:'🔄 Secondary Buy', secondary_sell:'🔄 Secondary Sell'};
+  var colorMap = {buy:'var(--primary)',sell:'var(--danger)',dividend:'var(--success)',secondary_buy:'var(--info)',secondary_sell:'var(--warning)'};
+  if(!list.length){ tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:18px">No transactions yet.</td></tr>'; return; }
   tbody.innerHTML = list.map(function(t){
-    var inv = (db.investors||[]).find(function(i){return i.id===t.invId;})||{};
+    var inv = (db.investors||[]).find(function(i){ return i.id===t.invId; })||{};
     return '<tr>'+
       '<td>'+fmtDate(t.date)+'</td>'+
-      '<td><strong>'+( inv.name||'Unknown')+'</strong></td>'+
-      '<td><span style="color:'+colorMap[t.type]+'">'+( typeMap[t.type]||t.type)+'</span></td>'+
-      '<td><strong style="color:'+colorMap[t.type]+'">'+fmtRs(t.amount)+'</strong></td>'+
+      '<td><strong>'+(inv.name||'Unknown')+'</strong></td>'+
+      '<td><span style="color:'+( colorMap[t.type]||'var(--muted)')+'">'+( typeMap[t.type]||t.type)+'</span></td>'+
+      '<td>'+(t.shares!=null ? '<strong>'+Number(t.shares).toLocaleString()+'</strong>' : '—')+'</td>'+
+      '<td>'+(t.pricePerShare!=null ? fmtRs(t.pricePerShare) : '—')+'</td>'+
+      '<td><strong style="color:'+( colorMap[t.type]||'var(--muted)')+'">'+fmtRs(t.amount)+'</strong></td>'+
       '<td style="color:var(--muted);font-size:12px">'+(t.note||'—')+'</td>'+
     '</tr>';
   }).join('');
 }
 
-// ── Render Monthly Payouts ──
-function renderInvPayouts() {
-  var tbody = document.getElementById('inv-payout-tbl');
-  if(!tbody) return;
-  var payouts = (db.investorPayouts||[]).slice().sort(function(a,b){ return (b.month||'').localeCompare(a.month||''); });
-  if(!payouts.length){ tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:18px">No payouts yet. Click "Generate This Month" to create payout records.</td></tr>'; return; }
-  tbody.innerHTML = payouts.map(function(p){
-    var inv = (db.investors||[]).find(function(i){return i.id===p.invId;})||{};
-    var statusBadge = p.status==='paid'?'<span class="badge bs">✅ Paid</span>':'<span class="badge bw">⏳ Pending</span>';
-    var btn = p.status==='paid'?
-      '<button class="btn bsm bo" onclick="markPayout(\''+p.id+'\',\'pending\')">↩️ Unmark</button>':
-      '<button class="btn bsm bs2" onclick="markPayout(\''+p.id+'\',\'paid\')">✅ Mark Paid</button>';
-    return '<tr>'+
-      '<td><strong>'+p.month+'</strong></td>'+
-      '<td>'+(inv.name||'Unknown')+'</td>'+
-      '<td>'+fmtRs(p.invested)+'</td>'+
-      '<td><strong style="color:var(--success)">'+fmtRs(p.amount)+'</strong></td>'+
-      '<td>'+statusBadge+'</td>'+
-      '<td>'+btn+'</td>'+
-    '</tr>';
-  }).join('');
-}
-
-// ── Populate investor filter dropdowns ──
+// ── Populate filter ──
 function populateInvTxFilter() {
   var sel = document.getElementById('inv-tx-filter');
   if(!sel) return;
@@ -12757,76 +12954,261 @@ function populateInvTxFilter() {
   sel.value = prev;
 }
 
-// ── Open Add Investor Modal ──
-function openInvestorModal(id) {
+// ── Open Share Price Modal ──
+function openSharePriceModal(){
+  var cur = currentSharePrice();
+  var el = document.getElementById('sp-current');
+  if(el) el.textContent = fmtRs(cur);
+  document.getElementById('sp-new-price').value = '';
+  document.getElementById('sp-date').value = todayStr();
+  document.getElementById('sp-by').value = '';
+  document.getElementById('sp-note').value = '';
+  document.getElementById('sp-change-preview').innerHTML = '';
+  openM('m-share-price');
+}
+
+function calcPriceChange(){
+  var cur = currentSharePrice();
+  var newP = parseFloat(document.getElementById('sp-new-price').value)||0;
+  var el = document.getElementById('sp-change-preview');
+  if(!el || !newP) return;
+  var diff = newP - cur;
+  var pct  = cur>0 ? (diff/cur*100).toFixed(1) : 0;
+  el.innerHTML = diff>=0
+    ? '<span style="color:var(--success)">▲ Increase of '+fmtRs(Math.abs(diff))+' (+'+Math.abs(pct)+'%)</span>'
+    : '<span style="color:var(--danger)">▼ Decrease of '+fmtRs(Math.abs(diff))+' (-'+Math.abs(pct)+'%)</span>';
+}
+
+function saveSharePrice(){
+  var price = parseFloat(document.getElementById('sp-new-price').value)||0;
+  if(price<=0){ toast('❌ Enter a valid price', 'var(--danger)'); return; }
+  invDbInit();
+  db.sharePriceHistory.push({
+    id:   'sp-'+Date.now(),
+    price: price,
+    date:  document.getElementById('sp-date').value||todayStr(),
+    by:    document.getElementById('sp-by').value.trim(),
+    note:  document.getElementById('sp-note').value.trim()
+  });
+  saveDB(); closeM('m-share-price'); renderInvestors();
+  toast('✅ Share price updated to '+fmtRs(price));
+}
+
+// ── Open Dividend Modal ──
+function openDividendModal(){
+  var tots = totalSharesIssued();
+  var el = document.getElementById('div-total-shares');
+  if(el) el.textContent = tots.toLocaleString();
+  document.getElementById('div-per-share').value = '';
+  document.getElementById('div-date').value = todayStr();
+  document.getElementById('div-note').value = '';
+  document.getElementById('div-total-preview').style.display = 'none';
+  openM('m-dividend');
+}
+
+function calcDividendTotal(){
+  var perShare = parseFloat(document.getElementById('div-per-share').value)||0;
+  var tots = totalSharesIssued();
+  var total = perShare * tots;
+  var preview = document.getElementById('div-total-preview');
+  var amtEl   = document.getElementById('div-total-amt');
+  if(preview && amtEl){
+    if(perShare>0){ preview.style.display=''; amtEl.textContent = fmtRs(total); }
+    else preview.style.display='none';
+  }
+}
+
+function saveDividend(){
+  var perShare = parseFloat(document.getElementById('div-per-share').value)||0;
+  if(perShare<=0){ toast('❌ Enter dividend per share', 'var(--danger)'); return; }
+  invDbInit();
+  var tots = totalSharesIssued();
+  var totalPayout = perShare * tots;
+  var date = document.getElementById('div-date').value||todayStr();
+  var divId = 'div-'+Date.now();
+  db.dividends.push({
+    id: divId, perShare: perShare, totalPayout: totalPayout,
+    date: date, note: document.getElementById('div-note').value.trim(), status:'pending'
+  });
+  // Create individual dividend transactions per investor
+  (db.investors||[]).filter(function(i){ return i.status!=='inactive'; }).forEach(function(inv){
+    var shares = investorSharesHeldAt(inv, date);
+    var amount = shares * perShare;
+    if(amount<=0) return;
+    db.investorTx.push({id:'tx-'+Date.now()+'-'+inv.id, invId:inv.id, type:'dividend', shares:shares, pricePerShare:perShare, amount:amount, date:date, note:'Dividend: '+fmtRs(perShare)+'/share — '+( document.getElementById('div-note').value.trim()||''), refDivId:divId});
+  });
+  saveDB(); closeM('m-dividend'); renderInvestors();
+  toast('✅ Dividend declared: '+fmtRs(perShare)+'/share — Total: '+fmtRs(totalPayout));
+}
+
+function markDividendStatus(divId, status){
+  invDbInit();
+  var d = (db.dividends||[]).find(function(x){ return x.id===divId; });
+  if(!d) return;
+  d.status = status;
+  saveDB(); renderInvestors();
+  toast(status==='paid' ? '✅ Dividend marked as paid!' : '↩️ Dividend unmarked');
+}
+
+// ── Open Secondary Trade Modal ──
+function openSecondaryTradeModal(preSellerInvId){
+  invDbInit();
+  var sellers = document.getElementById('trade-seller');
+  var buyersEl = document.getElementById('trade-buyer-existing');
+  var invOpts = (db.investors||[]).filter(function(i){ return i.status!=='inactive'; }).map(function(i){ return '<option value="'+i.id+'">'+i.name+' ('+investorSharesHeld(i).toLocaleString()+' shares)</option>'; }).join('');
+  sellers.innerHTML = '<option value="">-- Select Seller --</option>' + invOpts;
+  buyersEl.innerHTML = '<option value="">-- Select Buyer --</option>' + (db.investors||[]).filter(function(i){ return i.status!=='inactive'; }).map(function(i){ return '<option value="'+i.id+'">'+i.name+'</option>'; }).join('');
+  if(preSellerInvId){ sellers.value = preSellerInvId; updateSellerShares(); }
+  document.getElementById('trade-shares').value='';
+  document.getElementById('trade-price').value= currentSharePrice()||'';
+  document.getElementById('trade-date').value=todayStr();
+  document.getElementById('trade-note').value='';
+  document.getElementById('trade-buyer-type').value='existing';
+  toggleBuyerType();
+  document.getElementById('trade-total-preview').style.display='none';
+  openM('m-sec-trade');
+}
+
+function updateSellerShares(){
+  var sid = document.getElementById('trade-seller').value;
+  var el  = document.getElementById('trade-seller-shares');
+  if(!el) return;
+  if(!sid){ el.textContent=''; return; }
+  var inv = (db.investors||[]).find(function(i){ return i.id===sid; });
+  var held = inv ? investorSharesHeld(inv) : 0;
+  el.textContent = 'Available shares: '+held.toLocaleString();
+}
+
+function toggleBuyerType(){
+  var t = document.getElementById('trade-buyer-type').value;
+  document.getElementById('trade-buyer-existing').style.display = t==='existing' ? '' : 'none';
+  document.getElementById('trade-buyer-new').style.display      = t==='new'      ? '' : 'none';
+}
+
+function calcTradeTotal(){
+  var shares = parseFloat(document.getElementById('trade-shares').value)||0;
+  var price  = parseFloat(document.getElementById('trade-price').value)||0;
+  var preview = document.getElementById('trade-total-preview');
+  var valEl   = document.getElementById('trade-total-val');
+  if(preview && valEl){
+    if(shares>0 && price>0){ preview.style.display=''; valEl.textContent = fmtRs(shares*price); }
+    else preview.style.display='none';
+  }
+}
+
+function saveSecondaryTrade(){
+  invDbInit();
+  var sellerId = document.getElementById('trade-seller').value;
+  var shares   = parseInt(document.getElementById('trade-shares').value)||0;
+  var price    = parseFloat(document.getElementById('trade-price').value)||0;
+  var date     = document.getElementById('trade-date').value||todayStr();
+  var note     = document.getElementById('trade-note').value.trim();
+  var buyerType= document.getElementById('trade-buyer-type').value;
+  var buyerId  = buyerType==='existing' ? document.getElementById('trade-buyer-existing').value : '';
+  var buyerName= buyerType==='new'      ? document.getElementById('trade-buyer-new').value.trim() : '';
+
+  if(!sellerId){ toast('❌ Select seller', 'var(--danger)'); return; }
+  if(shares<=0){ toast('❌ Enter number of shares', 'var(--danger)'); return; }
+  if(price<=0) { toast('❌ Enter price per share', 'var(--danger)'); return; }
+  if(buyerType==='existing' && !buyerId){ toast('❌ Select buyer', 'var(--danger)'); return; }
+  if(buyerType==='new' && !buyerName){ toast('❌ Enter buyer name', 'var(--danger)'); return; }
+
+  // Validate seller has enough shares
+  var sellerInv = (db.investors||[]).find(function(i){ return i.id===sellerId; });
+  var sellerHeld = sellerInv ? investorSharesHeld(sellerInv) : 0;
+  if(shares > sellerHeld){ toast('❌ Seller only has '+sellerHeld+' shares', 'var(--danger)'); return; }
+
+  var tradeId = 'trade-'+Date.now();
+  var totalVal = shares * price;
+
+  // If new buyer, auto-create as investor
+  if(buyerType==='new' && buyerName){
+    var newBuyer = {id:'inv-'+Date.now(), name:buyerName, phone:'', nic:'', email:'', shares:0, buyPrice:price, startDate:date, notes:'Added via secondary trade', status:'active', createdAt:Date.now()};
+    db.investors.push(newBuyer);
+    buyerId = newBuyer.id;
+    // Add initial buy tx
+    db.investorTx.push({id:'tx-'+Date.now(), invId:buyerId, type:'buy', shares:0, pricePerShare:price, amount:0, date:date, note:'New investor via secondary trade'});
+  }
+
+  db.secondaryTrades.push({id:tradeId, sellerId:sellerId, buyerId:buyerId, buyerName:buyerName, shares:shares, pricePerShare:price, totalValue:totalVal, date:date, note:note});
+
+  // Transactions
+  db.investorTx.push({id:'tx-s-'+Date.now(), invId:sellerId, type:'secondary_sell', shares:shares, pricePerShare:price, amount:totalVal, date:date, note:'Secondary sale → '+(buyerId ? ((db.investors||[]).find(function(i){return i.id===buyerId;})||{}).name||buyerName : buyerName), refTradeId:tradeId});
+  if(buyerId){
+    db.investorTx.push({id:'tx-b-'+Date.now(), invId:buyerId, type:'secondary_buy', shares:shares, pricePerShare:price, amount:totalVal, date:date, note:'Secondary purchase from '+( sellerInv?sellerInv.name:'Unknown'), refTradeId:tradeId});
+  }
+
+  saveDB(); closeM('m-sec-trade'); renderInvestors();
+  toast('✅ Trade recorded: '+shares.toLocaleString()+' shares @ '+fmtRs(price)+' = '+fmtRs(totalVal));
+}
+
+// ── Open Add/Edit Investor Modal ──
+function openInvestorModal(id){
   var isEdit = !!id;
   document.getElementById('inv-modal-title').textContent = isEdit ? '✏️ Edit Investor' : '➕ Add Investor';
-  var inv = isEdit ? (db.investors||[]).find(function(i){return i.id===id;}) : {};
+  var inv = isEdit ? (db.investors||[]).find(function(i){ return i.id===id; }) : {};
   if(!inv) return;
-  document.getElementById('inv-name').value = inv.name||'';
-  document.getElementById('inv-phone').value = inv.phone||'';
-  document.getElementById('inv-nic').value = inv.nic||'';
-  document.getElementById('inv-email').value = inv.email||'';
-  document.getElementById('inv-type').value = inv.type||'lump';
-  document.getElementById('inv-lump').value = inv.lump||'';
-  document.getElementById('inv-monthly-amt').value = inv.monthlyAmt||'';
-  document.getElementById('inv-start').value = inv.startDate||todayStr();
-  document.getElementById('inv-rate').value = inv.rate||8;
-  document.getElementById('inv-notes').value = inv.notes||'';
+  document.getElementById('inv-name').value       = inv.name||'';
+  document.getElementById('inv-phone').value      = inv.phone||'';
+  document.getElementById('inv-nic').value        = inv.nic||'';
+  document.getElementById('inv-email').value      = inv.email||'';
+  document.getElementById('inv-shares').value     = inv.shares||'';
+  document.getElementById('inv-buy-price').value  = inv.buyPrice||currentSharePrice()||'';
+  document.getElementById('inv-start').value      = inv.startDate||todayStr();
+  document.getElementById('inv-notes').value      = inv.notes||'';
   document.getElementById('m-investor').dataset.editId = id||'';
-  toggleInvType();
+  calcInvTotal();
   openM('m-investor');
 }
 
 function editInvestor(id){ openInvestorModal(id); }
 
-function toggleInvType() {
-  var t = document.getElementById('inv-type').value;
-  document.getElementById('inv-lump-row').style.display = (t==='monthly')?'none':'';
-  document.getElementById('inv-monthly-row').style.display = (t==='lump')?'none':'';
+function calcInvTotal(){
+  var s = parseFloat(document.getElementById('inv-shares').value)||0;
+  var p = parseFloat(document.getElementById('inv-buy-price').value)||0;
+  var el = document.getElementById('inv-total-calc');
+  if(el) el.textContent = fmtRs(s*p);
 }
 
 // ── Save Investor ──
-function saveInvestor() {
-  var name = document.getElementById('inv-name').value.trim();
-  if(!name){ toast('❌ Investor name required', 'var(--danger)'); return; }
-  var type = document.getElementById('inv-type').value;
-  var lump = parseFloat(document.getElementById('inv-lump').value)||0;
-  var monthlyAmt = parseFloat(document.getElementById('inv-monthly-amt').value)||0;
-  if(type!=='monthly' && lump<=0){ toast('❌ Enter lump sum amount', 'var(--danger)'); return; }
-  if(type!=='lump' && monthlyAmt<0){ toast('❌ Invalid monthly amount', 'var(--danger)'); return; }
+function saveInvestor(){
+  invDbInit();
+  var name     = document.getElementById('inv-name').value.trim();
+  var shares   = parseInt(document.getElementById('inv-shares').value)||0;
+  var buyPrice = parseFloat(document.getElementById('inv-buy-price').value)||0;
+  if(!name)            { toast('❌ Investor name required', 'var(--danger)'); return; }
+  if(shares<=0)        { toast('❌ Enter number of shares', 'var(--danger)'); return; }
+  if(buyPrice<=0)      { toast('❌ Enter price per share', 'var(--danger)'); return; }
 
   var editId = document.getElementById('m-investor').dataset.editId;
-  if(editId) {
-    var inv = (db.investors||[]).find(function(i){return i.id===editId;});
+  if(editId){
+    var inv = (db.investors||[]).find(function(i){ return i.id===editId; });
     if(inv){
       inv.name=name; inv.phone=document.getElementById('inv-phone').value.trim();
       inv.nic=document.getElementById('inv-nic').value.trim();
       inv.email=document.getElementById('inv-email').value.trim();
-      inv.type=type; inv.lump=lump; inv.monthlyAmt=monthlyAmt;
+      inv.shares=shares; inv.buyPrice=buyPrice;
       inv.startDate=document.getElementById('inv-start').value;
-      inv.rate=parseFloat(document.getElementById('inv-rate').value)||8;
       inv.notes=document.getElementById('inv-notes').value.trim();
     }
     toast('✅ Investor updated!');
   } else {
-    if(!db.investors) db.investors=[];
     var newInv = {
-      id: 'inv-'+Date.now(),
-      name:name, phone:document.getElementById('inv-phone').value.trim(),
+      id:'inv-'+Date.now(), name:name,
+      phone:document.getElementById('inv-phone').value.trim(),
       nic:document.getElementById('inv-nic').value.trim(),
       email:document.getElementById('inv-email').value.trim(),
-      type:type, lump:lump, monthlyAmt:monthlyAmt,
+      shares:shares, buyPrice:buyPrice,
       startDate:document.getElementById('inv-start').value||todayStr(),
-      rate:parseFloat(document.getElementById('inv-rate').value)||8,
       notes:document.getElementById('inv-notes').value.trim(),
       status:'active', createdAt:Date.now()
     };
     db.investors.push(newInv);
-    // Auto-create initial investment transaction if lump sum
-    if(lump>0){
-      if(!db.investorTx) db.investorTx=[];
-      db.investorTx.push({id:'tx-'+Date.now(), invId:newInv.id, type:'investment', amount:lump, date:newInv.startDate, note:'Initial lump sum investment'});
+    // Auto tx
+    db.investorTx.push({id:'tx-'+Date.now(), invId:newInv.id, type:'buy', shares:shares, pricePerShare:buyPrice, amount:shares*buyPrice, date:newInv.startDate, note:'Initial share purchase'});
+    // If no share price set yet, set it now
+    if(!db.sharePriceHistory.length){
+      db.sharePriceHistory.push({id:'sp-init', price:buyPrice, date:newInv.startDate, by:'System', note:'Initial share price (auto)'});
     }
     toast('✅ Investor added!');
   }
@@ -12834,122 +13216,66 @@ function saveInvestor() {
 }
 
 // ── Delete Investor ──
-function deleteInvestor(id) {
-  if(!confirm('Delete this investor? All transactions will also be removed.')) return;
-  db.investors = (db.investors||[]).filter(function(i){return i.id!==id;});
-  db.investorTx = (db.investorTx||[]).filter(function(t){return t.invId!==id;});
-  db.investorPayouts = (db.investorPayouts||[]).filter(function(p){return p.invId!==id;});
+function deleteInvestor(id){
+  if(!confirm('Delete this investor? All related transactions and trades will also be removed.')) return;
+  invDbInit();
+  db.investors        = db.investors.filter(function(i){ return i.id!==id; });
+  db.investorTx       = db.investorTx.filter(function(t){ return t.invId!==id; });
+  db.secondaryTrades  = db.secondaryTrades.filter(function(t){ return t.sellerId!==id && t.buyerId!==id; });
   saveDB(); renderInvestors(); toast('🗑️ Investor removed', 'var(--danger)');
 }
 
-// ── Open Transaction Modal ──
-function openInvTxModal(invId) {
-  var sel = document.getElementById('inv-tx-investor');
-  sel.innerHTML = (db.investors||[]).map(function(i){ return '<option value="'+i.id+'">'+ i.name+'</option>'; }).join('');
-  if(invId) sel.value = invId;
-  document.getElementById('inv-tx-date').value = todayStr();
-  document.getElementById('inv-tx-amount').value = '';
-  document.getElementById('inv-tx-note').value = '';
-  document.getElementById('inv-tx-type').value = 'payout';
-  openM('m-inv-tx');
-}
-
-// ── Save Transaction ──
-function saveInvTransaction() {
-  var invId = document.getElementById('inv-tx-investor').value;
-  var type = document.getElementById('inv-tx-type').value;
-  var amount = parseFloat(document.getElementById('inv-tx-amount').value)||0;
-  var date = document.getElementById('inv-tx-date').value||todayStr();
-  var note = document.getElementById('inv-tx-note').value.trim();
-  if(!invId){ toast('❌ Select investor', 'var(--danger)'); return; }
-  if(amount<=0){ toast('❌ Enter amount', 'var(--danger)'); return; }
-  if(!db.investorTx) db.investorTx=[];
-  db.investorTx.push({id:'tx-'+Date.now(), invId:invId, type:type, amount:amount, date:date, note:note});
-  // If it's a monthly contribution, update investor base?
-  // (We compute dynamically so no update needed)
-  saveDB(); closeM('m-inv-tx'); renderInvestors();
-  toast('✅ Transaction saved!');
-}
-
-// ── Generate Monthly Payouts ──
-function generateMonthlyPayouts() {
-  if(!db.investors||!db.investors.length){ toast('❌ No investors found', 'var(--danger)'); return; }
-  if(!db.investorPayouts) db.investorPayouts=[];
-  var mKey = thisMonthKey();
-  var added = 0;
-  db.investors.filter(function(i){return i.status!=='inactive';}).forEach(function(inv){
-    var exists = db.investorPayouts.find(function(p){return p.invId===inv.id && p.month===mKey;});
-    if(!exists){
-      var invested = investorTotalInvested(inv);
-      var due = investorMonthlyDue(inv);
-      db.investorPayouts.push({id:'pay-'+Date.now()+'-'+inv.id, invId:inv.id, month:mKey, invested:invested, amount:due, status:'pending', createdAt:Date.now()});
-      added++;
-    }
-  });
-  saveDB(); renderInvestors();
-  toast(added>0 ? '✅ '+added+' payout record(s) generated for '+mKey : '⚠️ Already generated for '+mKey, added>0?'var(--success)':'var(--warning)');
-}
-
-// ── Mark Payout ──
-function markPayout(payId, status) {
-  var p = (db.investorPayouts||[]).find(function(x){return x.id===payId;});
-  if(!p) return;
-  p.status = status;
-  if(status==='paid'){
-    // Auto-add payout transaction
-    if(!db.investorTx) db.investorTx=[];
-    var already = db.investorTx.find(function(t){return t.refPayId===payId;});
-    if(!already){
-      db.investorTx.push({id:'tx-'+Date.now(), invId:p.invId, type:'payout', amount:p.amount, date:todayStr(), note:'Monthly profit payout — '+p.month, refPayId:payId});
-    }
-    toast('✅ Payout marked as paid!');
-  } else {
-    // Remove auto-added transaction
-    db.investorTx = (db.investorTx||[]).filter(function(t){return t.refPayId!==payId;});
-    toast('↩️ Payout unmarked');
-  }
-  saveDB(); renderInvestors();
-}
-
-// ── Monthly Report Modal ──
-function openInvestorReport() {
-  var mKey = thisMonthKey();
+// ── Investor Summary Report ──
+function openInvestorReport(){
+  invDbInit();
+  var curPrice = currentSharePrice();
   var html = '<div style="font-size:13px">';
-  html += '<div style="font-size:14px;font-weight:700;margin-bottom:14px;color:var(--primary)">📅 Report for: '+mKey+'</div>';
-  var totalDue=0, totalPaid=0, totalInv=0;
-  (db.investors||[]).filter(function(i){return i.status!=='inactive';}).forEach(function(inv){
-    var invested = investorTotalInvested(inv);
-    var due = investorMonthlyDue(inv);
-    var paid = investorTotalPaid(inv);
-    var payout = (db.investorPayouts||[]).find(function(p){return p.invId===inv.id && p.month===mKey;});
-    totalDue+=due; totalPaid+=paid; totalInv+=invested;
+  html += '<div style="font-size:15px;font-weight:700;margin-bottom:14px;color:var(--primary)">📈 Investor Holdings Report</div>';
+  var totalCap=0, totalMkt=0, totalDiv=0;
+  (db.investors||[]).filter(function(i){ return i.status!=='inactive'; }).forEach(function(inv){
+    var shares = investorSharesHeld(inv);
+    var avgBuy = investorAvgBuyPrice(inv);
+    var curVal  = shares * curPrice;
+    var cost    = shares * avgBuy;
+    var gain    = curVal - cost;
+    var gainColor = gain>=0?'var(--success)':'var(--danger)';
+    var divRec  = investorDividendsReceived(inv);
+    totalCap += cost; totalMkt += curVal; totalDiv += divRec;
     html += '<div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px">';
-    html += '<div style="display:flex;justify-content:space-between;align-items:center">';
-    html += '<div><strong>'+inv.name+'</strong><br><span style="font-size:11px;color:var(--muted)">'+(inv.phone||'')+'</span></div>';
-    html += '<div style="text-align:right"><div style="font-size:12px;color:var(--muted)">Total Invested</div><strong style="color:var(--primary)">'+fmtRs(invested)+'</strong></div>';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">';
+    html += '<div><strong>'+inv.name+'</strong>'+(inv.phone?'<br><span style="font-size:11px;color:var(--muted)">'+inv.phone+'</span>':'')+'</div>';
+    html += '<div style="text-align:right"><span style="font-size:11px;color:var(--muted)">Shares</span><br><strong style="color:var(--info);font-size:16px">'+shares.toLocaleString()+'</strong></div>';
     html += '</div>';
-    html += '<div style="display:flex;gap:12px;margin-top:10px;flex-wrap:wrap">';
-    html += '<div style="flex:1;background:rgba(0,230,118,0.08);border-radius:7px;padding:8px;text-align:center"><div style="font-size:11px;color:var(--muted)">This Month Due ('+(inv.rate||8)+'%)</div><strong style="color:var(--success)">'+fmtRs(due)+'</strong></div>';
-    html += '<div style="flex:1;background:rgba(255,171,0,0.08);border-radius:7px;padding:8px;text-align:center"><div style="font-size:11px;color:var(--muted)">Total Paid To Date</div><strong style="color:var(--warning)">'+fmtRs(paid)+'</strong></div>';
-    html += '<div style="flex:1;background:rgba(108,99,255,0.08);border-radius:7px;padding:8px;text-align:center"><div style="font-size:11px;color:var(--muted)">This Month Status</div><strong>'+(payout ? (payout.status==='paid'?'<span style="color:var(--success)">✅ Paid</span>':'<span style="color:var(--warning)">⏳ Pending</span>') : '<span style="color:var(--muted)">Not Generated</span>')+'</strong></div>';
+    html += '<div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap">';
+    html += '<div style="flex:1;background:rgba(108,99,255,0.08);border-radius:7px;padding:8px;text-align:center;min-width:80px"><div style="font-size:10px;color:var(--muted)">Cost Basis</div><strong>'+fmtRs(cost)+'</strong></div>';
+    html += '<div style="flex:1;background:rgba(0,230,118,0.08);border-radius:7px;padding:8px;text-align:center;min-width:80px"><div style="font-size:10px;color:var(--muted)">Market Value</div><strong style="color:var(--success)">'+fmtRs(curVal)+'</strong></div>';
+    html += '<div style="flex:1;border-radius:7px;padding:8px;text-align:center;min-width:80px;background:rgba(0,0,0,0.1)"><div style="font-size:10px;color:var(--muted)">Gain/Loss</div><strong style="color:'+gainColor+'">'+fmtRs(gain)+'</strong></div>';
+    html += '<div style="flex:1;background:rgba(255,171,0,0.08);border-radius:7px;padding:8px;text-align:center;min-width:80px"><div style="font-size:10px;color:var(--muted)">Dividends</div><strong style="color:var(--warning)">'+fmtRs(divRec)+'</strong></div>';
     html += '</div></div>';
   });
   html += '<div style="background:var(--card);border:1px solid var(--primary);border-radius:10px;padding:14px;margin-top:14px">';
+  html += '<div style="font-size:12px;color:var(--muted);margin-bottom:8px">📊 Portfolio Summary</div>';
   html += '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px">';
-  html += '<div><span style="font-size:12px;color:var(--muted)">Total Capital</span><br><strong style="color:var(--primary);font-size:16px">'+fmtRs(totalInv)+'</strong></div>';
-  html += '<div><span style="font-size:12px;color:var(--muted)">This Month Payout Due</span><br><strong style="color:var(--success);font-size:16px">'+fmtRs(totalDue)+'</strong></div>';
-  html += '<div><span style="font-size:12px;color:var(--muted)">All-time Total Paid</span><br><strong style="color:var(--warning);font-size:16px">'+fmtRs(totalPaid)+'</strong></div>';
+  html += '<div><span style="font-size:11px;color:var(--muted)">Total Cost Basis</span><br><strong style="color:var(--primary);font-size:15px">'+fmtRs(totalCap)+'</strong></div>';
+  html += '<div><span style="font-size:11px;color:var(--muted)">Total Market Value</span><br><strong style="color:var(--success);font-size:15px">'+fmtRs(totalMkt)+'</strong></div>';
+  html += '<div><span style="font-size:11px;color:var(--muted)">Overall Gain/Loss</span><br><strong style="color:'+(totalMkt>=totalCap?'var(--success)':'var(--danger)')+';font-size:15px">'+fmtRs(totalMkt-totalCap)+'</strong></div>';
+  html += '<div><span style="font-size:11px;color:var(--muted)">Total Dividends Paid</span><br><strong style="color:var(--warning);font-size:15px">'+fmtRs(totalDiv)+'</strong></div>';
   html += '</div></div></div>';
   document.getElementById('inv-report-body').innerHTML = html;
   openM('m-inv-report');
 }
 
-function printInvReport() {
+function printInvReport(){
   var body = document.getElementById('inv-report-body').innerHTML;
   var w = window.open('','_blank');
   w.document.write('<html><head><title>Investor Report</title><style>body{font-family:Arial,sans-serif;padding:20px;color:#111;font-size:13px}strong{font-weight:700}</style></head><body>'+body+'</body></html>');
   w.document.close(); w.print();
 }
+
+// ── Keep investorPayouts stub (legacy compat) ──
+function generateMonthlyPayouts(){ toast('ℹ️ Monthly fixed payouts replaced by Dividend system', 'var(--info)'); }
+function markPayout(){}
+function openInvTxModal(){}
 
 // ── Hook into renderAll & goPage ──
 var _invRenderAll = renderAll;
@@ -12969,9 +13295,12 @@ goPage = function(id){
 // ── Firebase sync: include investor data ──
 var _origFirebaseSaveDB = window.firebaseSaveDB;
 window.firebaseSaveDB = function(dbObj){
-  dbObj.investors       = dbObj.investors       || [];
-  dbObj.investorTx      = dbObj.investorTx      || [];
-  dbObj.investorPayouts = dbObj.investorPayouts  || [];
+  dbObj.investors        = dbObj.investors        || [];
+  dbObj.investorTx       = dbObj.investorTx       || [];
+  dbObj.investorPayouts  = dbObj.investorPayouts  || [];
+  dbObj.sharePriceHistory= dbObj.sharePriceHistory|| [];
+  dbObj.dividends        = dbObj.dividends        || [];
+  dbObj.secondaryTrades  = dbObj.secondaryTrades  || [];
   if(_origFirebaseSaveDB) _origFirebaseSaveDB(dbObj);
 };
 
