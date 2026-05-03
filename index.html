@@ -70,6 +70,11 @@
       followups:  dbObj.followups  || [],
       timerLogs:  dbObj.timerLogs  || [],
       repTemplates:dbObj.repTemplates||[],
+      purchaseOrders:dbObj.purchaseOrders||[],
+      branches:    dbObj.branches    || [],
+      taxProfiles: dbObj.taxProfiles || [],
+      stockTransfers:dbObj.stockTransfers||[],
+      widgetPrefs: dbObj.widgetPrefs  || {},
       _lastSync:  Date.now()
     };
     set(ref(database, 'pos-data'), payload)
@@ -5764,6 +5769,11 @@ function init() {
       if (cloudData.followups)   db.followups   = _fbArr(cloudData.followups);
       if (cloudData.timerLogs)   db.timerLogs   = _fbArr(cloudData.timerLogs);
       if (cloudData.repTemplates)db.repTemplates= _fbArr(cloudData.repTemplates);
+      if (cloudData.purchaseOrders) db.purchaseOrders = _fbArr(cloudData.purchaseOrders);
+      if (cloudData.branches)      db.branches      = _fbArr(cloudData.branches);
+      if (cloudData.taxProfiles)   db.taxProfiles   = _fbArr(cloudData.taxProfiles);
+      if (cloudData.stockTransfers)db.stockTransfers= _fbArr(cloudData.stockTransfers);
+      if (cloudData.widgetPrefs)   db.widgetPrefs   = cloudData.widgetPrefs;
       // Sync to SQLite for local queries
       renderAll();
       applyTheme(db.settings.theme || '#6c63ff');
@@ -5879,7 +5889,7 @@ function openM(id) {
   }
 }
 // Modals that should NOT have their inputs cleared on close
-var _noClrModals = ['m-invoice','m-rbill','m-obill','m-thermal','m-eod','m-held','m-notif','m-estimate','m-markup','m-cust-hist'];
+var _noClrModals = ['m-invoice','m-rbill','m-obill','m-thermal','m-eod','m-held','m-notif','m-estimate','m-markup','m-cust-hist','m-po'];
 function closeM(id) {
   var el = document.getElementById(id);
   if (!el) return;
@@ -11553,13 +11563,15 @@ function renderPurchaseOrders() {
 function openM_PO() {
   var sel = document.getElementById('po-supplier');
   if(sel) { sel.innerHTML = '<option value="">— Select Supplier —</option>' + (db.suppliers||[]).map(function(s){ return '<option>' + s.name + '</option>'; }).join(''); }
-  document.getElementById('po-items').innerHTML = '';
-  document.getElementById('po-id').value = '';
-  document.getElementById('po-notes').value = '';
-  document.getElementById('po-delivery').value = '';
+  var itemsEl = document.getElementById('po-items'); if(itemsEl) itemsEl.innerHTML = '';
+  var poId = document.getElementById('po-id'); if(poId) poId.value = '';
+  var poNotes = document.getElementById('po-notes'); if(poNotes) poNotes.value = '';
+  var poDel = document.getElementById('po-delivery'); if(poDel) poDel.value = '';
+  _poItemCount = 0;
   addPOItem();
   calcPOTotal();
-  openM('m-po');
+  // Directly open modal to avoid recursion with overridden openM
+  var el = document.getElementById('m-po'); if(el) el.classList.add('open');
 }
 
 var _poItemCount = 0;
@@ -11622,16 +11634,11 @@ function receivePO(id) {
 function viewPO(id) {
   var po = (db.purchaseOrders||[]).find(function(p){ return p.id === id; });
   if(!po) return;
-  var html = '<div style="padding:16px;background:var(--card2);border-radius:10px;font-size:13px">' +
-    '<h3 style="margin-bottom:12px;color:var(--primary)">PO-' + po.id + ' — ' + po.supplier + '</h3>' +
-    '<div style="margin-bottom:8px">📅 Date: ' + po.date + (po.delivery ? ' | Delivery: ' + po.delivery : '') + '</div>' +
-    '<div style="margin-bottom:12px">Status: <strong>' + po.status + '</strong></div>' +
-    '<table style="width:100%;border-collapse:collapse;font-size:12px"><tr style="background:var(--border)"><th style="padding:6px;text-align:left">Item</th><th style="padding:6px">Qty</th><th style="padding:6px">Unit</th><th style="padding:6px">Total</th></tr>' +
-    (po.items||[]).map(function(i){ return '<tr><td style="padding:6px">' + i.name + '</td><td style="padding:6px;text-align:center">' + i.qty + '</td><td style="padding:6px;text-align:right">Rs.' + (i.cost||0).toFixed(2) + '</td><td style="padding:6px;text-align:right">Rs.' + (i.qty*i.cost).toFixed(2) + '</td></tr>'; }).join('') +
-    '<tr style="font-weight:800;color:var(--primary)"><td colspan="3" style="padding:8px;text-align:right">TOTAL</td><td style="padding:8px;text-align:right">Rs. ' + po.total.toFixed(2) + '</td></tr></table>' +
-    (po.notes ? '<div style="margin-top:8px;color:var(--muted)">Notes: ' + po.notes + '</div>' : '') + '</div>';
-  alert(html.replace(/<[^>]*>/g, '').replace(/\s+/g,' '));
-  toast('👁️ PO-' + id + ' — ' + po.supplier + ' | Rs.' + po.total.toFixed(0));
+  var itemsList = (po.items||[]).map(function(i){ return i.name + ' ×' + i.qty + ' @ Rs.' + (i.cost||0).toFixed(0) + ' = Rs.' + (i.qty*(i.cost||0)).toFixed(0); }).join('\n');
+  var msg = 'PO-' + id + ' | ' + po.supplier + '\nDate: ' + po.date + (po.delivery ? ' | Delivery: ' + po.delivery : '') +
+    '\nStatus: ' + po.status + '\n\nItems:\n' + itemsList + '\n\nTOTAL: Rs. ' + (po.total||0).toFixed(2) +
+    (po.notes ? '\nNotes: ' + po.notes : '');
+  alert(msg);
 }
 
 function deletePO(id) {
