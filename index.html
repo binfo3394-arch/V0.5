@@ -1816,7 +1816,7 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
           <button class="btn bo bsm ord-filter-btn" data-f="cat:other" onclick="setOrdF('cat:other')">📦 Other</button>
         </div>
         <div class="sbar"><span>🔍</span><input id="ord-q" placeholder="Customer name / phone search..." oninput="renderOrd()"></div>
-        <div class="tcard"><table><thead><tr><th>ID</th><th>Customer</th><th>Service</th><th>Amount</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead><tbody id="ord-tbl"></tbody></table></div>
+        <div class="tcard"><table><thead><tr><th>ID</th><th>Customer</th><th>Service</th><th>Amount</th><th>Status</th><th>Staff</th><th>Date</th><th>Actions</th></tr></thead><tbody id="ord-tbl"></tbody></table></div>
       </div>
 
       <!-- MESSAGES PAGE -->
@@ -2361,7 +2361,7 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
           <div class="scard s3"><div style="font-size:22px">🏆</div><div class="sval" id="staff-top">—</div><div class="slabel">Top Performer</div></div>
           <div class="scard s4"><div style="font-size:22px">🔧</div><div class="sval" id="staff-repairs-done">0</div><div class="slabel">Repairs Completed</div></div>
         </div>
-        <div class="tcard"><table><thead><tr><th>Staff Name</th><th>Role / Status</th><th>Sales (This Month)</th><th>Repairs Done (This Month)</th><th>Commission Rate</th><th>Commission Earned</th><th>Actions</th></tr></thead><tbody id="staff-tbl"></tbody></table></div>
+        <div class="tcard"><table><thead><tr><th>Staff Name</th><th>Role / Status</th><th>Sales (This Month)</th><th>Repairs Done (This Month)</th><th>Online Orders (This Month)</th><th>Commission Rate</th><th>Commission Earned</th><th>Actions</th></tr></thead><tbody id="staff-tbl"></tbody></table></div>
       </div>
 
 
@@ -3296,6 +3296,7 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
         <div class="fg"><label>⏰ Delivery Date</label><input id="o-due" type="date"></div>
         <div class="fg"><label>💵 Advance Paid (Rs.)</label><input id="o-adv" type="number" min="0" placeholder="0.00"></div>
       </div>
+      <div class="fg"><label>👷 Assigned Staff</label><select id="o-staff" style="width:100%"><option value="">-- No Staff Assigned --</option></select></div>
       <div class="fg"><label>Notes</label><textarea id="o-notes" rows="2"></textarea></div>
       <input type="hidden" id="o-id">
     </div>
@@ -5103,6 +5104,7 @@ function renderStaff() {
   var staff = db.staff || [];
   var invoices = db.invoices || [];
   var repairs = db.repairs || [];
+  var orders = db.orders || [];
   var now = new Date();
   var monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   
@@ -5132,12 +5134,20 @@ function renderStaff() {
     });
     var repairRevenue = staffRepsMonth.reduce(function(a,r){ return a+(r.cost||0); }, 0);
 
-    // Sales commission
+    // Online Orders: match by staffId, this month, paid or delivered
+    var staffOrdsMonth = orders.filter(function(o){
+      var d=parseDate(o.date); return String(o.staffId)===String(s.id) && d && d>=monthStart;
+    });
+    var orderRevenue = staffOrdsMonth.reduce(function(a,o){ return a+(o.amount||0); }, 0);
+
+    // Sales commission (on POS invoices)
     var commBase = s.commBase==='profit' ? staffProfit : staffRevenue;
     var salesComm = commBase * (s.commRate||0) / 100;
     // Repair commission
     var repairComm = repairRevenue * (s.repairCommRate||0) / 100;
-    var commEarned = salesComm + repairComm;
+    // Order commission (use same sales commission rate)
+    var orderComm = orderRevenue * (s.commRate||0) / 100;
+    var commEarned = salesComm + repairComm + orderComm;
 
     totalComm += commEarned;
     if (commEarned > topComm) { topComm = commEarned; topName = s.name; }
@@ -5147,6 +5157,7 @@ function renderStaff() {
       '<td><span class="badge bp">'+s.role+'</span><br>'+statusBadge+'</td>'+
       '<td>'+staffInvs.length+'<br><span style="font-size:11px;color:var(--muted)">Rs. '+staffRevenue.toLocaleString()+'</span></td>'+
       '<td>'+staffRepsMonth.length+' <span style="font-size:10px;color:var(--muted)">('+staffRepsAll.length+' total)</span><br><span style="font-size:11px;color:var(--info)">Rs. '+repairRevenue.toLocaleString()+'</span></td>'+
+      '<td>'+staffOrdsMonth.length+'<br><span style="font-size:11px;color:var(--warning)">Rs. '+orderRevenue.toLocaleString()+'</span></td>'+
       '<td>'+(s.commRate||0)+'% '+((s.commBase||'revenue')==='profit'?'profit':'rev')+
         ((!s.commRate||s.commRate==0)?'<br><span style="font-size:10px;color:var(--muted)">Sales: not set</span>':'')+
         '<br><span style="font-size:11px;color:'+(s.repairCommRate>0?'var(--warning)':'var(--danger)')+'">'+
@@ -5159,11 +5170,11 @@ function renderStaff() {
         (commEarned>0?
           '<span style="color:var(--success);font-weight:700;font-size:15px">Rs. '+Math.round(commEarned).toLocaleString()+'</span>':
           '<span style="color:var(--danger);font-weight:700;font-size:14px">Rs. 0</span>')+
-        '<br><span style="font-size:10px;color:var(--muted)">Sales: Rs.'+Math.round(salesComm).toLocaleString()+' + Rep: Rs.'+Math.round(repairComm).toLocaleString()+'</span>'+
-        (commEarned===0 && (staffRepsAll.length>0||staffInvs.length>0)?
+        '<br><span style="font-size:10px;color:var(--muted)">POS: Rs.'+Math.round(salesComm).toLocaleString()+' + Rep: Rs.'+Math.round(repairComm).toLocaleString()+' + Ord: Rs.'+Math.round(orderComm).toLocaleString()+'</span>'+
+        (commEarned===0 && (staffRepsAll.length>0||staffInvs.length>0||staffOrdsMonth.length>0)?
           '<br><span style="font-size:10px;color:var(--danger)">⚠️ Rate 0% — set kරන්න!</span>':'')+'</td>'+
       '<td><button class="btn bo bsm" onclick="editStaff('+s.id+')" title="Edit">✏️</button> <button class="btn bd2 bsm" onclick="deleteStaff('+s.id+')" title="Delete">🗑️</button></td></tr>';
-  }).join('') : '<tr><td colspan="7" class="empty" style="text-align:center;padding:20px;color:var(--muted)">No staff added yet</td></tr>';
+  }).join('') : '<tr><td colspan="8" class="empty" style="text-align:center;padding:20px;color:var(--muted)">No staff added yet</td></tr>';
   
   document.getElementById('staff-count').textContent = staff.filter(function(s){ return s.status!=='Inactive'; }).length;
   document.getElementById('staff-total-comm').textContent = 'Rs. ' + Math.round(totalComm).toLocaleString();
@@ -5986,6 +5997,13 @@ function autoFillItemDesc(idx){
   });
 }
 
+function populateOrdStaffSel(selectedId){
+  var sel=document.getElementById('o-staff'); if(!sel) return;
+  sel.innerHTML='<option value="">-- No Staff Assigned --</option>'+
+    (db.staff||[]).filter(function(s){return s.status!=='Inactive';}).map(function(s){
+      return '<option value="'+s.id+'"'+(selectedId&&String(selectedId)===String(s.id)?' selected':'')+'>'+s.name+' ('+s.role+')</option>';
+    }).join('');
+}
 function openOrdModal(){
   ordItems=[{cat:'',sub:'',frameSize:'',frameCustom:'',desc:'',amount:''}];
   document.getElementById('o-id').value='';
@@ -5997,6 +6015,7 @@ function openOrdModal(){
   var dEl=document.getElementById('o-delivery'); if(dEl) dEl.value=0;
   var duEl=document.getElementById('o-due'); if(duEl) duEl.value='';
   var advEl=document.getElementById('o-adv'); if(advEl) advEl.value='';
+  populateOrdStaffSel('');
   renderOrdItems();
   openM('m-ord');
 }
@@ -7402,8 +7421,9 @@ function renderOrd(){
     var ps=o.paymentStatus||'Unpaid';
     var pc=ps==='Paid'?'bs':ps==='Partial'?'bw':'bd';
     var svcDisplay=o.items&&o.items.length>1?'<b>'+o.items.length+' items</b><br>'+o.items.map(function(i){return '<small style="color:var(--muted)">• '+i.desc+'</small>';}).join('<br>'):o.service+(o.frameSize?'<br><small style="color:var(--muted)">🖼️ '+o.frameSize+'</small>':'');
-    return '<tr><td><b>#'+String(o.id).slice(-5)+'</b></td><td>'+o.customer+'<br><small style="color:var(--muted)">'+o.phone+'</small></td><td>'+svcDisplay+'<br><small style="color:var(--muted)">'+o.platform+'</small></td><td><b>Rs. '+(o.amount||0).toFixed(2)+'</b>'+(o.delivery>0?'<br><small style="color:var(--muted)">🚚 Rs.'+o.delivery.toFixed(2)+'</small>':'')+(o.advance>0?'<br><small style="color:var(--success)">Adv: Rs.'+o.advance.toFixed(0)+'</small>':'')+'</td><td>'+sbadge(o.status)+'<br><span class="badge '+pc+'" style="margin-top:2px">'+(ps==='Paid'?'💰 Paid':ps==='Partial'?'⚠️ Partial':'❌ Unpaid')+'</span></td><td>'+o.date+'</td><td style="white-space:nowrap"><button class="btn bo bsm" onclick="editOrd('+o.id+')" style="margin-right:3px">✏️</button><button class="btn bs2 bsm" onclick="cycleOrd('+o.id+')" style="margin-right:3px">→</button><button class="btn bp2 bsm" onclick="showOBill('+o.id+')" style="margin-right:3px">🧾</button><button class="btn bsm" style="background:rgba(0,230,118,0.15);color:var(--success);border:1px solid rgba(0,230,118,0.3);margin-right:3px" onclick="openPay('+o.id+')">💳</button><button class="btn bd2 bsm" onclick="delOrd('+o.id+')">🗑️</button></td></tr>';
-  }).join(''):'<tr><td colspan="7" class="empty"><div class="ei">🌐</div>No orders</td></tr>';
+    var assignedStaff = o.staffId ? ((db.staff||[]).find(function(s){return String(s.id)===String(o.staffId);})||{}).name||'—' : '<span style="color:var(--muted);font-size:11px">—</span>';
+    return '<tr><td><b>#'+String(o.id).slice(-5)+'</b></td><td>'+o.customer+'<br><small style="color:var(--muted)">'+o.phone+'</small></td><td>'+svcDisplay+'<br><small style="color:var(--muted)">'+o.platform+'</small></td><td><b>Rs. '+(o.amount||0).toFixed(2)+'</b>'+(o.delivery>0?'<br><small style="color:var(--muted)">🚚 Rs.'+o.delivery.toFixed(2)+'</small>':'')+(o.advance>0?'<br><small style="color:var(--success)">Adv: Rs.'+o.advance.toFixed(0)+'</small>':'')+'</td><td>'+sbadge(o.status)+'<br><span class="badge '+pc+'" style="margin-top:2px">'+(ps==='Paid'?'💰 Paid':ps==='Partial'?'⚠️ Partial':'❌ Unpaid')+'</span></td><td style="font-size:12px">'+assignedStaff+'</td><td>'+o.date+'</td><td style="white-space:nowrap"><button class="btn bo bsm" onclick="editOrd('+o.id+')" style="margin-right:3px">✏️</button><button class="btn bs2 bsm" onclick="cycleOrd('+o.id+')" style="margin-right:3px">→</button><button class="btn bp2 bsm" onclick="showOBill('+o.id+')" style="margin-right:3px">🧾</button><button class="btn bsm" style="background:rgba(0,230,118,0.15);color:var(--success);border:1px solid rgba(0,230,118,0.3);margin-right:3px" onclick="openPay('+o.id+')">💳</button><button class="btn bd2 bsm" onclick="delOrd('+o.id+')">🗑️</button></td></tr>';
+  }).join(''):'<tr><td colspan="8" class="empty"><div class="ei">🌐</div>No orders</td></tr>';
 }
 function saveOrd(){
   var id=document.getElementById('o-id').value;
@@ -7433,7 +7453,8 @@ function saveOrd(){
     delivery:delivery,
     subtotal:sub,
     dueDate:document.getElementById('o-due')?document.getElementById('o-due').value:'',
-    advance:parseFloat(document.getElementById('o-adv')?document.getElementById('o-adv').value:0)||0
+    advance:parseFloat(document.getElementById('o-adv')?document.getElementById('o-adv').value:0)||0,
+    staffId: document.getElementById('o-staff') ? (document.getElementById('o-staff').value || '') : ''
   };
   if(id){ var i=db.orders.findIndex(function(x){ return x.id===o.id; }); if(i>=0){ o.payments=db.orders[i].payments||[]; o.paymentStatus=db.orders[i].paymentStatus||'Unpaid'; db.orders[i]=o; } }
   else db.orders.push(o);
@@ -7451,6 +7472,7 @@ function editOrd(id){
   if(dEl) dEl.value=o.delivery||0;
   var duEl=document.getElementById('o-due'); if(duEl) duEl.value=o.dueDate||'';
   var advEl=document.getElementById('o-adv'); if(advEl) advEl.value=o.advance||'';
+  populateOrdStaffSel(o.staffId||'');
   // Restore items - support both old (no items) and new format
   if(o.items && o.items.length){
     ordItems=JSON.parse(JSON.stringify(o.items));
