@@ -711,144 +711,160 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
 }
 
 
-/* ═══════════════════════════════════════════════════════
-   📱 MOBILE UI  — Desktop sidebar untouched on >768px
-      Mobile (≤768px) gets bottom nav + more drawer
-   ═══════════════════════════════════════════════════════ */
-#mobile-bottom-nav,#mobile-more-drawer,#mobile-more-overlay{display:none!important;}
+/* ════════════════════════════════════════════════════
+   📱 MOBILE UI  —  bottom nav on ≤768 px
+       Desktop sidebar fully unchanged on > 768 px
+   ════════════════════════════════════════════════════ */
+#mobile-bottom-nav,
+#mobile-more-drawer,
+#mobile-more-overlay { display: none !important; }
 
-@media(max-width:768px){
-  .sidebar{display:none!important;}
-  .sidebar-overlay{display:none!important;}
-  .mob-toggle{display:none!important;}
-  .main{margin-left:0!important;padding-bottom:72px;}
+@media (max-width: 768px) {
+  .sidebar          { display: none !important; }
+  .sidebar-overlay  { display: none !important; }
+  .mob-toggle       { display: none !important; }
+  .main             { margin-left: 0 !important; padding-bottom: 72px; }
 
-  #mobile-bottom-nav{
-    display:flex!important;
-    position:fixed;bottom:0;left:0;right:0;height:62px;
-    background:var(--card);border-top:1px solid var(--border);
-    z-index:600;justify-content:space-around;align-items:center;
-    box-shadow:0 -4px 24px rgba(108,99,255,0.18);
-    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  /* ── Bottom nav bar ── */
+  #mobile-bottom-nav {
+    display: flex !important;
+    position: fixed; bottom: 0; left: 0; right: 0; height: 62px;
+    background: var(--card);
+    border-top: 1px solid var(--border);
+    z-index: 600;
+    justify-content: space-around;
+    align-items: center;
+    box-shadow: 0 -4px 24px rgba(108,99,255,.18);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
   }
-  .mbn-item{
-    display:flex;flex-direction:column;align-items:center;justify-content:center;
-    flex:1;height:100%;cursor:pointer;gap:3px;transition:all .2s;
-    position:relative;border:none;background:none;color:var(--muted);padding:0;
-    -webkit-tap-highlight-color:transparent;user-select:none;
+  .mbn-item {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    flex: 1; height: 100%; cursor: pointer; gap: 3px;
+    transition: all .2s; position: relative;
+    border: none; background: none;
+    color: var(--muted); padding: 0;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none; touch-action: manipulation;
   }
-  .mbn-ic{font-size:22px;transition:transform .25s cubic-bezier(.34,1.56,.64,1);}
-  .mbn-lbl{font-size:9px;font-weight:700;letter-spacing:.3px;}
-  .mbn-item.mbn-active{color:var(--primary);}
-  .mbn-item.mbn-active .mbn-ic{transform:scale(1.2) translateY(-2px);}
-  .mbn-item::after{content:'';position:absolute;top:0;left:20%;right:20%;height:2.5px;
-    background:var(--primary);border-radius:0 0 4px 4px;opacity:0;transition:opacity .2s;}
-  .mbn-item.mbn-active::after{opacity:1;}
-  .mbn-item:active .mbn-ic{transform:scale(.88);}
-  .mbn-badge{
-    position:absolute;top:8px;right:calc(50% - 22px);
-    background:var(--danger);color:#fff;font-size:9px;width:15px;height:15px;
-    border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;
+  .mbn-ic  { font-size: 22px; transition: transform .25s cubic-bezier(.34,1.56,.64,1); display: block; }
+  .mbn-lbl { font-size: 9px; font-weight: 700; letter-spacing: .3px; display: block; }
+  .mbn-item.mbn-active            { color: var(--primary); }
+  .mbn-item.mbn-active .mbn-ic    { transform: scale(1.2) translateY(-2px); }
+  .mbn-item::after {
+    content: ''; position: absolute; top: 0;
+    left: 20%; right: 20%; height: 2.5px;
+    background: var(--primary);
+    border-radius: 0 0 4px 4px; opacity: 0; transition: opacity .2s;
+  }
+  .mbn-item.mbn-active::after { opacity: 1; }
+  .mbn-item:active .mbn-ic        { transform: scale(.88); }
+  .mbn-badge {
+    position: absolute; top: 8px; right: calc(50% - 22px);
+    background: var(--danger); color: #fff;
+    font-size: 9px; width: 15px; height: 15px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-weight: 700;
   }
 
-  /* More drawer overlay */
-  #mobile-more-overlay{
-    display:block!important;position:fixed;inset:0;
-    background:rgba(0,0,0,.55);z-index:580;backdrop-filter:blur(3px);
-    opacity:0;pointer-events:none;transition:opacity .3s;
+  /* ── More drawer overlay ── */
+  #mobile-more-overlay {
+    display: block !important;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.55); z-index: 580;
+    backdrop-filter: blur(3px);
+    opacity: 0; pointer-events: none; transition: opacity .3s;
   }
-  #mobile-more-overlay.mmd-open{opacity:1;pointer-events:auto;}
+  #mobile-more-overlay.mmd-open { opacity: 1; pointer-events: auto; }
 
-  /* More drawer panel */
-  #mobile-more-drawer{
-    display:block!important;position:fixed;
-    bottom:62px;left:0;right:0;
-    background:var(--card);border-top:1px solid var(--border);
-    border-radius:20px 20px 0 0;z-index:590;
-    padding:12px 8px 12px;max-height:75vh;overflow-y:auto;
-    transform:translateY(110%);
-    transition:transform .35s cubic-bezier(.16,1,.3,1);
-    box-shadow:0 -8px 40px rgba(0,0,0,.4);
+  /* ── More drawer panel ── */
+  #mobile-more-drawer {
+    display: block !important;
+    position: fixed; bottom: 62px; left: 0; right: 0;
+    background: var(--card);
+    border-top: 1px solid var(--border);
+    border-radius: 20px 20px 0 0;
+    z-index: 590; padding: 12px 8px 12px;
+    max-height: 75vh; overflow-y: auto;
+    transform: translateY(110%);
+    transition: transform .35s cubic-bezier(.16,1,.3,1);
+    box-shadow: 0 -8px 40px rgba(0,0,0,.4);
   }
-  #mobile-more-drawer.mmd-open{transform:translateY(0);}
+  #mobile-more-drawer.mmd-open { transform: translateY(0); }
 
-  .mmore-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 14px;}
-  .mmore-title{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;
-    padding:8px 8px 4px;font-weight:700;}
-  .mmore-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:4px;}
-  .mmore-item{
+  .mmore-handle { width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 14px; }
+  .mmore-title  { font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;padding:8px 8px 4px;font-weight:700; }
+  .mmore-grid   { display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:4px; }
+  .mmore-item   {
     display:flex;flex-direction:column;align-items:center;justify-content:center;
     gap:5px;padding:12px 4px;border-radius:12px;cursor:pointer;
     background:var(--card2);border:1px solid var(--border);
     transition:all .18s;-webkit-tap-highlight-color:transparent;
-    position:relative;user-select:none;
+    position:relative;user-select:none;touch-action:manipulation;
   }
-  .mmore-item:active{transform:scale(.92);}
-  .mmore-ic{font-size:20px;}
-  .mmore-lbl{font-size:10px;color:var(--muted);text-align:center;line-height:1.2;font-weight:600;}
-  .mmore-item.mmore-active{background:rgba(108,99,255,.18);border-color:var(--primary);}
-  .mmore-item.mmore-active .mmore-lbl{color:var(--primary);}
-  .mmore-dot{position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:var(--danger);}
+  .mmore-item:active { transform:scale(.92); }
+  .mmore-ic  { font-size:20px; }
+  .mmore-lbl { font-size:10px;color:var(--muted);text-align:center;line-height:1.2;font-weight:600; }
+  .mmore-item.mmore-active { background:rgba(108,99,255,.18);border-color:var(--primary); }
+  .mmore-item.mmore-active .mmore-lbl { color:var(--primary); }
+  .mmore-dot { position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:var(--danger); }
 
-  /* FAB */
-  #fab{bottom:74px;right:16px;width:48px;height:48px;font-size:20px;}
-  #fab-menu{bottom:130px;right:16px;}
+  /* ── FAB ── */
+  #fab       { bottom:74px; right:16px; width:48px; height:48px; font-size:20px; }
+  #fab-menu  { bottom:130px; right:16px; }
 
-  /* Topbar */
-  .topbar{padding:10px 14px;}
-  .topbar h2{font-size:15px;}
-  .tright{gap:6px;}
-  .clock{font-size:11px;padding:4px 9px;}
-  #autosave-indicator,#fb-sync-indicator,#offline-indicator{font-size:10px;padding:2px 7px;}
-  .theme-btn{width:20px;height:20px;}
+  /* ── Topbar ── */
+  .topbar    { padding:10px 14px; }
+  .topbar h2 { font-size:15px; }
+  .tright    { gap:6px; }
+  .clock     { font-size:11px; padding:4px 9px; }
+  #autosave-indicator,#fb-sync-indicator,#offline-indicator { font-size:10px;padding:2px 7px; }
+  .theme-btn { width:20px;height:20px; }
 
-  /* Stats */
-  .sgrid{grid-template-columns:1fr 1fr;gap:10px;}
-  .scard{padding:13px;}
-  .sval{font-size:17px;}
-  .slabel{font-size:10px;}
+  /* ── Stats ── */
+  .sgrid { grid-template-columns:1fr 1fr; gap:10px; }
+  .scard { padding:13px; }
+  .sval  { font-size:17px; }
 
-  /* Content */
-  .content{padding:10px;}
+  /* ── Content ── */
+  .content { padding:10px; }
 
-  /* Tables */
-  .tcard{overflow-x:auto;-webkit-overflow-scrolling:touch;}
-  table{min-width:500px;}
-  td,th{padding:8px 10px;font-size:12px;}
+  /* ── Tables ── */
+  .tcard { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  table  { min-width:500px; }
+  td,th  { padding:8px 10px; font-size:12px; }
 
-  /* POS */
-  .pos-wrap{grid-template-columns:1fr;gap:12px;}
-  .pgrid{grid-template-columns:repeat(2,1fr);}
-  .cpanel{position:relative;top:0;height:auto;max-height:55vh;}
-  .citems{max-height:140px;}
+  /* ── POS ── */
+  .pos-wrap { grid-template-columns:1fr; gap:12px; }
+  .pgrid    { grid-template-columns:repeat(2,1fr); }
+  .cpanel   { position:relative;top:0;height:auto;max-height:55vh; }
+  .citems   { max-height:140px; }
 
-  /* Forms */
-  .fgrid{grid-template-columns:1fr;}
-  .g2{grid-template-columns:1fr;}
+  /* ── Forms ── */
+  .fgrid { grid-template-columns:1fr; }
+  .g2    { grid-template-columns:1fr; }
 
-  /* Modals — bottom sheet */
-  .moverlay{padding:0!important;align-items:flex-end;}
-  .modal{width:100%!important;max-width:100%!important;
-    border-radius:20px 20px 0 0!important;max-height:92vh;
-    animation:mobileModalUp .3s cubic-bezier(.16,1,.3,1)!important;}
-  @keyframes mobileModalUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+  /* ── Modals → bottom sheet ── */
+  .moverlay { padding:0 !important; align-items:flex-end; }
+  .modal {
+    width:100% !important; max-width:100% !important;
+    border-radius:20px 20px 0 0 !important; max-height:92vh;
+    animation: mobileModalUp .3s cubic-bezier(.16,1,.3,1) !important;
+  }
+  @keyframes mobileModalUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
 
-  /* Toast */
-  .toast{bottom:75px;right:12px;left:12px;max-width:none;font-size:12px;}
+  /* ── Toast / PWA ── */
+  .toast      { bottom:75px;right:12px;left:12px;max-width:none;font-size:12px; }
+  #pwa-banner { bottom:62px; }
 
-  /* PWA banner */
-  #pwa-banner{bottom:62px;}
+  /* ── Inputs ── */
+  input,select,textarea { font-size:16px !important; padding:11px 12px; }
+  .btn  { padding:9px 14px; font-size:13px; min-height:40px; }
+  .bsm  { padding:6px 10px; font-size:12px; min-height:34px; }
 
-  /* Touch inputs */
-  input,select,textarea{font-size:16px!important;padding:11px 12px;}
-  .btn{padding:9px 14px;font-size:13px;min-height:40px;}
-  .bsm{padding:6px 10px;font-size:12px;min-height:34px;}
-
-  /* Charts */
-  .dash-charts-grid{grid-template-columns:1fr!important;}
-
-  /* Pin */
-  .pin-key{width:68px;height:68px;font-size:19px;}
+  /* ── Charts / Pin ── */
+  .dash-charts-grid { grid-template-columns:1fr !important; }
+  .pin-key          { width:68px;height:68px;font-size:19px; }
 }
 
 </style>
@@ -856,32 +872,31 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
 <body>
 <canvas id="bgc"></canvas>
 
-<!-- ══════════════════════════════════════════
-     📱 MOBILE BOTTOM NAV  (visible ≤768px only)
-     Desktop sidebar unchanged on >768px
-     ══════════════════════════════════════════ -->
-<nav id="mobile-bottom-nav" role="navigation" aria-label="Mobile navigation">
-  <button class="mbn-item mbn-active" data-mbn="dashboard" type="button" aria-label="Dashboard">
+<!-- ═══════════════════════════════════════════════
+     📱 MOBILE BOTTOM NAV  (visible only on ≤768 px)
+     ═══════════════════════════════════════════════ -->
+<nav id="mobile-bottom-nav">
+  <button class="mbn-item mbn-active" data-mbn="dashboard" type="button">
     <span class="mbn-ic">🏠</span><span class="mbn-lbl">Home</span>
   </button>
-  <button class="mbn-item" data-mbn="pos" type="button" aria-label="New Sale">
+  <button class="mbn-item" data-mbn="pos" type="button">
     <span class="mbn-ic">🛒</span><span class="mbn-lbl">Sale</span>
   </button>
-  <button class="mbn-item" data-mbn="repairs" type="button" aria-label="Repairs">
+  <button class="mbn-item" data-mbn="repairs" type="button">
     <span class="mbn-ic">🔧</span><span class="mbn-lbl">Repairs</span>
     <span class="mbn-badge" id="mbn-rbadge" style="display:none">0</span>
   </button>
-  <button class="mbn-item" data-mbn="inventory" type="button" aria-label="Inventory">
+  <button class="mbn-item" data-mbn="inventory" type="button">
     <span class="mbn-ic">📦</span><span class="mbn-lbl">Stock</span>
   </button>
-  <button class="mbn-item" id="mbn-more-btn" type="button" aria-label="More">
+  <button class="mbn-item" id="mbn-more-btn" type="button">
     <span class="mbn-ic">☰</span><span class="mbn-lbl">More</span>
   </button>
 </nav>
 
 <div id="mobile-more-overlay"></div>
 
-<div id="mobile-more-drawer" role="dialog" aria-modal="true" aria-label="More navigation">
+<div id="mobile-more-drawer">
   <div class="mmore-handle"></div>
 
   <div class="mmore-title">Management</div>
@@ -939,7 +954,7 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
     <div class="mmore-item" data-mmr="device-history"><span class="mmore-ic">📱</span><span class="mmore-lbl">Device Hist</span></div>
     <div class="mmore-item" data-mmr="repair-advanced"><span class="mmore-ic">🛠️</span><span class="mmore-lbl">Diagnostics</span></div>
   </div>
-  <div style="height:10px"></div>
+  <div style="height:12px"></div>
 </div>
 
 <!-- PIN LOCK SCREEN -->
@@ -11147,56 +11162,64 @@ document.addEventListener('click', function(e){
 
 
 // ═══════════════════════════════════════════════════════════════
-//  📱 MOBILE BOTTOM NAV — clean event-listener approach
-//  Works on phone: onclick attrs replaced with delegated listeners
-//  Desktop (>768px): does nothing, sidebar handles navigation
+//  📱 MOBILE BOTTOM NAV JS
+//  Uses window 'load' event so goPage/openM/renderAll are
+//  guaranteed to exist before any listener fires.
+//  No inline onclick attrs — pure event delegation on data attrs.
 // ═══════════════════════════════════════════════════════════════
-(function() {
-  var MAIN_TABS = ['dashboard','pos','repairs','inventory'];
+(function () {
+  'use strict';
 
-  function isMob() { return window.innerWidth <= 768; }
+  var MAIN = ['dashboard', 'pos', 'repairs', 'inventory'];
 
-  /* ── drawer open/close ── */
+  /* open / close the more drawer */
   function openDrawer() {
     document.getElementById('mobile-more-drawer').classList.add('mmd-open');
     document.getElementById('mobile-more-overlay').classList.add('mmd-open');
+    document.getElementById('mbn-more-btn').classList.add('mbn-active');
   }
   function closeDrawer() {
     document.getElementById('mobile-more-drawer').classList.remove('mmd-open');
     document.getElementById('mobile-more-overlay').classList.remove('mmd-open');
   }
 
-  /* ── update active state on bottom tabs ── */
-  function setMbnActive(page) {
-    document.querySelectorAll('#mobile-bottom-nav .mbn-item').forEach(function(btn) {
-      var p = btn.getAttribute('data-mbn');
-      btn.classList.toggle('mbn-active', p === page);
+  /* highlight the correct bottom-tab and drawer item */
+  function setActive(page) {
+    /* bottom tabs */
+    document.querySelectorAll('#mobile-bottom-nav .mbn-item').forEach(function (btn) {
+      btn.classList.toggle('mbn-active', btn.getAttribute('data-mbn') === page);
     });
+    /* more button stays active when a drawer-page is current */
     var moreBtn = document.getElementById('mbn-more-btn');
-    if (moreBtn) moreBtn.classList.toggle('mbn-active', MAIN_TABS.indexOf(page) === -1);
-    // highlight active item inside drawer
-    document.querySelectorAll('.mmore-item').forEach(function(el) {
+    if (moreBtn) moreBtn.classList.toggle('mbn-active', MAIN.indexOf(page) === -1);
+    /* drawer items */
+    document.querySelectorAll('.mmore-item').forEach(function (el) {
       el.classList.toggle('mmore-active', el.getAttribute('data-mmr') === page);
     });
   }
 
-  /* ── navigate to page ── */
+  /* navigate: call original goPage, then update nav state */
   function mbnGo(page) {
     closeDrawer();
-    goPage(page);           // call the original goPage directly — no override needed
-    setMbnActive(page);
+    if (typeof goPage === 'function') {
+      goPage(page);
+    } else {
+      /* safety fallback: try window scope */
+      console.warn('[MobileNav] goPage not found, retrying…');
+      setTimeout(function () { if (typeof goPage === 'function') goPage(page); }, 300);
+    }
+    setActive(page);
   }
 
-  /* ── badge sync ── */
+  /* badge sync from desktop badges to mobile badges */
   function syncBadges() {
-    if (!isMob()) return;
     var map = [
-      ['rbadge', 'mbn-rbadge', true],
-      ['obadge', 'mmr-obadge', false],
-      ['msgbadge','mmr-msgbadge',false],
-      ['crbadge', 'mmr-crbadge', false],
+      ['rbadge',   'mbn-rbadge',  true ],
+      ['obadge',   'mmr-obadge',  false],
+      ['msgbadge', 'mmr-msgbadge',false],
+      ['crbadge',  'mmr-crbadge', false],
     ];
-    map.forEach(function(m) {
+    map.forEach(function (m) {
       var src = document.getElementById(m[0]);
       var dst = document.getElementById(m[1]);
       if (!src || !dst) return;
@@ -11207,48 +11230,70 @@ document.addEventListener('click', function(e){
     });
   }
 
-  /* ── wire everything up after DOM ready ── */
-  document.addEventListener('DOMContentLoaded', function() {
-    // Bottom tab clicks
-    document.querySelectorAll('#mobile-bottom-nav .mbn-item[data-mbn]').forEach(function(btn) {
-      btn.addEventListener('click', function(e) {
-        if (!isMob()) return;
-        e.stopPropagation();
-        mbnGo(btn.getAttribute('data-mbn'));
+  /* wire everything up — use 'load' so module scripts have run */
+  function wireNav() {
+    /* bottom tab buttons */
+    document.querySelectorAll('#mobile-bottom-nav .mbn-item[data-mbn]').forEach(function (btn) {
+      /* use both click AND touchend to maximize mobile reliability */
+      ['click', 'touchend'].forEach(function (evt) {
+        btn.addEventListener(evt, function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          mbnGo(btn.getAttribute('data-mbn'));
+        }, { passive: false });
       });
     });
 
-    // "More" button
+    /* "More" button */
     var moreBtn = document.getElementById('mbn-more-btn');
     if (moreBtn) {
-      moreBtn.addEventListener('click', function(e) {
-        if (!isMob()) return;
-        e.stopPropagation();
-        openDrawer();
-        moreBtn.classList.add('mbn-active');
+      ['click', 'touchend'].forEach(function (evt) {
+        moreBtn.addEventListener(evt, function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          openDrawer();
+        }, { passive: false });
       });
     }
 
-    // Drawer item clicks (event delegation)
+    /* drawer items — event delegation */
     var drawer = document.getElementById('mobile-more-drawer');
     if (drawer) {
-      drawer.addEventListener('click', function(e) {
-        var item = e.target.closest('.mmore-item');
-        if (!item) return;
-        var page = item.getAttribute('data-mmr');
-        if (page) mbnGo(page);
+      ['click', 'touchend'].forEach(function (evt) {
+        drawer.addEventListener(evt, function (e) {
+          var item = e.target.closest('.mmore-item');
+          if (!item) return;
+          e.preventDefault();
+          var page = item.getAttribute('data-mmr');
+          if (page) mbnGo(page);
+        }, { passive: false });
       });
     }
 
-    // Overlay click → close drawer
+    /* overlay → close drawer */
     var overlay = document.getElementById('mobile-more-overlay');
-    if (overlay) overlay.addEventListener('click', closeDrawer);
+    if (overlay) {
+      ['click', 'touchend'].forEach(function (evt) {
+        overlay.addEventListener(evt, function (e) {
+          e.preventDefault();
+          closeDrawer();
+        }, { passive: false });
+      });
+    }
 
-    // Badge sync
+    /* badge sync */
+    syncBadges();
     setInterval(syncBadges, 3000);
-    setTimeout(syncBadges, 1200);
-  });
-})();
+  }
+
+  /* 'load' fires after ALL scripts (including type="module") have executed */
+  if (document.readyState === 'complete') {
+    wireNav();          /* already loaded */
+  } else {
+    window.addEventListener('load', wireNav);
+  }
+
+}());
 
 init();
 </script>
