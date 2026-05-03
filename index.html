@@ -458,10 +458,7 @@ body {
   table  { width: 100% !important; min-width: 0 !important; table-layout: fixed !important; font-size: 11px !important; }
   th, td { padding: 5px 6px !important; font-size: 11px !important; white-space: normal !important; word-break: break-word !important; overflow: hidden !important; }
 
-  /* Hide extra table columns on small screens */
-  table th:nth-child(n+5), table td:nth-child(n+5) { display: none !important; }
-
-  /* ── Repairs & Stock pages: side scroll allow ── */
+  /* ── Repairs & Stock pages: full side scroll, ALL columns visible ── */
   #pg-repairs .tcard,
   #pg-inventory .tcard,
   #pg-stocklog .tcard,
@@ -477,19 +474,23 @@ body {
   #pg-stocklog .tcard table,
   #pg-dead-stock .tcard table,
   #pg-stock-audit .tcard table {
-    min-width: 580px !important;
+    min-width: 700px !important;
     table-layout: auto !important;
     width: max-content !important;
+    font-size: 12px !important;
   }
 
-  #pg-repairs .tcard th, #pg-repairs .tcard td,
+  #pg-repairs .tcard th,   #pg-repairs .tcard td,
   #pg-inventory .tcard th, #pg-inventory .tcard td,
-  #pg-stocklog .tcard th, #pg-stocklog .tcard td,
-  #pg-dead-stock .tcard th, #pg-dead-stock .tcard td,
+  #pg-stocklog .tcard th,  #pg-stocklog .tcard td,
+  #pg-dead-stock .tcard th,  #pg-dead-stock .tcard td,
   #pg-stock-audit .tcard th, #pg-stock-audit .tcard td {
     white-space: nowrap !important;
     word-break: normal !important;
-    display: table-cell !important;
+    display: table-cell !important;  /* show ALL columns */
+    overflow: visible !important;
+    padding: 7px 10px !important;
+    font-size: 12px !important;
   }
 
   /* Fixed-width elements → full width */
