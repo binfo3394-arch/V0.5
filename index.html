@@ -458,12 +458,39 @@ body {
   table  { width: 100% !important; min-width: 0 !important; table-layout: fixed !important; font-size: 11px !important; }
   th, td { padding: 5px 6px !important; font-size: 11px !important; white-space: normal !important; word-break: break-word !important; overflow: hidden !important; }
 
-  /* ── Repairs & Stock pages: full side scroll, ALL columns visible ── */
+  /* ── ALL pages: full side scroll for tables, ALL columns visible ── */
   #pg-repairs .tcard,
   #pg-inventory .tcard,
   #pg-stocklog .tcard,
   #pg-dead-stock .tcard,
-  #pg-stock-audit .tcard {
+  #pg-stock-audit .tcard,
+  #pg-customers .tcard,
+  #pg-invoices .tcard,
+  #pg-orders .tcard,
+  #pg-credits .tcard,
+  #pg-suppliers .tcard,
+  #pg-returns .tcard,
+  #pg-expenses .tcard,
+  #pg-targets .tcard,
+  #pg-appointments .tcard,
+  #pg-loyalty .tcard,
+  #pg-staff .tcard,
+  #pg-activitylog .tcard,
+  #pg-abc-analysis .tcard,
+  #pg-cust-segments .tcard,
+  #pg-shift .tcard,
+  #pg-batch-tracking .tcard,
+  #pg-kit-assembly .tcard,
+  #pg-cust-timeline .tcard,
+  #pg-repair-advanced .tcard,
+  #pg-pnl .tcard,
+  #pg-reports .tcard,
+  #pg-bundles .tcard,
+  #pg-tasks .tcard,
+  #pg-followups .tcard,
+  #pg-repair-timer .tcard,
+  #pg-repair-templates .tcard,
+  #pg-device-history .tcard {
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch !important;
     touch-action: pan-x pan-y !important;
@@ -473,21 +500,45 @@ body {
   #pg-inventory .tcard table,
   #pg-stocklog .tcard table,
   #pg-dead-stock .tcard table,
-  #pg-stock-audit .tcard table {
+  #pg-stock-audit .tcard table,
+  #pg-customers .tcard table,
+  #pg-invoices .tcard table,
+  #pg-orders .tcard table,
+  #pg-credits .tcard table,
+  #pg-suppliers .tcard table,
+  #pg-returns .tcard table,
+  #pg-expenses .tcard table,
+  #pg-targets .tcard table,
+  #pg-appointments .tcard table,
+  #pg-loyalty .tcard table,
+  #pg-staff .tcard table,
+  #pg-activitylog .tcard table,
+  #pg-abc-analysis .tcard table,
+  #pg-cust-segments .tcard table,
+  #pg-shift .tcard table,
+  #pg-batch-tracking .tcard table,
+  #pg-kit-assembly .tcard table,
+  #pg-cust-timeline .tcard table,
+  #pg-repair-advanced .tcard table,
+  #pg-pnl .tcard table,
+  #pg-reports .tcard table,
+  #pg-bundles .tcard table,
+  #pg-tasks .tcard table,
+  #pg-followups .tcard table,
+  #pg-repair-timer .tcard table,
+  #pg-repair-templates .tcard table,
+  #pg-device-history .tcard table {
     min-width: 700px !important;
     table-layout: auto !important;
     width: max-content !important;
     font-size: 12px !important;
   }
 
-  #pg-repairs .tcard th,   #pg-repairs .tcard td,
-  #pg-inventory .tcard th, #pg-inventory .tcard td,
-  #pg-stocklog .tcard th,  #pg-stocklog .tcard td,
-  #pg-dead-stock .tcard th,  #pg-dead-stock .tcard td,
-  #pg-stock-audit .tcard th, #pg-stock-audit .tcard td {
+  /* Show ALL columns, no hiding */
+  .tcard th, .tcard td {
     white-space: nowrap !important;
     word-break: normal !important;
-    display: table-cell !important;  /* show ALL columns */
+    display: table-cell !important;
     overflow: visible !important;
     padding: 7px 10px !important;
     font-size: 12px !important;
