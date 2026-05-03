@@ -19,8 +19,8 @@
     name: "ST Mobile & Designing POS",
     short_name: "ST POS",
     description: "ST Mobile Point of Sale System",
-    start_url: "./",
-    scope: "./",
+    start_url: "/V0.5/",
+    scope: "/V0.5/",
     display: "standalone",
     orientation: "portrait-primary",
     background_color: "#0a0a1a",
@@ -40,43 +40,13 @@
   document.currentScript.parentNode.insertBefore(link, document.currentScript.nextSibling);
 
   // ── Service Worker (cache-first for offline) ──
+  // ── Service Worker via sw.js (generated separately) ──
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
-      var sw = `
-const CACHE = 'st-pos-v28-pwa-v2';
-self.addEventListener('install', e => {
-  self.skipWaiting();
-  e.waitUntil(
-    caches.open(CACHE).then(c => c.add(self.location.href)).catch(()=>{})
-  );
-});
-self.addEventListener('activate', e => {
-  e.waitUntil(
-    caches.keys().then(ks => Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k))))
-  );
-  self.clients.claim();
-});
-self.addEventListener('fetch', e => {
-  var url = e.request.url;
-  if(url.includes('firebase')||url.includes('googleapis')||url.includes('cdnjs')||url.includes('unpkg')||url.includes('gstatic')) return;
-  e.respondWith(
-    caches.match(e.request).then(cached => {
-      var net = fetch(e.request).then(r => {
-        if(r && r.status===200 && e.request.method==='GET') {
-          var clone = r.clone();
-          caches.open(CACHE).then(c => c.put(e.request, clone));
-        }
-        return r;
-      }).catch(()=>{});
-      return cached || net;
-    })
-  );
-});
-`;
-      var swBlob = new Blob([sw], {type:'application/javascript'});
-      navigator.serviceWorker.register(URL.createObjectURL(swBlob), {scope:'./'})
-        .then(function(r){ console.log('✅ ST POS SW registered', r.scope); })
-        .catch(function(e){ console.warn('SW failed:', e); });
+      // Try to register sw.js if it exists alongside index.html
+      navigator.serviceWorker.register('/V0.5/sw.js', {scope: '/V0.5/'})
+        .then(function(r){ console.log('✅ SW registered via sw.js', r.scope); })
+        .catch(function(){ console.log('ℹ️ sw.js not found — PWA install still works via manifest'); });
     });
   }
 
