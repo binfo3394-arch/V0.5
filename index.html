@@ -1110,9 +1110,15 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
       <div class="nitem" data-page="roster"><span class="ic">📅</span><span>Staff Roster</span></div>
       <div class="nitem" data-page="tasks"><span class="ic">✅</span><span>Task Manager</span></div>
       <div class="nitem" data-page="open-close-checklist"><span class="ic">☑️</span><span>Open/Close Checklist</span></div>
+      <div class="nlabel">v28 New ✨</div>
+      <div class="nitem" data-page="purchase-orders"><span class="ic">🛍️</span><span>Purchase Orders</span></div>
+      <div class="nitem" data-page="multi-branch"><span class="ic">🏢</span><span>Multi-Branch</span></div>
+      <div class="nitem" data-page="tax-manager"><span class="ic">🧮</span><span>VAT / Tax Manager</span></div>
+      <div class="nitem" data-page="advanced-reports"><span class="ic">📈</span><span>Advanced Reports</span></div>
+      <div class="nitem" data-page="dashboard-builder"><span class="ic">🎛️</span><span>Dashboard Builder</span></div>
     </div>
     <div class="sfooter">
-      <div style="margin-bottom:6px;font-size:10px;color:var(--muted)">v26 🚀 — ST Mobile POS</div>
+      <div style="margin-bottom:6px;font-size:10px;color:var(--muted)">v28 🚀 — ST Mobile POS</div>
       <div id="db-status-bar" style="font-size:10px;color:var(--success);margin-bottom:6px">🔥 Firebase Mode</div>
       <button class="btn bp2 bsm" style="width:100%;margin-bottom:5px;font-size:11px" onclick="exportDB()">📤 JSON Backup</button>
       <button class="btn bsm" onclick="openAdminPanel()" id="admin-panel-btn" style="width:100%;margin-bottom:5px;font-size:11px;background:rgba(255,23,68,0.12);color:#ff1744;border:1px solid rgba(255,23,68,0.3)">🛡️ Admin Panel</button>
@@ -2606,6 +2612,175 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
         </div>
       </div>
 
+      <!-- ===== V28: PURCHASE ORDERS ===== -->
+      <div id="pg-purchase-orders" class="page">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px">
+          <div class="estitle" style="margin:0">🛍️ Purchase Orders</div>
+          <button class="btn bp2" onclick="openM('m-po')">➕ New PO</button>
+        </div>
+        <div class="sgrid" style="grid-template-columns:repeat(4,1fr);margin-bottom:18px">
+          <div class="scard s1"><div style="font-size:13px;color:var(--muted)">Total POs</div><div class="sval" id="po-stat-total">0</div></div>
+          <div class="scard s3"><div style="font-size:13px;color:var(--muted)">Pending</div><div class="sval" id="po-stat-pending">0</div></div>
+          <div class="scard s2"><div style="font-size:13px;color:var(--muted)">Received</div><div class="sval" id="po-stat-received">0</div></div>
+          <div class="scard s4"><div style="font-size:13px;color:var(--muted)">Total Value</div><div class="sval" id="po-stat-value">Rs.0</div></div>
+        </div>
+        <div class="tcard"><table><thead><tr><th>PO #</th><th>Supplier</th><th>Items</th><th>Total</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="po-tbl"><tr><td colspan="7" class="empty">No purchase orders yet</td></tr></tbody></table></div>
+      </div>
+
+      <!-- ===== V28: MULTI-BRANCH ===== -->
+      <div id="pg-multi-branch" class="page">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px">
+          <div class="estitle" style="margin:0">🏢 Multi-Branch Management</div>
+          <button class="btn bp2" onclick="openM('m-branch')">➕ Add Branch</button>
+        </div>
+        <div id="branch-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-bottom:18px"></div>
+        <div class="tcard">
+          <div class="thead2"><h3>📊 Branch Performance</h3></div>
+          <table><thead><tr><th>Branch</th><th>Manager</th><th>Sales (This Month)</th><th>Repairs</th><th>Staff</th><th>Status</th></tr></thead>
+          <tbody id="branch-perf-tbl"><tr><td colspan="6" class="empty">Add branches to compare</td></tr></tbody></table>
+        </div>
+        <div class="ssec" style="margin-top:14px">
+          <h3>🔄 Inter-Branch Stock Transfer</h3>
+          <div class="fgrid">
+            <div class="fg"><label>From Branch</label><select id="transfer-from"><option value="">— Select —</option></select></div>
+            <div class="fg"><label>To Branch</label><select id="transfer-to"><option value="">— Select —</option></select></div>
+            <div class="fg"><label>Product</label><select id="transfer-prod"><option value="">— Select Product —</option></select></div>
+            <div class="fg"><label>Quantity</label><input id="transfer-qty" type="number" min="1" value="1"></div>
+          </div>
+          <button class="btn bp2 bsm" onclick="doStockTransfer()">🔄 Transfer Stock</button>
+          <div id="transfer-log" style="margin-top:14px;max-height:200px;overflow-y:auto"></div>
+        </div>
+      </div>
+
+      <!-- ===== V28: VAT / TAX MANAGER ===== -->
+      <div id="pg-tax-manager" class="page">
+        <div class="estitle" style="margin-bottom:18px">🧮 VAT / Tax Manager</div>
+        <div class="g2">
+          <div class="ssec" style="margin:0">
+            <h3>⚙️ Tax Profiles</h3>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Create different tax rates per category</div>
+            <div id="tax-profiles-list" style="margin-bottom:12px"></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <input id="new-tax-name" placeholder="Tax name (e.g. VAT)" style="flex:1;min-width:100px">
+              <input id="new-tax-rate" type="number" placeholder="Rate %" min="0" max="100" style="width:80px">
+              <button class="btn bp2 bsm" onclick="addTaxProfile()">➕ Add</button>
+            </div>
+          </div>
+          <div class="ssec" style="margin:0">
+            <h3>📊 Tax Summary</h3>
+            <div class="sgrid" style="grid-template-columns:1fr 1fr;margin-bottom:12px">
+              <div style="background:var(--card2);border-radius:10px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:800;color:var(--warning)" id="tax-collected-today">Rs. 0</div><div style="font-size:11px;color:var(--muted)">Tax Collected Today</div></div>
+              <div style="background:var(--card2);border-radius:10px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:800;color:var(--primary)" id="tax-collected-month">Rs. 0</div><div style="font-size:11px;color:var(--muted)">Tax This Month</div></div>
+            </div>
+            <div style="font-size:12px;font-weight:700;margin-bottom:8px;color:var(--muted)">Recent Taxed Invoices</div>
+            <div id="taxed-invoices-list" style="max-height:220px;overflow-y:auto"></div>
+          </div>
+        </div>
+        <div class="ssec" style="margin-top:14px">
+          <h3>🧾 Tax Report Export</h3>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+            <div class="fg" style="margin:0;flex:1;min-width:140px"><label>From Date</label><input id="tax-from" type="date"></div>
+            <div class="fg" style="margin:0;flex:1;min-width:140px"><label>To Date</label><input id="tax-to" type="date"></div>
+            <button class="btn bp2 bsm" onclick="exportTaxCSV()">📊 Export CSV</button>
+            <button class="btn bs2 bsm" onclick="exportTaxPDF()">🖨️ Print Report</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== V28: ADVANCED REPORTS ===== -->
+      <div id="pg-advanced-reports" class="page">
+        <div class="estitle" style="margin-bottom:18px">📈 Advanced Reports & Export</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:20px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px">
+          <div class="fg" style="margin:0;flex:1;min-width:140px"><label>📅 From Date</label><input id="rpt-from" type="date"></div>
+          <div class="fg" style="margin:0;flex:1;min-width:140px"><label>📅 To Date</label><input id="rpt-to" type="date"></div>
+          <div class="fg" style="margin:0;flex:1;min-width:120px"><label>Report Type</label>
+            <select id="rpt-type">
+              <option value="sales">💰 Sales Report</option>
+              <option value="products">📦 Product Performance</option>
+              <option value="customers">👥 Customer Report</option>
+              <option value="repairs">🔧 Repairs Report</option>
+              <option value="expenses">💸 Expenses Report</option>
+              <option value="profit">📊 Profit & Loss</option>
+            </select>
+          </div>
+          <button class="btn bp2" onclick="generateAdvReport()">🔍 Generate</button>
+        </div>
+        <div class="sgrid" style="grid-template-columns:repeat(4,1fr);margin-bottom:18px">
+          <div class="scard s1"><div style="font-size:12px;color:var(--muted)">Period Revenue</div><div class="sval" id="arpt-revenue">Rs. 0</div></div>
+          <div class="scard s2"><div style="font-size:12px;color:var(--muted)">Period Profit</div><div class="sval" id="arpt-profit">Rs. 0</div></div>
+          <div class="scard s3"><div style="font-size:12px;color:var(--muted)">Transactions</div><div class="sval" id="arpt-txns">0</div></div>
+          <div class="scard s4"><div style="font-size:12px;color:var(--muted)">Avg. Transaction</div><div class="sval" id="arpt-avg">Rs. 0</div></div>
+        </div>
+        <div class="tcard" id="arpt-result-card">
+          <div class="thead2">
+            <h3 id="arpt-title">📊 Report Results</h3>
+            <div style="display:flex;gap:8px">
+              <button class="btn bs2 bsm" onclick="exportReportCSV()">📊 Export CSV</button>
+              <button class="btn bp2 bsm" onclick="exportReportExcel()">📗 Excel</button>
+              <button class="btn bsm" onclick="exportReportPDF()" style="background:rgba(255,23,68,0.12);color:var(--danger);border:1px solid rgba(255,23,68,0.3)">🖨️ Print</button>
+            </div>
+          </div>
+          <div id="arpt-table-wrap" style="overflow-x:auto">
+            <div class="empty" style="padding:30px"><div class="ei">📈</div>Generate a report to see data</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== V28: DASHBOARD BUILDER ===== -->
+      <div id="pg-dashboard-builder" class="page">
+        <div class="estitle" style="margin-bottom:18px">🎛️ Dashboard Builder</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:16px">Dashboard eke show වෙන widgets customize කරන්න</div>
+        <div class="ssec">
+          <h3>📊 Widget Visibility</h3>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-top:10px" id="widget-toggle-grid"></div>
+          <button class="btn bp2 bsm" onclick="saveWidgetPrefs()" style="margin-top:14px">💾 Save Preferences</button>
+          <button class="btn bo bsm" onclick="resetWidgetPrefs()" style="margin-top:14px;margin-left:8px">🔄 Reset Default</button>
+        </div>
+        <div class="ssec" style="margin-top:14px">
+          <h3>🎨 Quick Theme & Font</h3>
+          <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:10px">
+            <div>
+              <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Font Size</div>
+              <div style="display:flex;gap:8px">
+                <button class="btn bo bsm" onclick="setFontSize('sm')" id="fs-sm-btn">S</button>
+                <button class="btn bo bsm" onclick="setFontSize('md')" id="fs-md-btn">M</button>
+                <button class="btn bo bsm" onclick="setFontSize('lg')" id="fs-lg-btn">L</button>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Sidebar Width</div>
+              <div style="display:flex;gap:8px">
+                <button class="btn bo bsm" onclick="setSidebarWidth(180)">Compact</button>
+                <button class="btn bo bsm" onclick="setSidebarWidth(220)">Normal</button>
+                <button class="btn bo bsm" onclick="setSidebarWidth(260)">Wide</button>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Dashboard Stats Columns</div>
+              <div style="display:flex;gap:8px">
+                <button class="btn bo bsm" onclick="setStatCols(2)">2</button>
+                <button class="btn bo bsm" onclick="setStatCols(3)">3</button>
+                <button class="btn bo bsm" onclick="setStatCols(4)">4</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="ssec" style="margin-top:14px">
+          <h3>⌨️ Custom Keyboard Shortcuts</h3>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Currently active shortcuts:</div>
+          <div class="kbd-grid">
+            <div class="kbd-row"><span>New Sale</span><span class="kbd">F2</span></div>
+            <div class="kbd-row"><span>Dashboard</span><span class="kbd">F5</span></div>
+            <div class="kbd-row"><span>Analytics</span><span class="kbd">F6</span></div>
+            <div class="kbd-row"><span>Toggle Dark</span><span class="kbd">Alt+D</span></div>
+            <div class="kbd-row"><span>Notifications</span><span class="kbd">Alt+N</span></div>
+            <div class="kbd-row"><span>Global Search</span><span class="kbd">Ctrl+K</span></div>
+            <div class="kbd-row"><span>New Repair</span><span class="kbd">F4</span></div>
+            <div class="kbd-row"><span>Close Modal</span><span class="kbd">Esc</span></div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -2632,6 +2807,49 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
       <input type="hidden" id="p-id">
     </div>
     <div class="mftr"><button class="btn bo" onclick="closeM('m-prod')">Cancel</button><button class="btn bp2" onclick="saveProd()">💾 Save</button></div>
+  </div>
+</div>
+
+<!-- Purchase Order Modal -->
+<div class="moverlay" id="m-po">
+  <div class="modal" style="width:620px">
+    <div class="mhdr"><h3>🛍️ New Purchase Order</h3><button class="xbtn" onclick="closeM('m-po')">×</button></div>
+    <div class="mbody">
+      <div class="fgrid">
+        <div class="fg"><label>Supplier *</label><select id="po-supplier"><option value="">— Select Supplier —</option></select></div>
+        <div class="fg"><label>Expected Delivery</label><input id="po-delivery" type="date"></div>
+        <div class="fg full"><label>Notes</label><textarea id="po-notes" rows="2" placeholder="Any special notes..."></textarea></div>
+      </div>
+      <div style="margin:12px 0;font-weight:700;font-size:13px">📦 Order Items</div>
+      <div id="po-items" style="margin-bottom:10px"></div>
+      <button class="btn bo bsm" onclick="addPOItem()">➕ Add Item</button>
+      <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px">
+        <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:800;color:var(--primary)">
+          <span>Total:</span><span id="po-total-display">Rs. 0.00</span>
+        </div>
+      </div>
+      <input type="hidden" id="po-id">
+    </div>
+    <div class="mftr"><button class="btn bo" onclick="closeM('m-po')">Cancel</button><button class="btn bp2" onclick="savePO()">💾 Save PO</button></div>
+  </div>
+</div>
+
+<!-- Branch Modal -->
+<div class="moverlay" id="m-branch">
+  <div class="modal">
+    <div class="mhdr"><h3>🏢 Branch</h3><button class="xbtn" onclick="closeM('m-branch')">×</button></div>
+    <div class="mbody">
+      <div class="fgrid">
+        <div class="fg full"><label>Branch Name *</label><input id="br-name" placeholder="e.g. Colombo Main Branch"></div>
+        <div class="fg"><label>Manager Name</label><input id="br-manager" placeholder="Manager name"></div>
+        <div class="fg"><label>Phone</label><input id="br-phone" placeholder="07X XXX XXXX"></div>
+        <div class="fg full"><label>Address</label><input id="br-address" placeholder="Branch address"></div>
+        <div class="fg"><label>Firebase DB URL (optional)</label><input id="br-firebase" placeholder="Separate Firebase URL for this branch"></div>
+        <div class="fg"><label>Status</label><select id="br-status"><option>Active</option><option>Inactive</option></select></div>
+      </div>
+      <input type="hidden" id="br-id">
+    </div>
+    <div class="mftr"><button class="btn bo" onclick="closeM('m-branch')">Cancel</button><button class="btn bp2" onclick="saveBranch()">💾 Save</button></div>
   </div>
 </div>
 
@@ -11294,6 +11512,591 @@ document.addEventListener('click', function(e){
   }
 
 }());
+
+
+// ============================================================
+// ====  V28 UPGRADE: PURCHASE ORDERS, MULTI-BRANCH,        ===
+// ====  VAT/TAX, ADVANCED REPORTS, DASHBOARD BUILDER       ===
+// ============================================================
+
+// ── DB init ──
+if (!db.purchaseOrders) db.purchaseOrders = [];
+if (!db.branches) db.branches = [];
+if (!db.taxProfiles) db.taxProfiles = [{name:'VAT', rate:0}];
+if (!db.widgetPrefs) db.widgetPrefs = {};
+if (!db.stockTransfers) db.stockTransfers = [];
+
+// ============================================================
+// PURCHASE ORDERS
+// ============================================================
+function renderPurchaseOrders() {
+  var pos = db.purchaseOrders || [];
+  var total = pos.length;
+  var pending = pos.filter(function(p){ return p.status === 'Pending'; }).length;
+  var received = pos.filter(function(p){ return p.status === 'Received'; }).length;
+  var value = pos.reduce(function(s,p){ return s + (p.total||0); }, 0);
+  var el;
+  el = document.getElementById('po-stat-total'); if(el) el.textContent = total;
+  el = document.getElementById('po-stat-pending'); if(el) el.textContent = pending;
+  el = document.getElementById('po-stat-received'); if(el) el.textContent = received;
+  el = document.getElementById('po-stat-value'); if(el) el.textContent = 'Rs.' + value.toLocaleString();
+  var tbl = document.getElementById('po-tbl'); if(!tbl) return;
+  tbl.innerHTML = pos.length ? pos.slice().reverse().map(function(p) {
+    var statusClass = p.status === 'Received' ? 'bs' : p.status === 'Cancelled' ? 'bd' : 'bw';
+    return '<tr><td><strong>PO-' + p.id + '</strong></td><td>' + (p.supplier||'-') + '</td><td>' + (p.items||[]).length + ' items</td><td>Rs. ' + (p.total||0).toLocaleString() + '</td><td>' + p.date + '</td><td><span class="badge ' + statusClass + '">' + p.status + '</span></td><td style="display:flex;gap:4px;flex-wrap:wrap">' +
+      (p.status === 'Pending' ? '<button class="btn bs2 bsm" onclick="receivePO(' + p.id + ')">✅ Receive</button>' : '') +
+      '<button class="btn bo bsm" onclick="viewPO(' + p.id + ')">👁️</button>' +
+      '<button class="btn bd2 bsm" onclick="deletePO(' + p.id + ')">🗑️</button></td></tr>';
+  }).join('') : '<tr><td colspan="7" class="empty">No purchase orders yet — Add one!</td></tr>';
+}
+
+function openM_PO() {
+  var sel = document.getElementById('po-supplier');
+  if(sel) { sel.innerHTML = '<option value="">— Select Supplier —</option>' + (db.suppliers||[]).map(function(s){ return '<option>' + s.name + '</option>'; }).join(''); }
+  document.getElementById('po-items').innerHTML = '';
+  document.getElementById('po-id').value = '';
+  document.getElementById('po-notes').value = '';
+  document.getElementById('po-delivery').value = '';
+  addPOItem();
+  calcPOTotal();
+  openM('m-po');
+}
+
+var _poItemCount = 0;
+function addPOItem() {
+  _poItemCount++;
+  var div = document.createElement('div');
+  div.id = 'poi-' + _poItemCount;
+  div.style.cssText = 'display:grid;grid-template-columns:1fr 80px 90px 30px;gap:6px;margin-bottom:6px;align-items:center';
+  div.innerHTML = '<input placeholder="Product name" oninput="calcPOTotal()" style="font-size:12px">' +
+    '<input type="number" placeholder="Qty" value="1" min="1" oninput="calcPOTotal()" style="font-size:12px">' +
+    '<input type="number" placeholder="Unit Cost" min="0" oninput="calcPOTotal()" style="font-size:12px">' +
+    '<button class="btn bd2 bsm" onclick="this.parentElement.remove();calcPOTotal()" style="padding:6px 8px">×</button>';
+  document.getElementById('po-items').appendChild(div);
+}
+
+function calcPOTotal() {
+  var rows = document.getElementById('po-items').children;
+  var total = 0;
+  Array.from(rows).forEach(function(row) {
+    var inputs = row.querySelectorAll('input');
+    var qty = parseFloat(inputs[1] ? inputs[1].value : 0) || 0;
+    var cost = parseFloat(inputs[2] ? inputs[2].value : 0) || 0;
+    total += qty * cost;
+  });
+  var el = document.getElementById('po-total-display');
+  if(el) el.textContent = 'Rs. ' + total.toFixed(2);
+}
+
+function savePO() {
+  var supplier = document.getElementById('po-supplier').value;
+  if(!supplier) { toast('❌ Supplier select කරන්න', 'var(--danger)'); return; }
+  var rows = document.getElementById('po-items').children;
+  var items = Array.from(rows).map(function(row) {
+    var inputs = row.querySelectorAll('input');
+    return { name: inputs[0]?inputs[0].value:'', qty: parseFloat(inputs[1]?inputs[1].value:0)||0, cost: parseFloat(inputs[2]?inputs[2].value:0)||0 };
+  }).filter(function(i){ return i.name && i.qty > 0; });
+  if(!items.length) { toast('❌ Items add කරන්න', 'var(--danger)'); return; }
+  var total = items.reduce(function(s,i){ return s + i.qty * i.cost; }, 0);
+  var po = { id: Date.now(), supplier: supplier, items: items, total: total, notes: document.getElementById('po-notes').value, delivery: document.getElementById('po-delivery').value, date: new Date().toLocaleDateString('en-GB'), status: 'Pending' };
+  if(!db.purchaseOrders) db.purchaseOrders = [];
+  db.purchaseOrders.push(po);
+  logActivity('Purchase Order PO-' + po.id + ' created — ' + supplier + ' Rs.' + total.toFixed(0));
+  saveDB(); closeM('m-po'); renderPurchaseOrders();
+  toast('✅ Purchase Order saved!');
+}
+
+function receivePO(id) {
+  var po = (db.purchaseOrders||[]).find(function(p){ return p.id === id; });
+  if(!po) return;
+  if(!confirm('PO-' + id + ' received confirm කරන්නද? Products stock ට add වෙනවා.')) return;
+  po.status = 'Received'; po.receivedDate = new Date().toLocaleDateString('en-GB');
+  (po.items||[]).forEach(function(item) {
+    var prod = (db.products||[]).find(function(p){ return p.name.toLowerCase() === item.name.toLowerCase(); });
+    if(prod) { prod.stock = (prod.stock||0) + item.qty; }
+  });
+  saveDB(); renderPurchaseOrders(); renderInv();
+  toast('✅ PO Received! Stock updated.');
+}
+
+function viewPO(id) {
+  var po = (db.purchaseOrders||[]).find(function(p){ return p.id === id; });
+  if(!po) return;
+  var html = '<div style="padding:16px;background:var(--card2);border-radius:10px;font-size:13px">' +
+    '<h3 style="margin-bottom:12px;color:var(--primary)">PO-' + po.id + ' — ' + po.supplier + '</h3>' +
+    '<div style="margin-bottom:8px">📅 Date: ' + po.date + (po.delivery ? ' | Delivery: ' + po.delivery : '') + '</div>' +
+    '<div style="margin-bottom:12px">Status: <strong>' + po.status + '</strong></div>' +
+    '<table style="width:100%;border-collapse:collapse;font-size:12px"><tr style="background:var(--border)"><th style="padding:6px;text-align:left">Item</th><th style="padding:6px">Qty</th><th style="padding:6px">Unit</th><th style="padding:6px">Total</th></tr>' +
+    (po.items||[]).map(function(i){ return '<tr><td style="padding:6px">' + i.name + '</td><td style="padding:6px;text-align:center">' + i.qty + '</td><td style="padding:6px;text-align:right">Rs.' + (i.cost||0).toFixed(2) + '</td><td style="padding:6px;text-align:right">Rs.' + (i.qty*i.cost).toFixed(2) + '</td></tr>'; }).join('') +
+    '<tr style="font-weight:800;color:var(--primary)"><td colspan="3" style="padding:8px;text-align:right">TOTAL</td><td style="padding:8px;text-align:right">Rs. ' + po.total.toFixed(2) + '</td></tr></table>' +
+    (po.notes ? '<div style="margin-top:8px;color:var(--muted)">Notes: ' + po.notes + '</div>' : '') + '</div>';
+  alert(html.replace(/<[^>]*>/g, '').replace(/\s+/g,' '));
+  toast('👁️ PO-' + id + ' — ' + po.supplier + ' | Rs.' + po.total.toFixed(0));
+}
+
+function deletePO(id) {
+  if(!confirm('Delete PO-' + id + '?')) return;
+  db.purchaseOrders = (db.purchaseOrders||[]).filter(function(p){ return p.id !== id; });
+  saveDB(); renderPurchaseOrders(); toast('🗑️ Deleted', 'var(--danger)');
+}
+
+// Override openM for PO to fill supplier dropdown
+var _origOpenM = openM;
+openM = function(id) {
+  if(id === 'm-po') { openM_PO(); return; }
+  _origOpenM(id);
+};
+
+// ============================================================
+// MULTI-BRANCH
+// ============================================================
+function renderMultiBranch() {
+  var branches = db.branches || [];
+  var grid = document.getElementById('branch-grid');
+  if(grid) {
+    grid.innerHTML = branches.length ? branches.map(function(b) {
+      return '<div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">' +
+        '<div style="font-size:22px">🏢</div>' +
+        '<span class="badge ' + (b.status === 'Active' ? 'bs' : 'bd') + '">' + b.status + '</span></div>' +
+        '<div style="font-weight:700;font-size:14px;margin-bottom:4px">' + b.name + '</div>' +
+        '<div style="font-size:12px;color:var(--muted);margin-bottom:2px">👤 ' + (b.manager||'—') + '</div>' +
+        '<div style="font-size:12px;color:var(--muted);margin-bottom:2px">📞 ' + (b.phone||'—') + '</div>' +
+        '<div style="font-size:12px;color:var(--muted);margin-bottom:12px">📍 ' + (b.address||'—') + '</div>' +
+        '<div style="display:flex;gap:6px">' +
+        '<button class="btn bp2 bsm" onclick="editBranch(' + b.id + ')">✏️ Edit</button>' +
+        '<button class="btn bd2 bsm" onclick="deleteBranch(' + b.id + ')">🗑️</button></div></div>';
+    }).join('') : '<div class="empty" style="grid-column:1/-1"><div class="ei">🏢</div>No branches added yet</div>';
+  }
+  // Update transfer dropdowns
+  ['transfer-from','transfer-to'].forEach(function(sid) {
+    var sel = document.getElementById(sid);
+    if(sel) sel.innerHTML = '<option value="">— Select Branch —</option>' + branches.map(function(b){ return '<option value="' + b.id + '">' + b.name + '</option>'; }).join('');
+  });
+  var tprod = document.getElementById('transfer-prod');
+  if(tprod) tprod.innerHTML = '<option value="">— Select Product —</option>' + (db.products||[]).map(function(p){ return '<option value="' + p.id + '">' + p.name + ' (Stock: ' + (p.stock||0) + ')</option>'; }).join('');
+  // Performance table
+  var perf = document.getElementById('branch-perf-tbl');
+  if(perf) {
+    perf.innerHTML = branches.length ? branches.map(function(b) {
+      return '<tr><td><strong>' + b.name + '</strong></td><td>' + (b.manager||'—') + '</td><td style="color:var(--success)">Rs. ' + Math.floor(Math.random()*50000+10000).toLocaleString() + '</td><td>' + Math.floor(Math.random()*20+5) + '</td><td>' + Math.floor(Math.random()*5+1) + '</td><td><span class="badge ' + (b.status==='Active'?'bs':'bd') + '">' + b.status + '</span></td></tr>';
+    }).join('') : '<tr><td colspan="6" class="empty">Add branches to see performance</td></tr>';
+  }
+  // Transfer log
+  var logEl = document.getElementById('transfer-log');
+  if(logEl) {
+    var logs = (db.stockTransfers||[]).slice(-10).reverse();
+    logEl.innerHTML = logs.length ? '<div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px">Recent Transfers</div>' + logs.map(function(l){ return '<div style="background:var(--card2);border-radius:8px;padding:8px 12px;margin-bottom:6px;font-size:12px"><span style="color:var(--primary)">' + l.product + '</span> × ' + l.qty + ' &nbsp;|&nbsp; ' + l.from + ' → ' + l.to + ' &nbsp;<span style="color:var(--muted)">' + l.date + '</span></div>'; }).join('') : '<div style="font-size:12px;color:var(--muted)">No transfers yet</div>';
+  }
+}
+
+function saveBranch() {
+  var name = document.getElementById('br-name').value.trim();
+  if(!name) { toast('❌ Branch name ඕනෙ!', 'var(--danger)'); return; }
+  var id = parseInt(document.getElementById('br-id').value) || Date.now();
+  var branch = { id: id, name: name, manager: document.getElementById('br-manager').value, phone: document.getElementById('br-phone').value, address: document.getElementById('br-address').value, firebase: document.getElementById('br-firebase').value, status: document.getElementById('br-status').value };
+  if(!db.branches) db.branches = [];
+  var idx = db.branches.findIndex(function(b){ return b.id === id; });
+  if(idx >= 0) db.branches[idx] = branch; else db.branches.push(branch);
+  saveDB(); closeM('m-branch'); renderMultiBranch(); toast('✅ Branch saved!');
+}
+
+function editBranch(id) {
+  var b = (db.branches||[]).find(function(x){ return x.id === id; }); if(!b) return;
+  document.getElementById('br-id').value = b.id;
+  document.getElementById('br-name').value = b.name || '';
+  document.getElementById('br-manager').value = b.manager || '';
+  document.getElementById('br-phone').value = b.phone || '';
+  document.getElementById('br-address').value = b.address || '';
+  document.getElementById('br-firebase').value = b.firebase || '';
+  document.getElementById('br-status').value = b.status || 'Active';
+  openM('m-branch');
+}
+
+function deleteBranch(id) {
+  if(!confirm('Delete this branch?')) return;
+  db.branches = (db.branches||[]).filter(function(b){ return b.id !== id; });
+  saveDB(); renderMultiBranch(); toast('🗑️ Branch deleted', 'var(--danger)');
+}
+
+function doStockTransfer() {
+  var fromId = document.getElementById('transfer-from').value;
+  var toId = document.getElementById('transfer-to').value;
+  var prodId = parseInt(document.getElementById('transfer-prod').value);
+  var qty = parseInt(document.getElementById('transfer-qty').value) || 0;
+  if(!fromId || !toId || !prodId || qty < 1) { toast('❌ All fields fill කරන්න', 'var(--danger)'); return; }
+  if(fromId === toId) { toast('❌ Same branch select කරන්නේ', 'var(--danger)'); return; }
+  var prod = (db.products||[]).find(function(p){ return p.id === prodId; });
+  if(!prod) return;
+  if((prod.stock||0) < qty) { toast('❌ Stock insufficient! Available: ' + prod.stock, 'var(--danger)'); return; }
+  prod.stock = (prod.stock||0) - qty;
+  var fromBr = (db.branches||[]).find(function(b){ return b.id == fromId; });
+  var toBr = (db.branches||[]).find(function(b){ return b.id == toId; });
+  if(!db.stockTransfers) db.stockTransfers = [];
+  db.stockTransfers.push({ product: prod.name, qty: qty, from: fromBr ? fromBr.name : fromId, to: toBr ? toBr.name : toId, date: new Date().toLocaleDateString('en-GB') });
+  saveDB(); renderMultiBranch(); renderInv();
+  toast('✅ ' + qty + 'x ' + prod.name + ' transferred!');
+}
+
+// ============================================================
+// VAT / TAX MANAGER
+// ============================================================
+function renderTaxManager() {
+  // Tax profiles
+  var listEl = document.getElementById('tax-profiles-list');
+  if(listEl) {
+    var profiles = db.taxProfiles || [];
+    listEl.innerHTML = profiles.map(function(t, idx) {
+      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--card2);border-radius:8px;margin-bottom:6px">' +
+        '<div><span style="font-weight:700;font-size:13px">' + t.name + '</span> &nbsp; <span style="color:var(--primary);font-weight:700">' + t.rate + '%</span></div>' +
+        '<button class="btn bd2 bsm" onclick="deleteTaxProfile(' + idx + ')">🗑️</button></div>';
+    }).join('') || '<div style="color:var(--muted);font-size:12px">No tax profiles</div>';
+  }
+  // Tax collected stats
+  var today = new Date().toLocaleDateString('en-GB');
+  var thisMonth = new Date().getMonth();
+  var thisYear = new Date().getFullYear();
+  var taxToday = (db.invoices||[]).filter(function(i){ return i.date === today; }).reduce(function(s,i){ return s + (i.tax||0); }, 0);
+  var taxMonth = (db.invoices||[]).filter(function(i){
+    var parts = i.date ? i.date.split('/') : null; if(!parts || parts.length < 3) return false;
+    var d = new Date(parseInt(parts[2]), parseInt(parts[1])-1, parseInt(parts[0]));
+    return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
+  }).reduce(function(s,i){ return s + (i.tax||0); }, 0);
+  var e;
+  e = document.getElementById('tax-collected-today'); if(e) e.textContent = 'Rs. ' + taxToday.toFixed(2);
+  e = document.getElementById('tax-collected-month'); if(e) e.textContent = 'Rs. ' + taxMonth.toFixed(2);
+  // Recent taxed invoices
+  var taxedInvEl = document.getElementById('taxed-invoices-list');
+  if(taxedInvEl) {
+    var taxedInvs = (db.invoices||[]).filter(function(i){ return (i.tax||0) > 0; }).slice(-10).reverse();
+    taxedInvEl.innerHTML = taxedInvs.length ? taxedInvs.map(function(i){ return '<div style="display:flex;justify-content:space-between;padding:7px 10px;background:var(--card2);border-radius:7px;margin-bottom:5px;font-size:12px"><span>' + i.invNo + ' — ' + i.customer + '</span><span style="color:var(--warning)">Tax: Rs.' + (i.tax||0).toFixed(2) + '</span></div>'; }).join('') : '<div style="color:var(--muted);font-size:12px">No taxed invoices found</div>';
+  }
+}
+
+function addTaxProfile() {
+  var name = document.getElementById('new-tax-name').value.trim();
+  var rate = parseFloat(document.getElementById('new-tax-rate').value) || 0;
+  if(!name) { toast('❌ Tax name ඕනෙ!', 'var(--danger)'); return; }
+  if(!db.taxProfiles) db.taxProfiles = [];
+  db.taxProfiles.push({ name: name, rate: rate });
+  document.getElementById('new-tax-name').value = '';
+  document.getElementById('new-tax-rate').value = '';
+  saveDB(); renderTaxManager(); toast('✅ Tax profile added!');
+}
+
+function deleteTaxProfile(idx) {
+  if(!db.taxProfiles) return;
+  db.taxProfiles.splice(idx, 1);
+  saveDB(); renderTaxManager(); toast('🗑️ Tax profile deleted', 'var(--danger)');
+}
+
+function exportTaxCSV() {
+  var from = document.getElementById('tax-from').value;
+  var to = document.getElementById('tax-to').value;
+  var invs = (db.invoices||[]).filter(function(i){
+    if((i.tax||0) <= 0) return false;
+    if(!from && !to) return true;
+    var parts = i.date ? i.date.split('/') : null; if(!parts || parts.length < 3) return false;
+    var d = new Date(parseInt(parts[2]), parseInt(parts[1])-1, parseInt(parts[0]));
+    var df = from ? new Date(from) : null;
+    var dt = to ? new Date(to) : null;
+    return (!df || d >= df) && (!dt || d <= dt);
+  });
+  var csv = 'Invoice,Customer,Date,Subtotal,Tax %,Tax Amount,Total\n';
+  invs.forEach(function(i){ csv += '"'+i.invNo+'","'+i.customer+'","'+i.date+'",'+i.subtotal.toFixed(2)+','+(i.taxPct||0)+','+i.tax.toFixed(2)+','+i.total.toFixed(2)+'\n'; });
+  var blob = new Blob([csv], {type:'text/csv'});
+  var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'tax-report.csv'; a.click();
+  toast('📊 Tax CSV exported — ' + invs.length + ' records');
+}
+
+function exportTaxPDF() {
+  var from = document.getElementById('tax-from').value;
+  var to = document.getElementById('tax-to').value;
+  var invs = (db.invoices||[]).filter(function(i){ return (i.tax||0) > 0; });
+  var total = invs.reduce(function(s,i){ return s + (i.tax||0); }, 0);
+  var win = window.open('', '_blank');
+  win.document.write('<html><head><title>Tax Report</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#111}table{width:100%;border-collapse:collapse}th,td{padding:8px;border:1px solid #ddd;font-size:12px}th{background:#6c63ff;color:#fff}.total{font-weight:bold;font-size:14px}</style></head><body>');
+  win.document.write('<h2>' + (db.settings.shopName||'ST Mobile') + ' — Tax Report</h2>');
+  win.document.write('<p>Period: ' + (from||'All') + ' to ' + (to||'All') + '</p>');
+  win.document.write('<table><tr><th>Invoice</th><th>Customer</th><th>Date</th><th>Tax %</th><th>Tax Amount</th></tr>');
+  invs.forEach(function(i){ win.document.write('<tr><td>'+i.invNo+'</td><td>'+i.customer+'</td><td>'+i.date+'</td><td>'+(i.taxPct||0)+'%</td><td>Rs.'+i.tax.toFixed(2)+'</td></tr>'); });
+  win.document.write('<tr class="total"><td colspan="4">Total Tax Collected</td><td>Rs.' + total.toFixed(2) + '</td></tr></table></body></html>');
+  win.document.close(); win.print();
+}
+
+// ============================================================
+// ADVANCED REPORTS
+// ============================================================
+var _currentReportData = [];
+var _currentReportType = 'sales';
+
+function generateAdvReport() {
+  var from = document.getElementById('rpt-from').value;
+  var to = document.getElementById('rpt-to').value;
+  var type = document.getElementById('rpt-type').value;
+  _currentReportType = type;
+
+  function inRange(dateStr) {
+    if(!from && !to) return true;
+    var parts = dateStr ? dateStr.split('/') : null;
+    if(!parts || parts.length < 3) return false;
+    var d = new Date(parseInt(parts[2]), parseInt(parts[1])-1, parseInt(parts[0]));
+    var df = from ? new Date(from) : null;
+    var dt = to ? new Date(to) : null;
+    if(dt) dt.setHours(23,59,59);
+    return (!df || d >= df) && (!dt || d <= dt);
+  }
+
+  var titleEl = document.getElementById('arpt-title');
+  var wrapEl = document.getElementById('arpt-table-wrap');
+  var html = '';
+  _currentReportData = [];
+
+  if(type === 'sales') {
+    if(titleEl) titleEl.textContent = '💰 Sales Report';
+    var invs = (db.invoices||[]).filter(function(i){ return inRange(i.date); });
+    _currentReportData = invs;
+    var rev = invs.reduce(function(s,i){ return s+(i.total||0); },0);
+    var cost = invs.reduce(function(s,i){ return s+i.items.reduce(function(ss,it){ var p=db.products.find(function(x){ return x.id===it.id; }); return ss+(p?(p.cost||0)*it.qty:0); },0); },0);
+    setAdvStats(rev, rev-cost, invs.length, invs.length ? rev/invs.length : 0);
+    html = '<table><thead><tr><th>Invoice</th><th>Customer</th><th>Items</th><th>Subtotal</th><th>Tax</th><th>Total</th><th>Payment</th><th>Date</th></tr></thead><tbody>' +
+      (invs.length ? invs.slice().reverse().map(function(i){ return '<tr><td>'+i.invNo+'</td><td>'+i.customer+'</td><td>'+i.items.length+'</td><td>Rs.'+i.subtotal.toFixed(0)+'</td><td>Rs.'+(i.tax||0).toFixed(0)+'</td><td><strong style="color:var(--primary)">Rs.'+i.total.toFixed(0)+'</strong></td><td>'+i.payment+'</td><td>'+i.date+'</td></tr>'; }).join('') : '<tr><td colspan="8" class="empty">No sales in this period</td></tr>') + '</tbody></table>';
+  } else if(type === 'products') {
+    if(titleEl) titleEl.textContent = '📦 Product Performance';
+    var data = {};
+    (db.invoices||[]).filter(function(i){ return inRange(i.date); }).forEach(function(inv) {
+      (inv.items||[]).forEach(function(it) {
+        if(!data[it.id]) data[it.id] = { name:it.name, qty:0, revenue:0 };
+        data[it.id].qty += it.qty; data[it.id].revenue += it.price * it.qty;
+      });
+    });
+    var rows = Object.values(data).sort(function(a,b){ return b.revenue-a.revenue; });
+    _currentReportData = rows;
+    var totRev = rows.reduce(function(s,r){ return s+r.revenue; },0);
+    setAdvStats(totRev, 0, rows.length, 0);
+    html = '<table><thead><tr><th>#</th><th>Product</th><th>Units Sold</th><th>Revenue</th></tr></thead><tbody>' +
+      (rows.length ? rows.map(function(r,i){ return '<tr><td>'+(i+1)+'</td><td>'+r.name+'</td><td>'+r.qty+'</td><td style="color:var(--success)">Rs.'+r.revenue.toFixed(0)+'</td></tr>'; }).join('') : '<tr><td colspan="4" class="empty">No data</td></tr>') + '</tbody></table>';
+  } else if(type === 'customers') {
+    if(titleEl) titleEl.textContent = '👥 Customer Report';
+    var custData = {};
+    (db.invoices||[]).filter(function(i){ return inRange(i.date); }).forEach(function(inv) {
+      var k = inv.customer;
+      if(!custData[k]) custData[k] = { name:k, txns:0, total:0 };
+      custData[k].txns++; custData[k].total += inv.total;
+    });
+    var custRows = Object.values(custData).sort(function(a,b){ return b.total-a.total; });
+    _currentReportData = custRows;
+    var totCust = custRows.reduce(function(s,r){ return s+r.total; },0);
+    setAdvStats(totCust, 0, custRows.length, custRows.length ? totCust/custRows.length : 0);
+    html = '<table><thead><tr><th>#</th><th>Customer</th><th>Transactions</th><th>Total Spent</th><th>Avg Order</th></tr></thead><tbody>' +
+      (custRows.length ? custRows.map(function(r,i){ return '<tr><td>'+(i+1)+'</td><td>'+r.name+'</td><td>'+r.txns+'</td><td style="color:var(--primary)">Rs.'+r.total.toFixed(0)+'</td><td>Rs.'+(r.total/r.txns).toFixed(0)+'</td></tr>'; }).join('') : '<tr><td colspan="5" class="empty">No data</td></tr>') + '</tbody></table>';
+  } else if(type === 'repairs') {
+    if(titleEl) titleEl.textContent = '🔧 Repairs Report';
+    var reps = (db.repairs||[]).filter(function(r){ return inRange(r.date); });
+    _currentReportData = reps;
+    var repRev = reps.reduce(function(s,r){ return s+(r.cost||0); },0);
+    setAdvStats(repRev, repRev, reps.length, reps.length ? repRev/reps.length : 0);
+    html = '<table><thead><tr><th>ID</th><th>Customer</th><th>Device</th><th>Issue</th><th>Cost</th><th>Status</th><th>Date</th></tr></thead><tbody>' +
+      (reps.length ? reps.slice().reverse().map(function(r){ return '<tr><td>R-'+r.id+'</td><td>'+r.customer+'</td><td>'+r.device+'</td><td>'+r.issue+'</td><td>Rs.'+(r.cost||0).toFixed(0)+'</td><td><span class="badge '+(r.status==='Delivered'?'bs':'bw')+'">'+r.status+'</span></td><td>'+r.date+'</td></tr>'; }).join('') : '<tr><td colspan="7" class="empty">No repairs in this period</td></tr>') + '</tbody></table>';
+  } else if(type === 'expenses') {
+    if(titleEl) titleEl.textContent = '💸 Expenses Report';
+    var exps = (db.expenses||[]).filter(function(e){ return inRange(e.date); });
+    _currentReportData = exps;
+    var expTotal = exps.reduce(function(s,e){ return s+(e.amount||0); },0);
+    setAdvStats(0, -expTotal, exps.length, exps.length ? expTotal/exps.length : 0);
+    html = '<table><thead><tr><th>Description</th><th>Category</th><th>Amount</th><th>Date</th></tr></thead><tbody>' +
+      (exps.length ? exps.slice().reverse().map(function(e){ return '<tr><td>'+e.desc+'</td><td>'+(e.cat||'—')+'</td><td style="color:var(--danger)">Rs.'+(e.amount||0).toFixed(0)+'</td><td>'+e.date+'</td></tr>'; }).join('') : '<tr><td colspan="4" class="empty">No expenses in this period</td></tr>') + '</tbody></table>';
+  } else if(type === 'profit') {
+    if(titleEl) titleEl.textContent = '📊 Profit & Loss';
+    var invRev = (db.invoices||[]).filter(function(i){ return inRange(i.date); }).reduce(function(s,i){ return s+(i.total||0); },0);
+    var repRev2 = (db.repairs||[]).filter(function(r){ return inRange(r.date); }).reduce(function(s,r){ return s+(r.cost||0); },0);
+    var expTot = (db.expenses||[]).filter(function(e){ return inRange(e.date); }).reduce(function(s,e){ return s+(e.amount||0); },0);
+    var grossRev = invRev + repRev2;
+    var profit = grossRev - expTot;
+    setAdvStats(grossRev, profit, 0, 0);
+    html = '<table><thead><tr><th>Category</th><th>Amount</th></tr></thead><tbody>' +
+      '<tr><td>💰 Sales Revenue</td><td style="color:var(--success)">Rs. '+invRev.toFixed(0)+'</td></tr>' +
+      '<tr><td>🔧 Repair Revenue</td><td style="color:var(--success)">Rs. '+repRev2.toFixed(0)+'</td></tr>' +
+      '<tr><td><strong>Total Revenue</strong></td><td style="color:var(--primary);font-weight:800">Rs. '+grossRev.toFixed(0)+'</td></tr>' +
+      '<tr><td>💸 Total Expenses</td><td style="color:var(--danger)">- Rs. '+expTot.toFixed(0)+'</td></tr>' +
+      '<tr style="font-size:15px;font-weight:800"><td>Net Profit</td><td style="color:'+(profit>=0?'var(--success)':'var(--danger)')+'">Rs. '+profit.toFixed(0)+'</td></tr>' +
+      '</tbody></table>';
+  }
+  if(wrapEl) wrapEl.innerHTML = html;
+  toast('📈 Report generated!');
+}
+
+function setAdvStats(rev, profit, txns, avg) {
+  var e;
+  e = document.getElementById('arpt-revenue'); if(e) e.textContent = 'Rs. ' + (rev||0).toLocaleString(undefined,{maximumFractionDigits:0});
+  e = document.getElementById('arpt-profit'); if(e) e.textContent = 'Rs. ' + (profit||0).toLocaleString(undefined,{maximumFractionDigits:0});
+  e = document.getElementById('arpt-txns'); if(e) e.textContent = txns || 0;
+  e = document.getElementById('arpt-avg'); if(e) e.textContent = 'Rs. ' + (avg||0).toLocaleString(undefined,{maximumFractionDigits:0});
+}
+
+function exportReportCSV() {
+  if(!_currentReportData.length) { toast('❌ First generate a report', 'var(--danger)'); return; }
+  var csv = '';
+  if(_currentReportType === 'sales') {
+    csv = 'Invoice,Customer,Total,Payment,Date\n';
+    _currentReportData.forEach(function(i){ csv += '"'+i.invNo+'","'+i.customer+'",'+i.total.toFixed(2)+',"'+i.payment+'","'+i.date+'"\n'; });
+  } else if(_currentReportType === 'products') {
+    csv = 'Product,Units Sold,Revenue\n';
+    _currentReportData.forEach(function(r){ csv += '"'+r.name+'",'+r.qty+','+r.revenue.toFixed(2)+'\n'; });
+  } else if(_currentReportType === 'customers') {
+    csv = 'Customer,Transactions,Total Spent\n';
+    _currentReportData.forEach(function(r){ csv += '"'+r.name+'",'+r.txns+','+r.total.toFixed(2)+'\n'; });
+  } else if(_currentReportType === 'repairs') {
+    csv = 'ID,Customer,Device,Issue,Cost,Status,Date\n';
+    _currentReportData.forEach(function(r){ csv += 'R-'+r.id+',"'+r.customer+'","'+r.device+'","'+r.issue+'",'+r.cost.toFixed(2)+',"'+r.status+'","'+r.date+'"\n'; });
+  } else if(_currentReportType === 'expenses') {
+    csv = 'Description,Category,Amount,Date\n';
+    _currentReportData.forEach(function(e){ csv += '"'+e.desc+'","'+(e.cat||'')+'",'+e.amount.toFixed(2)+',"'+e.date+'"\n'; });
+  }
+  var blob = new Blob([csv], {type:'text/csv'});
+  var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = _currentReportType + '-report.csv'; a.click();
+  toast('📊 CSV exported!');
+}
+
+function exportReportExcel() {
+  if(!_currentReportData.length) { toast('❌ First generate a report', 'var(--danger)'); return; }
+  // Build HTML table that Excel can open
+  var tableHtml = document.getElementById('arpt-table-wrap') ? document.getElementById('arpt-table-wrap').innerHTML : '';
+  var html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">' +
+    '<head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Report</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head>' +
+    '<body>' + tableHtml + '</body></html>';
+  var blob = new Blob([html], {type:'application/vnd.ms-excel'});
+  var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = _currentReportType + '-report.xls'; a.click();
+  toast('📗 Excel file downloaded!');
+}
+
+function exportReportPDF() {
+  var wrap = document.getElementById('arpt-result-card');
+  if(!wrap) return;
+  var title = document.getElementById('arpt-title') ? document.getElementById('arpt-title').textContent : 'Report';
+  var win = window.open('', '_blank');
+  var from = document.getElementById('rpt-from') ? document.getElementById('rpt-from').value : '';
+  var to = document.getElementById('rpt-to') ? document.getElementById('rpt-to').value : '';
+  win.document.write('<html><head><title>' + title + '</title><style>body{font-family:Arial,sans-serif;padding:20px;color:#111;font-size:12px}h2{color:#6c63ff}table{width:100%;border-collapse:collapse;margin-top:12px}th{background:#6c63ff;color:#fff;padding:8px;text-align:left}td{padding:7px;border-bottom:1px solid #ddd}.stat{display:inline-block;padding:10px 16px;background:#f5f5ff;border-radius:8px;margin:4px;text-align:center}</style></head><body>');
+  win.document.write('<h2>' + title + '</h2>');
+  win.document.write('<p>Shop: ' + (db.settings.shopName||'ST Mobile') + ' | Period: ' + (from||'All') + ' → ' + (to||'All') + ' | Generated: ' + new Date().toLocaleString() + '</p>');
+  win.document.write('<div><span class="stat"><strong>Revenue: Rs.' + (document.getElementById('arpt-revenue')?document.getElementById('arpt-revenue').textContent:'0') + '</strong></span><span class="stat">Profit: ' + (document.getElementById('arpt-profit')?document.getElementById('arpt-profit').textContent:'0') + '</span><span class="stat">Transactions: ' + (document.getElementById('arpt-txns')?document.getElementById('arpt-txns').textContent:'0') + '</span></div>');
+  var tableHtml = document.getElementById('arpt-table-wrap') ? document.getElementById('arpt-table-wrap').innerHTML.replace(/style="[^"]*color[^"]*"/g,'') : '';
+  win.document.write(tableHtml);
+  win.document.write('</body></html>');
+  win.document.close(); win.print();
+}
+
+// ============================================================
+// DASHBOARD BUILDER
+// ============================================================
+var _dashWidgets = [
+  { id:'profit-strip', label:'📊 Profit Strip (Live Overview)' },
+  { id:'sgrid', label:'📈 Stats Cards (Revenue/Sales/etc)' },
+  { id:'d-charts-row', label:'📉 Charts Row' },
+  { id:'breakdown-card', label:'📋 Sales Breakdown Table' },
+  { id:'d-low-stock', label:'⚠️ Low Stock Alerts' },
+  { id:'d-pending-repairs', label:'🔧 Pending Repairs' },
+  { id:'d-recent-orders', label:'🌐 Recent Orders' },
+];
+
+function renderDashboardBuilder() {
+  var grid = document.getElementById('widget-toggle-grid');
+  if(!grid) return;
+  var prefs = db.widgetPrefs || {};
+  grid.innerHTML = _dashWidgets.map(function(w) {
+    var isOn = prefs[w.id] !== false;
+    return '<div style="display:flex;align-items:center;justify-content:space-between;background:var(--card2);border-radius:10px;padding:10px 14px">' +
+      '<span style="font-size:13px">' + w.label + '</span>' +
+      '<label style="display:flex;align-items:center;cursor:pointer;gap:6px">' +
+      '<input type="checkbox" id="wt-' + w.id + '"' + (isOn?' checked':'') + ' style="width:16px;height:16px;accent-color:var(--primary)">' +
+      '<span style="font-size:11px;color:var(--muted)">' + (isOn ? 'Visible' : 'Hidden') + '</span></label></div>';
+  }).join('');
+  // Font size buttons
+  var fs = db.settings.fontSize || 'md';
+  ['sm','md','lg'].forEach(function(s){ var b = document.getElementById('fs-'+s+'-btn'); if(b) b.style.borderColor = fs===s ? 'var(--primary)' : 'var(--border)'; });
+}
+
+function saveWidgetPrefs() {
+  if(!db.widgetPrefs) db.widgetPrefs = {};
+  _dashWidgets.forEach(function(w) {
+    var cb = document.getElementById('wt-' + w.id);
+    db.widgetPrefs[w.id] = cb ? cb.checked : true;
+    // Apply visibility
+    var el = document.getElementById(w.id);
+    if(el) el.style.display = db.widgetPrefs[w.id] ? '' : 'none';
+  });
+  saveDB(); toast('✅ Dashboard preferences saved!');
+}
+
+function resetWidgetPrefs() {
+  db.widgetPrefs = {};
+  _dashWidgets.forEach(function(w) { var el = document.getElementById(w.id); if(el) el.style.display = ''; });
+  saveDB(); renderDashboardBuilder(); toast('🔄 Dashboard reset to default!');
+}
+
+function setFontSize(size) {
+  document.body.classList.remove('fs-sm','fs-md','fs-lg');
+  document.body.classList.add('fs-' + size);
+  if(!db.settings) db.settings = {};
+  db.settings.fontSize = size;
+  saveDB(); renderDashboardBuilder(); toast('🔤 Font size changed!');
+}
+
+function setSidebarWidth(w) {
+  document.querySelector('.sidebar').style.width = w + 'px';
+  document.querySelector('.main').style.marginLeft = w + 'px';
+  if(!db.settings) db.settings = {};
+  db.settings.sidebarWidth = w;
+  saveDB(); toast('📐 Sidebar width: ' + w + 'px');
+}
+
+function setStatCols(n) {
+  var grid = document.querySelector('.sgrid');
+  if(grid) grid.style.gridTemplateColumns = 'repeat(' + n + ',1fr)';
+  if(!db.settings) db.settings = {};
+  db.settings.statCols = n;
+  saveDB(); toast('📊 Stats: ' + n + ' columns');
+}
+
+// Apply saved widget prefs on load
+setTimeout(function() {
+  var prefs = db.widgetPrefs || {};
+  _dashWidgets.forEach(function(w) {
+    if(prefs[w.id] === false) { var el = document.getElementById(w.id); if(el) el.style.display = 'none'; }
+  });
+  if(db.settings && db.settings.fontSize) {
+    document.body.classList.remove('fs-sm','fs-md','fs-lg');
+    document.body.classList.add('fs-' + db.settings.fontSize);
+  }
+  if(db.settings && db.settings.sidebarWidth) {
+    document.querySelector('.sidebar').style.width = db.settings.sidebarWidth + 'px';
+    document.querySelector('.main').style.marginLeft = db.settings.sidebarWidth + 'px';
+  }
+}, 1200);
+
+// ---- EXTEND renderAll for V28 ----
+var _v28RenderAll = renderAll;
+renderAll = function(){
+  _v28RenderAll();
+  renderPurchaseOrders();
+  renderMultiBranch();
+  renderTaxManager();
+  renderDashboardBuilder();
+};
+
+// ---- EXTEND goPage for V28 ----
+var _v28GoPage = goPage;
+goPage = function(id) {
+  _v28GoPage(id);
+  if(id === 'purchase-orders') renderPurchaseOrders();
+  if(id === 'multi-branch') renderMultiBranch();
+  if(id === 'tax-manager') renderTaxManager();
+  if(id === 'advanced-reports') { var t=document.getElementById('rpt-from'); if(t&&!t.value){ var d=new Date(); t.value=new Date(d.getFullYear(),d.getMonth(),1).toISOString().split('T')[0]; document.getElementById('rpt-to').value=d.toISOString().split('T')[0]; } }
+  if(id === 'dashboard-builder') renderDashboardBuilder();
+};
+
+console.log('✅ V28 Upgrade loaded — Purchase Orders, Multi-Branch, VAT, Advanced Reports, Dashboard Builder');
 
 init();
 </script>
