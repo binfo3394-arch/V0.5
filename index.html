@@ -11730,17 +11730,36 @@ document.addEventListener('click', function(e){
       });
     }
 
-    /* drawer items — event delegation */
+    /* drawer items — scroll-safe touch handling */
     var drawer = document.getElementById('mobile-more-drawer');
     if (drawer) {
-      ['click', 'touchend'].forEach(function (evt) {
-        drawer.addEventListener(evt, function (e) {
-          var item = e.target.closest('.mmore-item');
-          if (!item) return;
-          e.preventDefault();
-          var page = item.getAttribute('data-mmr');
-          if (page) mbnGo(page);
-        }, { passive: false });
+      var _touchStartY = 0;
+      var _touchStartX = 0;
+
+      drawer.addEventListener('touchstart', function (e) {
+        _touchStartY = e.touches[0].clientY;
+        _touchStartX = e.touches[0].clientX;
+      }, { passive: true });
+
+      drawer.addEventListener('touchend', function (e) {
+        var dy = Math.abs(e.changedTouches[0].clientY - _touchStartY);
+        var dx = Math.abs(e.changedTouches[0].clientX - _touchStartX);
+        /* Only treat as tap if finger moved less than 8px — otherwise it's a scroll */
+        if (dy > 8 || dx > 8) return;
+        var item = e.target.closest('.mmore-item');
+        if (!item) return;
+        e.preventDefault();
+        var page = item.getAttribute('data-mmr');
+        if (page) mbnGo(page);
+      }, { passive: false });
+
+      /* keep click for desktop/mouse */
+      drawer.addEventListener('click', function (e) {
+        if ('ontouchstart' in window) return; /* skip on touch devices — handled above */
+        var item = e.target.closest('.mmore-item');
+        if (!item) return;
+        var page = item.getAttribute('data-mmr');
+        if (page) mbnGo(page);
       });
     }
 
