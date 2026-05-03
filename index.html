@@ -6,8 +6,228 @@
 <title>ST Mobile & Designing — POS v26</title>
 <meta name="theme-color" content="#6c63ff">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="ST Mobile POS">
-<link rel="manifest" href="data:application/json;charset=utf-8,%7B%22name%22%3A%22ST%20Mobile%20POS%22%2C%22short_name%22%3A%22ST%20POS%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230a0a1a%22%2C%22theme_color%22%3A%22%236c63ff%22%7D">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ST POS">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="application-name" content="ST POS">
+<meta name="msapplication-TileColor" content="#6c63ff">
+<meta name="description" content="ST Mobile & Designing — Point of Sale System">
+
+<!-- PWA Icons (SVG → base64 PNG generated inline) -->
+<script>
+(function(){
+  // Generate ST purple gradient icon as canvas → data URL
+  function makeIcon(size) {
+    var c = document.createElement('canvas');
+    c.width = size; c.height = size;
+    var ctx = c.getContext('2d');
+    // Rounded rect background
+    var r = size * 0.18;
+    var grad = ctx.createLinearGradient(0, 0, size, size);
+    grad.addColorStop(0, '#8b5cf6');
+    grad.addColorStop(0.5, '#6c63ff');
+    grad.addColorStop(1, '#4f46e5');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.moveTo(r, 0); ctx.lineTo(size-r, 0);
+    ctx.quadraticCurveTo(size, 0, size, r);
+    ctx.lineTo(size, size-r);
+    ctx.quadraticCurveTo(size, size, size-r, size);
+    ctx.lineTo(r, size);
+    ctx.quadraticCurveTo(0, size, 0, size-r);
+    ctx.lineTo(0, r);
+    ctx.quadraticCurveTo(0, 0, r, 0);
+    ctx.closePath();
+    ctx.fill();
+    // Subtle inner glow
+    var glow = ctx.createRadialGradient(size*0.35, size*0.3, 0, size*0.5, size*0.5, size*0.6);
+    glow.addColorStop(0, 'rgba(255,255,255,0.18)');
+    glow.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = glow;
+    ctx.fill();
+    // "ST" text
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    var fs = Math.round(size * 0.38);
+    ctx.font = 'bold ' + fs + 'px Arial, sans-serif';
+    ctx.shadowColor = 'rgba(0,0,0,0.3)';
+    ctx.shadowBlur = size * 0.06;
+    ctx.fillText('ST', size/2, size/2);
+    return c.toDataURL('image/png');
+  }
+  window._pwaIconGen = makeIcon;
+})();
+</script>
+
+<!-- Manifest injected after icons are generated -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var icon192 = window._pwaIconGen(192);
+  var icon512 = window._pwaIconGen(512);
+  var icon180 = window._pwaIconGen(180);
+  var icon152 = window._pwaIconGen(152);
+  var icon120 = window._pwaIconGen(120);
+
+  // Apple touch icons
+  var apple = document.createElement('link');
+  apple.rel = 'apple-touch-icon';
+  apple.sizes = '180x180';
+  apple.href = icon180;
+  document.head.appendChild(apple);
+
+  var apple152 = document.createElement('link');
+  apple152.rel = 'apple-touch-icon';
+  apple152.sizes = '152x152';
+  apple152.href = icon152;
+  document.head.appendChild(apple152);
+
+  var apple120 = document.createElement('link');
+  apple120.rel = 'apple-touch-icon';
+  apple120.sizes = '120x120';
+  apple120.href = icon120;
+  document.head.appendChild(apple120);
+
+  // Favicon
+  var fav = document.createElement('link');
+  fav.rel = 'icon';
+  fav.type = 'image/png';
+  fav.href = window._pwaIconGen(32);
+  document.head.appendChild(fav);
+
+  // Build manifest JSON
+  var manifest = {
+    name: 'ST Mobile & Designing POS',
+    short_name: 'ST POS',
+    description: 'ST Mobile Point of Sale System',
+    start_url: '.',
+    scope: '.',
+    display: 'standalone',
+    orientation: 'portrait-primary',
+    background_color: '#0a0a1a',
+    theme_color: '#6c63ff',
+    lang: 'en',
+    categories: ['business', 'productivity'],
+    icons: [
+      { src: icon192, sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+      { src: icon512, sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
+    ],
+    shortcuts: [
+      { name: 'New Sale', short_name: 'Sale', description: 'Start a new sale', url: '.', icons: [{ src: icon192, sizes: '192x192' }] }
+    ]
+  };
+
+  var blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+  var manifestURL = URL.createObjectURL(blob);
+  var mlink = document.createElement('link');
+  mlink.rel = 'manifest';
+  mlink.href = manifestURL;
+  document.head.appendChild(mlink);
+
+  // Register Service Worker
+  if ('serviceWorker' in navigator) {
+    var swCode = `
+const CACHE_NAME = 'st-pos-v28-cache-v1';
+const OFFLINE_URL = self.location.href;
+
+// On install: cache the app itself
+self.addEventListener('install', function(event) {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(function(cache) {
+      return cache.addAll([OFFLINE_URL]);
+    }).catch(function(e){ console.warn('SW cache install error:', e); })
+  );
+  self.skipWaiting();
+});
+
+// On activate: clean old caches
+self.addEventListener('activate', function(event) {
+  event.waitUntil(
+    caches.keys().then(function(keys) {
+      return Promise.all(
+        keys.filter(function(k){ return k !== CACHE_NAME; })
+            .map(function(k){ return caches.delete(k); })
+      );
+    })
+  );
+  self.clients.claim();
+});
+
+// Fetch strategy: Network first, fallback to cache
+self.addEventListener('fetch', function(event) {
+  // Skip Firebase, external APIs
+  var url = event.request.url;
+  if (url.includes('firebase') || url.includes('googleapis') || url.includes('cdnjs') || url.includes('unpkg')) {
+    return; // Let browser handle external resources normally
+  }
+  event.respondWith(
+    fetch(event.request)
+      .then(function(response) {
+        // Cache successful GET responses for the app itself
+        if (event.request.method === 'GET' && response.status === 200) {
+          var clone = response.clone();
+          caches.open(CACHE_NAME).then(function(cache) {
+            cache.put(event.request, clone);
+          });
+        }
+        return response;
+      })
+      .catch(function() {
+        // Offline: serve from cache
+        return caches.match(event.request).then(function(cached) {
+          return cached || caches.match(OFFLINE_URL);
+        });
+      })
+  );
+});
+`;
+    var swBlob = new Blob([swCode], { type: 'application/javascript' });
+    var swURL = URL.createObjectURL(swBlob);
+    navigator.serviceWorker.register(swURL, { scope: './' })
+      .then(function(reg) {
+        console.log('✅ ST POS Service Worker registered', reg.scope);
+      })
+      .catch(function(e) {
+        console.warn('SW registration failed:', e);
+      });
+  }
+
+  // PWA Install prompt handler
+  window._pwaInstallPrompt = null;
+  window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault();
+    window._pwaInstallPrompt = e;
+    // Show install banner if not already installed
+    var banner = document.getElementById('pwa-install-banner');
+    if (banner) banner.style.display = 'flex';
+  });
+
+  window.addEventListener('appinstalled', function() {
+    var banner = document.getElementById('pwa-install-banner');
+    if (banner) banner.style.display = 'none';
+    window._pwaInstallPrompt = null;
+    console.log('✅ ST POS installed as PWA!');
+  });
+});
+
+function pwaInstallNow() {
+  if (window._pwaInstallPrompt) {
+    window._pwaInstallPrompt.prompt();
+    window._pwaInstallPrompt.userChoice.then(function(result) {
+      if (result.outcome === 'accepted') {
+        var banner = document.getElementById('pwa-install-banner');
+        if (banner) banner.style.display = 'none';
+      }
+      window._pwaInstallPrompt = null;
+    });
+  }
+}
+
+function pwaDismissBanner() {
+  var banner = document.getElementById('pwa-install-banner');
+  if (banner) banner.style.display = 'none';
+}
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -12107,5 +12327,60 @@ console.log('✅ V28 Upgrade loaded — Purchase Orders, Multi-Branch, VAT, Adva
 
 init();
 </script>
+
+<!-- ===== PWA INSTALL BANNER ===== -->
+<div id="pwa-install-banner" style="
+  display:none;
+  position:fixed;
+  bottom:24px;
+  left:50%;
+  transform:translateX(-50%);
+  z-index:99999;
+  background:linear-gradient(135deg,#8b5cf6,#6c63ff,#4f46e5);
+  color:#fff;
+  border-radius:16px;
+  padding:14px 20px;
+  box-shadow:0 8px 32px rgba(108,99,255,0.5);
+  align-items:center;
+  gap:14px;
+  max-width:360px;
+  width:calc(100% - 40px);
+  font-family:inherit;
+  animation: pwa-slide-up 0.4s ease;
+">
+  <style>
+  @keyframes pwa-slide-up {
+    from { opacity:0; transform:translateX(-50%) translateY(30px); }
+    to   { opacity:1; transform:translateX(-50%) translateY(0); }
+  }
+  </style>
+  <div style="font-size:28px;flex-shrink:0">📲</div>
+  <div style="flex:1">
+    <div style="font-weight:700;font-size:14px;margin-bottom:2px">Install ST POS App</div>
+    <div style="font-size:12px;opacity:0.85">Phone home screen එකේ add කරන්න</div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
+    <button onclick="pwaInstallNow()" style="
+      background:#fff;
+      color:#6c63ff;
+      border:none;
+      border-radius:8px;
+      padding:6px 14px;
+      font-weight:700;
+      font-size:12px;
+      cursor:pointer;
+    ">Install</button>
+    <button onclick="pwaDismissBanner()" style="
+      background:rgba(255,255,255,0.2);
+      color:#fff;
+      border:none;
+      border-radius:8px;
+      padding:4px 14px;
+      font-size:11px;
+      cursor:pointer;
+    ">Later</button>
+  </div>
+</div>
+
 </body>
 </html>
