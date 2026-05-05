@@ -1446,6 +1446,7 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
       <div class="nlabel">Main</div>
       <div class="nitem active" data-page="dashboard"><span class="ic">🏠</span><span>Dashboard</span></div>
       <div class="nitem" data-page="pos"><span class="ic">🛒</span><span>New Sale</span></div>
+      <div class="nitem" data-page="cart"><span class="ic">🧾</span><span>Cart <span id="cart-nav-badge" style="background:var(--secondary);color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;display:none">0</span></span></div>
       <div class="nlabel">Management</div>
       <div class="nitem" data-page="inventory"><span class="ic">📦</span><span>Inventory</span></div>
       <div class="nitem" data-page="repairs"><span class="ic">🔧</span><span>Repairs</span><span class="nbadge" id="rbadge">0</span></div>
@@ -1703,31 +1704,39 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
 
       <!-- POS -->
       <div id="pg-pos" class="page">
-        <div class="pos-wrap">
-          <div>
-            <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
-              <div class="sbar" style="flex:1;margin:0;min-width:150px"><span>🔍</span><input id="pos-q" placeholder="Search products..." oninput="renderPos()"></div>
-              <button class="btn bo bsm" onclick="openBarcodeScanner()" title="Barcode Scan">📷</button>
-              <select id="pos-cat" onchange="renderPos()" style="width:140px">
-                <option value="">All</option><option>Phone</option><option>Accessories</option><option>Repair Part</option><option>Design Service</option><option>Other</option>
-              </select>
+        <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
+          <div class="sbar" style="flex:1;margin:0;min-width:150px"><span>🔍</span><input id="pos-q" placeholder="Search products..." oninput="renderPos()"></div>
+          <button class="btn bo bsm" onclick="openBarcodeScanner()" title="Barcode Scan">📷</button>
+          <select id="pos-cat" onchange="renderPos()" style="width:140px">
+            <option value="">All</option><option>Phone</option><option>Accessories</option><option>Repair Part</option><option>Design Service</option><option>Other</option>
+          </select>
+          <button class="btn bp2 bsm" onclick="goPage('cart')" style="gap:6px">
+            🛒 View Cart <span id="cart-cnt" style="background:#fff;color:var(--primary);font-size:10px;padding:2px 7px;border-radius:10px;font-weight:800">0</span>
+          </button>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;align-items:center">
+          <button class="btn bo bsm ptab at" onclick="setPosTab('',this)">All</button>
+          <button class="btn bo bsm ptab" onclick="setPosTab('Phone',this)">📱 Phones</button>
+          <button class="btn bo bsm ptab" onclick="setPosTab('Accessories',this)">🎧 Access.</button>
+          <button class="btn bo bsm ptab" onclick="setPosTab('Repair Part',this)">🔩 Parts</button>
+          <button class="btn bo bsm ptab" onclick="setPosTab('Design Service',this)">🎨 Design</button>
+          <button class="btn bo bsm" id="pos-oos-btn" onclick="togglePosOutOfStock()" title="Show/Hide out of stock">👁️ Out of Stock</button>
+        </div>
+        <div class="pgrid" id="pos-prods"></div>
+      </div>
+
+      <!-- ═══ CART PAGE (Separate) ═══ -->
+      <div id="pg-cart" class="page">
+        <div style="max-width:540px;margin:0 auto">
+        <div class="cpanel" style="position:static;height:auto;max-height:none;border-radius:16px">
+          <div class="cpanel-inner" style="overflow:visible">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <h3 style="font-size:14px">🛒 Cart <span id="cart-cnt-2" style="background:var(--primary);color:#fff;font-size:10px;padding:2px 7px;border-radius:10px">0</span></h3>
+            <div style="display:flex;gap:6px">
+              <button class="btn bo bsm" onclick="goPage('pos')">← Add Items</button>
+              <button class="btn bd2 bsm" onclick="clearCart()">🗑️ Clear</button>
             </div>
-            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;align-items:center">
-              <button class="btn bo bsm ptab at" onclick="setPosTab('',this)">All</button>
-              <button class="btn bo bsm ptab" onclick="setPosTab('Phone',this)">📱 Phones</button>
-              <button class="btn bo bsm ptab" onclick="setPosTab('Accessories',this)">🎧 Access.</button>
-              <button class="btn bo bsm ptab" onclick="setPosTab('Repair Part',this)">🔩 Parts</button>
-              <button class="btn bo bsm ptab" onclick="setPosTab('Design Service',this)">🎨 Design</button>
-              <button class="btn bo bsm" id="pos-oos-btn" onclick="togglePosOutOfStock()" title="Show/Hide out of stock">👁️ Out of Stock</button>
-            </div>
-            <div class="pgrid" id="pos-prods"></div>
           </div>
-          <div class="cpanel">
-            <div class="cpanel-inner">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-              <h3 style="font-size:14px">🛒 Cart <span id="cart-cnt" style="background:var(--primary);color:#fff;font-size:10px;padding:2px 7px;border-radius:10px">0</span></h3>
-              <button class="btn bd2 bsm" onclick="clearCart()">🗑️</button>
-            </div>
             <div class="fg" style="margin-bottom:8px">
               <label>👷 Cashier / Staff</label>
               <select id="cart-cashier-sel" style="width:100%">
@@ -1790,9 +1799,9 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
               <button class="btn bp2" style="width:100%;padding:11px;font-size:14px;margin-top:6px" onclick="completeSale()">✅ Complete Sale</button>
             </div>
             </div><!-- /cpanel-inner -->
-          </div>
-        </div>
-      </div>
+          </div><!-- /cpanel -->
+        </div><!-- /max-width wrapper -->
+      </div><!-- /pg-cart -->
 
       <!-- INVENTORY -->
       <div id="pg-inventory" class="page">
@@ -5339,7 +5348,7 @@ function completeSplitPayment() {
 
 // Add split pay button to POS
 function addSplitPayButton() {
-  var payGrid = document.querySelector('#pg-pos .cpanel .paybtn[onclick*="Cash"]');
+  var payGrid = document.querySelector('#pg-cart .paybtn[onclick*="Cash"]');
   if (payGrid && !document.getElementById('split-pay-btn')) {
     var btn = document.createElement('button');
     btn.id = 'split-pay-btn';
@@ -6266,7 +6275,7 @@ function closeSidebar(){
 }
 
 // =========== NAVIGATION ===========
-var pageTitles = { dashboard:'Dashboard', pos:'New Sale', inventory:'Inventory', repairs:'Repairs', orders:'Online Orders', customers:'Customers', invoices:'Invoices', analytics:'Analytics', credits:'Credit Sales', suppliers:'Suppliers', stocklog:'Stock History', settings:'Settings' };
+var pageTitles = { dashboard:'Dashboard', pos:'New Sale 🛍️', cart:'🛒 Cart & Checkout', inventory:'Inventory', repairs:'Repairs', orders:'Online Orders', customers:'Customers', invoices:'Invoices', analytics:'Analytics', credits:'Credit Sales', suppliers:'Suppliers', stocklog:'Stock History', settings:'Settings' };
 function goPage(id) {
   closeSidebar();
   document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
@@ -6278,6 +6287,7 @@ function goPage(id) {
   var t = document.getElementById('ptitle');
   if (t) t.textContent = pageTitles[id] || id;
   if (id === 'pos') renderPos();
+  if (id === 'cart') { renderCart(); calcTotal(); }
   if (id === 'dashboard') { updateDash(); }
   if (id === 'settings') loadSettingsFrm();
   if (id === 'analytics') renderAnalytics();
@@ -7110,8 +7120,12 @@ function addCustom() {
 }
 function renderCart() {
   var cnt = document.getElementById('cart-cnt');
+  var cnt2 = document.getElementById('cart-cnt-2');
+  var navBadge = document.getElementById('cart-nav-badge');
   var total = cart.reduce(function(s,c){ return s+c.qty; },0);
   if(cnt) cnt.textContent = total;
+  if(cnt2) cnt2.textContent = total;
+  if(navBadge){ navBadge.textContent = total; navBadge.style.display = total > 0 ? 'inline' : 'none'; }
   var el = document.getElementById('cart-list'); if(!el) return;
   if(!cart.length){ el.innerHTML = '<div class="empty" style="padding:16px"><div class="ei">🛒</div>Empty cart</div>'; calcTotal(); return; }
   el.innerHTML = cart.map(function(c,i){
@@ -7133,7 +7147,7 @@ function editCartPrice(i, val){
 function clearCart(){ cart=[]; var d=document.getElementById('c-disc'); if(d) d.value=0; var t=document.getElementById('c-tax'); if(t) t.value=0; var g=document.getElementById('c-given'); if(g) g.value=''; var cc=document.getElementById('c-coupon'); if(cc) cc.value=''; var cm=document.getElementById('c-coupon-msg'); if(cm) cm.style.display='none'; discType='Rs'; var dt=document.getElementById('disc-toggle'); if(dt){ dt.textContent='Rs'; dt.style.color='var(--primary)'; } clearCustSel(); renderCart(); }
 function selPay(m,el){
   selPayment=m;
-  document.querySelectorAll('.cpanel .paybtn').forEach(function(b){ b.classList.remove('ap'); });
+  document.querySelectorAll('.paybtn').forEach(function(b){ b.classList.remove('ap'); });
   if(el) el.classList.add('ap');
 }
 var discType='Rs'; // 'Rs' or '%'
@@ -7187,11 +7201,12 @@ function completeSale(){
   cart.forEach(function(c){ if(!c.custom){ var p=db.products.find(function(x){ return x.id===c.id; }); if(p){ p.stock-=c.qty; logStock(p.id, p.name, 'Sale', -c.qty, p.stock, inv.invNo, true); }}});
   db.invoices.push(inv);
   selPayment = 'Cash';
-  document.querySelectorAll('.cpanel .paybtn').forEach(function(b){ b.classList.remove('ap'); });
-  var cashBtn = document.querySelector('.cpanel .paybtn');
+  document.querySelectorAll('.paybtn').forEach(function(b){ b.classList.remove('ap'); });
+  var cashBtn = document.querySelector('#pg-cart .paybtn');
   if(cashBtn) cashBtn.classList.add('ap');
   saveDB(); clearCart(); renderAll();
   playBeep(880, 0.15); setTimeout(function(){ playBeep(1100, 0.15); }, 150);
+  goPage('pos');
   showInv(inv.id);
   toast('✅ Sale done! '+inv.invNo);
 }
