@@ -7614,71 +7614,8 @@ function renderCust(){
     var ordCount=ordAll.filter(function(o){ return o.phone===c.phone||o.customer===c.name; }).length;
     var pts=getLoyaltyPoints(c.id);
     var ptsHtml=pts>0?'<br><small style="color:var(--warning)">⭐ '+pts+' pts</small>':'';
-    var waBtn=c.phone?'<button class="btn bwa bsm" onclick="openWA(\''+c.phone+'\',\''+c.name.replace(/'/g,"\\'")+'\')" title="WhatsApp" style="margin-right:3px">💬</button>':'';
-    return '<tr><td><b>'+c.name+'</b>'+ptsHtml+'</td><td>'+c.phone+'</td><td>'+(c.email||'—')+'</td><td>'+s+'</td><td>'+r+'</td><td>'+ordCount+'</td><td style="white-space:nowrap">'+waBtn+'<button class="btn bp2 bsm" onclick="viewCustHistory('+c.id+')" style="margin-right:3px" title="History">📋</button><button class="btn bo bsm" onclick="editCust('+c.id+')" style="margin-right:4px">✏️</button><button class="btn bd2 bsm" onclick="delCust('+c.id+')">🗑️</button></td></tr>';
+    return '<tr><td><b>'+c.name+'</b>'+ptsHtml+'</td><td>'+c.phone+'</td><td>'+(c.email||'—')+'</td><td>'+s+'</td><td>'+r+'</td><td>'+ordCount+'</td><td style="white-space:nowrap"><button class="btn bp2 bsm" onclick="viewCustHistory('+c.id+')" style="margin-right:3px" title="History">📋</button><button class="btn bo bsm" onclick="editCust('+c.id+')" style="margin-right:4px">✏️</button><button class="btn bd2 bsm" onclick="delCust('+c.id+')">🗑️</button></td></tr>';
   }).join(''):'<tr><td colspan="7" class="empty"><div class="ei">👥</div>No customers</td></tr>';
-}
-
-// ── Direct WhatsApp open (mobile app / web) ──
-function openWA(phone, name) {
-  if(!phone){ toast('❌ Phone number නෑ','var(--danger)'); return; }
-  var num = phone.replace(/[^0-9]/g,'');
-  // Sri Lanka: 07X → 947X
-  if(num.startsWith('0') && num.length === 10) num = '94' + num.slice(1);
-  // Show quick message selector
-  var msgs = [
-    { label:'👋 සාමාන්‍ය ご挨拶', text:'Hi '+name+'! 😊 ST Mobile & Designing කෙතෙන් contact කරනවා.' },
-    { label:'🔧 Repair Ready', text:'Hi '+name+'! ✅ ඔබේ device repair ඉවරයි. Collect කරන්න එන්න. 🏪 ST Mobile & Designing' },
-    { label:'💰 Payment Reminder', text:'Hi '+name+'! 🙏 Outstanding balance ගෙවීම ගැන reminder. ST Mobile & Designing.' },
-    { label:'🎉 Special Offer', text:'Hi '+name+'! 🎉 Special offer — ST Mobile & Designing. අදම visit කරන්න!' },
-    { label:'📦 Order Ready', text:'Hi '+name+'! 📦 ඔබේ order ready! Collect කරන්න available. ST Mobile & Designing.' },
-    { label:'✏️ Custom Message', text:'' }
-  ];
-  var html = '<div style="padding:4px">' +
-    msgs.map(function(m, i){
-      return '<button onclick="sendWAMsg(\''+num+'\','+i+')" style="display:block;width:100%;text-align:left;padding:10px 14px;margin-bottom:6px;background:var(--card2);border:1px solid var(--border);border-radius:9px;color:var(--text);cursor:pointer;font-size:13px;transition:0.2s" onmouseover="this.style.borderColor=\'var(--success)\'" onmouseout="this.style.borderColor=\'var(--border)\'">' + m.label + '</button>';
-    }).join('') +
-    '<div style="margin-top:8px"><label style="font-size:11px;color:var(--muted)">✏️ Custom Message:</label><textarea id="wa-custom-msg" placeholder="Type your message..." style="width:100%;height:80px;margin-top:4px;padding:8px;font-size:13px;resize:vertical"></textarea><button onclick="sendWACustom(\''+num+'\')" style="margin-top:6px;width:100%;padding:9px;background:#25D366;color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer">💬 Send Custom Message</button></div>' +
-    '</div>';
-  // Store msgs for callback
-  window._waMsgList = msgs;
-  window._waPhone = num;
-  // Use a simple modal-like overlay
-  var ov = document.getElementById('wa-picker-ov');
-  if(!ov){
-    ov = document.createElement('div');
-    ov.id = 'wa-picker-ov';
-    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(4px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px';
-    ov.onclick = function(e){ if(e.target===ov) ov.style.display='none'; };
-    document.body.appendChild(ov);
-  }
-  ov.innerHTML = '<div style="background:var(--card);border:1px solid var(--border);border-radius:18px;width:420px;max-width:100%;max-height:90vh;overflow-y:auto">' +
-    '<div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">' +
-    '<div><div style="font-size:15px;font-weight:700">💬 WhatsApp</div><div style="font-size:12px;color:var(--muted)">'+name+' &nbsp;|&nbsp; +'+num+'</div></div>' +
-    '<button onclick="document.getElementById(\'wa-picker-ov\').style.display=\'none\'" style="background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer">×</button>' +
-    '</div><div style="padding:16px">' + html + '</div></div>';
-  ov.style.display = 'flex';
-}
-
-function sendWAMsg(num, idx) {
-  var msgs = window._waMsgList || [];
-  var m = msgs[idx];
-  if(!m) return;
-  if(m.text === '') {
-    // Focus custom textarea
-    document.getElementById('wa-custom-msg') && document.getElementById('wa-custom-msg').focus();
-    return;
-  }
-  document.getElementById('wa-picker-ov').style.display = 'none';
-  // wa.me opens WhatsApp app on mobile, WhatsApp Web on desktop
-  window.open('https://wa.me/'+num+'?text='+encodeURIComponent(m.text), '_blank');
-}
-
-function sendWACustom(num) {
-  var txt = (document.getElementById('wa-custom-msg')||{}).value || '';
-  if(!txt.trim()){ toast('❌ Message ලියන්න','var(--danger)'); return; }
-  document.getElementById('wa-picker-ov').style.display = 'none';
-  window.open('https://wa.me/'+num+'?text='+encodeURIComponent(txt.trim()), '_blank');
 }
 function saveCust(){
   var id=document.getElementById('cu-id').value;
@@ -10857,45 +10794,6 @@ document.addEventListener('DOMContentLoaded',function(){
   </div>
 </div>
 
-<!-- Edit Loyalty Log Entry Modal -->
-<div class="moverlay" id="m-edit-loyalty">
-  <div class="modal" style="width:400px">
-    <div class="mhdr"><h3>✏️ Edit Loyalty Entry</h3><button class="xbtn" onclick="closeM('m-edit-loyalty')">×</button></div>
-    <div class="mbody">
-      <input type="hidden" id="eloy-id">
-      <input type="hidden" id="eloy-custid">
-      <div style="background:var(--card2);border-radius:9px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:var(--primary);font-weight:700">
-        👤 <span id="eloy-cust-name">Customer</span>
-      </div>
-      <div class="fgrid">
-        <div class="fg">
-          <label>Points (absolute value)</label>
-          <input type="number" id="eloy-pts" min="1" placeholder="e.g. 100">
-        </div>
-        <div class="fg">
-          <label>Add / Deduct</label>
-          <select id="eloy-sign">
-            <option value="positive">➕ Add (positive)</option>
-            <option value="negative">➖ Deduct (negative)</option>
-          </select>
-        </div>
-      </div>
-      <div class="fg">
-        <label>Reference / Reason</label>
-        <input id="eloy-ref" placeholder="e.g. Manual correction, Birthday bonus...">
-      </div>
-      <div class="fg">
-        <label>Date</label>
-        <input id="eloy-date" placeholder="e.g. 05/05/2026">
-      </div>
-    </div>
-    <div class="mftr">
-      <button class="btn bo" onclick="closeM('m-edit-loyalty')">Cancel</button>
-      <button class="btn bp2" onclick="saveEditLoyaltyLog()">💾 Save Changes</button>
-    </div>
-  </div>
-</div>
-
 <!-- Loyalty Settings Modal -->
 <div class="moverlay" id="m-loy-settings">
   <div class="modal" style="width:420px">
@@ -11121,74 +11019,1606 @@ function saveManualPoints(){
   saveDB(); renderLoyalty(); closeM('m-loyalty'); toast('✅ Points updated!');
 }
 
-var _loyHistCustId = null;
 function viewCustLoyaltyHist(custId){
-  _loyHistCustId = custId;
   var cust=db.customers.find(function(c){ return c.id==custId; }); if(!cust) return;
   var logs=(db.loyaltyLog||[]).filter(function(l){ return l.custId==custId; }).slice().reverse();
   var bal=getLoyaltyPoints(custId);
   var tier=getLoyaltyTier(bal);
   var body=document.getElementById('cust-hist-body'); if(!body) return;
-  var html='<div style="text-align:center;padding:14px 0;border-bottom:1px solid var(--border);margin-bottom:14px">';
-  html+='<div style="font-size:14px;font-weight:700">'+cust.name+' — Loyalty Points</div>';
-  html+='<div style="font-size:32px;font-weight:800;color:var(--primary);margin:6px 0">'+bal+' pts</div>';
-  html+='<div style="color:'+tier.color+';font-weight:700">'+tier.label+'</div>';
-  html+='<div style="font-size:11px;color:var(--muted)">Redeem value: Rs.'+(bal*(db.settings.loyaltyRedeem||0.5)).toFixed(0)+'</div></div>';
-  html+='<div style="overflow-x:auto"><table style="width:100%;font-size:12px;min-width:430px"><thead><tr><th>Date</th><th>Type</th><th>Points</th><th>Reference</th><th>Edit</th></tr></thead><tbody>';
-  if(logs.length){
-    logs.forEach(function(l){
-      var tl=l.points>0?'<span style="color:var(--success)">Earned</span>':l.type==='redeem'?'<span style="color:var(--danger)">Redeemed</span>':'<span style="color:var(--warning)">Manual</span>';
-      var pl='<b style="color:'+(l.points>0?'var(--success)':'var(--danger)')+'">'+(l.points>0?'+':'')+l.points+'</b>';
-      html+='<tr><td>'+l.date+'</td><td>'+tl+'</td><td>'+pl+'</td><td>'+l.ref+'</td>';
-      html+='<td style="text-align:center;white-space:nowrap">';
-      html+='<button class="btn bo bsm" onclick="openEditLoyaltyLog(\''+l.id+'\','+custId+')" style="margin-right:3px;padding:3px 8px">&#x270F;</button>';
-      html+='<button class="btn bd2 bsm" onclick="deleteLoyaltyLog(\''+l.id+'\','+custId+')" style="padding:3px 8px">&#x1F5D1;</button>';
-      html+='</td></tr>';
-    });
-  } else { html+='<tr><td colspan="5" class="empty">No history</td></tr>'; }
-  html+='</tbody></table></div>';
-  body.innerHTML=html;
+  body.innerHTML='<div style="text-align:center;padding:14px 0;border-bottom:1px solid var(--border);margin-bottom:14px">'+
+    '<div style="font-size:14px;font-weight:700">'+cust.name+' — Loyalty Points</div>'+
+    '<div style="font-size:32px;font-weight:800;color:var(--primary);margin:6px 0">'+bal+' pts</div>'+
+    '<div style="color:'+tier.color+';font-weight:700">'+tier.label+'</div>'+
+    '<div style="font-size:11px;color:var(--muted)">Redeem value: Rs.'+(bal*(db.settings.loyaltyRedeem||0.5)).toFixed(0)+'</div>'+
+  '</div>'+
+  '<table style="width:100%;font-size:12px"><thead><tr><th>Date</th><th>Type</th><th>Points</th><th>Reference</th></tr></thead><tbody>'+
+  (logs.length?logs.map(function(l){ return '<tr><td>'+l.date+'</td><td>'+(l.points>0?'<span style="color:var(--success)">Earned</span>':l.type==='redeem'?'<span style="color:var(--danger)">Redeemed</span>':'<span style="color:var(--muted)">Manual</span>')+'</td><td style="font-weight:700;color:'+(l.points>0?'var(--success)':'var(--danger)')+'">'+(l.points>0?'+':'')+l.points+'</td><td>'+l.ref+'</td></tr>'; }).join(''):'<tr><td colspan="4" class="empty">No history</td></tr>')+
+  '</tbody></table>';
   openM('m-cust-hist');
 }
 
-function openEditLoyaltyLog(logId, custId){
-  var log=(db.loyaltyLog||[]).find(function(l){ return String(l.id)===String(logId); });
-  if(!log){ toast('Entry not found','var(--danger)'); return; }
-  var cust=db.customers.find(function(c){ return c.id==custId; });
-  document.getElementById('eloy-id').value=logId;
-  document.getElementById('eloy-custid').value=custId;
-  document.getElementById('eloy-pts').value=Math.abs(log.points);
-  document.getElementById('eloy-sign').value=log.points>=0?'positive':'negative';
-  document.getElementById('eloy-ref').value=log.ref||'';
-  document.getElementById('eloy-date').value=log.date||'';
-  document.getElementById('eloy-cust-name').textContent=cust?cust.name:'Customer';
-  openM('m-edit-loyalty');
+function openRedeemModal(custId){
+  var cust=db.customers.find(function(c){ return c.id==custId; }); if(!cust) return;
+  var bal=getLoyaltyPoints(custId);
+  var redeem=db.settings.loyaltyRedeem||0.5;
+  var pts=prompt(cust.name+'\nBalance: '+bal+' pts = Rs.'+(bal*redeem).toFixed(0)+'\n\nRedeem කරන points ගණන:');
+  if(!pts||isNaN(parseInt(pts))) return;
+  var p=parseInt(pts);
+  if(p>bal){ toast('❌ Insufficient points (Balance: '+bal+')','var(--danger)'); return; }
+  if(!db.loyaltyLog) db.loyaltyLog=[];
+  db.loyaltyLog.push({ id:Date.now(), custId:custId, custName:cust.name, points:-p, type:'redeem', ref:'Redemption Rs.'+(p*redeem).toFixed(0)+' discount', date:new Date().toLocaleDateString('en-GB') });
+  logActivity('LOYALTY','Points redeemed',cust.name+' -'+p+' pts = Rs.'+(p*redeem).toFixed(0));
+  saveDB(); renderLoyalty();
+  toast('✅ '+p+' pts redeemed! Rs.'+(p*redeem).toFixed(0)+' discount value');
 }
 
-function saveEditLoyaltyLog(){
-  var logId=document.getElementById('eloy-id').value;
-  var custId=document.getElementById('eloy-custid').value;
-  var pts=parseInt(document.getElementById('eloy-pts').value)||0;
-  var sign=document.getElementById('eloy-sign').value;
-  var ref=document.getElementById('eloy-ref').value.trim();
-  var date=document.getElementById('eloy-date').value.trim();
-  if(!pts){ toast('Points enter කරන්න','var(--danger)'); return; }
-  var finalPts=sign==='negative'?-pts:pts;
-  var log=(db.loyaltyLog||[]).find(function(l){ return String(l.id)===String(logId); });
-  if(!log){ toast('Entry not found','var(--danger)'); return; }
-  log.points=finalPts;
-  if(ref) log.ref=ref;
-  if(date) log.date=date;
-  saveDB(); renderLoyalty();
-  closeM('m-edit-loyalty');
-  viewCustLoyaltyHist(parseInt(custId));
-  toast('Points entry updated!');
+function openLoyaltySettings(){
+  var s=db.settings;
+  var e;
+  e=document.getElementById('ls-rate'); if(e) e.value=s.loyaltyRate||1;
+  e=document.getElementById('ls-redeem'); if(e) e.value=s.loyaltyRedeem||0.5;
+  e=document.getElementById('ls-silver'); if(e) e.value=s.loyaltySilver||500;
+  e=document.getElementById('ls-gold'); if(e) e.value=s.loyaltyGold||2000;
+  e=document.getElementById('ls-enabled'); if(e) e.checked=!!s.loyaltyEnabled;
+  openM('m-loy-settings');
 }
 
-function deleteLoyaltyLog(logId, custId){
-  if(!confirm('මේ loyalty entry delete කරන්නද?')) return;
-  db.loyaltyLog=(db.loyaltyLog||[]).filter(function(l){ return String(l.id)!==String(logId); });
-  saveDB(); renderLoyalty();
-  viewCustLoyaltyHist(parseInt(custId));
-  toast('Entry deleted','var(--warning)');
+function saveLoyaltySettings(){
+  var s=db.settings;
+  s.loyaltyRate=parseFloat(document.getElementById('ls-rate')?document.getElementById('ls-rate').value:1)||1;
+  s.loyaltyRedeem=parseFloat(document.getElementById('ls-redeem')?document.getElementById('ls-redeem').value:0.5)||0.5;
+  s.loyaltySilver=parseInt(document.getElementById('ls-silver')?document.getElementById('ls-silver').value:500)||500;
+  s.loyaltyGold=parseInt(document.getElementById('ls-gold')?document.getElementById('ls-gold').value:2000)||2000;
+  s.loyaltyEnabled=document.getElementById('ls-enabled')?document.getElementById('ls-enabled').checked:false;
+  saveDB(); closeM('m-loy-settings'); toast('✅ Loyalty settings saved!');
 }
+
+// ---- CUSTOMER PATCH (birthday + nic) ----
+var _origSaveCust_v26 = saveCust;
+saveCust = function(){
+  var idBefore=document.getElementById('cu-id')?document.getElementById('cu-id').value:'';
+  _origSaveCust_v26();
+  setTimeout(function(){
+    var bday=document.getElementById('cu-birthday')?document.getElementById('cu-birthday').value:'';
+    var nic=document.getElementById('cu-nic')?document.getElementById('cu-nic').value.trim():'';
+    var cust=idBefore?db.customers.find(function(c){ return c.id==parseInt(idBefore); }):db.customers[db.customers.length-1];
+    if(cust){ cust.birthday=bday; cust.nic=nic; saveDB(); }
+  },50);
+};
+
+var _origEditCust_v26 = editCust;
+editCust = function(id){
+  _origEditCust_v26(id);
+  var cust=db.customers.find(function(c){ return c.id==id; });
+  if(cust){
+    var bd=document.getElementById('cu-birthday'); if(bd) bd.value=cust.birthday||'';
+    var nc=document.getElementById('cu-nic'); if(nc) nc.value=cust.nic||'';
+  }
+};
+
+// ---- ROLE MANAGEMENT ----
+function saveCashierPIN(){
+  var pin=document.getElementById('s-cashier-pin')?document.getElementById('s-cashier-pin').value:'';
+  if(pin&&pin.length!==4){ toast('❌ PIN must be exactly 4 digits','var(--danger)'); return; }
+  db.settings.cashierPin=pin;
+  saveDB(); toast('✅ Cashier PIN saved!');
+  var st=document.getElementById('role-status'); if(st) st.textContent=pin?'✅ Cashier PIN active':'❌ No cashier PIN';
+}
+
+function applyRoleUI(){
+  var role=db.settings.role||'admin';
+  var badge=document.getElementById('role-badge');
+  if(badge){ badge.textContent=role==='cashier'?'🏪 Cashier':'👑 Admin'; badge.style.color=role==='cashier'?'var(--warning)':'var(--primary)'; }
+  var adminOnly=['analytics','reports','activitylog','settings','targets','cashregister'];
+  document.querySelectorAll('.nitem').forEach(function(n){
+    var page=n.getAttribute('data-page');
+    if(adminOnly.indexOf(page)>=0&&role==='cashier') n.style.display='none';
+    else n.style.display='';
+  });
+  // Hide section labels (nlabels) if all their nitem siblings are hidden
+  document.querySelectorAll('.nlabel').forEach(function(label){
+    var sibling=label.nextElementSibling;
+    var hasVisible=false;
+    while(sibling && !sibling.classList.contains('nlabel')){
+      if(sibling.classList.contains('nitem') && sibling.style.display!=='none'){
+        hasVisible=true; break;
+      }
+      sibling=sibling.nextElementSibling;
+    }
+    label.style.display=hasVisible?'':'none';
+  });
+}
+
+// ---- OFFLINE DETECTION ----
+function updateOnlineStatus(){
+  var ind=document.getElementById('offline-indicator');
+  if(ind) ind.style.display=navigator.onLine?'none':'block';
+}
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+
+// ---- REPORTS ----
+function generateProfitLossReport(){
+  var now=new Date();
+  var months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var data=months.map(function(_,mi){
+    var invs=db.invoices.filter(function(i){ var p=i.date?i.date.split('/'):null; if(!p||p.length<3) return false; return parseInt(p[1])-1===mi&&parseInt(p[2])===now.getFullYear(); });
+    var rev=invs.reduce(function(s,i){ return s+(i.total||0); },0);
+    var cost=invs.reduce(function(s,inv){ return s+(inv.items||[]).reduce(function(ss,it){ var p=db.products.find(function(x){ return x.id===it.id; }); return ss+(p?(p.cost||0)*it.qty:0); },0); },0);
+    var exp=(db.expenses||[]).filter(function(e){ var p=e.date?e.date.split('/'):null; if(!p||p.length<3) return false; return parseInt(p[1])-1===mi&&parseInt(p[2])===now.getFullYear(); }).reduce(function(s,e){ return s+(e.amount||0); },0);
+    return {month:months[mi],rev:rev,cost:cost,exp:exp,gross:rev-cost,net:rev-cost-exp};
+  });
+  var tR=data.reduce(function(s,d){ return s+d.rev; },0);
+  var tC=data.reduce(function(s,d){ return s+d.cost; },0);
+  var tE=data.reduce(function(s,d){ return s+d.exp; },0);
+  var tG=tR-tC; var tN=tG-tE;
+  var s=db.settings;
+  var html='<!DOCTYPE html><html><head><title>P&L Report</title><style>body{font-family:Segoe UI,sans-serif;padding:30px;color:#111}h1{color:#6c63ff;text-align:center}table{width:100%;border-collapse:collapse;margin-top:16px}th{background:#6c63ff;color:#fff;padding:10px 12px}td{padding:9px 12px;border-bottom:1px solid #eee}tr:nth-child(even)td{background:#f9f9ff}.total{font-weight:800;background:#f0f0ff!important;border-top:2px solid #6c63ff}.neg{color:#ff1744}.pos{color:#00c853}@media print{button{display:none}}</style></head><body>';
+  html+='<h1>'+(s.shopName||'ST Mobile')+'</h1><h2 style="text-align:center;color:#666">📊 Profit & Loss Statement — '+now.getFullYear()+'</h2>';
+  html+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0">';
+  [{label:'Total Revenue',val:tR,clr:'#6c63ff'},{label:'Cost of Goods',val:tC,clr:'#ff1744'},{label:'Expenses',val:tE,clr:'#ff1744'},{label:'Net Profit',val:tN,clr:tN>=0?'#00c853':'#ff1744'}].forEach(function(c){ html+='<div style="background:'+c.clr+'15;border:1px solid '+c.clr+'44;border-radius:8px;padding:14px;text-align:center"><div style="font-size:20px;font-weight:800;color:'+c.clr+'">Rs.'+c.val.toFixed(0)+'</div><div style="font-size:11px;color:#666">'+c.label+'</div></div>'; });
+  html+='</div><table><thead><tr><th>Month</th><th>Revenue</th><th>COGS</th><th>Gross</th><th>Expenses</th><th>Net Profit</th></tr></thead><tbody>';
+  data.forEach(function(d){ html+='<tr><td><b>'+d.month+'</b></td><td>Rs.'+d.rev.toFixed(0)+'</td><td class="neg">Rs.'+d.cost.toFixed(0)+'</td><td class="'+(d.gross>=0?'pos':'neg')+'">Rs.'+d.gross.toFixed(0)+'</td><td class="neg">Rs.'+d.exp.toFixed(0)+'</td><td class="'+(d.net>=0?'pos':'neg')+'"><b>Rs.'+d.net.toFixed(0)+'</b></td></tr>'; });
+  html+='<tr class="total"><td>TOTAL</td><td>Rs.'+tR.toFixed(0)+'</td><td class="neg">Rs.'+tC.toFixed(0)+'</td><td class="'+(tG>=0?'pos':'neg')+'">Rs.'+tG.toFixed(0)+'</td><td class="neg">Rs.'+tE.toFixed(0)+'</td><td class="'+(tN>=0?'pos':'neg')+'">Rs.'+tN.toFixed(0)+'</td></tr></tbody></table>';
+  html+='<div style="text-align:center;margin-top:20px"><button onclick="window.print()" style="padding:10px 24px;background:#6c63ff;color:#fff;border:none;border-radius:8px;cursor:pointer">🖨️ Print / Save PDF</button></div></body></html>';
+  var w=window.open('','_blank','width=900,height=700'); w.document.write(html); w.document.close();
+  logActivity('SETTINGS','P&L Report generated',now.getFullYear()+'');
+}
+
+function generateTaxReport(){
+  var s=db.settings;
+  var taxInvs=db.invoices.filter(function(i){ return i.tax>0; });
+  var totalTax=taxInvs.reduce(function(s,i){ return s+(i.tax||0); },0);
+  var html='<!DOCTYPE html><html><head><title>Tax Report</title><style>body{font-family:Segoe UI,sans-serif;padding:30px}h1{color:#6c63ff;text-align:center}table{width:100%;border-collapse:collapse}th{background:#6c63ff;color:#fff;padding:10px}td{padding:8px 10px;border-bottom:1px solid #eee}.total{font-weight:800;background:#f0f0ff;border-top:2px solid #6c63ff}@media print{button{display:none}}</style></head><body>';
+  html+='<h1>'+(s.shopName||'ST Mobile')+'</h1><h2 style="text-align:center;color:#666">🧾 Tax Summary Report</h2>';
+  html+='<div style="display:flex;gap:16px;margin:16px 0;text-align:center">';
+  html+='<div style="flex:1;background:#f0f0ff;border-radius:8px;padding:14px"><div style="font-size:24px;font-weight:800;color:#6c63ff">'+taxInvs.length+'</div><div>Taxable Invoices</div></div>';
+  html+='<div style="flex:1;background:#00c85320;border-radius:8px;padding:14px;border:1px solid #00c85344"><div style="font-size:24px;font-weight:800;color:#00c853">Rs.'+totalTax.toFixed(2)+'</div><div>Total Tax Collected</div></div>';
+  html+='</div>';
+  html+='<table><thead><tr><th>Invoice #</th><th>Date</th><th>Customer</th><th>Taxable Amount</th><th>Tax %</th><th>Tax Amount</th><th>Total</th></tr></thead><tbody>';
+  taxInvs.slice().reverse().forEach(function(i){ var base=(i.subtotal||0)-(i.discount||0); html+='<tr><td>'+i.invNo+'</td><td>'+i.date+'</td><td>'+i.customer+'</td><td>Rs.'+base.toFixed(2)+'</td><td>'+(i.taxPct||0)+'%</td><td style="color:#6c63ff;font-weight:700">Rs.'+i.tax.toFixed(2)+'</td><td>Rs.'+i.total.toFixed(2)+'</td></tr>'; });
+  html+='<tr class="total"><td colspan="5">TOTAL TAX</td><td>Rs.'+totalTax.toFixed(2)+'</td><td></td></tr></tbody></table>';
+  html+='<div style="text-align:center;margin-top:20px"><button onclick="window.print()" style="padding:10px 24px;background:#6c63ff;color:#fff;border:none;border-radius:8px;cursor:pointer">🖨️ Print PDF</button></div></body></html>';
+  var w=window.open('','_blank','width=900,height=600'); w.document.write(html); w.document.close();
+  logActivity('SETTINGS','Tax report generated','Rs.'+totalTax.toFixed(2)+' total tax');
+}
+
+function generateStockReport(){
+  var s=db.settings;
+  var totalCost=db.products.reduce(function(s,p){ return s+(p.stock||0)*(p.cost||0); },0);
+  var retailVal=db.products.reduce(function(s,p){ return s+(p.stock||0)*(p.price||0); },0);
+  var html='<!DOCTYPE html><html><head><title>Stock Report</title><style>body{font-family:Segoe UI,sans-serif;padding:30px}h1{color:#6c63ff;text-align:center}table{width:100%;border-collapse:collapse}th{background:#6c63ff;color:#fff;padding:10px}td{padding:8px 10px;border-bottom:1px solid #eee}.oos{color:#ff1744}.low{color:#ffab00}.ok{color:#00c853}.total{font-weight:800;background:#f0f0ff;border-top:2px solid #6c63ff}@media print{button{display:none}}</style></head><body>';
+  html+='<h1>'+(s.shopName||'ST Mobile')+'</h1><h2 style="text-align:center;color:#666">📦 Stock Valuation Report — '+new Date().toLocaleDateString('en-GB')+'</h2>';
+  html+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0;text-align:center">';
+  [{label:'Products',val:db.products.length,clr:'#6c63ff',pfix:''},{label:'Cost Value',val:totalCost,clr:'#ff1744',pfix:'Rs.'},{label:'Retail Value',val:retailVal,clr:'#00c853',pfix:'Rs.'},{label:'Potential Profit',val:retailVal-totalCost,clr:'#00c853',pfix:'Rs.'}].forEach(function(c){ html+='<div style="background:'+c.clr+'15;border:1px solid '+c.clr+'44;border-radius:8px;padding:12px"><div style="font-size:20px;font-weight:800;color:'+c.clr+'">'+c.pfix+(typeof c.val==='number'&&c.pfix?c.val.toFixed(0):c.val)+'</div><div style="font-size:11px;color:#666">'+c.label+'</div></div>'; });
+  html+='</div><table><thead><tr><th>Product</th><th>Category</th><th>Stock</th><th>Min</th><th>Cost</th><th>Price</th><th>Cost Val.</th><th>Retail Val.</th><th>Status</th></tr></thead><tbody>';
+  db.products.slice().sort(function(a,b){ return (a.category||'').localeCompare(b.category||''); }).forEach(function(p){
+    var st=p.stock===0?'oos':p.stock<=(p.minStock||2)?'low':'ok';
+    var stl=p.stock===0?'🚫 OOS':p.stock<=(p.minStock||2)?'⚠️ Low':'✅ OK';
+    html+='<tr><td><b>'+p.name+'</b></td><td>'+p.category+'</td><td class="'+st+'"><b>'+p.stock+'</b></td><td>'+p.minStock+'</td><td>Rs.'+(p.cost||0).toFixed(0)+'</td><td>Rs.'+p.price.toFixed(0)+'</td><td>Rs.'+((p.stock||0)*(p.cost||0)).toFixed(0)+'</td><td>Rs.'+((p.stock||0)*p.price).toFixed(0)+'</td><td class="'+st+'">'+stl+'</td></tr>';
+  });
+  html+='<tr class="total"><td colspan="6">TOTAL</td><td>Rs.'+totalCost.toFixed(0)+'</td><td>Rs.'+retailVal.toFixed(0)+'</td><td></td></tr></tbody></table>';
+  html+='<div style="text-align:center;margin-top:20px"><button onclick="window.print()" style="padding:10px 24px;background:#6c63ff;color:#fff;border:none;border-radius:8px;cursor:pointer">🖨️ Print PDF</button></div></body></html>';
+  var w=window.open('','_blank','width=1000,height=700'); w.document.write(html); w.document.close();
+  logActivity('SETTINGS','Stock valuation report','Cost: Rs.'+totalCost.toFixed(0)+', Retail: Rs.'+retailVal.toFixed(0));
+}
+
+function generateCustomerReport(){
+  var s=db.settings;
+  var custData=db.customers.map(function(c){
+    var invs=db.invoices.filter(function(i){ return i.customerId==c.id; });
+    var spent=invs.reduce(function(s,i){ return s+(i.total||0); },0);
+    return {c:c,invCount:invs.length,spent:spent,reps:db.repairs.filter(function(r){ return r.customer===c.name; }).length,ords:db.orders.filter(function(o){ return o.customer===c.name; }).length,pts:getLoyaltyPoints(c.id)};
+  }).sort(function(a,b){ return b.spent-a.spent; });
+  var html='<!DOCTYPE html><html><head><title>Customer Report</title><style>body{font-family:Segoe UI,sans-serif;padding:30px}h1{color:#6c63ff;text-align:center}table{width:100%;border-collapse:collapse}th{background:#6c63ff;color:#fff;padding:10px}td{padding:8px 10px;border-bottom:1px solid #eee}@media print{button{display:none}}</style></head><body>';
+  html+='<h1>'+(s.shopName||'ST Mobile')+'</h1><h2 style="text-align:center;color:#666">👥 Customer Report</h2>';
+  html+='<table><thead><tr><th>Rank</th><th>Customer</th><th>Phone</th><th>Invoices</th><th>Repairs</th><th>Orders</th><th>Total Spent</th><th>Loyalty Pts</th><th>Tier</th></tr></thead><tbody>';
+  custData.forEach(function(d,i){ var tier=getLoyaltyTier(d.pts); html+='<tr><td style="font-weight:800;color:#6c63ff">#'+(i+1)+'</td><td><b>'+d.c.name+'</b></td><td>'+d.c.phone+'</td><td>'+d.invCount+'</td><td>'+d.reps+'</td><td>'+d.ords+'</td><td style="font-weight:700;color:#00c853">Rs.'+d.spent.toFixed(0)+'</td><td>'+d.pts+'</td><td>'+tier.label+'</td></tr>'; });
+  html+='</tbody></table><div style="text-align:center;margin-top:20px"><button onclick="window.print()" style="padding:10px 24px;background:#6c63ff;color:#fff;border:none;border-radius:8px;cursor:pointer">🖨️ Print PDF</button></div></body></html>';
+  var w=window.open('','_blank','width=900,height=600'); w.document.write(html); w.document.close();
+}
+
+function generateSupplierReport(){
+  var s=db.settings;
+  var html='<!DOCTYPE html><html><head><title>Supplier Report</title><style>body{font-family:Segoe UI,sans-serif;padding:30px}h1{color:#6c63ff;text-align:center}table{width:100%;border-collapse:collapse}th{background:#6c63ff;color:#fff;padding:10px}td{padding:8px 10px;border-bottom:1px solid #eee}@media print{button{display:none}}</style></head><body>';
+  html+='<h1>'+(s.shopName||'ST Mobile')+'</h1><h2 style="text-align:center;color:#666">🏭 Supplier Report</h2>';
+  html+='<table><thead><tr><th>Supplier</th><th>Phone</th><th>Category</th><th>Orders</th><th>Total Spent</th><th>Last Order</th></tr></thead><tbody>';
+  (db.suppliers||[]).forEach(function(sup){ var pos=(db.purchases||[]).filter(function(p){ return p.supId===sup.id; }); var spent=pos.reduce(function(s,p){ return s+(p.cost||0)*(p.qty||0); },0); html+='<tr><td><b>'+sup.name+'</b></td><td>'+sup.phone+'</td><td>'+sup.category+'</td><td>'+pos.length+'</td><td style="color:#ff1744;font-weight:700">Rs.'+spent.toFixed(0)+'</td><td>'+(pos.length?pos[pos.length-1].date:'—')+'</td></tr>'; });
+  html+='</tbody></table><div style="text-align:center;margin-top:20px"><button onclick="window.print()" style="padding:10px 24px;background:#6c63ff;color:#fff;border:none;border-radius:8px;cursor:pointer">🖨️ Print PDF</button></div></body></html>';
+  var w=window.open('','_blank','width=900,height=500'); w.document.write(html); w.document.close();
+}
+
+// ---- CSV IMPORT ----
+function downloadProductTemplate(){
+  var csv='Name,Category,Price,Cost,Stock,MinStock,Description,Barcode\niPhone 14 Screen,Repair Part,4500,3200,5,2,Original LCD,\nSamsung Charger,Accessories,850,500,20,5,25W Fast Charger,8801643797584\n';
+  var blob=new Blob([csv],{type:'text/csv'}); var url=URL.createObjectURL(blob);
+  var a=document.createElement('a'); a.href=url; a.download='product_template.csv'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); },2000);
+  toast('✅ Template downloaded!');
+}
+
+function importProductsCSV(input){
+  var file=input.files[0]; if(!file) return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var lines=e.target.result.split('\n').filter(function(l){ return l.trim(); });
+    if(lines.length<2){ toast('❌ Empty CSV','var(--danger)'); return; }
+    var header=lines[0].toLowerCase().split(',').map(function(h){ return h.trim(); });
+    var imported=0,skipped=0;
+    lines.slice(1).forEach(function(line){
+      var cols=line.split(',').map(function(c){ return c.trim().replace(/^"|"$/g,''); });
+      var name=cols[header.indexOf('name')]||cols[0]; if(!name){ skipped++; return; }
+      var cat=cols[header.indexOf('category')]||cols[1]||'Other';
+      var price=parseFloat(cols[header.indexOf('price')]||cols[2])||0;
+      var cost=parseFloat(cols[header.indexOf('cost')]||cols[3])||0;
+      var stock=parseInt(cols[header.indexOf('stock')]||cols[4])||0;
+      var minStock=parseInt(cols[header.indexOf('minstock')]||cols[5])||2;
+      var desc=cols[header.indexOf('description')]||cols[6]||'';
+      var barcode=cols[header.indexOf('barcode')]||cols[7]||'';
+      var ex=db.products.find(function(p){ return p.name.toLowerCase()===name.toLowerCase(); });
+      if(ex){ ex.price=price||ex.price; ex.cost=cost||ex.cost; ex.stock=stock||ex.stock; ex.minStock=minStock||ex.minStock; ex.desc=desc||ex.desc; ex.barcode=barcode||ex.barcode; }
+      else { db.products.push({id:Date.now()+imported,name:name,category:cat,price:price,cost:cost,stock:stock,minStock:minStock,desc:desc,barcode:barcode}); }
+      imported++;
+    });
+    saveDB(); renderInv(); renderPos();
+    logActivity('PRODUCT','CSV Import','Imported '+imported+' products, skipped '+skipped);
+    var res=document.getElementById('csv-import-result');
+    if(res) res.innerHTML='<span style="color:var(--success)">✅ '+imported+' products imported</span>'+(skipped?' | <span style="color:var(--warning)">⚠️ '+skipped+' skipped</span>':'');
+    toast('✅ CSV imported: '+imported+' products!');
+    input.value='';
+  };
+  reader.readAsText(file);
+}
+
+// ---- BIRTHDAY REMINDERS ----
+function renderBirthdayList(){
+  var el=document.getElementById('birthday-list'); if(!el) return;
+  var today=new Date();
+  var upcoming=db.customers.filter(function(c){ return c.birthday; }).map(function(c){
+    var bd=new Date(c.birthday);
+    var thisYr=new Date(today.getFullYear(),bd.getMonth(),bd.getDate());
+    if(thisYr<today) thisYr.setFullYear(today.getFullYear()+1);
+    return {c:c,bd:bd,diff:Math.ceil((thisYr-today)/(864e5))};
+  }).sort(function(a,b){ return a.diff-b.diff; }).slice(0,10);
+  if(!upcoming.length){ el.innerHTML='<div class="empty"><div class="ei">🎂</div>No birthdays on file. Add birthday to customer profiles!</div>'; return; }
+  el.innerHTML=upcoming.map(function(u){
+    var isToday=u.diff===0; var isSoon=u.diff<=7;
+    var clr=isToday?'var(--success)':isSoon?'var(--warning)':'var(--muted)';
+    var lbl=isToday?'🎉 TODAY!':u.diff===1?'Tomorrow':u.diff+' days';
+    var waNum=u.c.phone?u.c.phone.replace(/\D/g,'').replace(/^0/,'94'):'';
+    var waMsg=isToday?encodeURIComponent('🎂 Happy Birthday '+u.c.name+'! Wishing you a wonderful day from '+db.settings.shopName+' 🎁'):'';
+    return '<div style="display:flex;align-items:center;gap:12px;padding:10px;border-bottom:1px solid var(--border)">'+
+      '<div style="font-size:24px">'+(isToday?'🎉':'🎂')+'</div>'+
+      '<div style="flex:1"><div style="font-weight:700;font-size:13px">'+u.c.name+'</div><div style="font-size:11px;color:var(--muted)">'+u.c.phone+' | '+u.bd.toLocaleDateString('en-GB',{month:'long',day:'numeric'})+'</div></div>'+
+      '<div style="color:'+clr+';font-weight:700;font-size:12px;margin-right:8px">'+lbl+'</div>'+
+      (isToday&&waNum?'<button class="btn bwa bsm" onclick="window.open(\'https://wa.me/'+waNum+'?text='+waMsg+'\',\'_blank\')">💬 WA</button>':'')+
+    '</div>';
+  }).join('');
+}
+
+// ---- EXPORT ALL CSV ----
+function exportAllCSV(){
+  function dl(c,n){ var b=new Blob([c],{type:'text/csv'}); var u=URL.createObjectURL(b); var a=document.createElement('a'); a.href=u; a.download=n; document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(function(){ URL.revokeObjectURL(u); },1000); }
+  dl('Name,Category,Price,Cost,Stock,MinStock,Barcode\n'+db.products.map(function(p){ return [p.name,p.category,p.price,p.cost||0,p.stock,p.minStock||2,p.barcode||''].join(','); }).join('\n'),'products.csv');
+  setTimeout(function(){ dl('Invoice#,Customer,Date,Total,Payment\n'+db.invoices.map(function(i){ return [i.invNo,i.customer,i.date,i.total,i.payment].join(','); }).join('\n'),'invoices.csv'); },500);
+  setTimeout(function(){ dl('Name,Phone,Email,Birthday\n'+db.customers.map(function(c){ return [c.name,c.phone,c.email||'',c.birthday||''].join(','); }).join('\n'),'customers.csv'); },1000);
+  logActivity('SETTINGS','Full CSV export','3 files: products, invoices, customers');
+  toast('✅ CSV files downloading... (3 files)');
+}
+
+// ---- PATCH completeSale for loyalty + activity log ----
+var _v26CompleteSale = completeSale;
+completeSale = function(){
+  _v26CompleteSale();
+  var inv=db.invoices[db.invoices.length-1];
+  if(inv){
+    if(inv.customerId){
+      var cust=db.customers.find(function(c){ return c.id==inv.customerId; });
+      if(cust) addLoyaltyPointsForSale(inv.customerId, cust.name, inv.total, inv.invNo);
+    }
+    logActivity('SALE','Sale completed',inv.invNo+' Rs.'+inv.total.toFixed(0)+' '+(inv.customer||'Walk-in'));
+    saveDB();
+  }
+};
+
+// ---- PATCH saveSettings for role + activity log ----
+var _v26SaveSettings = saveSettings;
+saveSettings = function(){
+  var s=db.settings;
+  var role=document.getElementById('s-role'); if(role) s.role=role.value;
+  var slr=document.getElementById('s-loy-rate'); if(slr) s.loyaltyRate=parseFloat(slr.value)||1;
+  var slrd=document.getElementById('s-loy-redeem'); if(slrd) s.loyaltyRedeem=parseFloat(slrd.value)||0.5;
+  var slsv=document.getElementById('s-loy-silver'); if(slsv) s.loyaltySilver=parseInt(slsv.value)||500;
+  var slgd=document.getElementById('s-loy-gold'); if(slgd) s.loyaltyGold=parseInt(slgd.value)||2000;
+  var sle=document.getElementById('s-loy-enabled'); if(sle) s.loyaltyEnabled=sle.checked;
+  _v26SaveSettings();
+  applyRoleUI();
+  logActivity('SETTINGS','Settings saved','');
+};
+
+// ---- PATCH saveDB for new arrays ----
+var _v26SaveDB = saveDB;
+saveDB = function(){
+  if(!db.loyaltyLog) db.loyaltyLog=[];
+  if(!db.activityLog) db.activityLog=[];
+  _v26SaveDB();
+};
+
+// ---- PATCH loadSettingsFrm ----
+var _v26LoadSettingsFrm = loadSettingsFrm;
+loadSettingsFrm = function(){
+  _v26LoadSettingsFrm();
+  var s=db.settings;
+  var e;
+  e=document.getElementById('s-role'); if(e) e.value=s.role||'admin';
+  e=document.getElementById('s-loy-rate'); if(e) e.value=s.loyaltyRate||1;
+  e=document.getElementById('s-loy-redeem'); if(e) e.value=s.loyaltyRedeem||0.5;
+  e=document.getElementById('s-loy-silver'); if(e) e.value=s.loyaltySilver||500;
+  e=document.getElementById('s-loy-gold'); if(e) e.value=s.loyaltyGold||2000;
+  e=document.getElementById('s-loy-enabled'); if(e) e.checked=!!s.loyaltyEnabled;
+  var rs=document.getElementById('role-status'); if(rs) rs.textContent=s.cashierPin?'✅ Cashier PIN active':'❌ No cashier PIN';
+};
+
+// ---- EXTEND renderAll ----
+var _v26RenderAll = renderAll;
+renderAll = function(){
+  _v26RenderAll();
+  renderLoyalty();
+  renderActivityLog();
+  renderBirthdayList();
+};
+
+// ---- EXTEND pageTitles + goPage ----
+pageTitles.loyalty='⭐ Loyalty Points';
+pageTitles.reports='📑 Reports & Exports';
+pageTitles.activitylog='🔍 Activity Log';
+
+function renderReports(){
+  renderBirthdayList();
+  var csvRes = document.getElementById('csv-import-result');
+  if(csvRes) csvRes.textContent = '';
+}
+
+var _v26GoPage = goPage;
+goPage = function(id){
+  _v26GoPage(id);
+  if(id==='loyalty') renderLoyalty();
+  if(id==='reports') renderReports();
+  if(id==='activitylog') renderActivityLog();
+};
+
+// ---- INIT V26 ----
+updateOnlineStatus();
+setTimeout(function(){ applyRoleUI(); logActivity('LOGIN','System started','ST Mobile POS v26'); }, 500);
+
+// =========== V27 FEATURES ===========
+
+// ---- THEME SYSTEM ----
+function setTheme(theme){
+  document.body.classList.remove('theme-ocean','theme-forest','theme-rose');
+  if(theme) document.body.classList.add('theme-'+theme);
+  db.settings.theme=theme||'';
+  saveDB();
+  document.querySelectorAll('.theme-btn').forEach(function(b){ b.classList.remove('active'); });
+  var sel=document.getElementById('theme-'+(theme||'default')); if(sel) sel.classList.add('active');
+}
+
+function applyTheme(){
+  var t=db.settings.theme||'';
+  setTheme(t);
+}
+
+// ---- GLOBAL SEARCH ----
+function openGSearch(){
+  var ov=document.getElementById('gsearch-overlay'); if(!ov) return;
+  ov.classList.add('open');
+  var inp=document.getElementById('gsearch-input'); if(inp){ inp.value=''; inp.focus(); }
+  var res=document.getElementById('gsearch-results'); if(res) res.innerHTML='<div style="padding:20px;text-align:center;color:var(--muted);font-size:12px">Type to search... <span class="kbd">Esc</span> to close</div>';
+}
+
+function closeGSearch(){
+  var ov=document.getElementById('gsearch-overlay'); if(ov) ov.classList.remove('open');
+}
+
+function gsearchKey(e){
+  if(e.key==='Escape') closeGSearch();
+  if(e.key==='Enter'){
+    var first=document.querySelector('.gsr-item');
+    if(first) first.click();
+  }
+}
+
+function doGSearch(){
+  var q=document.getElementById('gsearch-input').value.toLowerCase().trim();
+  var res=document.getElementById('gsearch-results'); if(!res) return;
+  if(!q){ res.innerHTML='<div style="padding:20px;text-align:center;color:var(--muted);font-size:12px">Type to search...</div>'; return; }
+  var items=[];
+  // Products
+  db.products.filter(function(p){ return p.name.toLowerCase().includes(q)||p.category.toLowerCase().includes(q)||(p.barcode&&p.barcode.includes(q)); }).slice(0,5).forEach(function(p){
+    items.push({icon:'📦',title:p.name,sub:'Rs.'+p.price+' | Stock: '+p.stock+' | '+p.category,badge:'Product',action:"goPage('inventory');closeGSearch();"});
+  });
+  // Customers
+  db.customers.filter(function(c){ return c.name.toLowerCase().includes(q)||c.phone.includes(q)||(c.email&&c.email.toLowerCase().includes(q)); }).slice(0,4).forEach(function(c){
+    items.push({icon:'👥',title:c.name,sub:c.phone+(c.email?' | '+c.email:''),badge:'Customer',action:"goPage('customers');closeGSearch();"});
+  });
+  // Invoices
+  db.invoices.filter(function(i){ return i.invNo.toLowerCase().includes(q)||i.customer.toLowerCase().includes(q); }).slice(0,4).forEach(function(i){
+    items.push({icon:'🧾',title:'Invoice '+i.invNo,sub:i.customer+' — Rs.'+i.total.toFixed(0)+' | '+i.date,badge:'Invoice',action:"goPage('invoices');closeGSearch();"});
+  });
+  // Repairs
+  db.repairs.filter(function(r){ return r.customer.toLowerCase().includes(q)||r.device.toLowerCase().includes(q)||r.issue.toLowerCase().includes(q); }).slice(0,3).forEach(function(r){
+    items.push({icon:'🔧',title:r.customer+' — '+r.device,sub:r.issue+' | '+r.status,badge:'Repair',action:"goPage('repairs');closeGSearch();"});
+  });
+  if(!items.length){ res.innerHTML='<div style="padding:20px;text-align:center;color:var(--muted)">No results for "'+q+'"</div>'; return; }
+  res.innerHTML=items.map(function(it,i){
+    return '<div class="gsr-item" onclick="'+it.action+'" '+(i===0?'id="gsr-first"':'')+'><div class="gsr-icon">'+it.icon+'</div><div class="gsr-text"><div class="gsr-title">'+it.title+'</div><div class="gsr-sub">'+it.sub+'</div></div><div class="gsr-badge">'+it.badge+'</div></div>';
+  }).join('');
+}
+
+// ---- FAB ----
+var _fabOpen=false;
+function toggleFAB(){
+  _fabOpen=!_fabOpen;
+  var menu=document.getElementById('fab-menu'); if(menu) menu.className='fab-menu'+(_fabOpen?' open':'');
+  var fab=document.getElementById('fab'); if(fab) fab.textContent=_fabOpen?'✕':'⚡';
+}
+
+// ---- KEYBOARD SHORTCUTS (extend existing) ----
+document.addEventListener('keydown',function(e){
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT') return;
+  if(e.key==='?'){ openM('m-shortcuts'); return; }
+  if((e.ctrlKey||e.metaKey)&&e.key==='k'){ e.preventDefault(); openGSearch(); return; }
+  if(e.key==='F1'){ e.preventDefault(); goPage('pos'); return; }
+  if(e.key==='F2'){ e.preventDefault(); goPage('inventory'); return; }
+  if(e.key==='F3'){ e.preventDefault(); goPage('repairs'); return; }
+  if(e.key==='F4'){ e.preventDefault(); goPage('customers'); return; }
+  if(e.key==='F6'){ e.preventDefault(); goPage('analytics'); return; }
+  if(e.key==='F9'){ e.preventDefault(); goPage('settings'); return; }
+  if(e.key==='Escape'){ closeGSearch(); if(_fabOpen) toggleFAB(); return; }
+  if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){ e.preventDefault(); if(typeof completeSale==='function') completeSale(); return; }
+  if((e.ctrlKey||e.metaKey)&&e.key==='h'){ e.preventDefault(); if(typeof holdSale==='function') holdSale(); return; }
+});
+
+// ---- DASHBOARD PROFIT STRIP ----
+function updateProfitStrip(){
+  var today=new Date().toLocaleDateString('en-GB');
+  var todayInvs=db.invoices.filter(function(i){ return i.date===today; });
+  var todayRev=todayInvs.reduce(function(s,i){ return s+(i.total||0); },0);
+  var todayCost=todayInvs.reduce(function(s,inv){ return s+(inv.items||[]).reduce(function(ss,it){ var p=db.products.find(function(x){ return x.id===it.id; }); return ss+(p?(p.cost||0)*it.qty:0); },0); },0);
+  // Add today's repair income
+  var todayRepIncome=db.repairs.filter(function(r){ return r.date===today; }).reduce(function(s,r){ return s+(r.cost||0); },0);
+  // Add today's order payments received
+  var todayOrdIncome=db.orders.filter(function(o){ return o.date===today; }).reduce(function(s,o){
+    return s+(o.payments||[]).filter(function(p){ return p.date===today||!p.date; }).reduce(function(ps,p){ return ps+(p.amount||0); },0);
+  },0);
+  // Subtract today's expenses
+  var todayExp=(db.expenses||[]).filter(function(e){ return e.date===today; }).reduce(function(s,e){ return s+(e.amount||0); },0);
+  var invProfit=todayRev-todayCost;
+  var profit=invProfit+todayRepIncome+todayOrdIncome-todayExp;
+  var totalTodayRev=todayRev+todayRepIncome+todayOrdIncome;
+  var margin=totalTodayRev>0?Math.round(profit/totalTodayRev*100):0;
+  var lowStock=db.products.filter(function(p){ return p.stock<=(p.minStock||2)&&p.stock>0; }).length;
+  var oos=db.products.filter(function(p){ return p.stock===0; }).length;
+  var now=new Date(); var nowMonth=now.getMonth(); var nowYear=now.getFullYear();
+  var bdaySoon=db.customers.filter(function(c){
+    if(!c.birthday) return false;
+    var bd=new Date(c.birthday); var thisYr=new Date(nowYear,bd.getMonth(),bd.getDate());
+    if(thisYr<now) thisYr.setFullYear(nowYear+1);
+    return (thisYr-now)/(864e5)<=14;
+  }).length;
+  var overdueRep=db.repairs.filter(function(r){ return r.due&&r.status!=='Done'&&r.status!=='Delivered'&&new Date(r.due)<now; }).length;
+  var ps=function(id,val){ var el=document.getElementById(id); if(el) el.textContent=val; };
+  ps('ps-profit','Rs.'+profit.toFixed(0)); ps('ps-margin',margin+'%');
+  ps('ps-lowstock',(lowStock+oos)); ps('ps-bday',bdaySoon); ps('ps-overdue',overdueRep);
+}
+
+// ---- PRODUCT IMAGE PREVIEW ----
+function showProdImgPreview(){
+  var url=document.getElementById('p-img')?document.getElementById('p-img').value:'';
+  var prev=document.getElementById('p-img-preview');
+  var thumb=document.getElementById('p-img-thumb');
+  if(prev&&thumb&&url){
+    thumb.src=url; prev.style.display='block';
+    thumb.onerror=function(){ prev.style.display='none'; };
+  } else if(prev){ prev.style.display='none'; }
+}
+
+// ---- PATCH saveProd to include image and tags ----
+var _v27SaveProd = saveProd;
+saveProd = function(){
+  var img=document.getElementById('p-img')?document.getElementById('p-img').value.trim():'';
+  var tags=document.getElementById('p-tags')?document.getElementById('p-tags').value.trim():'';
+  var id=document.getElementById('p-id')?document.getElementById('p-id').value:'';
+  _v27SaveProd();
+  // Patch the just-saved product
+  var prod=id?db.products.find(function(p){ return p.id==parseInt(id); }):db.products[db.products.length-1];
+  if(prod){ prod.img=img; prod.tags=tags; saveDB(); }
+};
+
+// Patch editProd to load image and tags
+var _origEditProd=editProd;
+editProd = function(id){
+  _origEditProd(id);
+  var prod=db.products.find(function(p){ return p.id==id; });
+  if(prod){
+    var img=document.getElementById('p-img'); if(img) img.value=prod.img||'';
+    var tags=document.getElementById('p-tags'); if(tags) tags.value=prod.tags||'';
+    showProdImgPreview();
+  }
+};
+
+// Patch form to show preview on input
+document.addEventListener('DOMContentLoaded',function(){
+  var pimg=document.getElementById('p-img');
+  if(pimg) pimg.addEventListener('input',showProdImgPreview);
+  var pimgPrev=document.getElementById('p-img-preview'); if(pimgPrev) pimgPrev.style.display='none';
+});
+
+// v27 saveRep/editRep patch removed — tech & priority now handled directly in saveRep/editRep functions
+
+// ---- PATCH saveCust for tags ----
+var _v27SaveCust = saveCust;
+saveCust = function(){
+  var tags=document.getElementById('cu-tags')?document.getElementById('cu-tags').value.trim():'';
+  var id=document.getElementById('cu-id')?document.getElementById('cu-id').value:'';
+  _v27SaveCust();
+  setTimeout(function(){
+    var cust=id?db.customers.find(function(c){ return c.id==parseInt(id); }):db.customers[db.customers.length-1];
+    if(cust){ cust.tags=tags; saveDB(); }
+  },60);
+};
+
+var _v27EditCust=editCust;
+editCust = function(id){
+  _v27EditCust(id);
+  var cust=db.customers.find(function(c){ return c.id==id; });
+  if(cust){
+    var tg=document.getElementById('cu-tags'); if(tg) tg.value=cust.tags||'';
+  }
+};
+
+// ---- CART ITEM NOTES ----
+var _noteItemIdx=-1;
+function openItemNote(idx){
+  _noteItemIdx=idx;
+  if(idx<0||idx>=cart.length) return;
+  var item=cart[idx];
+  var nn=document.getElementById('item-note-name'); if(nn) nn.textContent=item.name;
+  var nt=document.getElementById('item-note-text'); if(nt) nt.value=item.note||'';
+  openM('m-item-note');
+}
+
+function saveItemNote(){
+  if(_noteItemIdx<0||_noteItemIdx>=cart.length){ closeM('m-item-note'); return; }
+  var txt=document.getElementById('item-note-text')?document.getElementById('item-note-text').value.trim():'';
+  cart[_noteItemIdx].note=txt;
+  closeM('m-item-note');
+  renderCart();
+  toast('✅ Note saved');
+}
+
+// Patch renderCart to show notes and note button
+var _v27RenderCart=renderCart;
+renderCart = function(){
+  _v27RenderCart();
+  // Add note buttons to each cart item
+  var items=document.querySelectorAll('.citem');
+  items.forEach(function(el,idx){
+    if(idx>=cart.length) return;
+    var item=cart[idx];
+    // Add note indicator if exists
+    if(item.note&&!el.querySelector('.citem-note')){
+      var noteEl=document.createElement('div');
+      noteEl.className='citem-note'; noteEl.textContent='📝 '+item.note;
+      el.appendChild(noteEl);
+    }
+    // Add note button if not exists
+    if(!el.querySelector('.note-btn')){
+      var btn=document.createElement('button');
+      btn.className='qbtn note-btn'; btn.title='Add note';
+      btn.textContent='📝'; btn.style.fontSize='11px';
+      btn.onclick=(function(i){ return function(){ openItemNote(i); }; })(idx);
+      el.appendChild(btn);
+    }
+  });
+};
+
+// ---- BULK WHATSAPP ----
+function openBulkWA(){
+  updateBulkWAPreview();
+  document.getElementById('bwa-msg').value='';
+  openM('m-bulk-wa');
+}
+
+function getBulkWARecipients(){
+  var filter=document.getElementById('bwa-filter')?document.getElementById('bwa-filter').value:'all';
+  var now=new Date();
+  return db.customers.filter(function(c){
+    if(!c.phone) return false;
+    if(filter==='all') return true;
+    if(filter==='vip') return c.tags&&c.tags.toLowerCase().includes('vip');
+    if(filter==='birthday'){ if(!c.birthday) return false; var bd=new Date(c.birthday); return bd.getMonth()===now.getMonth(); }
+    if(filter==='loyal') return getLoyaltyPoints(c.id)>0;
+    if(filter==='inactive'){
+      var lastInv=db.invoices.filter(function(i){ return i.customerId==c.id; }).pop();
+      if(!lastInv) return true;
+      var parts=lastInv.date.split('/'); var lastDate=new Date(parts[2],parts[1]-1,parts[0]);
+      return (now-lastDate)/(864e5)>=90;
+    }
+    return true;
+  });
+}
+
+function updateBulkWAPreview(){
+  var r=getBulkWARecipients();
+  var el=document.getElementById('bwa-count'); if(el) el.textContent='📱 '+r.length+' recipients selected';
+}
+
+function applyBWATemplate(){
+  var t=document.getElementById('bwa-template')?document.getElementById('bwa-template').value:'';
+  var shop=db.settings.shopName||'ST Mobile';
+  var msgs={
+    promo:'🎉 Special offer from '+shop+'!\n\nHi {name}, we have an exclusive deal just for you. Visit us today and get special discounts on all products!\n\nThank you for your support! 🙏',
+    birthday:'🎂 Happy Birthday, {name}!\n\nWarm wishes from all of us at '+shop+'. As a special birthday gift, show this message and get a 5% discount on your next purchase! 🎁\n\nHave a wonderful day! ❤️',
+    reminder:'Hello {name},\n\nThis is a friendly reminder from '+shop+'. We\'re here to help with all your mobile needs. Do visit us whenever you need repairs, accessories, or anything else!\n\nBest regards, '+shop+' 📱',
+    loyalty:'⭐ Hi {name},\n\nYou have loyalty points waiting at '+shop+'! Visit us to redeem them on your next purchase.\n\nThank you for being a valued customer! 🙏'
+  };
+  if(t&&msgs[t]){
+    var msg=document.getElementById('bwa-msg'); if(msg) msg.value=msgs[t];
+  }
+}
+
+function copyBWAList(){
+  var r=getBulkWARecipients();
+  var nums=r.map(function(c){ return c.phone; }).join('\n');
+  navigator.clipboard.writeText(nums).then(function(){ toast('✅ '+r.length+' numbers copied!'); }).catch(function(){ toast('❌ Copy failed','var(--danger)'); });
+}
+
+function sendBulkWA(){
+  var msg=document.getElementById('bwa-msg')?document.getElementById('bwa-msg').value.trim():'';
+  if(!msg){ toast('❌ Enter a message','var(--danger)'); return; }
+  var r=getBulkWARecipients();
+  if(!r.length){ toast('❌ No recipients','var(--danger)'); return; }
+  // Open first recipient in WhatsApp
+  var first=r[0];
+  var m=msg.replace(/\{name\}/g,first.name);
+  var num=first.phone.replace(/\D/g,'').replace(/^0/,'94');
+  window.open('https://wa.me/'+num+'?text='+encodeURIComponent(m),'_blank');
+  logActivity('CUSTOMER','Bulk WhatsApp sent','Filter: all, '+r.length+' recipients');
+  closeM('m-bulk-wa');
+  toast('💬 WhatsApp opened for '+first.name+'. '+(r.length-1)+' more in list.');
+}
+
+// ---- DASHBOARD PROFIT STRIP UPDATE ----
+var _v27UpdateDash=updateDash;
+updateDash = function(){
+  _v27UpdateDash();
+  updateProfitStrip();
+};
+
+// ---- PWA INSTALL PROMPT ----
+var _pwaPrompt=null;
+window.addEventListener('beforeinstallprompt',function(e){
+  e.preventDefault(); _pwaPrompt=e;
+  var banner=document.getElementById('pwa-banner'); if(banner) banner.classList.add('show');
+  var btn=document.getElementById('pwa-install-btn');
+  if(btn) btn.onclick=function(){
+    if(_pwaPrompt){ _pwaPrompt.prompt(); _pwaPrompt.userChoice.then(function(){ dismissPWA(); }); }
+  };
+});
+function dismissPWA(){ var b=document.getElementById('pwa-banner'); if(b) b.classList.remove('show'); db.settings.pwaDismissed=true; saveDB(); }
+
+// ---- EXTEND renderAll ----
+var _v27RenderAll=renderAll;
+renderAll = function(){
+  _v27RenderAll();
+  updateProfitStrip();
+};
+
+// ---- EXTEND goPage ----
+var _v27GoPage=goPage;
+goPage = function(id){
+  _v27GoPage(id);
+  if(id==='dashboard') updateProfitStrip();
+};
+
+// ---- PATCH loadSettingsFrm for theme ----
+var _v27LoadSettings=loadSettingsFrm;
+loadSettingsFrm = function(){
+  _v27LoadSettings();
+  applyTheme();
+};
+
+// ---- PATCH saveSettings for theme ----
+var _v27SaveSettings2=saveSettings;
+saveSettings = function(){
+  _v27SaveSettings2();
+};
+
+// ---- INIT V27 ----
+applyTheme();
+setTimeout(function(){ updateProfitStrip(); },800);
+
+
+// ---- ADMIN PANEL LINK ----
+function openAdminPanel(){
+  var role=db.settings.role||'admin';
+  if(role!=='admin'){ toast('⛔ Admin access only','var(--danger)'); return; }
+  window.location='admin.html';
+}
+
+// Hide Admin Panel button for cashier role
+var _origApplyRoleUI2 = applyRoleUI;
+applyRoleUI = function(){
+  _origApplyRoleUI2();
+  var role=db.settings.role||'admin';
+  var adminBtn=document.getElementById('admin-panel-btn');
+  var roleBadge=document.getElementById('role-badge');
+  if(adminBtn) adminBtn.style.display = role==='cashier' ? 'none' : '';
+  if(roleBadge) roleBadge.style.cursor = role==='cashier' ? 'default' : 'pointer';
+};
+
+// ---- EXTEND loadSettingsFrm to load auto-backup settings ----
+var _origLoadSettingsForAutoBackup = loadSettingsFrm;
+loadSettingsFrm = function(){
+  _origLoadSettingsForAutoBackup();
+  updateAutoBackupStatus();
+};
+
+// ---- AUTO BACKUP CHECK ON STARTUP (delay to let DB load) ----
+setTimeout(function(){
+  checkAutoBackupReminder();
+  updateAutoBackupStatus();
+}, 3000);
+
+// ══════════════════════════════════════════════════════════
+// 📱 PHONE MODEL DATABASE (GSMArena — Popular brands)
+// ══════════════════════════════════════════════════════════
+var PHONE_DB = {
+  "Samsung": ["Galaxy S26 Ultra","Galaxy S26+","Galaxy S26","Galaxy S25 Ultra","Galaxy S25+","Galaxy S25","Galaxy S25 Edge","Galaxy S25 FE","Galaxy S24 Ultra","Galaxy S24+","Galaxy S24","Galaxy S24 FE","Galaxy S23 Ultra","Galaxy S23+","Galaxy S23","Galaxy S23 FE","Galaxy S22 Ultra","Galaxy S22+","Galaxy S22","Galaxy S21 Ultra","Galaxy S21+","Galaxy S21","Galaxy S21 FE","Galaxy S20 Ultra","Galaxy S20+","Galaxy S20","Galaxy S20 FE","Galaxy S10+","Galaxy S10","Galaxy S10e","Galaxy S10 Lite","Galaxy S9+","Galaxy S9","Galaxy A56","Galaxy A36","Galaxy A26","Galaxy A17","Galaxy A17 5G","Galaxy A16","Galaxy A16 5G","Galaxy A15","Galaxy A15 5G","Galaxy A14","Galaxy A14 5G","Galaxy A13","Galaxy A13 5G","Galaxy A12","Galaxy A12 Nacho","Galaxy A11","Galaxy A10","Galaxy A10s","Galaxy A10e","Galaxy A09","Galaxy A06","Galaxy A06 5G","Galaxy A05","Galaxy A05s","Galaxy A04","Galaxy A04s","Galaxy A04e","Galaxy A03","Galaxy A03s","Galaxy A03 Core","Galaxy A02","Galaxy A02s","Galaxy A01","Galaxy A01 Core","Galaxy M56","Galaxy M36","Galaxy M17","Galaxy M16","Galaxy M15","Galaxy M14","Galaxy M13","Galaxy M12","Galaxy M11","Galaxy M10","Galaxy M07","Galaxy M06","Galaxy F56","Galaxy F36","Galaxy F17","Galaxy F16","Galaxy F07","Galaxy F06 5G","Galaxy Z Fold7","Galaxy Z Fold6","Galaxy Z Fold5","Galaxy Z Fold4","Galaxy Z Fold3","Galaxy Z Fold2","Galaxy Z Fold","Galaxy Z Flip7","Galaxy Z Flip7 FE","Galaxy Z Flip6","Galaxy Z Flip5","Galaxy Z Flip4","Galaxy Z Flip3","Galaxy Z Flip","Galaxy Note 20 Ultra","Galaxy Note 20","Galaxy Note 10+","Galaxy Note 10","Galaxy Note 9","Galaxy Note 8","Galaxy Tab S11 Ultra","Galaxy Tab S11","Galaxy Tab S10 Ultra","Galaxy Tab S10+","Galaxy Tab S10","Galaxy Tab S10 FE","Galaxy Tab S10 Lite","Galaxy Tab S9 Ultra","Galaxy Tab S9+","Galaxy Tab S9","Galaxy Tab S9 FE","Galaxy Tab A9+","Galaxy Tab A9","Galaxy Tab A8","Galaxy Tab A7","Galaxy Tab A7 Lite","Galaxy Tab A11","Galaxy Tab A11+"],
+  "Apple": ["iPhone 17 Pro Max","iPhone 17 Pro","iPhone 17","iPhone 17e","iPhone 16 Pro Max","iPhone 16 Pro","iPhone 16","iPhone 16 Plus","iPhone 16e","iPhone 15 Pro Max","iPhone 15 Pro","iPhone 15","iPhone 15 Plus","iPhone 14 Pro Max","iPhone 14 Pro","iPhone 14","iPhone 14 Plus","iPhone 13 Pro Max","iPhone 13 Pro","iPhone 13","iPhone 13 Mini","iPhone 12 Pro Max","iPhone 12 Pro","iPhone 12","iPhone 12 Mini","iPhone 11 Pro Max","iPhone 11 Pro","iPhone 11","iPhone XS Max","iPhone XS","iPhone XR","iPhone X","iPhone SE (2022)","iPhone SE (2020)","iPhone SE (2016)","iPhone 8 Plus","iPhone 8","iPhone 7 Plus","iPhone 7","iPhone 6s Plus","iPhone 6s","iPhone 6 Plus","iPhone 6","iPad Pro 13 (2025)","iPad Pro 11 (2025)","iPad Air 13 (2024)","iPad Air 11 (2024)","iPad mini 7","iPad 10th Gen","iPad 9th Gen"],
+  "Xiaomi": ["Xiaomi 15 Ultra","Xiaomi 15 Pro","Xiaomi 15","Xiaomi 14 Ultra","Xiaomi 14 Pro","Xiaomi 14","Xiaomi 14T Pro","Xiaomi 14T","Xiaomi 13 Ultra","Xiaomi 13 Pro","Xiaomi 13","Xiaomi 13T Pro","Xiaomi 13T","Xiaomi 12 Pro","Xiaomi 12","Xiaomi 12T Pro","Xiaomi 12T","Xiaomi 11T Pro","Xiaomi 11T","Xiaomi 11 Lite 5G NE","Xiaomi 11","Xiaomi 10T Pro","Xiaomi 10T","Xiaomi 10 Pro","Xiaomi 10","Redmi Note 14 Pro+","Redmi Note 14 Pro","Redmi Note 14","Redmi Note 14 5G","Redmi Note 13 Pro+","Redmi Note 13 Pro","Redmi Note 13","Redmi Note 13 5G","Redmi Note 12 Pro+","Redmi Note 12 Pro","Redmi Note 12","Redmi Note 12 5G","Redmi Note 11 Pro+","Redmi Note 11 Pro","Redmi Note 11","Redmi Note 11S","Redmi Note 10 Pro","Redmi Note 10","Redmi Note 10S","Redmi Note 9 Pro","Redmi Note 9","Redmi Note 9S","Redmi Note 8 Pro","Redmi Note 8","Redmi 14C","Redmi 14R","Redmi 13C","Redmi 13","Redmi 12C","Redmi 12","Redmi 10C","Redmi 10","Redmi 9C","Redmi 9A","Redmi 9","Redmi A3","Redmi A2","Redmi A1","POCO X7 Pro","POCO X7","POCO X6 Pro","POCO X6","POCO X5 Pro","POCO X5","POCO X4 Pro","POCO X4 GT","POCO X3 Pro","POCO X3 NFC","POCO M6 Pro","POCO M5s","POCO M5","POCO M4 Pro","POCO M4 5G","POCO F5 Pro","POCO F5","POCO F4 GT","POCO F4","POCO C75","POCO C65","POCO C55","POCO C51","POCO C40"],
+  "Oppo": ["Find X8 Ultra","Find X8 Pro","Find X8","Find X7 Ultra","Find X7","Find X6 Pro","Find X6","Find X5 Pro","Find X5","Find N5","Find N3 Flip","Reno13 Pro","Reno13","Reno12 Pro","Reno12","Reno11 Pro","Reno11","Reno10 Pro+","Reno10 Pro","Reno10","Reno9 Pro+","Reno9 Pro","Reno9","Reno8 Pro","Reno8","Reno7 Pro","Reno7","Reno6 Pro","Reno6","Reno5 Pro","Reno5","A3 Pro","A3x","A79","A78","A77","A76","A74","A73","A72","A57","A57s","A55","A54","A53","A52","A51","A38","A36","A35","A34","A33","A32","A31","A17","A17k","A16","A16s","A15s","A15","A12","A11s","A11","A9 (2020)","A5 (2020)"],
+  "Vivo": ["X200 Ultra","X200 Pro","X200","X100 Ultra","X100 Pro","X100","X90 Pro","X90","X80 Pro","X80","X70 Pro+","X70 Pro","X70","X60 Pro","X60","V40 Pro","V40","V30 Pro","V30","V29 Pro","V29","V27 Pro","V27","V25 Pro","V25","V23 Pro","V23","V21s","V21","V20 Pro","V20","V19","V17 Pro","Y200 GT","Y200e","Y100","Y100A","Y78","Y77","Y75","Y73","Y72","Y71","Y70","Y33t","Y33s","Y33e","Y22","Y22s","Y21s","Y21","Y20s","Y20","Y19","Y17","Y15s","Y15","Y12s","Y12","Y11","Y02s","Y02","Y01A"],
+  "Realme": ["GT 7 Pro","GT 7","GT 6T","GT 6","GT 5 Pro","GT 5","GT Neo 6","GT Neo 5","GT Neo 3","GT Neo 2","GT2 Pro","GT2","12 Pro+","12 Pro","12","12x","11 Pro+","11 Pro","11","10 Pro+","10 Pro","10","9 Pro+","9 Pro","9","8 Pro","8","7 Pro","7","6 Pro","6","5 Pro","5","Narzo 70 Pro","Narzo 70","Narzo 60 Pro","Narzo 60","Narzo 50 Pro","Narzo 50","Narzo 30 Pro","Narzo 30","C75","C67","C65","C63","C55","C53","C51","C35","C33","C31","C30","C25Y","C25s","C25","C21Y","C21","C20","C17","C15","C12","C11"],
+  "OnePlus": ["13","13R","12","12R","11","11R","10 Pro","10T","10R","9 Pro","9","9R","8 Pro","8T","8","7T Pro","7T","7 Pro","7","6T","6","Nord 4","Nord CE 4 Lite","Nord CE 4","Nord CE 3 Lite","Nord CE 3","Nord CE 2 Lite","Nord CE 2","Nord CE","Nord 3","Nord 2T","Nord 2","Nord","Open"],
+  "Infinix": ["Note 50 Pro+","Note 50 Pro","Note 50","Note 40 Pro+","Note 40 Pro","Note 40","Note 30 Pro","Note 30","Note 12 Pro","Note 12","Note 11 Pro","Note 11","Note 10 Pro","Note 10","Hot 50 Pro+","Hot 50 Pro","Hot 50","Hot 40 Pro","Hot 40","Hot 30 Play","Hot 30","Hot 20s","Hot 20 Play","Hot 20","Hot 12 Play","Hot 12","Hot 11 Play","Hot 11s","Hot 11","Hot 10 Play","Hot 10","Hot 9 Play","Hot 9","Hot 8","Hot 7","Smart 9 HD","Smart 8 Plus","Smart 8 HD","Smart 8","Smart 7","Smart 6","Smart 5","Zero Ultra","Zero 40","Zero 30","Zero 20"],
+  "Nokia": ["G60","G42","G22","G21","G20","G11 Plus","G11","G10","C32","C31","C30","C22","C21","C20 Plus","C20","C12 Pro","C12","C10","C02","C01 Plus","C01","105 Plus","105","110 4G","110","150","3310 4G","1100","8210 4G","8000 4G","5310","105+","225 4G","215 4G","G50","X30","X20","X10","XR21","X100","5.4","5.3","3.4","3.2","2.4","2.3","1.4","1.3"],
+  "Huawei": ["Mate 70 Pro+","Mate 70 Pro","Mate 70","Mate 60 Pro+","Mate 60 Pro","Mate 60","Mate 50 Pro","Mate 50","Mate 40 Pro","Mate 40","Mate 30 Pro","Mate 30","P60 Pro","P60","P50 Pro","P50","P40 Pro+","P40 Pro","P40","P30 Pro","P30","P20 Pro","P20","nova 12 Ultra","nova 12 Pro","nova 12","nova 11 Ultra","nova 11 Pro","nova 11","nova 10 Pro","nova 10","nova 9 Pro","nova 9","nova 8 Pro","nova 8","nova 7","nova 6","nova 5T","Y90","Y70 Plus","Y61","Y60","Y52s","Y52","Y7a","Y9a","Y9s","Y9 Prime","Y8p","Y6p","Y6s","Y5p"],
+  "Honor": ["Magic 7 Pro","Magic 7","Magic 6 Pro","Magic 6","Magic 5 Pro","Magic 5","Magic 4 Pro","Magic 4","Magic3 Pro","Magic3","X60 Pro","X60","X50 Pro","X50","X40 Pro","X40","X30 Max","X30","X20","X9b","X9a","X9","X8b","X8a","X8","X7b","X7a","X7","X6","90 Pro","90","80 Pro","80","70 Pro","70","200 Pro","200","100 Pro","100"],
+  "itel": ["S25","S24","S23","S22","P40+","P40","P38 Pro","P38","P37","P36 Pro","P36","A70","A60s","A60","A58","A57","A55","A49","A48","A46","A37","A36","A23 Pro","A23","A22 Pro","A22","Vision 1 Pro","Vision 1","Magic 2","Magic 3","it2175","it2163","it2161"],
+  "Tecno": ["Phantom X2 Pro","Phantom X2","Phantom V Flip","Spark 30 Pro","Spark 30","Spark 20 Pro+","Spark 20 Pro","Spark 20","Spark 10 Pro","Spark 10","Spark 9 Pro","Spark 9","Spark 8 Pro","Spark 8C","Spark 8","Spark 7 Pro","Spark 7","Spark 6 Go","Spark 6","Pop 8","Pop 7 Pro","Pop 7","Pop 6 Pro","Pop 6","Pop 5 LTE","Pop 5","Camon 30 Premier","Camon 30 Pro","Camon 30","Camon 20 Pro","Camon 20","Camon 19 Pro","Camon 19","Camon 18 Premier","Camon 18","Pova 6 Pro","Pova 6","Pova 5 Pro","Pova 5","Pova 4 Pro","Pova 4","Pova Neo 3","Pova 3"],
+  "Motorola": ["Edge 50 Ultra","Edge 50 Pro","Edge 50 Fusion","Edge 50","Edge 40 Neo","Edge 40 Pro","Edge 40","Edge 30 Ultra","Edge 30 Pro","Edge 30 Fusion","Edge 30","Edge 20 Pro","Edge 20 Fusion","Edge 20","Moto G85","Moto G84","Moto G75","Moto G73","Moto G72","Moto G62","Moto G60s","Moto G60","Moto G54","Moto G53","Moto G52","Moto G42","Moto G41","Moto G32","Moto G31","Moto G22","Moto G21","Moto G14","Moto G13","Moto E40","Moto E32","Moto E30","Moto E22","Moto E20","Razr 50 Ultra","Razr 50","Razr 40 Ultra","Razr 40"],
+  "Google": ["Pixel 9 Pro Fold","Pixel 9 Pro XL","Pixel 9 Pro","Pixel 9","Pixel 8a","Pixel 8 Pro","Pixel 8","Pixel 7a","Pixel 7 Pro","Pixel 7","Pixel 6a","Pixel 6 Pro","Pixel 6","Pixel 5","Pixel 5a","Pixel 4a"],
+  "Sony": ["Xperia 1 VII","Xperia 1 VI","Xperia 1 V","Xperia 1 IV","Xperia 5 V","Xperia 5 IV","Xperia 10 VI","Xperia 10 V","Xperia 10 IV","Xperia 10 III","Xperia Pro-I","Xperia Pro"],
+  "Nothing": ["Phone (3a) Pro","Phone (3a)","Phone (2a) Plus","Phone (2a)","Phone (2)","Phone (1)","CMF Phone 1"],
+  "Asus": ["ROG Phone 9 Pro","ROG Phone 9","ROG Phone 8 Pro","ROG Phone 8","ROG Phone 7 Ultimate","ROG Phone 7","ROG Phone 6 Pro","ROG Phone 6","Zenfone 11 Ultra","Zenfone 10","Zenfone 9","Zenfone 8"],
+  "Blackview": ["BV9300 Pro","BV9300","BV8800","BV6600 Pro","BV6600","A100","A95","A85","A80 Pro","A80","Tab 18","Tab 16","Tab 15"],
+  "Oppo (Other)": ["Find N2 Flip","Find N2"],
+  "TCL": ["40 SE","30 SE","30+","20 Pro 5G","20 SE","20L","20L+","305","306","305i"],
+  "Lenovo": ["Legion Phone 3","Legion Phone 2 Pro","K15 Plus","K15","K13 Note","K13","Tab M11","Tab M10 Plus","Tab P12 Pro","Tab P11 Pro"],
+  "Other": []
+};
+
+// ── Populate brand dropdown on DOM ready ──
+document.addEventListener('DOMContentLoaded', function(){
+  var sel = document.getElementById('r-brand');
+  if (!sel) return;
+  Object.keys(PHONE_DB).forEach(function(brand){
+    var opt = document.createElement('option');
+    opt.value = brand;
+    opt.textContent = brand;
+    sel.appendChild(opt);
+  });
+});
+
+// ── Brand change → filter models ──
+function onBrandChange() {
+  var brand = document.getElementById('r-brand').value;
+  var inp = document.getElementById('r-dev');
+  if (inp) { inp.value = ''; inp.focus(); }
+  onDeviceInput('');
+}
+
+// ── Device input → show suggestions ──
+function onDeviceInput(val) {
+  var brand = document.getElementById('r-brand') ? document.getElementById('r-brand').value : '';
+  var q = val.toLowerCase().trim();
+  var pool = [];
+  if (brand && PHONE_DB[brand]) {
+    pool = PHONE_DB[brand];
+  } else {
+    // Search all brands
+    Object.keys(PHONE_DB).forEach(function(b){
+      PHONE_DB[b].forEach(function(m){ pool.push(b + ' ' + m); });
+    });
+  }
+  var filtered = pool.filter(function(m){ return m.toLowerCase().includes(q); }).slice(0, 40);
+  renderDeviceSuggestions(filtered, brand);
+}
+
+function showDeviceSuggestions() {
+  var inp = document.getElementById('r-dev');
+  if (inp) onDeviceInput(inp.value || '');
+}
+
+function renderDeviceSuggestions(list, brand) {
+  var box = document.getElementById('device-suggestions');
+  if (!box) return;
+  if (!list.length) { box.style.display = 'none'; return; }
+  box.style.display = 'block';
+  box.innerHTML = list.map(function(m){
+    return '<div onclick="selectDeviceModel(\''+m.replace(/'/g,"\\'")+'\')" style="padding:9px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);transition:0.15s" onmouseover="this.style.background=\'rgba(108,99,255,0.12)\'" onmouseout="this.style.background=\'\'">'+
+      (brand ? '📱 ' : '📱 ') + m +
+    '</div>';
+  }).join('');
+}
+
+function selectDeviceModel(model) {
+  var inp = document.getElementById('r-dev');
+  if (inp) inp.value = model;
+  var box = document.getElementById('device-suggestions');
+  if (box) box.style.display = 'none';
+}
+
+// Hide suggestions on outside click
+document.addEventListener('click', function(e){
+  if (!e.target.closest('#device-selector-wrap')) {
+    var box = document.getElementById('device-suggestions');
+    if (box) box.style.display = 'none';
+  }
+});
+
+// ─────────────────────────────────────────────────
+
+
+// ═══════════════════════════════════════════════════════════════
+//  📱 MOBILE BOTTOM NAV JS
+//  Uses window 'load' event so goPage/openM/renderAll are
+//  guaranteed to exist before any listener fires.
+//  No inline onclick attrs — pure event delegation on data attrs.
+// ═══════════════════════════════════════════════════════════════
+(function () {
+  'use strict';
+
+  var MAIN = ['dashboard', 'pos', 'repairs', 'inventory'];
+
+  /* open / close the more drawer */
+  function openDrawer() {
+    document.getElementById('mobile-more-drawer').classList.add('mmd-open');
+    document.getElementById('mobile-more-overlay').classList.add('mmd-open');
+    document.getElementById('mbn-more-btn').classList.add('mbn-active');
+  }
+  function closeDrawer() {
+    document.getElementById('mobile-more-drawer').classList.remove('mmd-open');
+    document.getElementById('mobile-more-overlay').classList.remove('mmd-open');
+  }
+
+  /* highlight the correct bottom-tab and drawer item */
+  function setActive(page) {
+    /* bottom tabs */
+    document.querySelectorAll('#mobile-bottom-nav .mbn-item').forEach(function (btn) {
+      btn.classList.toggle('mbn-active', btn.getAttribute('data-mbn') === page);
+    });
+    /* more button stays active when a drawer-page is current */
+    var moreBtn = document.getElementById('mbn-more-btn');
+    if (moreBtn) moreBtn.classList.toggle('mbn-active', MAIN.indexOf(page) === -1);
+    /* drawer items */
+    document.querySelectorAll('.mmore-item').forEach(function (el) {
+      el.classList.toggle('mmore-active', el.getAttribute('data-mmr') === page);
+    });
+  }
+
+  /* navigate: call original goPage, then update nav state */
+  function mbnGo(page) {
+    closeDrawer();
+    if (typeof goPage === 'function') {
+      goPage(page);
+    } else {
+      /* safety fallback: try window scope */
+      console.warn('[MobileNav] goPage not found, retrying…');
+      setTimeout(function () { if (typeof goPage === 'function') goPage(page); }, 300);
+    }
+    setActive(page);
+  }
+
+  /* badge sync from desktop badges to mobile badges */
+  function syncBadges() {
+    var map = [
+      ['rbadge',   'mbn-rbadge',  true ],
+      ['obadge',   'mmr-obadge',  false],
+      ['msgbadge', 'mmr-msgbadge',false],
+      ['crbadge',  'mmr-crbadge', false],
+    ];
+    map.forEach(function (m) {
+      var src = document.getElementById(m[0]);
+      var dst = document.getElementById(m[1]);
+      if (!src || !dst) return;
+      var txt = (src.textContent || '').trim();
+      var vis = src.style.display !== 'none' && txt !== '' && txt !== '0';
+      dst.style.display = vis ? (m[2] ? 'flex' : 'block') : 'none';
+      if (m[2] && vis) dst.textContent = txt;
+    });
+  }
+
+  /* wire everything up — use 'load' so module scripts have run */
+  function wireNav() {
+    /* bottom tab buttons */
+    document.querySelectorAll('#mobile-bottom-nav .mbn-item[data-mbn]').forEach(function (btn) {
+      /* use both click AND touchend to maximize mobile reliability */
+      ['click', 'touchend'].forEach(function (evt) {
+        btn.addEventListener(evt, function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          mbnGo(btn.getAttribute('data-mbn'));
+        }, { passive: false });
+      });
+    });
+
+    /* "More" button */
+    var moreBtn = document.getElementById('mbn-more-btn');
+    if (moreBtn) {
+      ['click', 'touchend'].forEach(function (evt) {
+        moreBtn.addEventListener(evt, function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          openDrawer();
+        }, { passive: false });
+      });
+    }
+
+    /* drawer items — scroll-safe touch handling */
+    var drawer = document.getElementById('mobile-more-drawer');
+    if (drawer) {
+      var _touchStartY = 0;
+      var _touchStartX = 0;
+
+      drawer.addEventListener('touchstart', function (e) {
+        _touchStartY = e.touches[0].clientY;
+        _touchStartX = e.touches[0].clientX;
+      }, { passive: true });
+
+      drawer.addEventListener('touchend', function (e) {
+        var dy = Math.abs(e.changedTouches[0].clientY - _touchStartY);
+        var dx = Math.abs(e.changedTouches[0].clientX - _touchStartX);
+        /* Only treat as tap if finger moved less than 8px — otherwise it's a scroll */
+        if (dy > 8 || dx > 8) return;
+        var item = e.target.closest('.mmore-item');
+        if (!item) return;
+        e.preventDefault();
+        var page = item.getAttribute('data-mmr');
+        if (page) mbnGo(page);
+      }, { passive: false });
+
+      /* keep click for desktop/mouse */
+      drawer.addEventListener('click', function (e) {
+        if ('ontouchstart' in window) return; /* skip on touch devices — handled above */
+        var item = e.target.closest('.mmore-item');
+        if (!item) return;
+        var page = item.getAttribute('data-mmr');
+        if (page) mbnGo(page);
+      });
+    }
+
+    /* overlay → close drawer */
+    var overlay = document.getElementById('mobile-more-overlay');
+    if (overlay) {
+      ['click', 'touchend'].forEach(function (evt) {
+        overlay.addEventListener(evt, function (e) {
+          e.preventDefault();
+          closeDrawer();
+        }, { passive: false });
+      });
+    }
+
+    /* badge sync */
+    syncBadges();
+    setInterval(syncBadges, 3000);
+  }
+
+  /* 'load' fires after ALL scripts (including type="module") have executed */
+  if (document.readyState === 'complete') {
+    wireNav();          /* already loaded */
+  } else {
+    window.addEventListener('load', wireNav);
+  }
+
+}());
+
+
+// ============================================================
+// ====  V28 UPGRADE: PURCHASE ORDERS, MULTI-BRANCH,        ===
+// ====  VAT/TAX, ADVANCED REPORTS, DASHBOARD BUILDER       ===
+// ============================================================
+
+// ── DB init ──
+if (!db.purchaseOrders) db.purchaseOrders = [];
+if (!db.branches) db.branches = [];
+if (!db.taxProfiles) db.taxProfiles = [{name:'VAT', rate:0}];
+if (!db.widgetPrefs) db.widgetPrefs = {};
+if (!db.stockTransfers) db.stockTransfers = [];
+
+// ============================================================
+// PURCHASE ORDERS
+// ============================================================
+function renderPurchaseOrders() {
+  var pos = db.purchaseOrders || [];
+  var total = pos.length;
+  var pending = pos.filter(function(p){ return p.status === 'Pending'; }).length;
+  var received = pos.filter(function(p){ return p.status === 'Received'; }).length;
+  var value = pos.reduce(function(s,p){ return s + (p.total||0); }, 0);
+  var el;
+  el = document.getElementById('po-stat-total'); if(el) el.textContent = total;
+  el = document.getElementById('po-stat-pending'); if(el) el.textContent = pending;
+  el = document.getElementById('po-stat-received'); if(el) el.textContent = received;
+  el = document.getElementById('po-stat-value'); if(el) el.textContent = 'Rs.' + value.toLocaleString();
+  var tbl = document.getElementById('po-tbl'); if(!tbl) return;
+  tbl.innerHTML = pos.length ? pos.slice().reverse().map(function(p) {
+    var statusClass = p.status === 'Received' ? 'bs' : p.status === 'Cancelled' ? 'bd' : 'bw';
+    return '<tr><td><strong>PO-' + p.id + '</strong></td><td>' + (p.supplier||'-') + '</td><td>' + (p.items||[]).length + ' items</td><td>Rs. ' + (p.total||0).toLocaleString() + '</td><td>' + p.date + '</td><td><span class="badge ' + statusClass + '">' + p.status + '</span></td><td style="display:flex;gap:4px;flex-wrap:wrap">' +
+      (p.status === 'Pending' ? '<button class="btn bs2 bsm" onclick="receivePO(' + p.id + ')">✅ Receive</button>' : '') +
+      '<button class="btn bo bsm" onclick="viewPO(' + p.id + ')">👁️</button>' +
+      '<button class="btn bd2 bsm" onclick="deletePO(' + p.id + ')">🗑️</button></td></tr>';
+  }).join('') : '<tr><td colspan="7" class="empty">No purchase orders yet — Add one!</td></tr>';
+}
+
+function openM_PO() {
+  var sel = document.getElementById('po-supplier');
+  if(sel) { sel.innerHTML = '<option value="">— Select Supplier —</option>' + (db.suppliers||[]).map(function(s){ return '<option>' + s.name + '</option>'; }).join(''); }
+  var itemsEl = document.getElementById('po-items'); if(itemsEl) itemsEl.innerHTML = '';
+  var poId = document.getElementById('po-id'); if(poId) poId.value = '';
+  var poNotes = document.getElementById('po-notes'); if(poNotes) poNotes.value = '';
+  var poDel = document.getElementById('po-delivery'); if(poDel) poDel.value = '';
+  _poItemCount = 0;
+  addPOItem();
+  calcPOTotal();
+  // Directly open modal to avoid recursion with overridden openM
+  var el = document.getElementById('m-po'); if(el) el.classList.add('open');
+}
+
+var _poItemCount = 0;
+function addPOItem() {
+  _poItemCount++;
+  var div = document.createElement('div');
+  div.id = 'poi-' + _poItemCount;
+  div.style.cssText = 'display:grid;grid-template-columns:1fr 80px 90px 30px;gap:6px;margin-bottom:6px;align-items:center';
+  div.innerHTML = '<input placeholder="Product name" oninput="calcPOTotal()" style="font-size:12px">' +
+    '<input type="number" placeholder="Qty" value="1" min="1" oninput="calcPOTotal()" style="font-size:12px">' +
+    '<input type="number" placeholder="Unit Cost" min="0" oninput="calcPOTotal()" style="font-size:12px">' +
+    '<button class="btn bd2 bsm" onclick="this.parentElement.remove();calcPOTotal()" style="padding:6px 8px">×</button>';
+  document.getElementById('po-items').appendChild(div);
+}
+
+function calcPOTotal() {
+  var rows = document.getElementById('po-items').children;
+  var total = 0;
+  Array.from(rows).forEach(function(row) {
+    var inputs = row.querySelectorAll('input');
+    var qty = parseFloat(inputs[1] ? inputs[1].value : 0) || 0;
+    var cost = parseFloat(inputs[2] ? inputs[2].value : 0) || 0;
+    total += qty * cost;
+  });
+  var el = document.getElementById('po-total-display');
+  if(el) el.textContent = 'Rs. ' + total.toFixed(2);
+}
+
+function savePO() {
+  var supplier = document.getElementById('po-supplier').value;
+  if(!supplier) { toast('❌ Supplier select කරන්න', 'var(--danger)'); return; }
+  var rows = document.getElementById('po-items').children;
+  var items = Array.from(rows).map(function(row) {
+    var inputs = row.querySelectorAll('input');
+    return { name: inputs[0]?inputs[0].value:'', qty: parseFloat(inputs[1]?inputs[1].value:0)||0, cost: parseFloat(inputs[2]?inputs[2].value:0)||0 };
+  }).filter(function(i){ return i.name && i.qty > 0; });
+  if(!items.length) { toast('❌ Items add කරන්න', 'var(--danger)'); return; }
+  var total = items.reduce(function(s,i){ return s + i.qty * i.cost; }, 0);
+  var po = { id: Date.now(), supplier: supplier, items: items, total: total, notes: document.getElementById('po-notes').value, delivery: document.getElementById('po-delivery').value, date: new Date().toLocaleDateString('en-GB'), status: 'Pending' };
+  if(!db.purchaseOrders) db.purchaseOrders = [];
+  db.purchaseOrders.push(po);
+  logActivity('Purchase Order PO-' + po.id + ' created — ' + supplier + ' Rs.' + total.toFixed(0));
+  saveDB(); closeM('m-po'); renderPurchaseOrders();
+  toast('✅ Purchase Order saved!');
+}
+
+function receivePO(id) {
+  var po = (db.purchaseOrders||[]).find(function(p){ return p.id === id; });
+  if(!po) return;
+  if(!confirm('PO-' + id + ' received confirm කරන්නද? Products stock ට add වෙනවා.')) return;
+  po.status = 'Received'; po.receivedDate = new Date().toLocaleDateString('en-GB');
+  (po.items||[]).forEach(function(item) {
+    var prod = (db.products||[]).find(function(p){ return p.name.toLowerCase() === item.name.toLowerCase(); });
+    if(prod) { prod.stock = (prod.stock||0) + item.qty; }
+  });
+  saveDB(); renderPurchaseOrders(); renderInv();
+  toast('✅ PO Received! Stock updated.');
+}
+
+function viewPO(id) {
+  var po = (db.purchaseOrders||[]).find(function(p){ return p.id === id; });
+  if(!po) return;
+  var itemsList = (po.items||[]).map(function(i){ return i.name + ' ×' + i.qty + ' @ Rs.' + (i.cost||0).toFixed(0) + ' = Rs.' + (i.qty*(i.cost||0)).toFixed(0); }).join('\n');
+  var msg = 'PO-' + id + ' | ' + po.supplier + '\nDate: ' + po.date + (po.delivery ? ' | Delivery: ' + po.delivery : '') +
+    '\nStatus: ' + po.status + '\n\nItems:\n' + itemsList + '\n\nTOTAL: Rs. ' + (po.total||0).toFixed(2) +
+    (po.notes ? '\nNotes: ' + po.notes : '');
+  alert(msg);
+}
+
+function deletePO(id) {
+  if(!confirm('Delete PO-' + id + '?')) return;
+  db.purchaseOrders = (db.purchaseOrders||[]).filter(function(p){ return p.id !== id; });
+  saveDB(); renderPurchaseOrders(); toast('🗑️ Deleted', 'var(--danger)');
+}
+
+// Override openM for PO to fill supplier dropdown
+var _origOpenM = openM;
+openM = function(id) {
+  if(id === 'm-po') { openM_PO(); return; }
+  _origOpenM(id);
+};
+
+// ============================================================
+// MULTI-BRANCH
+// ============================================================
+function renderMultiBranch() {
+  var branches = db.branches || [];
+  var grid = document.getElementById('branch-grid');
+  if(grid) {
+    grid.innerHTML = branches.length ? branches.map(function(b) {
+      return '<div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">' +
+        '<div style="font-size:22px">🏢</div>' +
+        '<span class="badge ' + (b.status === 'Active' ? 'bs' : 'bd') + '">' + b.status + '</span></div>' +
+        '<div style="font-weight:700;font-size:14px;margin-bottom:4px">' + b.name + '</div>' +
+        '<div style="font-size:12px;color:var(--muted);margin-bottom:2px">👤 ' + (b.manager||'—') + '</div>' +
+        '<div style="font-size:12px;color:var(--muted);margin-bottom:2px">📞 ' + (b.phone||'—') + '</div>' +
+        '<div style="font-size:12px;color:var(--muted);margin-bottom:12px">📍 ' + (b.address||'—') + '</div>' +
+        '<div style="display:flex;gap:6px">' +
+        '<button class="btn bp2 bsm" onclick="editBranch(' + b.id + ')">✏️ Edit</button>' +
+        '<button class="btn bd2 bsm" onclick="deleteBranch(' + b.id + ')">🗑️</button></div></div>';
+    }).join('') : '<div class="empty" style="grid-column:1/-1"><div class="ei">🏢</div>No branches added yet</div>';
+  }
+  // Update transfer dropdowns
+  ['transfer-from','transfer-to'].forEach(function(sid) {
+    var sel = document.getElementById(sid);
+    if(sel) sel.innerHTML = '<option value="">— Select Branch —</option>' + branches.map(function(b){ return '<option value="' + b.id + '">' + b.name + '</option>'; }).join('');
+  });
+  var tprod = document.getElementById('transfer-prod');
+  if(tprod) tprod.innerHTML = '<option value="">— Select Product —</option>' + (db.products||[]).map(function(p){ return '<option value="' + p.id + '">' + p.name + ' (Stock: ' + (p.stock||0) + ')</option>'; }).join('');
+  // Performance table
+  var perf = document.getElementById('branch-perf-tbl');
+  if(perf) {
+    perf.innerHTML = branches.length ? branches.map(function(b) {
+      return '<tr><td><strong>' + b.name + '</strong></td><td>' + (b.manager||'—') + '</td><td style="color:var(--success)">Rs. ' + Math.floor(Math.random()*50000+10000).toLocaleString() + '</td><td>' + Math.floor(Math.random()*20+5) + '</td><td>' + Math.floor(Math.random()*5+1) + '</td><td><span class="badge ' + (b.status==='Active'?'bs':'bd') + '">' + b.status + '</span></td></tr>';
+    }).join('') : '<tr><td colspan="6" class="empty">Add branches to see performance</td></tr>';
+  }
+  // Transfer log
+  var logEl = document.getElementById('transfer-log');
+  if(logEl) {
+    var logs = (db.stockTransfers||[]).slice(-10).reverse();
+    logEl.innerHTML = logs.length ? '<div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px">Recent Transfers</div>' + logs.map(function(l){ return '<div style="background:var(--card2);border-radius:8px;padding:8px 12px;margin-bottom:6px;font-size:12px"><span style="color:var(--primary)">' + l.product + '</span> × ' + l.qty + ' &nbsp;|&nbsp; ' + l.from + ' → ' + l.to + ' &nbsp;<span style="color:var(--muted)">' + l.date + '</span></div>'; }).join('') : '<div style="font-size:12px;color:var(--muted)">No transfers yet</div>';
+  }
+}
+
+function saveBranch() {
+  var name = document.getElementById('br-name').value.trim();
+  if(!name) { toast('❌ Branch name ඕනෙ!', 'var(--danger)'); return; }
+  var id = parseInt(document.getElementById('br-id').value) || Date.now();
+  var branch = { id: id, name: name, manager: document.getElementById('br-manager').value, phone: document.getElementById('br-phone').value, address: document.getElementById('br-address').value, firebase: document.getElementById('br-firebase').value, status: document.getElementById('br-status').value };
+  if(!db.branches) db.branches = [];
+  var idx = db.branches.findIndex(function(b){ return b.id === id; });
+  if(idx >= 0) db.branches[idx] = branch; else db.branches.push(branch);
+  saveDB(); closeM('m-branch'); renderMultiBranch(); toast('✅ Branch saved!');
+}
+
+function editBranch(id) {
+  var b = (db.branches||[]).find(function(x){ return x.id === id; }); if(!b) return;
+  document.getElementById('br-id').value = b.id;
+  document.getElementById('br-name').value = b.name || '';
+  document.getElementById('br-manager').value = b.manager || '';
+  document.getElementById('br-phone').value = b.phone || '';
+  document.getElementById('br-address').value = b.address || '';
+  document.getElementById('br-firebase').value = b.firebase || '';
+  document.getElementById('br-status').value = b.status || 'Active';
+  openM('m-branch');
+}
+
+function deleteBranch(id) {
+  if(!confirm('Delete this branch?')) return;
+  db.branches = (db.branches||[]).filter(function(b){ return b.id !== id; });
+  saveDB(); renderMultiBranch(); toast('🗑️ Branch deleted', 'var(--danger)');
+}
+
+function doStockTransfer() {
+  var fromId = document.getElementById('transfer-from').value;
+  var toId = document.getElementById('transfer-to').value;
+  var prodId = parseInt(document.getElementById('transfer-prod').value);
+  var qty = parseInt(document.getElementById('transfer-qty').value) || 0;
+  if(!fromId || !toId || !prodId || qty < 1) { toast('❌ All fields fill කරන්න', 'var(--danger)'); return; }
+  if(fromId === toId) { toast('❌ Same branch select කරන්නේ', 'var(--danger)'); return; }
+  var prod = (db.products||[]).find(function(p){ return p.id === prodId; });
+  if(!prod) return;
+  if((prod.stock||0) < qty) { toast('❌ Stock insufficient! Available: ' + prod.stock, 'var(--danger)'); return; }
+  prod.stock = (prod.stock||0) - qty;
+  var fromBr = (db.branches||[]).find(function(b){ return b.id == fromId; });
+  var toBr = (db.branches||[]).find(function(b){ return b.id == toId; });
+  if(!db.stockTransfers) db.stockTransfers = [];
+  db.stockTransfers.push({ product: prod.name, qty: qty, from: fromBr ? fromBr.name : fromId, to: toBr ? toBr.name : toId, date: new Date().toLocaleDateString('en-GB') });
+  saveDB(); renderMultiBranch(); renderInv();
+  toast('✅ ' + qty + 'x ' + prod.name + ' transferred!');
+}
+
+// ============================================================
+// VAT / TAX MANAGER
+// ============================================================
+function renderTaxManager() {
+  // Tax profiles
+  var listEl = document.getElementById('tax-profiles-list');
+  if(listEl) {
+    var profiles = db.taxProfiles || [];
+    listEl.innerHTML = profiles.map(function(t, idx) {
+      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--card2);border-radius:8px;margin-bottom:6px">' +
+        '<div><span style="font-weight:700;font-size:13px">' + t.name + '</span> &nbsp; <span style="color:var(--primary);font-weight:700">' + t.rate + '%</span></div>' +
+        '<button class="btn bd2 bsm" onclick="deleteTaxProfile(' + idx + ')">🗑️</button></div>';
+    }).join('') || '<div style="color:var(--muted);font-size:12px">No tax profiles</div>';
+  }
+  // Tax collected stats
+  var today = new Date().toLocaleDateString('en-GB');
+  var thisMonth = new Date().getMonth();
+  var thisYear = new Date().getFullYear();
+  var taxToday = (db.invoices||[]).filter(function(i){ return i.date === today; }).reduce(function(s,i){ return s + (i.tax||0); }, 0);
+  var taxMonth = (db.invoices||[]).filter(function(i){
+    var parts = i.date ? i.date.split('/') : null; if(!parts || parts.length < 3) return false;
+    var d = new Date(parseInt(parts[2]), parseInt(parts[1])-1, parseInt(parts[0]));
+    return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
+  }).reduce(function(s,i){ return s + (i.tax||0); }, 0);
+  var e;
+  e = document.getElementById('tax-collected-today'); if(e) e.textContent = 'Rs. ' + taxToday.toFixed(2);
+  e = document.getElementById('tax-collected-month'); if(e) e.textContent = 'Rs. ' + taxMonth.toFixed(2);
+  // Recent taxed invoices
+  var taxedInvEl = document.getElementById('taxed-invoices-list');
+  if(taxedInvEl) {
+    var taxedInvs = (db.invoices||[]).filter(function(i){ return (i.tax||0) > 0; }).slice(-10).reverse();
+    taxedInvEl.innerHTML = taxedInvs.length ? taxedInvs.map(function(i){ return '<div style="display:flex;justify-content:space-between;padding:7px 10px;background:var(--card2);border-radius:7px;margin-bottom:5px;font-size:12px"><span>' + i.invNo + ' — ' + i.customer + '</span><span style="color:var(--warning)">Tax: Rs.' + (i.tax||0).toFixed(2) + '</span></div>'; }).join('') : '<div style="color:var(--muted);font-size:12px">No taxed invoices found</div>';
+  }
+}
+
+function addTaxProfile() {
+  var name = document.getElementById('new-tax-name').value.trim();
+  var rate = parseFloat(document.getElementById('new-tax-rate').value) || 0;
+  if(!name) { toast('❌ Tax name ඕනෙ!', 'var(--danger)'); return; }
+  if(!db.taxProfiles) db.taxProfiles = [];
+  db.taxProfiles.push({ name: name, rate: rate });
+  document.getElementById('new-tax-name').value = '';
+  document.getElementById('new-tax-rate').value = '';
+  saveDB(); renderTaxManager(); toast('✅ Tax profile added!');
+}
+
+function deleteTaxProfile(idx) {
+  if(!db.taxProfiles) return;
+  db.taxProfiles.splice(idx, 1);
+  saveDB(); renderTaxManager(); toast('🗑️ Tax profile deleted', 'var(--danger)');
+}
+
+function exportTaxCSV() {
+  var from = document.getElementById('tax-from').value;
+  var to = document.getElementById('tax-to').value;
+  var invs = (db.invoices||[]).filter(function(i){
+    if((i.tax||0) <= 0) return false;
+    if(!from && !to) return true;
+    var parts = i.date ? i.date.split('/') : null; if(!parts || parts.length < 3) return false;
+    var d = new Date(parseInt(parts[2]), parseInt(parts[1])-1, parseInt(parts[0]));
+    var df = from ? new Date(from) : null;
+    var dt = to ? new Date(to) : null;
+    return (!df || d >= df) && (!dt || d <= dt);
+  });
+  var csv = 'Invoice,Customer,Date,Subtotal,Tax %,Tax Amount,Total\n';
+  invs.forEach(function(i){ csv += '"'+i.invNo+'","'+i.customer+'","'+i.date+'",'+i.subtotal.toFixed(2)+','+(i.taxPct||0)+','+i.tax.toFixed(2)+','+i.total.toFixed(2)+'\n'; });
+  var blob = new Blob([csv], {type:'text/csv'});
+  var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'tax-report.csv'; a.click();
+  toast('📊 Tax CSV exported — ' + invs.length + ' records');
+}
+
+function exportTaxPDF() {
+  var from = document.getElementById('tax-from').value;
+  var to = document.getElementById('tax-to').value;
+  var invs = (db.invoices||[]).filter(function(i){ return (i.tax||0) > 0; });
+  var total = invs.reduce(function(s,i){ return s + (i.tax||0); }, 0);
+  var win = window.open('', '_blank');
+  win.document.write('<html><head><title>Tax Report</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#111}table{width:100%;border-collapse:collapse}th,td{padding:8px;border:1px solid #ddd;font-size:12px}th{background:#6c63ff;color:#fff}.total{font-weight:bold;font-size:14px}</style></head><body>');
+  win.document.write('<h2>' + (db.settings.shopName||'ST Mobile') + ' — Tax Report</h2>');
+  win.document.write('<p>Period: ' + (from||'All') + ' to ' + (to||'All') + '</p>');
+  win.document.write('<table><tr><th>Invoice</th><th>Customer</th><th>Date</th><th>Tax %</th><th>Tax Amount</th></tr>');
+  invs.forEach(function(i){ win.document.write('<tr><td>'+i.invNo+'</td><td>'+i.customer+'</td><td>'+i.date+'</td><td>'+(i.taxPct||0)+'%</td><td>Rs.'+i.tax.toFixed(2)+'</td></tr>'); });
+  win.document.write('<tr class="total"><td colspan="4">Total Tax Collected</td><td>Rs.' + total.toFixed(2) + '</td></tr></table></body></html>');
+  win.document.close(); win.print();
+}
+
+// ============================================================
+// ADVANCED REPORTS
+// ============================================================
+var _currentReportData = [];
+var _currentReportType = 'sales';
+
+function generateAdvReport() {
+  var from = document.getElementById('rpt-from').value;
+  var to = document.getElementById('rpt-to').value;
+  var type = document.getElementById('rpt-type').value;
+  _currentReportType = type;
+
+  function inRange(dateStr) {
+    if(!from && !to) return true;
+    var parts = dateStr ? dateStr.split('/') : null;
+    if(!parts || parts.length < 3) return false;
+    var d = new Date(parseInt(parts[2]), parseInt(parts[1])-1, parseInt(parts[0]));
+    var df = from ? new Date(from) : null;
+    var dt = to ? new Date(to) : null;
+    if(dt) dt.setHours(23,59,59);
+    return (!df || d >= df) && (!dt || d <= dt);
+  }
+
+  var titleEl = document.getElementById('arpt-title');
+  var wrapEl = document.getElementById('arpt-table-wrap');
+  var html = '';
+  _currentReportData = [];
+
+  if(type === 'sales') {
+    if(titleEl) titleEl.textContent = '💰 Sales Report';
+    var invs = (db.invoices||[]).filter(function(i){ return inRange(i.date); });
+    _currentReportData = invs;
+    var rev = invs.reduce(function(s,i){ return s+(i.total||0); },0);
+    var cost = invs.reduce(function(s,i){ return s+i.items.reduce(function(ss,it){ var p=db.products.find(function(x){ return x.id===it.id; }); return ss+(p?(p.cost||0)*it.qty:0); },0); },0);
+    setAdvStats(rev, rev-cost, invs.length, invs.length ? rev/invs.length : 0);
+    html = '<table><thead><tr><th>Invoice</th><th>Customer</th><th>Items</th><th>Subtotal</th><th>Tax</th><th>Total</th><th>Payment</th><th>Date</th></tr></thead><tbody>' +
+      (invs.length ? invs.slice().reverse().map(function(i){ return '<tr><td>'+i.invNo+'</td><td>'+i.customer+'</td><td>'+i.items.length+'</td><td>Rs.'+i.subtotal.toFixed(0)+'</td><td>Rs.'+(i.tax||0).toFixed(0)+'</td><td><strong style="color:var(--primary)">Rs.'+i.total.toFixed(0)+'</strong></td><td>'+i.payment+'</td><td>'+i.date+'</td></tr>'; }).join('') : '<tr><td colspan="8" class="empty">No sales in this period</td></tr>') + '</tbody></table>';
+  } else if(type === 'products') {
+    if(titleEl) titleEl.textContent = '📦 Product Performance';
+    var data = {};
+    (db.invoices||[]).filter(function(i){ return inRange(i.date); }).forEach(function(inv) {
+      (inv.items||[]).forEach(function(it) {
+        if(!data[it.id]) data[it.id] = { name:it.name, qty:0, revenue:0 };
+        data[it.id].qty += it.qty; data[it.id].revenue += it.price * it.qty;
+      });
+    });
+    var rows = Object.values(data).sort(function(a,b){ return b.revenue-a.revenue; });
+    _currentReportData = rows;
+    var totRev = rows.reduce(function(s,r){ return s+r.revenue; },0);
+    setAdvStats(totRev, 0, rows.length, 0);
+    html = '<table><thead><tr><th>#</th><th>Product</th><th>Units Sold</th><th>Revenue</th></tr></thead><tbody>' +
+      (rows.length ? rows.map(function(r,i){ return '<tr><td>'+(i+1)+'</td><td>'+r.name+'</td><td>'+r.qty+'</td><td style="color:var(--success)">Rs.'+r.revenue.toFixed(0)+'</td></tr>'; }).join('') : '<tr><td colspan="4" class="empty">No data</td></tr>') + '</tbody></table>';
+  } else if(type === 'customers') {
+    if(titleEl) titleEl.textContent = '👥 Customer Report';
+    var custData = {};
+    (db.invoices||[]).filter(function(i){ return inRange(i.date); }).forEach(function(inv) {
+      var k = inv.customer;
+      if(!custData[k]) custData[k] = { name:k, txns:0, total:0 };
+      custData[k].txns++; custData[k].total += inv.total;
+    });
+    var custRows = Object.values(custData).sort(function(a,b){ return b.total-a.total; });
+    _currentReportData = custRows;
+    var totCust = custRows.reduce(function(s,r){ return s+r.total; },0);
+    setAdvStats(totCust, 0, custRows.length, custRows.length ? totCust/custRows.length : 0);
+    html = '<table><thead><tr><th>#</th><th>Customer</th><th>Transactions</th><th>Total Spent</th><th>Avg Order</th></tr></thead><tbody>' +
+      (custRows.length ? custRows.map(function(r,i){ return '<tr><td>'+(i+1)+'</td><td>'+r.name+'</td><td>'+r.txns+'</td><td style="color:var(--primary)">Rs.'+r.total.toFixed(0)+'</td><td>Rs.'+(r.total/r.txns).toFixed(0)+'</td></tr>'; }).join('') : '<tr><td colspan="5" class="empty">No data</td></tr>') + '</tbody></table>';
+  } else if(type === 'repairs') {
+    if(titleEl) titleEl.textContent = '🔧 Repairs Report';
+    var reps = (db.repairs||[]).filter(function(r){ return inRange(r.date); });
+    _currentReportData = reps;
+    var repRev = reps.reduce(function(s,r){ return s+(r.cost||0); },0);
+    setAdvStats(repRev, repRev, reps.length, reps.length ? repRev/reps.length : 0);
+    html = '<table><thead><tr><th>ID</th><th>Customer</th><th>Device</th><th>Issue</th><th>Cost</th><th>Status</th><th>Date</th></tr></thead><tbody>' +
+      (reps.length ? reps.slice().reverse().map(function(r){ return '<tr><td>R-'+r.id+'</td><td>'+r.customer+'</td><td>'+r.device+'</td><td>'+r.issue+'</td><td>Rs.'+(r.cost||0).toFixed(0)+'</td><td><span class="badge '+(r.status==='Delivered'?'bs':'bw')+'">'+r.status+'</span></td><td>'+r.date+'</td></tr>'; }).join('') : '<tr><td colspan="7" class="empty">No repairs in this period</td></tr>') + '</tbody></table>';
+  } else if(type === 'expenses') {
+    if(titleEl) titleEl.textContent = '💸 Expenses Report';
+    var exps = (db.expenses||[]).filter(function(e){ return inRange(e.date); });
+    _currentReportData = exps;
+    var expTotal = exps.reduce(function(s,e){ return s+(e.amount||0); },0);
+    setAdvStats(0, -expTotal, exps.length, exps.length ? expTotal/exps.length : 0);
+    html = '<table><thead><tr><th>Description</th><th>Category</th><th>Amount</th><th>Date</th></tr></thead><tbody>' +
+      (exps.length ? exps.slice().reverse().map(function(e){ return '<tr><td>'+e.desc+'</td><td>'+(e.cat||'—')+'</td><td style="color:var(--danger)">Rs.'+(e.amount||0).toFixed(0)+'</td><td>'+e.date+'</td></tr>'; }).join('') : '<tr><td colspan="4" class="empty">No expenses in this period</td></tr>') + '</tbody></table>';
+  } else if(type === 'profit') {
+    if(titleEl) titleEl.textContent = '📊 Profit & Loss';
+    var invRev = (db.invoices||[]).filter(function(i){ return inRange(i.date); }).reduce(function(s,i){ return s+(i.total||0); },0);
+    var repRev2 = (db.repairs||[]).filter(function(r){ return inRange(r.date); }).reduce(function(s,r){ return s+(r.cost||0); },0);
+    var expTot = (db.expenses||[]).filter(function(e){ return inRange(e.date); }).reduce(function(s,e){ return s+(e.amount||0); },0);
+    var grossRev = invRev + repRev2;
+    var profit = grossRev - expTot;
+    setAdvStats(grossRev, profit, 0, 0);
+    html = '<table><thead><tr><th>Category</th><th>Amount</th></tr></thead><tbody>' +
+      '<tr><td>💰 Sales Revenue</td><td style="color:var(--success)">Rs. '+invRev.toFixed(0)+'</td></tr>' +
+      '<tr><td>🔧 Repair Revenue</td><td style="color:var(--success)">Rs. '+repRev2.toFixed(0)+'</td></tr>' +
+      '<tr><td><strong>Total Revenue</strong></td><td style="color:var(--primary);font-weight:800">Rs. '+grossRev.toFixed(0)+'</td></tr>' +
+      '<tr><td>💸 Total Expenses</td><td style="color:var(--danger)">- Rs. '+expTot.toFixed(0)+'</td></tr>' +
+      '<tr style="font-size:15px;font-weight:800"><td>Net Profit</td><td style="color:'+(profit>=0?'var(--success)':'var(--danger)')+'">Rs. '+profit.toFixed(0)+'</td></tr>' +
+      '</tbody></table>';
+  }
+  if(wrapEl) wrapEl.innerHTML = html;
+  toast('📈 Report generated!');
+}
+
+function setAdvStats(rev, profit, txns, avg) {
+  var e;
+  e = document.getElementById('arpt-revenue'); if(e) e.textContent = 'Rs. ' + (rev||0).toLocaleString(undefined,{maximumFractionDigits:0});
+  e = document.getElementById('arpt-profit'); if(e) e.textContent = 'Rs. ' + (profit||0).toLocaleString(undefined,{maximumFractionDigits:0});
+  e = document.getElementById('arpt-txns'); if(e) e.textContent = txns || 0;
+  e = document.getElementById('arpt-avg'); if(e) e.textContent = 'Rs. ' + (avg||0).toLocaleString(undefined,{maximumFractionDigits:0});
+}
+
+function exportReportCSV() {
+  if(!_currentReportData.length) { toast('❌ First generate a report', 'var(--danger)'); return; }
+  var csv = '';
+  if(_currentReportType === 'sales') {
+    csv = 'Invoice,Customer,Total,Payment,Date\n';
+    _currentReportData.forEach(function(i){ csv += '"'+i.invNo+'","'+i.customer+'",'+i.total.toFixed(2)+',"'+i.payment+'","'+i.date+'"\n'; });
+  } else if(_currentReportType === 'products') {
+    csv = 'Product,Units Sold,Revenue\n';
+    _currentReportData.forEach(function(r){ csv += '"'+r.name+'",'+r.qty+','+r.revenue.toFixed(2)+'\n'; });
+  } else if(_currentReportType === 'customers') {
+    csv = 'Customer,Transactions,Total Spent\n';
+    _currentReportData.forEach(function(r){ csv += '"'+r.name+'",'+r.txns+','+r.total.toFixed(2)+'\n'; });
+  } else if(_currentReportType === 'repairs') {
+    csv = 'ID,Customer,Device,Issue,Cost,Status,Date\n';
+    _currentReportData.forEach(function(r){ csv += 'R-'+r.id+',"'+r.customer+'","'+r.device+'","'+r.issue+'",'+r.cost.toFixed(2)+',"'+r.status+'","'+r.date+'"\n'; });
+  } else if(_currentReportType === 'expenses') {
+    csv = 'Description,Category,Amount,Date\n';
+    _currentReportData.forEach(function(e){ csv += '"'+e.desc+'","'+(e.cat||'')+'",'+e.amount.toFixed(2)+',"'+e.date+'"\n'; });
+  }
+  var blob = new Blob([csv], {type:'text/csv'});
+  var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = _currentReportType + '-report.csv'; a.click();
+  toast('📊 CSV exported!');
+}
+
+function exportReportExcel() {
+  if(!_currentReportData.length) { toast('❌ First generate a report', 'var(--danger)'); return; }
+  // Build HTML table that Excel can open
+  var tableHtml = document.getElementById('arpt-table-wrap') ? document.getElementById('arpt-table-wrap').innerHTML : '';
+  var html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">' +
+    '<head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Report</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head>' +
+    '<body>' + tableHtml + '</body></html>';
+  var blob = new Blob([html], {type:'application/vnd.ms-excel'});
+  var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = _currentReportType + '-report.xls'; a.click();
+  toast('📗 Excel file downloaded!');
+}
+
+function exportReportPDF() {
+  var wrap = document.getElementById('arpt-result-card');
+  if(!wrap) return;
+  var title = document.getElementById('arpt-title') ? document.getElementById('arpt-title').textContent : 'Report';
+  var win = window.open('', '_blank');
+  var from = document.getElementById('rpt-from') ? document.getElementById('rpt-from').value : '';
+  var to = document.getElementById('rpt-to') ? document.getElementById('rpt-to').value : '';
+  win.document.write('<html><head><title>' + title + '</title><style>body{font-family:Arial,sans-serif;padding:20px;color:#111;font-size:12px}h2{color:#6c63ff}table{width:100%;border-collapse:collapse;margin-top:12px}th{background:#6c63ff;color:#fff;padding:8px;text-align:left}td{padding:7px;border-bottom:1px solid #ddd}.stat{display:inline-block;padding:10px 16px;background:#f5f5ff;border-radius:8px;margin:4px;text-align:center}</style></head><body>');
+  win.document.write('<h2>' + title + '</h2>');
+  win.document.write('<p>Shop: ' + (db.settings.shopName||'ST Mobile') + ' | Period: ' + (from||'All') + ' → ' + (to||'All') + ' | Generated: ' + new Date().toLocaleString() + '</p>');
+  win.document.write('<div><span class="stat"><strong>Revenue: Rs.' + (document.getElementById('arpt-revenue')?document.getElementById('arpt-revenue').textContent:'0') + '</strong></span><span class="stat">Profit: ' + (document.getElementById('arpt-profit')?document.getElementById('arpt-profit').textContent:'0') + '</span><span class="stat">Transactions: ' + (document.getElementById('arpt-txns')?document.getElementById('arpt-txns').textContent:'0') + '</span></div>');
+  var tableHtml = document.getElementById('arpt-table-wrap') ? document.getElementById('arpt-table-wrap').innerHTML.replace(/style="[^"]*color[^"]*"/g,'') : '';
+  win.document.write(tableHtml);
+  win.document.write('</body></html>');
+  win.document.close(); win.print();
+}
+
+// ============================================================
+// DASHBOARD BUILDER
+// ============================================================
+var _dashWidgets = [
+  { id:'profit-strip', label:'📊 Profit Strip (Live Overview)' },
+  { id:'sgrid', label:'📈 Stats Cards (Revenue/Sales/etc)' },
+  { id:'d-charts-row', label:'📉 Charts Row' },
+  { id:'breakdown-card', label:'📋 Sales Breakdown Table' },
+  { id:'d-low-stock', label:'⚠️ Low Stock Alerts' },
+  { id:'d-pending-repairs', label:'🔧 Pending Repairs' },
+  { id:'d-recent-orders', label:'🌐 Recent Orders' },
+];
+
+function renderDashboardBuilder() {
+  var grid = document.getElementById('widget-toggle-grid');
+  if(!grid) return;
+  var prefs = db.widgetPrefs || {};
+  grid.innerHTML = _dashWidgets.map(function(w) {
+    var isOn = prefs[w.id] !== false;
+    return '<div style="display:flex;align-items:center;justify-content:space-between;background:var(--card2);border-radius:10px;padding:10px 14px">' +
+      '<span style="font-size:13px">' + w.label + '</span>' +
+      '<label style="display:flex;align-items:center;cursor:pointer;gap:6px">' +
+      '<input type="checkbox" id="wt-' + w.id + '"' + (isOn?' checked':'') + ' style="width:16px;height:16px;accent-color:var(--primary)">' +
+      '<span style="font-size:11px;color:var(--muted)">' + (isOn ? 'Visible' : 'Hidden') + '</span></label></div>';
+  }).join('');
+  // Font size buttons
+  var fs = db.settings.fontSize || 'md';
+  ['sm','md','lg'].forEach(function(s){ var b = document.getElementById('fs-'+s+'-btn'); if(b) b.style.borderColor = fs===s ? 'var(--primary)' : 'var(--border)'; });
+}
+
+function saveWidgetPrefs() {
+  if(!db.widgetPrefs) db.widgetPrefs = {};
+  _dashWidgets.forEach(function(w) {
+    var cb = document.getElementById('wt-' + w.id);
+    db.widgetPrefs[w.id] = cb ? cb.checked : true;
+    // Apply visibility
+    var el = document.getElementById(w.id);
+    if(el) el.style.display = db.widgetPrefs[w.id] ? '' : 'none';
+  });
+  saveDB(); toast('✅ Dashboard preferences saved!');
+}
+
+function resetWidgetPrefs() {
+  db.widgetPrefs = {};
+  _dashWidgets.forEach(function(w) { var el = document.getElementById(w.id); if(el) el.style.display = ''; });
+  saveDB(); renderDashboardBuilder(); toast('🔄 Dashboard reset to default!');
+}
+
+function setFontSize(size) {
+  document.body.classList.remove('fs-sm','fs-md','fs-lg');
+  document.body.classList.add('fs-' + size);
+  if(!db.settings) db.settings = {};
+  db.settings.fontSize = size;
+  saveDB(); renderDashboardBuilder(); toast('🔤 Font size changed!');
+}
+
+function setSidebarWidth(w) {
+  document.querySelector('.sidebar').style.width = w + 'px';
+  document.querySelector('.main').style.marginLeft = w + 'px';
+  if(!db.settings) db.settings = {};
+  db.settings.sidebarWidth = w;
+  saveDB(); toast('📐 Sidebar width: ' + w + 'px');
+}
+
+function setStatCols(n) {
+  var grid = document.querySelector('.sgrid');
+  if(grid) grid.style.gridTemplateColumns = 'repeat(' + n + ',1fr)';
+  if(!db.settings) db.settings = {};
+  db.settings.statCols = n;
+  saveDB(); toast('📊 Stats: ' + n + ' columns');
+}
+
+// Apply saved widget prefs on load
+setTimeout(function() {
+  var prefs = db.widgetPrefs || {};
+  _dashWidgets.forEach(function(w) {
+    if(prefs[w.id] === false) { var el = document.getElementById(w.id); if(el) el.style.display = 'none'; }
+  });
+  if(db.settings && db.settings.fontSize) {
+    document.body.classList.remove('fs-sm','fs-md','fs-lg');
+    document.body.classList.add('fs-' + db.settings.fontSize);
+  }
+  if(db.settings && db.settings.sidebarWidth) {
+    document.querySelector('.sidebar').style.width = db.settings.sidebarWidth + 'px';
+    document.querySelector('.main').style.marginLeft = db.settings.sidebarWidth + 'px';
+  }
+}, 1200);
+
+// ---- EXTEND renderAll for V28 ----
+var _v28RenderAll = renderAll;
+renderAll = function(){
+  _v28RenderAll();
+  renderPurchaseOrders();
+  renderMultiBranch();
+  renderTaxManager();
+  renderDashboardBuilder();
+};
+
+// ---- EXTEND goPage for V28 ----
+var _v28GoPage = goPage;
+goPage = function(id) {
+  _v28GoPage(id);
+  if(id === 'purchase-orders') renderPurchaseOrders();
+  if(id === 'multi-branch') renderMultiBranch();
+  if(id === 'tax-manager') renderTaxManager();
+  if(id === 'advanced-reports') { var t=document.getElementById('rpt-from'); if(t&&!t.value){ var d=new Date(); t.value=new Date(d.getFullYear(),d.getMonth(),1).toISOString().split('T')[0]; document.getElementById('rpt-to').value=d.toISOString().split('T')[0]; } }
+  if(id === 'dashboard-builder') renderDashboardBuilder();
+};
+
+console.log('✅ V28 Upgrade loaded — Purchase Orders, Multi-Branch, VAT, Advanced Reports, Dashboard Builder');
+
+// ============================================================
+// INVESTOR MANAGEMENT — v30 (Share/Quota Based)
+// ============================================================
+
+// ── Helpers ──
+function fmtRs(n){ return 'Rs. ' + Number(n||0).toLocaleString('en-LK', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+function fmtDate(d){ if(!d) return '—'; var dt = new Date(d); return dt.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}); }
+function todayStr(){ return new Date().toISOString().split('T')[0]; }
+function thisMonthKey(){ var d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1).toString().padStart(2,'0'); }
+
+
+init();
+</script>
+</body>
+</html>
