@@ -81,31 +81,43 @@
   window.firebaseSaveDB = function(dbObj) {
     if (!firebaseConfig.databaseURL || firebaseConfig.databaseURL.includes('YOUR_PROJECT')) return;
     setFBStatus('☁️ Syncing...', 'var(--warning)');
-    // Save main data collections separately for efficiency
+    // Save ALL data collections — no limit, unlimited save
     var payload = {
-      products:   dbObj.products   || [],
-      invoices:   dbObj.invoices   || [],
-      repairs:    dbObj.repairs    || [],
-      orders:     dbObj.orders     || [],
-      customers:  dbObj.customers  || [],
-      expenses:   dbObj.expenses   || [],
-      suppliers:  dbObj.suppliers  || [],
-      activityLog:dbObj.activityLog|| [],
-      loyaltyLog: dbObj.loyaltyLog || [],
-      settings:   dbObj.settings   || {},
-      staff:      dbObj.staff      || [],
-      shifts:     dbObj.shifts     || [],
-      rosterShifts:dbObj.rosterShifts||[],
-      tasks:      dbObj.tasks      || [],
-      followups:  dbObj.followups  || [],
-      timerLogs:  dbObj.timerLogs  || [],
-      repTemplates:dbObj.repTemplates||[],
-      purchaseOrders:dbObj.purchaseOrders||[],
-      branches:    dbObj.branches    || [],
-      taxProfiles: dbObj.taxProfiles || [],
-      stockTransfers:dbObj.stockTransfers||[],
-      widgetPrefs: dbObj.widgetPrefs  || {},
-      _lastSync:  Date.now()
+      products:      dbObj.products      || [],
+      invoices:      dbObj.invoices      || [],
+      repairs:       dbObj.repairs       || [],
+      orders:        dbObj.orders        || [],
+      customers:     dbObj.customers     || [],
+      expenses:      dbObj.expenses      || [],
+      suppliers:     dbObj.suppliers     || [],
+      purchases:     dbObj.purchases     || [],
+      stockLog:      dbObj.stockLog      || [],
+      credits:       dbObj.credits       || [],
+      activityLog:   dbObj.activityLog   || [],
+      loyaltyLog:    dbObj.loyaltyLog    || [],
+      settings:      dbObj.settings      || {},
+      staff:         dbObj.staff         || [],
+      shifts:        dbObj.shifts        || [],
+      rosterShifts:  dbObj.rosterShifts  || [],
+      tasks:         dbObj.tasks         || [],
+      followups:     dbObj.followups     || [],
+      timerLogs:     dbObj.timerLogs     || [],
+      repTemplates:  dbObj.repTemplates  || [],
+      purchaseOrders:dbObj.purchaseOrders|| [],
+      branches:      dbObj.branches      || [],
+      taxProfiles:   dbObj.taxProfiles   || [],
+      stockTransfers:dbObj.stockTransfers|| [],
+      widgetPrefs:   dbObj.widgetPrefs   || {},
+      batches:       dbObj.batches       || [],
+      kits:          dbObj.kits          || [],
+      upsellRules:   dbObj.upsellRules   || [],
+      referrals:     dbObj.referrals     || [],
+      diagChecklists:dbObj.diagChecklists|| {},
+      repairParts:   dbObj.repairParts   || {},
+      warrantyDays:  dbObj.warrantyDays  || {},
+      productVariants:dbObj.productVariants||{},
+      invDesign:     dbObj.invDesign     || {},
+      _lastSync:     Date.now()
     };
     set(ref(database, 'pos-data'), payload)
       .then(function(){ setFBStatus('✅ Cloud Saved', 'var(--success)'); })
@@ -168,7 +180,21 @@
       if (remote.tasks)       db.tasks       = _fbArr(remote.tasks);
       if (remote.followups)   db.followups   = _fbArr(remote.followups);
       if (remote.timerLogs)   db.timerLogs   = _fbArr(remote.timerLogs);
-      if (remote.repTemplates)db.repTemplates= _fbArr(remote.repTemplates);
+      if (remote.repTemplates)    db.repTemplates    = _fbArr(remote.repTemplates);
+      if (remote.purchaseOrders)  db.purchaseOrders  = _fbArr(remote.purchaseOrders);
+      if (remote.branches)        db.branches        = _fbArr(remote.branches);
+      if (remote.taxProfiles)     db.taxProfiles     = _fbArr(remote.taxProfiles);
+      if (remote.stockTransfers)  db.stockTransfers  = _fbArr(remote.stockTransfers);
+      if (remote.widgetPrefs)     db.widgetPrefs     = remote.widgetPrefs;
+      if (remote.batches)         db.batches         = _fbArr(remote.batches);
+      if (remote.kits)            db.kits            = _fbArr(remote.kits);
+      if (remote.upsellRules)     db.upsellRules     = _fbArr(remote.upsellRules);
+      if (remote.referrals)       db.referrals       = _fbArr(remote.referrals);
+      if (remote.diagChecklists)  db.diagChecklists  = remote.diagChecklists || {};
+      if (remote.repairParts)     db.repairParts     = remote.repairParts    || {};
+      if (remote.warrantyDays)    db.warrantyDays    = remote.warrantyDays   || {};
+      if (remote.productVariants) db.productVariants = remote.productVariants|| {};
+      if (remote.invDesign)       db.invDesign       = remote.invDesign      || {};
       renderAll();
       setFBStatus('\uD83D\uDD04 Live synced', 'var(--info)');
     }, function(error){ console.error('Firebase listener error:', error); });
@@ -6160,6 +6186,15 @@ function init() {
       if (cloudData.taxProfiles)   db.taxProfiles   = _fbArr(cloudData.taxProfiles);
       if (cloudData.stockTransfers)db.stockTransfers= _fbArr(cloudData.stockTransfers);
       if (cloudData.widgetPrefs)   db.widgetPrefs   = cloudData.widgetPrefs;
+      if (cloudData.batches)       db.batches       = _fbArr(cloudData.batches);
+      if (cloudData.kits)          db.kits          = _fbArr(cloudData.kits);
+      if (cloudData.upsellRules)   db.upsellRules   = _fbArr(cloudData.upsellRules);
+      if (cloudData.referrals)     db.referrals     = _fbArr(cloudData.referrals);
+      if (cloudData.diagChecklists)db.diagChecklists= cloudData.diagChecklists || {};
+      if (cloudData.repairParts)   db.repairParts   = cloudData.repairParts   || {};
+      if (cloudData.warrantyDays)  db.warrantyDays  = cloudData.warrantyDays  || {};
+      if (cloudData.productVariants)db.productVariants= cloudData.productVariants||{};
+      if (cloudData.invDesign)     db.invDesign     = cloudData.invDesign      || {};
       // Sync to SQLite for local queries
       renderAll();
       applyTheme(db.settings.theme || '#6c63ff');
