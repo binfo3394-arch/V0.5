@@ -7252,45 +7252,42 @@ function clearCustSel(){
 }
 
 // =========== REPAIR CUSTOMER DROPDOWN ===========
-var _repCustSelecting = false;
+// Repair customer dropdown — safe version (no inline JS, uses data-index)
+var _repCustList = [];
 function filterRepCustDrop(){
   var inp=document.getElementById('r-cust'); if(!inp) return;
   var drop=document.getElementById('rep-cust-drop'); if(!drop) return;
   var q=inp.value.toLowerCase().trim();
-  var custs=db.customers.filter(function(c){ return !q||c.name.toLowerCase().includes(q)||(c.phone&&c.phone.includes(q)); }).slice(0,8);
-  if(!custs.length){ drop.style.display='none'; return; }
-  drop.innerHTML=custs.map(function(c){
+  _repCustList=db.customers.filter(function(c){ return !q||c.name.toLowerCase().includes(q)||(c.phone&&c.phone.includes(q)); }).slice(0,8);
+  if(!_repCustList.length){ drop.style.display='none'; return; }
+  drop.innerHTML=_repCustList.map(function(c,i){
     var pts=getLoyaltyPoints(c.id);
     var ptsHtml=pts>0?' <small style="color:var(--warning)">⭐'+pts+'pts</small>':'';
-    var idEsc=c.id, nameEsc=JSON.stringify(c.name), phoneEsc=JSON.stringify(c.phone||'');
-    return '<div '+
-      'onmousedown="_repCustSelecting=true" '+
-      'onmouseup="selectRepCust('+idEsc+','+nameEsc+','+phoneEsc+')" '+
-      'ontouchstart="_repCustSelecting=true;selectRepCust('+idEsc+','+nameEsc+','+phoneEsc+')" '+
-      'style="padding:9px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border)" '+
-      'onmouseover="this.style.background=\'rgba(108,99,255,0.12)\'" '+
-      'onmouseout="this.style.background=\'\'">'+
-      '👤 <b>'+c.name+'</b> <span style="color:var(--muted);font-size:11px">'+c.phone+'</span>'+ptsHtml+'</div>';
+    return '<div data-ri="'+i+'" style="padding:9px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border)" onmouseover="this.style.background=\'rgba(108,99,255,0.12)\'" onmouseout="this.style.background=\'\'">👤 <b>'+c.name+'</b> <span style="color:var(--muted);font-size:11px">'+c.phone+'</span>'+ptsHtml+'</div>';
   }).join('');
+  // Attach events programmatically — safe for any name/phone content
+  drop.querySelectorAll('[data-ri]').forEach(function(el){
+    var idx=parseInt(el.getAttribute('data-ri'));
+    function doSelect(e){ e.preventDefault(); e.stopPropagation(); selectRepCust(_repCustList[idx].id, _repCustList[idx].name, _repCustList[idx].phone||''); }
+    el.addEventListener('mousedown', doSelect);
+    el.addEventListener('touchstart', doSelect, {passive:false});
+  });
   drop.style.display='block';
 }
 function selectRepCust(id,name,phone){
-  _repCustSelecting=false;
   var inp=document.getElementById('r-cust'); if(inp) inp.value=name;
   var ph=document.getElementById('r-phone'); if(ph&&phone) ph.value=phone;
   var ci=document.getElementById('r-cust-id'); if(ci) ci.value=id;
   hideRepCustDrop();
-  // Keep focus on input so form doesn't lose state
-  if(inp) inp.focus();
 }
 function hideRepCustDrop(){
   var drop=document.getElementById('rep-cust-drop'); if(drop) drop.style.display='none';
 }
 document.addEventListener('mousedown',function(e){
-  if(!e.target.closest('#r-cust')&&!e.target.closest('#rep-cust-drop')){ _repCustSelecting=false; hideRepCustDrop(); }
+  if(!e.target.closest('#r-cust')&&!e.target.closest('#rep-cust-drop')) hideRepCustDrop();
 });
 document.addEventListener('touchstart',function(e){
-  if(!e.target.closest('#r-cust')&&!e.target.closest('#rep-cust-drop')){ _repCustSelecting=false; hideRepCustDrop(); }
+  if(!e.target.closest('#r-cust')&&!e.target.closest('#rep-cust-drop')) hideRepCustDrop();
 },{passive:true});
 
 // ── Add New Customer from Repair modal ──
