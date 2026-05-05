@@ -496,6 +496,24 @@ body {
     touch-action: pan-x pan-y !important;
   }
 
+  /* Dashboard Low Stock horizontal scroll */
+  #d-low-stock {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-x pan-y !important;
+  }
+  #d-lowstock-scroll {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-x pan-y !important;
+  }
+  #d-lowstock table {
+    min-width: 480px !important;
+    table-layout: auto !important;
+    width: max-content !important;
+    font-size: 12px !important;
+  }
+
   #pg-repairs .tcard table,
   #pg-inventory .tcard table,
   #pg-stocklog .tcard table,
@@ -1660,7 +1678,7 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
             <table><thead><tr><th>Order ID</th><th>Customer</th><th>Status</th></tr></thead><tbody id="d-ord-tbl"></tbody></table>
           </div>
         </div>
-        <div class="tcard"><div class="thead2"><h3>⚠️ Low Stock</h3></div><div id="d-lowstock"><div class="empty"><div class="ei">✅</div>All stock OK</div></div></div>
+        <div class="tcard" id="d-low-stock"><div class="thead2"><h3>⚠️ Low Stock</h3></div><div id="d-lowstock-scroll" style="overflow-x:auto;-webkit-overflow-scrolling:touch"><div id="d-lowstock"><div class="empty"><div class="ei">✅</div>All stock OK</div></div></div></div>
       </div>
 
       <!-- POS -->
@@ -7266,12 +7284,11 @@ document.addEventListener('click',function(e){
   if(!e.target.closest('#r-cust')&&!e.target.closest('#rep-cust-drop')) hideRepCustDrop();
 });
 
-// ── Add New Customer directly from Repair modal ──
+// ── Add New Customer from Repair modal ──
 function openAddCustFromRep(){
-  // Pre-fill customer name/phone from what was typed in repair form
   var typedName = document.getElementById('r-cust').value.trim();
   var typedPhone = document.getElementById('r-phone').value.trim();
-  // Clear customer modal for new entry
+  // Clear & pre-fill customer modal
   document.getElementById('cu-id').value='';
   document.getElementById('cu-name').value=(typedName&&typedName!=='Walk-in')?typedName:'';
   document.getElementById('cu-phone').value=typedPhone||'';
@@ -7281,13 +7298,13 @@ function openAddCustFromRep(){
   if(document.getElementById('cu-birthday')) document.getElementById('cu-birthday').value='';
   if(document.getElementById('cu-nic')) document.getElementById('cu-nic').value='';
   if(document.getElementById('cu-tags')) document.getElementById('cu-tags').value='';
-  // Set callback: after save, fill repair modal fields and re-open it
+  // After save, auto-fill repair modal and re-open it
   window._custSaveCallback = function(custId, custName){
-    var savedCust = db.customers.find(function(c){ return c.id==custId; });
+    var saved = db.customers.find(function(c){ return c.id==custId; });
     var inp = document.getElementById('r-cust'); if(inp) inp.value=custName;
-    if(savedCust){
-      var ph = document.getElementById('r-phone'); if(ph&&savedCust.phone) ph.value=savedCust.phone;
-      var ci = document.getElementById('r-cust-id'); if(ci) ci.value=savedCust.id;
+    if(saved){
+      var ph = document.getElementById('r-phone'); if(ph&&saved.phone) ph.value=saved.phone;
+      var ci = document.getElementById('r-cust-id'); if(ci) ci.value=saved.id;
     }
     window._custSaveCallback = null;
     openM('m-rep');
