@@ -3218,6 +3218,7 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
           <div style="display:flex;gap:6px;align-items:center">
             <input id="r-cust" placeholder="Name" style="flex:1" oninput="filterRepCustDrop()" onfocus="filterRepCustDrop()" autocomplete="off">
             <button type="button" class="btn bo bsm" onclick="document.getElementById('r-cust').value='Walk-in';document.getElementById('r-phone').value='';document.getElementById('r-cust-id').value='';hideRepCustDrop();" style="white-space:nowrap;padding:8px 10px;font-size:12px;border:1px dashed rgba(108,99,255,0.5);color:var(--muted);" title="Walk-in Customer">🚶 Walk-in</button>
+            <button type="button" class="btn bp2 bsm" onclick="openAddCustFromRep()" style="white-space:nowrap;padding:8px 10px;font-size:12px;" title="Add New Customer">➕ New</button>
           </div>
           <div id="rep-cust-drop" style="display:none;position:relative;z-index:9999;background:var(--card);border:1px solid var(--border);border-radius:0 0 8px 8px;max-height:160px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,0.3)"></div>
         </div>
@@ -7264,6 +7265,35 @@ function hideRepCustDrop(){
 document.addEventListener('click',function(e){
   if(!e.target.closest('#r-cust')&&!e.target.closest('#rep-cust-drop')) hideRepCustDrop();
 });
+
+// ── Add New Customer directly from Repair modal ──
+function openAddCustFromRep(){
+  // Pre-fill customer name/phone from what was typed in repair form
+  var typedName = document.getElementById('r-cust').value.trim();
+  var typedPhone = document.getElementById('r-phone').value.trim();
+  // Clear customer modal for new entry
+  document.getElementById('cu-id').value='';
+  document.getElementById('cu-name').value=(typedName&&typedName!=='Walk-in')?typedName:'';
+  document.getElementById('cu-phone').value=typedPhone||'';
+  document.getElementById('cu-email').value='';
+  document.getElementById('cu-addr').value='';
+  if(document.getElementById('cu-notes')) document.getElementById('cu-notes').value='';
+  if(document.getElementById('cu-birthday')) document.getElementById('cu-birthday').value='';
+  if(document.getElementById('cu-nic')) document.getElementById('cu-nic').value='';
+  if(document.getElementById('cu-tags')) document.getElementById('cu-tags').value='';
+  // Set callback: after save, fill repair modal fields and re-open it
+  window._custSaveCallback = function(custId, custName){
+    var savedCust = db.customers.find(function(c){ return c.id==custId; });
+    var inp = document.getElementById('r-cust'); if(inp) inp.value=custName;
+    if(savedCust){
+      var ph = document.getElementById('r-phone'); if(ph&&savedCust.phone) ph.value=savedCust.phone;
+      var ci = document.getElementById('r-cust-id'); if(ci) ci.value=savedCust.id;
+    }
+    window._custSaveCallback = null;
+    openM('m-rep');
+  };
+  openM('m-cust');
+}
 
 // =========== REPAIRS ===========
 function setRepF(s){ repF=s; renderRep(); }
