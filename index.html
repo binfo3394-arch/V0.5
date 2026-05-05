@@ -484,6 +484,12 @@ body {
   table  { width: 100% !important; min-width: 0 !important; table-layout: fixed !important; font-size: 11px !important; }
   th, td { padding: 5px 6px !important; font-size: 11px !important; white-space: normal !important; word-break: break-word !important; overflow: hidden !important; }
 
+  /* ── Period Summary / Breakdown table — horizontal scroll ── */
+  #breakdown-card { overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; }
+  #breakdown-card > div { overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; width: 100% !important; }
+  #breakdown-tbl { min-width: 480px !important; width: max-content !important; table-layout: auto !important; }
+  #breakdown-tbl th, #breakdown-tbl td { white-space: nowrap !important; overflow: visible !important; word-break: normal !important; font-size: 12px !important; padding: 8px 12px !important; }
+
   /* ── ALL pages: full side scroll for tables, ALL columns visible ── */
   #pg-repairs .tcard,
   #pg-inventory .tcard,
@@ -1640,7 +1646,7 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
         </div>
 
         <!-- Monthly/Yearly Breakdown Table -->
-        <div class="tcard" style="margin-bottom:16px">
+        <div class="tcard" id="breakdown-card" style="margin-bottom:16px">
           <div class="thead2">
             <h3>📅 Period Summary</h3>
             <div style="display:flex;gap:6px">
@@ -1648,8 +1654,8 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
               <button class="btn bo bsm" id="breakdown-yearly-btn" onclick="setBreakdown('yearly',this)">Yearly</button>
             </div>
           </div>
-          <div style="padding:14px;overflow-x:auto">
-            <table id="breakdown-tbl" style="min-width:500px">
+          <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;width:100%">
+            <table id="breakdown-tbl" style="min-width:560px;width:max-content">
               <thead><tr><th id="breakdown-col1">Month</th><th>Sales Revenue</th><th>Repair Revenue</th><th>Order Revenue</th><th>Total</th></tr></thead>
               <tbody id="breakdown-tbody"></tbody>
             </table>
