@@ -251,6 +251,15 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);mi
 .slogo h1{font-size:14px;color:var(--primary);font-weight:800;}
 .slogo p{font-size:10px;color:var(--muted);margin-top:2px;}
 .nav-sec{padding:8px 0;flex:1;overflow-y:auto;}
+/* Sidebar search */
+.sidebar-search{padding:8px 10px;border-bottom:1px solid var(--border);}
+.sidebar-search-wrap{display:flex;align-items:center;gap:7px;background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;transition:0.2s;}
+.sidebar-search-wrap:focus-within{border-color:var(--primary);box-shadow:0 0 0 2px rgba(108,99,255,0.15);}
+.sidebar-search-wrap input{background:none;border:none;color:var(--text);font-size:12px;flex:1;padding:0;outline:none;}
+.sidebar-search-wrap input::placeholder{color:var(--muted);}
+.sidebar-search-wrap span{font-size:13px;color:var(--muted);}
+.nitem.nav-hidden{display:none!important;}
+.nlabel.nav-hidden{display:none!important;}
 .nlabel{font-size:10px;color:var(--muted);padding:8px 14px 3px;text-transform:uppercase;letter-spacing:1px;}
 .nitem{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;transition:0.2s;font-size:13px;color:var(--muted);border-left:3px solid transparent;}
 .nitem:hover{background:rgba(108,99,255,0.1);color:var(--text);}
@@ -1448,7 +1457,14 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
   <!-- Sidebar -->
   <div class="sidebar">
     <div class="slogo"><h1>📱 ST Mobile</h1><p>&amp; Designing POS</p></div>
-    <div class="nav-sec">
+    <div class="sidebar-search">
+      <div class="sidebar-search-wrap">
+        <span>🔍</span>
+        <input type="text" id="sidebar-search-input" placeholder="Menu search..." oninput="sidebarSearch(this.value)" autocomplete="off">
+        <button onclick="document.getElementById('sidebar-search-input').value='';sidebarSearch('');" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:0;line-height:1;opacity:0;transition:0.2s" id="sidebar-search-clear" title="Clear">✕</button>
+      </div>
+    </div>
+    <div class="nav-sec" id="sidebar-nav-sec">
       <div class="nlabel">Main</div>
       <div class="nitem active" data-page="dashboard"><span class="ic">🏠</span><span>Dashboard</span></div>
       <div class="nitem" data-page="pos"><span class="ic">🛒</span><span>New Sale</span></div>
@@ -12665,6 +12681,39 @@ function fmtDate(d){ if(!d) return '—'; var dt = new Date(d); return dt.toLoca
 function todayStr(){ return new Date().toISOString().split('T')[0]; }
 function thisMonthKey(){ var d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1).toString().padStart(2,'0'); }
 
+
+// ── Sidebar Search ──
+function sidebarSearch(q) {
+  var navSec = document.getElementById('sidebar-nav-sec');
+  if (!navSec) return;
+  var clearBtn = document.getElementById('sidebar-search-clear');
+  if (clearBtn) clearBtn.style.opacity = q ? '1' : '0';
+  var items = navSec.querySelectorAll('.nitem');
+  var labels = navSec.querySelectorAll('.nlabel');
+  var term = q.toLowerCase().trim();
+  if (!term) {
+    items.forEach(function(el){ el.classList.remove('nav-hidden'); });
+    labels.forEach(function(el){ el.classList.remove('nav-hidden'); });
+    return;
+  }
+  // Hide/show items
+  items.forEach(function(el){ 
+    var txt = el.textContent.toLowerCase();
+    el.classList.toggle('nav-hidden', txt.indexOf(term) === -1);
+  });
+  // Hide section labels if no visible items follow them
+  labels.forEach(function(label) {
+    var next = label.nextElementSibling;
+    var hasVisible = false;
+    while (next && !next.classList.contains('nlabel')) {
+      if (next.classList.contains('nitem') && !next.classList.contains('nav-hidden')) {
+        hasVisible = true; break;
+      }
+      next = next.nextElementSibling;
+    }
+    label.classList.toggle('nav-hidden', !hasVisible);
+  });
+}
 
 init();
 </script>
