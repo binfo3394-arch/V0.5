@@ -45,7 +45,6 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import { getDatabase, ref, set, onValue, get, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
   // ══════════════════════════════════════════════════
   //  🔥 ඔබේ Firebase config එක මෙතන දාන්න
@@ -64,69 +63,6 @@
 
   const app = initializeApp(firebaseConfig);
   const database = getDatabase(app);
-  const auth = getAuth(app);
-
-  // ── Subscription Guard ──
-  (function() {
-    const uid  = localStorage.getItem('st_uid');
-    const user = JSON.parse(localStorage.getItem('st_user') || 'null');
-    if (!uid || !user) { window.location.href = 'login.html'; return; }
-    // Show user info in topbar
-    window.addEventListener('DOMContentLoaded', function() {
-      var tb = document.querySelector('.tright');
-      if (tb) {
-        var badge = document.createElement('div');
-        badge.style.cssText = 'font-size:11px;background:rgba(108,99,255,0.15);color:var(--primary);padding:5px 10px;border-radius:8px;display:flex;align-items:center;gap:6px';
-        badge.innerHTML = '<span style="font-size:14px">' + (user.plan==='basic'?'🌱':user.plan==='pro'?'🚀':'🏢') + '</span><span><strong>' + (user.name||'User') + '</strong> · ' + (user.plan||'') + '</span>';
-        tb.insertBefore(badge, tb.firstChild);
-        // Logout button
-        var lbtn = document.createElement('button');
-        lbtn.textContent = '🚪';
-        lbtn.title = 'Logout';
-        lbtn.style.cssText = 'background:rgba(255,23,68,0.12);border:1px solid rgba(255,23,68,0.3);color:var(--danger);padding:5px 10px;border-radius:8px;cursor:pointer;font-size:14px';
-        lbtn.onclick = function() {
-          if (confirm('Logout?')) {
-            signOut(auth).catch(function(){});
-            localStorage.removeItem('st_uid');
-            localStorage.removeItem('st_user');
-            window.location.href = 'login.html';
-          }
-        };
-        tb.appendChild(lbtn);
-      }
-    });
-    // Verify with Firebase (live check)
-    onAuthStateChanged(auth, function(firebaseUser) {
-      if (!firebaseUser) {
-        localStorage.removeItem('st_uid');
-        localStorage.removeItem('st_user');
-        window.location.href = 'login.html';
-        return;
-      }
-      get(ref(database, 'users/' + firebaseUser.uid)).then(function(snap) {
-        if (!snap.exists()) { window.location.href = 'login.html'; return; }
-        var u = snap.val();
-        if (u.status !== 'active') {
-          alert('⚠️ Account suspended or pending. Contact admin.');
-          signOut(auth).catch(function(){});
-          localStorage.removeItem('st_uid'); localStorage.removeItem('st_user');
-          window.location.href = 'login.html';
-          return;
-        }
-        if (u.subscriptionExpiry < Date.now()) {
-          alert('⚠️ Subscription expired! Contact admin to renew.');
-          signOut(auth).catch(function(){});
-          localStorage.removeItem('st_uid'); localStorage.removeItem('st_user');
-          window.location.href = 'login.html';
-          return;
-        }
-        // Override Firebase data path with user-specific path
-        window._userUID = firebaseUser.uid;
-        // Update pos-data path to be user-specific
-        window._posDataRef = 'pos-data-' + firebaseUser.uid;
-      }).catch(function() {});
-    });
-  })();
 
   // ── Firebase sync status indicator ──
   function setFBStatus(text, color) {
@@ -162,7 +98,6 @@
       settings:      dbObj.settings      || {},
       staff:         dbObj.staff         || [],
       shifts:        dbObj.shifts        || [],
-      staffPayments: dbObj.staffPayments || [],
       rosterShifts:  dbObj.rosterShifts  || [],
       tasks:         dbObj.tasks         || [],
       followups:     dbObj.followups     || [],
@@ -184,7 +119,7 @@
       invDesign:     dbObj.invDesign     || {},
       _lastSync:     Date.now()
     };
-    set(ref(database, window._posDataRef || 'pos-data'), payload)
+    set(ref(database, 'pos-data'), payload)
       .then(function(){ setFBStatus('✅ Cloud Saved', 'var(--success)'); })
       .catch(function(e){ setFBStatus('❌ Sync Error', 'var(--danger)'); console.error('Firebase save error:', e); });
   };
@@ -196,7 +131,7 @@
       return;
     }
     setFBStatus('☁️ Loading...', 'var(--info)');
-    get(ref(database, window._posDataRef || 'pos-data')).then(function(snapshot) {
+    get(ref(database, 'pos-data')).then(function(snapshot) {
       if (snapshot.exists()) {
         var data = snapshot.val();
         setFBStatus('✅ Cloud Loaded', 'var(--success)');
@@ -215,7 +150,7 @@
   // ── Real-time listener (live sync across devices) ──
   window.firebaseStartLiveSync = function() {
     if (!firebaseConfig.databaseURL || firebaseConfig.databaseURL.includes('YOUR_PROJECT')) return;
-    onValue(ref(database, window._posDataRef || 'pos-data'), function(snapshot) {
+    onValue(ref(database, 'pos-data'), function(snapshot) {
       if (!snapshot.exists()) return;
       var remote = snapshot.val();
       if (typeof db === 'undefined' || typeof renderAll !== 'function') return;
@@ -241,7 +176,6 @@
       if (remote.settings)    db.settings    = Object.assign({}, db.settings, remote.settings);
       if (remote.staff)       db.staff       = _fbArr(remote.staff);
       if (remote.shifts)      db.shifts      = _fbArr(remote.shifts);
-      if (remote.staffPayments) db.staffPayments = _fbArr(remote.staffPayments);
       if (remote.rosterShifts)db.rosterShifts= _fbArr(remote.rosterShifts);
       if (remote.tasks)       db.tasks       = _fbArr(remote.tasks);
       if (remote.followups)   db.followups   = _fbArr(remote.followups);
@@ -1514,19 +1448,6 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
   <!-- Sidebar -->
   <div class="sidebar">
     <div class="slogo"><h1>📱 ST Mobile</h1><p>&amp; Designing POS</p></div>
-    <!-- Sidebar Search -->
-    <div style="padding:8px 10px;border-bottom:1px solid var(--border)">
-      <div style="position:relative">
-        <span style="position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:13px;pointer-events:none">🔍</span>
-        <input id="sidebar-search" type="text" placeholder="Search menu..." autocomplete="off"
-          oninput="filterSidebar(this.value)"
-          style="width:100%;padding:7px 8px 7px 28px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:12px;outline:none;transition:0.2s"
-          onfocus="this.style.borderColor='var(--primary)'"
-          onblur="this.style.borderColor='var(--border)'">
-        <span id="sb-clear" onclick="clearSidebarSearch()" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:14px;color:var(--muted);display:none">✕</span>
-      </div>
-    </div>
-    <div id="sb-no-result" style="display:none;text-align:center;padding:14px 10px;color:var(--muted);font-size:12px">😕 No results found</div>
     <div class="nav-sec">
       <div class="nlabel">Main</div>
       <div class="nitem active" data-page="dashboard"><span class="ic">🏠</span><span>Dashboard</span></div>
@@ -2494,57 +2415,6 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
           <div class="scard s4"><div style="font-size:22px">🔧</div><div class="sval" id="staff-repairs-done">0</div><div class="slabel">Repairs Completed</div></div>
         </div>
         <div class="tcard"><table><thead><tr><th>Staff Name</th><th>Role / Status</th><th>Sales (This Month)</th><th>Repairs Done (This Month)</th><th>Online Orders (This Month)</th><th>Commission Rate</th><th>Commission Earned</th><th>Actions</th></tr></thead><tbody id="staff-tbl"></tbody></table></div>
-
-        <!-- ── Staff Income & Payment Summary ── -->
-        <div class="tcard" style="margin-top:18px">
-          <div class="thead2" style="flex-wrap:wrap;gap:8px">
-            <h3>💵 Staff Income & Payment Summary</h3>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-              <select id="pay-month-sel" onchange="renderStaffPaySummary()" style="font-size:12px;padding:5px 10px;border-radius:7px;border:1px solid var(--border);background:var(--card2);color:var(--text)"></select>
-              <button class="btn bp2 bsm" onclick="openPayStaffModal()">💸 Pay Staff</button>
-            </div>
-          </div>
-          <div style="overflow-x:auto">
-            <table>
-              <thead><tr>
-                <th>Staff Member</th>
-                <th>Base Salary</th>
-                <th>Commission</th>
-                <th>Total Income</th>
-                <th>Paid</th>
-                <th>Balance</th>
-                <th>Status</th>
-                <th>Action</th>
-              </tr></thead>
-              <tbody id="staff-pay-summary-tbl"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- ── Payment History ── -->
-        <div class="tcard" style="margin-top:18px">
-          <div class="thead2">
-            <h3>📋 Payment History</h3>
-            <button class="btn bo bsm" onclick="renderStaffPayHistory()">🔄 Refresh</button>
-          </div>
-          <div style="overflow-x:auto">
-            <table>
-              <thead><tr>
-                <th>Date</th>
-                <th>Staff</th>
-                <th>Month</th>
-                <th>Base Salary</th>
-                <th>Commission</th>
-                <th>Total Paid</th>
-                <th>Method</th>
-                <th>Note</th>
-                <th>By</th>
-                <th>Action</th>
-              </tr></thead>
-              <tbody id="staff-pay-history-tbl"></tbody>
-            </table>
-          </div>
-        </div>
       </div>
 
 
@@ -4918,7 +4788,6 @@ setTimeout(function(){
           <select id="staff-role"><option>Cashier</option><option>Technician</option><option>Manager</option><option>Sales</option><option>Other</option></select>
         </div>
         <div class="fg"><label>Phone</label><input id="staff-phone" placeholder="+94..."></div>
-        <div class="fg"><label>💵 Base Salary (Rs.)</label><input type="number" id="staff-salary" placeholder="e.g. 25000" min="0" step="100" value="0"></div>
         <div class="fg"><label>💰 Sales Commission Rate (%)</label><input type="number" id="staff-comm" placeholder="e.g. 5" min="0" max="100" step="0.5" value="0"></div>
         <div class="fg"><label>Commission Base</label>
           <select id="staff-comm-base"><option value="revenue">On Revenue</option><option value="profit">On Profit</option></select>
@@ -4930,57 +4799,6 @@ setTimeout(function(){
       </div>
     </div>
     <div class="mftr"><button class="btn bo" onclick="closeM('m-staff')">Cancel</button><button class="btn bp2" onclick="saveStaff()">💾 Save</button></div>
-  </div>
-</div>
-
-<!-- PAY STAFF MODAL -->
-<div class="moverlay" id="m-pay-staff">
-  <div class="modal" style="width:520px">
-    <div class="mhdr"><h3>💸 Pay Staff Member</h3><button class="xbtn" onclick="closeM('m-pay-staff')">×</button></div>
-    <div class="mbody">
-      <input type="hidden" id="ps-staff-id">
-      <div class="fgrid">
-        <div class="fg full"><label>Staff Member *</label>
-          <select id="ps-staff-sel" onchange="onPayStaffSelect()" style="width:100%">
-            <option value="">-- Select Staff --</option>
-          </select>
-        </div>
-        <div class="fg"><label>Pay Period (Month)</label>
-          <input type="month" id="ps-month" style="width:100%">
-        </div>
-        <div class="fg"><label>Payment Method</label>
-          <select id="ps-method" style="width:100%">
-            <option>Cash</option><option>Bank Transfer</option><option>Cheque</option><option>Online</option>
-          </select>
-        </div>
-      </div>
-      <!-- Income Breakdown -->
-      <div id="ps-breakdown" style="background:var(--card2);border-radius:10px;padding:14px;margin:12px 0;display:none">
-        <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:1px">Income Breakdown</div>
-        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--muted);font-size:13px">💵 Base Salary</span><span id="ps-base-disp" style="font-weight:700;color:var(--text)">Rs. 0</span></div>
-        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--muted);font-size:13px">📊 POS Sales Commission</span><span id="ps-sales-comm-disp" style="font-weight:700;color:var(--success)">Rs. 0</span></div>
-        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--muted);font-size:13px">🔧 Repair Commission</span><span id="ps-repair-comm-disp" style="font-weight:700;color:var(--info)">Rs. 0</span></div>
-        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--muted);font-size:13px">🌐 Order Commission</span><span id="ps-order-comm-disp" style="font-weight:700;color:var(--warning)">Rs. 0</span></div>
-        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:13px;font-weight:700">Total Income</span><span id="ps-total-income-disp" style="font-weight:800;font-size:16px;color:var(--primary)">Rs. 0</span></div>
-        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--muted);font-size:13px">✅ Already Paid (this month)</span><span id="ps-paid-disp" style="font-weight:700;color:var(--success)">Rs. 0</span></div>
-        <div style="display:flex;justify-content:space-between;padding:8px 0"><span style="font-size:13px;font-weight:700">⚖️ Balance Remaining</span><span id="ps-balance-disp" style="font-weight:800;font-size:16px;color:var(--warning)">Rs. 0</span></div>
-      </div>
-      <div class="fgrid">
-        <div class="fg"><label>Amount to Pay (Rs.) *</label>
-          <input type="number" id="ps-amount" placeholder="Enter amount" min="0" step="100" oninput="updatePayBalance()">
-        </div>
-        <div class="fg"><label>Note</label>
-          <input id="ps-note" placeholder="e.g. July salary + commission">
-        </div>
-      </div>
-      <div id="ps-after-pay" style="display:none;background:rgba(108,99,255,0.08);border-radius:8px;padding:10px;margin-top:8px;font-size:12px;color:var(--muted)">
-        After this payment: Balance = <span id="ps-after-balance" style="color:var(--primary);font-weight:700"></span>
-      </div>
-    </div>
-    <div class="mftr">
-      <button class="btn bo" onclick="closeM('m-pay-staff')">Cancel</button>
-      <button class="btn bp2" onclick="saveStaffPayment()">💾 Save Payment</button>
-    </div>
   </div>
 </div>
 
@@ -5425,7 +5243,6 @@ function openStaffModal(id) {
   document.getElementById('staff-role').value = s ? s.role : 'Cashier';
   document.getElementById('staff-phone').value = s ? (s.phone||'') : '';
   document.getElementById('staff-comm').value = s ? (s.commRate||0) : 0;
-  document.getElementById('staff-salary').value = s ? (s.baseSalary||0) : 0;
   document.getElementById('staff-comm-base').value = s ? (s.commBase||'revenue') : 'revenue';
   document.getElementById('staff-repair-comm').value = s ? (s.repairCommRate||0) : 0;
   document.getElementById('staff-status').value = s ? (s.status||'Active') : 'Active';
@@ -5455,7 +5272,6 @@ function saveStaff() {
     id: id, name: name,
     role: document.getElementById('staff-role').value,
     phone: document.getElementById('staff-phone').value,
-    baseSalary: parseFloat(document.getElementById('staff-salary').value)||0,
     commRate: parseFloat(document.getElementById('staff-comm').value)||0,
     commBase: document.getElementById('staff-comm-base').value,
     repairCommRate: parseFloat(document.getElementById('staff-repair-comm').value)||0,
@@ -5471,226 +5287,6 @@ function deleteStaff(id) {
   if (!confirm('Delete this staff member?')) return;
   db.staff = (db.staff||[]).filter(function(s){ return s.id!==id; });
   saveDB(); renderStaff(); toast('🗑️ Deleted');
-}
-
-// ============================================================
-// STAFF PAYMENT SYSTEM
-// ============================================================
-
-// Helper: calculate staff commission for a given month string "YYYY-MM"
-function calcStaffCommForMonth(s, monthStr) {
-  var invoices = db.invoices || [];
-  var repairs = db.repairs || [];
-  var orders = db.orders || [];
-  var yr = parseInt(monthStr.split('-')[0]);
-  var mo = parseInt(monthStr.split('-')[1]) - 1;
-  var monthStart = new Date(yr, mo, 1);
-  var monthEnd = new Date(yr, mo + 1, 0, 23, 59, 59);
-  function inRange(d) { var dt = parseDate(d); return dt && dt >= monthStart && dt <= monthEnd; }
-
-  var staffInvs = invoices.filter(function(inv){ return inv.staffId===s.id && inRange(inv.date); });
-  var staffRevenue = staffInvs.reduce(function(a,inv){ return a+(inv.total||0); }, 0);
-  var staffProfit = staffInvs.reduce(function(a,inv) {
-    var p=0;
-    (inv.items||[]).forEach(function(it){
-      var prod=(db.products||[]).find(function(pr){ return pr.id===it.id; });
-      p+=(it.price-(prod?prod.cost:0))*(it.qty||1);
-    });
-    return a+p;
-  }, 0);
-  var staffRepsMonth = repairs.filter(function(r){
-    return r.tech && r.tech.trim().toLowerCase()===s.name.trim().toLowerCase() &&
-           (r.status==='Delivered'||r.status==='Done') && inRange(r.date);
-  });
-  var repairRevenue = staffRepsMonth.reduce(function(a,r){ return a+(r.cost||0); }, 0);
-  var staffOrdsMonth = orders.filter(function(o){
-    return String(o.staffId)===String(s.id) && inRange(o.date);
-  });
-  var orderRevenue = staffOrdsMonth.reduce(function(a,o){ return a+(o.amount||0); }, 0);
-
-  var commBase = s.commBase==='profit' ? staffProfit : staffRevenue;
-  var salesComm = commBase * (s.commRate||0) / 100;
-  var repairComm = repairRevenue * (s.repairCommRate||0) / 100;
-  var orderComm = orderRevenue * (s.commRate||0) / 100;
-  return { salesComm: salesComm, repairComm: repairComm, orderComm: orderComm,
-           total: salesComm+repairComm+orderComm, salesRev: staffRevenue, repairRev: repairRevenue, orderRev: orderRevenue };
-}
-
-// Helper: get total paid to staff for a given month
-function getStaffPaidForMonth(staffId, monthStr) {
-  return (db.staffPayments||[]).filter(function(p){
-    return String(p.staffId)===String(staffId) && p.month===monthStr;
-  }).reduce(function(a,p){ return a+(p.amount||0); }, 0);
-}
-
-// Populate month selector
-function populatePayMonthSel() {
-  var sel = document.getElementById('pay-month-sel'); if(!sel) return;
-  var opts = '';
-  var now = new Date();
-  for (var i=0; i<12; i++) {
-    var d = new Date(now.getFullYear(), now.getMonth()-i, 1);
-    var val = d.getFullYear()+'-'+(d.getMonth()+1).toString().padStart(2,'0');
-    var lbl = d.toLocaleDateString('en-LK',{month:'long',year:'numeric'});
-    opts += '<option value="'+val+'"'+(i===0?' selected':'')+'>'+lbl+'</option>';
-  }
-  sel.innerHTML = opts;
-}
-
-// Render staff pay summary table
-function renderStaffPaySummary() {
-  var sel = document.getElementById('pay-month-sel'); if(!sel) return;
-  var monthStr = sel.value || (new Date().getFullYear()+'-'+(new Date().getMonth()+1).toString().padStart(2,'0'));
-  var staff = (db.staff||[]).filter(function(s){ return s.status!=='Inactive'; });
-  var tbody = document.getElementById('staff-pay-summary-tbl'); if(!tbody) return;
-  if (!staff.length) { tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--muted)">No active staff</td></tr>'; return; }
-  tbody.innerHTML = staff.map(function(s) {
-    var comm = calcStaffCommForMonth(s, monthStr);
-    var base = s.baseSalary||0;
-    var totalIncome = base + comm.total;
-    var paid = getStaffPaidForMonth(s.id, monthStr);
-    var balance = totalIncome - paid;
-    var statusColor = balance<=0 ? 'var(--success)' : (paid>0 ? 'var(--warning)' : 'var(--danger)');
-    var statusLabel = balance<=0 ? '✅ Paid' : (paid>0 ? '⏳ Partial' : '❌ Unpaid');
-    return '<tr>'+
-      '<td><strong>'+s.name+'</strong><br><span style="font-size:11px;color:var(--muted)">'+s.role+'</span></td>'+
-      '<td>Rs. '+base.toLocaleString()+'</td>'+
-      '<td><span style="color:var(--success)">Rs. '+Math.round(comm.total).toLocaleString()+'</span>'+
-        '<br><span style="font-size:10px;color:var(--muted)">POS:'+Math.round(comm.salesComm).toLocaleString()+' + Rep:'+Math.round(comm.repairComm).toLocaleString()+' + Ord:'+Math.round(comm.orderComm).toLocaleString()+'</span></td>'+
-      '<td><strong style="font-size:15px;color:var(--primary)">Rs. '+Math.round(totalIncome).toLocaleString()+'</strong></td>'+
-      '<td style="color:var(--success)">Rs. '+Math.round(paid).toLocaleString()+'</td>'+
-      '<td><strong style="color:'+statusColor+'">Rs. '+Math.round(balance).toLocaleString()+'</strong></td>'+
-      '<td><span class="badge" style="background:rgba(0,0,0,0.2);color:'+statusColor+'">'+statusLabel+'</span></td>'+
-      '<td><button class="btn bp2 bsm" onclick="openPayStaffModal('+s.id+',\''+monthStr+'\')" style="font-size:11px">💸 Pay</button></td>'+
-    '</tr>';
-  }).join('');
-}
-
-// Render pay history
-function renderStaffPayHistory() {
-  var tbody = document.getElementById('staff-pay-history-tbl'); if(!tbody) return;
-  var payments = (db.staffPayments||[]).slice().sort(function(a,b){ return b.id-a.id; });
-  if (!payments.length) { tbody.innerHTML='<tr><td colspan="10" style="text-align:center;padding:20px;color:var(--muted)">No payments recorded yet</td></tr>'; return; }
-  tbody.innerHTML = payments.map(function(p) {
-    var staff = (db.staff||[]).find(function(s){ return String(s.id)===String(p.staffId); });
-    var yr = p.month ? p.month.split('-')[0] : '';
-    var mo = p.month ? parseInt(p.month.split('-')[1])-1 : 0;
-    var monthLabel = p.month ? new Date(yr, mo, 1).toLocaleDateString('en-LK',{month:'long',year:'numeric'}) : '—';
-    return '<tr>'+
-      '<td>'+new Date(p.id).toLocaleDateString('en-GB')+'</td>'+
-      '<td><strong>'+(staff?staff.name:p.staffName||'—')+'</strong></td>'+
-      '<td>'+monthLabel+'</td>'+
-      '<td>Rs. '+Math.round(p.baseSalary||0).toLocaleString()+'</td>'+
-      '<td>Rs. '+Math.round(p.commission||0).toLocaleString()+'</td>'+
-      '<td><strong style="color:var(--success)">Rs. '+Math.round(p.amount||0).toLocaleString()+'</strong></td>'+
-      '<td><span class="badge bi">'+p.method+'</span></td>'+
-      '<td style="color:var(--muted);font-size:12px">'+(p.note||'—')+'</td>'+
-      '<td style="font-size:11px;color:var(--muted)">'+(p.paidBy||'—')+'</td>'+
-      '<td><button class="btn bd2 bsm" onclick="deleteStaffPayment('+p.id+')" style="font-size:10px">🗑️</button></td>'+
-    '</tr>';
-  }).join('');
-}
-
-// Open pay staff modal (optionally pre-fill staffId and month)
-function openPayStaffModal(staffId, monthStr) {
-  // Populate staff dropdown
-  var sel = document.getElementById('ps-staff-sel'); if(!sel) return;
-  var active = (db.staff||[]).filter(function(s){ return s.status!=='Inactive'; });
-  sel.innerHTML = '<option value="">-- Select Staff --</option>' +
-    active.map(function(s){ return '<option value="'+s.id+'">'+(s.name)+' ('+s.role+')</option>'; }).join('');
-  if (staffId) sel.value = staffId;
-  // Set month
-  var now = new Date();
-  var defMonth = monthStr || (now.getFullYear()+'-'+(now.getMonth()+1).toString().padStart(2,'0'));
-  document.getElementById('ps-month').value = defMonth;
-  document.getElementById('ps-amount').value = '';
-  document.getElementById('ps-note').value = '';
-  document.getElementById('ps-breakdown').style.display = 'none';
-  document.getElementById('ps-after-pay').style.display = 'none';
-  if (staffId) onPayStaffSelect();
-  openM('m-pay-staff');
-}
-
-function onPayStaffSelect() {
-  var sel = document.getElementById('ps-staff-sel');
-  var monthEl = document.getElementById('ps-month');
-  var staffId = parseInt(sel.value);
-  var monthStr = monthEl.value;
-  if (!staffId || !monthStr) { document.getElementById('ps-breakdown').style.display='none'; return; }
-  var s = (db.staff||[]).find(function(x){ return x.id===staffId; }); if(!s) return;
-  var comm = calcStaffCommForMonth(s, monthStr);
-  var base = s.baseSalary||0;
-  var totalIncome = base + comm.total;
-  var paid = getStaffPaidForMonth(staffId, monthStr);
-  var balance = totalIncome - paid;
-  document.getElementById('ps-base-disp').textContent = 'Rs. ' + base.toLocaleString();
-  document.getElementById('ps-sales-comm-disp').textContent = 'Rs. ' + Math.round(comm.salesComm).toLocaleString();
-  document.getElementById('ps-repair-comm-disp').textContent = 'Rs. ' + Math.round(comm.repairComm).toLocaleString();
-  document.getElementById('ps-order-comm-disp').textContent = 'Rs. ' + Math.round(comm.orderComm).toLocaleString();
-  document.getElementById('ps-total-income-disp').textContent = 'Rs. ' + Math.round(totalIncome).toLocaleString();
-  document.getElementById('ps-paid-disp').textContent = 'Rs. ' + Math.round(paid).toLocaleString();
-  document.getElementById('ps-balance-disp').textContent = 'Rs. ' + Math.round(balance).toLocaleString();
-  document.getElementById('ps-balance-disp').style.color = balance<=0 ? 'var(--success)' : 'var(--warning)';
-  document.getElementById('ps-breakdown').style.display = 'block';
-  // Auto-fill amount with balance
-  if (!document.getElementById('ps-amount').value) {
-    document.getElementById('ps-amount').value = Math.max(0, Math.round(balance));
-  }
-  updatePayBalance();
-}
-
-function updatePayBalance() {
-  var sel = document.getElementById('ps-staff-sel');
-  var monthEl = document.getElementById('ps-month');
-  var staffId = parseInt(sel.value);
-  var monthStr = monthEl.value;
-  if (!staffId || !monthStr) return;
-  var s = (db.staff||[]).find(function(x){ return x.id===staffId; }); if(!s) return;
-  var comm = calcStaffCommForMonth(s, monthStr);
-  var totalIncome = (s.baseSalary||0) + comm.total;
-  var paid = getStaffPaidForMonth(staffId, monthStr);
-  var payNow = parseFloat(document.getElementById('ps-amount').value)||0;
-  var afterBalance = totalIncome - paid - payNow;
-  document.getElementById('ps-after-pay').style.display = 'block';
-  document.getElementById('ps-after-balance').textContent = 'Rs. ' + Math.round(afterBalance).toLocaleString();
-  document.getElementById('ps-after-balance').style.color = afterBalance<=0 ? 'var(--success)' : 'var(--warning)';
-}
-
-function saveStaffPayment() {
-  var staffId = parseInt(document.getElementById('ps-staff-sel').value);
-  var monthStr = document.getElementById('ps-month').value;
-  var amount = parseFloat(document.getElementById('ps-amount').value)||0;
-  if (!staffId) { toast('❌ Staff member select කරන්න!', 'var(--danger)'); return; }
-  if (!monthStr) { toast('❌ Month select කරන්න!', 'var(--danger)'); return; }
-  if (amount<=0) { toast('❌ Valid amount දාන්න!', 'var(--danger)'); return; }
-  var s = (db.staff||[]).find(function(x){ return x.id===staffId; }); if(!s) { toast('❌ Staff not found','var(--danger)'); return; }
-  var comm = calcStaffCommForMonth(s, monthStr);
-  if (!db.staffPayments) db.staffPayments = [];
-  var payment = {
-    id: Date.now(),
-    staffId: staffId,
-    staffName: s.name,
-    month: monthStr,
-    baseSalary: s.baseSalary||0,
-    commission: Math.round(comm.total),
-    amount: amount,
-    method: document.getElementById('ps-method').value,
-    note: document.getElementById('ps-note').value,
-    paidBy: (db.settings&&db.settings.shopName) ? db.settings.shopName : 'Admin',
-    date: new Date().toISOString().split('T')[0]
-  };
-  db.staffPayments.push(payment);
-  saveDB();
-  closeM('m-pay-staff');
-  renderStaffPaySummary();
-  renderStaffPayHistory();
-  toast('✅ Payment of Rs.'+amount.toLocaleString()+' saved for '+s.name+'!', 'var(--success)');
-}
-
-function deleteStaffPayment(id) {
-  if (!confirm('Delete this payment record?')) return;
-  db.staffPayments = (db.staffPayments||[]).filter(function(p){ return p.id!==id; });
-  saveDB(); renderStaffPaySummary(); renderStaffPayHistory(); toast('🗑️ Payment deleted');
 }
 
 // Staff selector in POS cart
@@ -11589,48 +11185,6 @@ function updateOnlineStatus(){
 window.addEventListener('online', updateOnlineStatus);
 window.addEventListener('offline', updateOnlineStatus);
 
-// ---- SIDEBAR SEARCH ----
-function filterSidebar(q) {
-  var clearBtn = document.getElementById('sb-clear');
-  var noResult = document.getElementById('sb-no-result');
-  q = (q||'').toLowerCase().trim();
-  if (clearBtn) clearBtn.style.display = q ? 'block' : 'none';
-  var items = document.querySelectorAll('.nitem');
-  var labels = document.querySelectorAll('.nlabel');
-  var anyVisible = false;
-  if (!q) {
-    // Restore all — but respect role visibility
-    applyRoleUI();
-    if (noResult) noResult.style.display = 'none';
-    return;
-  }
-  // Hide all labels first
-  labels.forEach(function(l){ l.style.display='none'; });
-  items.forEach(function(n){
-    var text = n.textContent.toLowerCase();
-    var page = (n.getAttribute('data-page')||'').toLowerCase();
-    var match = text.indexOf(q)>=0 || page.indexOf(q)>=0;
-    n.style.display = match ? 'flex' : 'none';
-    if (match) {
-      anyVisible = true;
-      // Show the label above this item
-      var prev = n.previousElementSibling;
-      while (prev) {
-        if (prev.classList.contains('nlabel')) { prev.style.display='block'; break; }
-        if (prev.classList.contains('nitem')) break;
-        prev = prev.previousElementSibling;
-      }
-    }
-  });
-  if (noResult) noResult.style.display = anyVisible ? 'none' : 'block';
-}
-
-function clearSidebarSearch() {
-  var inp = document.getElementById('sidebar-search');
-  if (inp) { inp.value=''; inp.focus(); }
-  filterSidebar('');
-}
-
 // ---- REPORTS ----
 function generateProfitLossReport(){
   var now=new Date();
@@ -13095,7 +12649,6 @@ goPage = function(id) {
   if(id === 'purchase-orders') renderPurchaseOrders();
   if(id === 'multi-branch') renderMultiBranch();
   if(id === 'tax-manager') renderTaxManager();
-  if(id === 'staff') { populatePayMonthSel(); renderStaffPaySummary(); renderStaffPayHistory(); }
   if(id === 'advanced-reports') { var t=document.getElementById('rpt-from'); if(t&&!t.value){ var d=new Date(); t.value=new Date(d.getFullYear(),d.getMonth(),1).toISOString().split('T')[0]; document.getElementById('rpt-to').value=d.toISOString().split('T')[0]; } }
   if(id === 'dashboard-builder') renderDashboardBuilder();
 };
