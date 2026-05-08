@@ -41,6 +41,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
 <!-- ===== FIREBASE REALTIME DATABASE ===== -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -1275,6 +1276,13 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
   }
 }
 
+/* ── Sortable drag styles ── */
+.nitem { cursor: grab; }
+.nitem:active { cursor: grabbing; }
+.nitem.sortable-chosen { background: rgba(108,99,255,0.18) !important; box-shadow: 0 4px 16px rgba(0,0,0,0.3); border-radius: 8px; }
+.nitem.sortable-ghost { opacity: 0.35; background: rgba(108,99,255,0.08) !important; }
+.nlabel { cursor: default !important; }
+
 </style>
 </head>
 <body>
@@ -1321,6 +1329,7 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
     <div class="mmore-item" data-mmr="credits"><span class="mmore-ic">💳</span><span class="mmore-lbl">Credits</span><span class="mmore-dot" id="mmr-crbadge" style="display:none"></span></div>
     <div class="mmore-item" data-mmr="expenses"><span class="mmore-ic">💸</span><span class="mmore-lbl">Expenses</span></div>
     <div class="mmore-item" data-mmr="cashregister"><span class="mmore-ic">🏧</span><span class="mmore-lbl">Cash Reg</span></div>
+    <div class="mmore-item" data-mmr="gift-vouchers"><span class="mmore-ic">🎫</span><span class="mmore-lbl">Vouchers</span><span class="mmore-dot" id="mmr-gvbadge" style="display:none"></span></div>
   </div>
 
   <div class="mmore-title">Stock</div>
@@ -1360,6 +1369,7 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
     <div class="mmore-item" data-mmr="repair-templates"><span class="mmore-ic">📄</span><span class="mmore-lbl">Templates</span></div>
     <div class="mmore-item" data-mmr="device-history"><span class="mmore-ic">📱</span><span class="mmore-lbl">Device Hist</span></div>
     <div class="mmore-item" data-mmr="repair-advanced"><span class="mmore-ic">🛠️</span><span class="mmore-lbl">Diagnostics</span></div>
+    <div class="mmore-item" data-mmr="repair-parts"><span class="mmore-ic">🔩</span><span class="mmore-lbl">Parts</span></div>
   </div>
   <div style="height:12px"></div>
 </div>
@@ -6405,6 +6415,9 @@ function init() {
       goPage(n.getAttribute('data-page')); 
     });
   });
+  // ── Drag-and-drop sidebar reorder ──
+  _initSidebarSortable();
+  _loadNavOrder();
   initBG();
   renderAll();
   // Set Today as default dashboard period
@@ -6576,6 +6589,46 @@ function closeSidebar(){
   var ov=document.getElementById('sb-overlay');
   if(sb) sb.classList.remove('open');
   if(ov) ov.classList.remove('open');
+}
+
+// ── Sidebar drag-and-drop reorder ──
+var _navOrderKey = 'stpos-nav-order';
+function _saveNavOrder() {
+  var pages = [];
+  document.querySelectorAll('.nitem').forEach(function(n) { pages.push(n.getAttribute('data-page')); });
+  try { localStorage.setItem(_navOrderKey, JSON.stringify(pages)); } catch(e) {}
+}
+function _loadNavOrder() {
+  try {
+    var saved = localStorage.getItem(_navOrderKey);
+    if (!saved) return;
+    var order = JSON.parse(saved);
+    if (!Array.isArray(order)) return;
+    var navSec = document.querySelector('.nav-sec');
+    if (!navSec) return;
+    // Reorder .nitem elements to match saved order
+    var items = navSec.querySelectorAll('.nitem');
+    var itemMap = {};
+    items.forEach(function(el) { itemMap[el.getAttribute('data-page')] = el; });
+    // Insert sections and items in saved order
+    order.forEach(function(page) {
+      var el = itemMap[page];
+      if (el && el.parentNode === navSec) navSec.appendChild(el);
+    });
+  } catch(e) {}
+}
+function _initSidebarSortable() {
+  var navSec = document.querySelector('.nav-sec');
+  if (!navSec || typeof Sortable === 'undefined') return;
+  Sortable.create(navSec, {
+    filter: '.nlabel, .sfooter',
+    animation: 200,
+    handle: '.nitem',
+    ghostClass: 'sortable-ghost',
+    chosenClass: 'sortable-chosen',
+    dragClass: 'sortable-drag',
+    onEnd: function() { _saveNavOrder(); }
+  });
 }
 
 // =========== NAVIGATION ===========
@@ -13037,6 +13090,7 @@ document.addEventListener('click', function(e){
       ['obadge',   'mmr-obadge',  false],
       ['msgbadge', 'mmr-msgbadge',false],
       ['crbadge',  'mmr-crbadge', false],
+      ['gv-badge', 'mmr-gvbadge', false],
     ];
     map.forEach(function (m) {
       var src = document.getElementById(m[0]);
