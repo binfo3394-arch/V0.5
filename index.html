@@ -1171,13 +1171,16 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
 
   .mmore-handle { width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 14px; }
   .mmore-title  { font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;padding:8px 8px 4px;font-weight:700; }
-  .mmore-grid   { display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:4px; }
+  .mmore-grid   { display:flex;gap:8px;margin-bottom:4px;overflow-x:auto;-webkit-overflow-scrolling:touch;scroll-snap-type:x mandatory;padding:0 4px 4px; }
+  .mmore-grid::-webkit-scrollbar { height:3px; }
+  .mmore-grid::-webkit-scrollbar-thumb { background:var(--border);border-radius:3px; }
   .mmore-item   {
     display:flex;flex-direction:column;align-items:center;justify-content:center;
     gap:5px;padding:12px 4px;border-radius:12px;cursor:pointer;
     background:var(--card2);border:1px solid var(--border);
     transition:all .18s;-webkit-tap-highlight-color:transparent;
     position:relative;user-select:none;touch-action:manipulation;
+    flex:0 0 auto;width:65px;scroll-snap-align:start;
   }
   .mmore-item:active { transform:scale(.92); }
   .mmore-ic  { font-size:20px; }
@@ -2329,8 +2332,8 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
           <div class="thead2"><h3>📋 All Vouchers</h3></div>
           <div style="padding:14px">
             <div class="sbar" style="margin:0 0 10px"><span>🔍</span><input id="gv-q" placeholder="Search by code / buyer / recipient..." oninput="renderGiftVouchers()"></div>
-            <table><thead><tr><th>Code</th><th>Value</th><th>Remaining</th><th>Buyer</th><th>Recipient</th><th>Created</th><th>Expiry</th><th>Status</th><th>Actions</th></tr></thead>
-            <tbody id="gv-tbl"></tbody></table>
+            <div style="overflow-x:auto"><table><thead><tr><th>Code</th><th>Value</th><th>Remaining</th><th>Buyer</th><th>Recipient</th><th>Created</th><th>Expiry</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="gv-tbl"></tbody></table></div>
           </div>
         </div>
       </div>
@@ -3014,8 +3017,8 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
           </select>
         </div>
         <div class="tcard">
-          <table><thead><tr><th>Name</th><th>SKU</th><th>Category</th><th>Brand / Models</th><th>Stock</th><th>Cost (Rs.)</th><th>Price (Rs.)</th><th>Actions</th></tr></thead>
-          <tbody id="rparts-tbl"></tbody></table>
+          <div style="overflow-x:auto"><table><thead><tr><th>Name</th><th>SKU</th><th>Category</th><th>Brand / Models</th><th>Stock</th><th>Cost (Rs.)</th><th>Price (Rs.)</th><th>Actions</th></tr></thead>
+          <tbody id="rparts-tbl"></tbody></table></div>
         </div>
       </div>
 
