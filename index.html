@@ -1277,6 +1277,22 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
     font-size: 12px !important;
     overflow: visible !important;
   }
+  #pg-gift-vouchers .tcard table,
+  #pg-repair-parts .tcard table {
+    min-width: 750px !important;
+    width: max-content !important;
+    table-layout: auto !important;
+    font-size: 12px !important;
+  }
+  #pg-gift-vouchers .tcard th,
+  #pg-gift-vouchers .tcard td,
+  #pg-repair-parts .tcard th,
+  #pg-repair-parts .tcard td {
+    white-space: nowrap !important;
+    word-break: normal !important;
+    padding: 8px 10px !important;
+    font-size: 12px !important;
+  }
 }
 
 /* ── Sortable drag styles ── */
@@ -2332,7 +2348,7 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
           <div class="thead2"><h3>📋 All Vouchers</h3></div>
           <div style="padding:14px">
             <div class="sbar" style="margin:0 0 10px"><span>🔍</span><input id="gv-q" placeholder="Search by code / buyer / recipient..." oninput="renderGiftVouchers()"></div>
-            <div style="overflow-x:auto"><table><thead><tr><th>Code</th><th>Value</th><th>Remaining</th><th>Buyer</th><th>Recipient</th><th>Created</th><th>Expiry</th><th>Status</th><th>Actions</th></tr></thead>
+            <div style="overflow-x:auto;white-space:nowrap"><table><thead><tr><th>Code</th><th>Value</th><th>Remaining</th><th>Buyer</th><th>Recipient</th><th>Created</th><th>Expiry</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody id="gv-tbl"></tbody></table></div>
           </div>
         </div>
@@ -3017,7 +3033,7 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
           </select>
         </div>
         <div class="tcard">
-          <div style="overflow-x:auto"><table><thead><tr><th>Name</th><th>SKU</th><th>Category</th><th>Brand / Models</th><th>Stock</th><th>Cost (Rs.)</th><th>Price (Rs.)</th><th>Actions</th></tr></thead>
+          <div style="overflow-x:auto;white-space:nowrap"><table><thead><tr><th>Name</th><th>SKU</th><th>Category</th><th>Brand / Models</th><th>Stock</th><th>Cost (Rs.)</th><th>Price (Rs.)</th><th>Actions</th></tr></thead>
           <tbody id="rparts-tbl"></tbody></table></div>
         </div>
       </div>
