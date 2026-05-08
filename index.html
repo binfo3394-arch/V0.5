@@ -113,10 +113,12 @@
       upsellRules:   dbObj.upsellRules   || [],
       referrals:     dbObj.referrals     || [],
       diagChecklists:dbObj.diagChecklists|| {},
-      repairParts:   dbObj.repairParts   || {},
-      warrantyDays:  dbObj.warrantyDays  || {},
+      repairParts:   dbObj.repairParts     || {},
+      partsInventory:dbObj.partsInventory  || [],
+      warrantyDays:  dbObj.warrantyDays    || {},
       productVariants:dbObj.productVariants||{},
-      invDesign:     dbObj.invDesign     || {},
+      invDesign:     dbObj.invDesign       || {},
+      giftVouchers:  dbObj.giftVouchers    || [],
       _lastSync:     Date.now()
     };
     set(ref(database, 'pos-data'), payload)
@@ -191,11 +193,16 @@
       if (remote.upsellRules)     db.upsellRules     = _fbArr(remote.upsellRules);
       if (remote.referrals)       db.referrals       = _fbArr(remote.referrals);
       if (remote.diagChecklists)  db.diagChecklists  = remote.diagChecklists || {};
-      if (remote.repairParts)     db.repairParts     = remote.repairParts    || {};
-      if (remote.warrantyDays)    db.warrantyDays    = remote.warrantyDays   || {};
+      if (remote.repairParts)     db.repairParts      = remote.repairParts    || {};
+      if (remote.partsInventory)  db.partsInventory   = _fbArr(remote.partsInventory);
+      if (remote.warrantyDays)    db.warrantyDays     = remote.warrantyDays   || {};
       if (remote.productVariants) db.productVariants = remote.productVariants|| {};
       if (remote.invDesign)       db.invDesign       = remote.invDesign      || {};
+      if (remote.giftVouchers)    db.giftVouchers    = _fbArr(remote.giftVouchers);
       renderAll();
+      // Persist synced data locally for offline use
+      try { localStorage.setItem('stpos-db', JSON.stringify(db)); } catch(e) {}
+      _clearPendingSync();
       setFBStatus('\uD83D\uDD04 Live synced', 'var(--info)');
     }, function(error){ console.error('Firebase listener error:', error); });
   };
@@ -251,15 +258,9 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);mi
 .slogo h1{font-size:14px;color:var(--primary);font-weight:800;}
 .slogo p{font-size:10px;color:var(--muted);margin-top:2px;}
 .nav-sec{padding:8px 0;flex:1;overflow-y:auto;}
-/* Sidebar search */
 .sidebar-search{padding:8px 10px;border-bottom:1px solid var(--border);}
-.sidebar-search-wrap{display:flex;align-items:center;gap:7px;background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;transition:0.2s;}
-.sidebar-search-wrap:focus-within{border-color:var(--primary);box-shadow:0 0 0 2px rgba(108,99,255,0.15);}
-.sidebar-search-wrap input{background:none;border:none;color:var(--text);font-size:12px;flex:1;padding:0;outline:none;}
-.sidebar-search-wrap input::placeholder{color:var(--muted);}
-.sidebar-search-wrap span{font-size:13px;color:var(--muted);}
-.nitem.nav-hidden{display:none!important;}
-.nlabel.nav-hidden{display:none!important;}
+.sidebar-search input{background:var(--card2);border:1px solid var(--border);color:var(--text);padding:6px 9px;border-radius:7px;font-size:12px;width:100%;outline:none;transition:0.2s;}
+.sidebar-search input:focus{border-color:var(--primary);box-shadow:0 0 0 2px rgba(108,99,255,0.12);}
 .nlabel{font-size:10px;color:var(--muted);padding:8px 14px 3px;text-transform:uppercase;letter-spacing:1px;}
 .nitem{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;transition:0.2s;font-size:13px;color:var(--muted);border-left:3px solid transparent;}
 .nitem:hover{background:rgba(108,99,255,0.1);color:var(--text);}
@@ -1457,14 +1458,8 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
   <!-- Sidebar -->
   <div class="sidebar">
     <div class="slogo"><h1>📱 ST Mobile</h1><p>&amp; Designing POS</p></div>
-    <div class="sidebar-search">
-      <div class="sidebar-search-wrap">
-        <span>🔍</span>
-        <input type="text" id="sidebar-search-input" placeholder="Menu search..." oninput="sidebarSearch(this.value)" autocomplete="off">
-        <button onclick="document.getElementById('sidebar-search-input').value='';sidebarSearch('');" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:0;line-height:1;opacity:0;transition:0.2s" id="sidebar-search-clear" title="Clear">✕</button>
-      </div>
-    </div>
-    <div class="nav-sec" id="sidebar-nav-sec">
+    <div class="sidebar-search"><input id="sidebar-q" placeholder="🔍 Search menu..." oninput="filterSidebar()" autocomplete="off"></div>
+    <div class="nav-sec">
       <div class="nlabel">Main</div>
       <div class="nitem active" data-page="dashboard"><span class="ic">🏠</span><span>Dashboard</span></div>
       <div class="nitem" data-page="pos"><span class="ic">🛒</span><span>New Sale</span></div>
@@ -1479,6 +1474,7 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
       <div class="nlabel">Finance</div>
       <div class="nitem" data-page="analytics"><span class="ic">📊</span><span>Analytics</span></div>
       <div class="nitem" data-page="credits"><span class="ic">💳</span><span>Credit Sales</span><span class="nbadge" id="crbadge">0</span></div>
+      <div class="nitem" data-page="gift-vouchers"><span class="ic">🎫</span><span>Gift Vouchers</span><span class="nbadge" id="gv-badge">0</span></div>
       <div class="nlabel">Stock</div>
       <div class="nitem" data-page="suppliers"><span class="ic">🏭</span><span>Suppliers</span></div>
       <div class="nitem" data-page="stocklog"><span class="ic">📋</span><span>Stock History</span></div>
@@ -1516,6 +1512,7 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
       <div class="nitem" data-page="repair-timer"><span class="ic">⏱️</span><span>Repair Timer</span></div>
       <div class="nitem" data-page="repair-templates"><span class="ic">📄</span><span>Repair Templates</span></div>
       <div class="nitem" data-page="device-history"><span class="ic">📱</span><span>Device History</span></div>
+      <div class="nitem" data-page="repair-parts"><span class="ic">🔩</span><span>Repair Parts</span><span class="nbadge" id="rparts-badge" style="display:none">0</span></div>
       <div class="nlabel">Sales & Design</div>
       <div class="nitem" data-page="upsell"><span class="ic">💡</span><span>Upsell Engine</span></div>
       <div class="nitem" data-page="sales-compare"><span class="ic">📊</span><span>Sales Comparison</span></div>
@@ -1536,6 +1533,7 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
       <div id="db-status-bar" style="font-size:10px;color:var(--success);margin-bottom:6px">🔥 Firebase Mode</div>
       <button class="btn bp2 bsm" style="width:100%;margin-bottom:5px;font-size:11px" onclick="exportDB()">📤 JSON Backup</button>
       <button class="btn bsm" onclick="openAdminPanel()" id="admin-panel-btn" style="width:100%;margin-bottom:5px;font-size:11px;background:rgba(255,23,68,0.12);color:#ff1744;border:1px solid rgba(255,23,68,0.3)">🛡️ Admin Panel</button>
+      <button class="btn bsm" onclick="window.open('customer-portal.html','_blank')" style="width:100%;margin-bottom:5px;font-size:11px;background:rgba(0,176,255,0.12);color:var(--info);border:1px solid rgba(0,176,255,0.3)">🌐 Customer Portal</button>
     </div>
   </div>
 
@@ -2051,6 +2049,54 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
             <div id="an-categories" style="padding:14px"></div>
           </div>
         </div>
+
+        <!-- ═══ NEW ANALYTICS ROW: Best + Worst Sellers ═══ -->
+        <div class="g2" style="margin-bottom:18px;margin-top:18px">
+          <div class="tcard">
+            <div class="thead2"><h3>🏆 Best Sellers (Top 10)</h3></div>
+            <div id="an-bestsellers2" style="padding:14px"></div>
+          </div>
+          <div class="tcard">
+            <div class="thead2"><h3>📉 Worst Sellers (Bottom 10)</h3></div>
+            <div id="an-worstsellers" style="padding:14px"></div>
+          </div>
+        </div>
+
+        <!-- ═══ SALES FORECASTING ═══ -->
+        <div class="tcard" style="margin-bottom:18px">
+          <div class="thead2"><h3>📈 Product Sales Forecasting</h3>
+            <div style="display:flex;gap:6px;align-items:center">
+              <select id="an-fc-prod" onchange="anRenderForecast()" style="font-size:12px;padding:4px 8px;width:160px">
+                <option value="">-- Top Products --</option>
+              </select>
+              <select id="an-fc-months" onchange="anRenderForecast()" style="font-size:12px;padding:4px 8px;width:auto">
+                <option value="3">3 months</option>
+                <option value="6" selected>6 months</option>
+                <option value="12">12 months</option>
+              </select>
+            </div>
+          </div>
+          <div style="padding:14px">
+            <canvas id="an-fc-chart" height="180" style="width:100%;display:block"></canvas>
+            <div id="an-fc-summary" style="margin-top:10px;font-size:12px;color:var(--muted)"></div>
+          </div>
+        </div>
+
+        <!-- ═══ CASH FLOW PROJECTION ═══ -->
+        <div class="tcard">
+          <div class="thead2"><h3>💰 Cash Flow Projection</h3>
+            <div style="display:flex;gap:6px;align-items:center">
+              <select id="an-cf-months" onchange="anRenderCashFlow()" style="font-size:12px;padding:4px 8px;width:auto">
+                <option value="3">3 months</option>
+                <option value="6" selected>6 months</option>
+              </select>
+            </div>
+          </div>
+          <div style="padding:14px">
+            <canvas id="an-cf-chart" height="180" style="width:100%;display:block"></canvas>
+            <div id="an-cf-summary" style="margin-top:10px;font-size:12px;color:var(--muted)"></div>
+          </div>
+        </div>
       </div>
 
       <!-- CREDIT SALES -->
@@ -2229,6 +2275,9 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
         <div class="tcard" style="margin-top:14px">
           <div class="thead2"><h3>📦 All Products — Quick Print</h3></div>
           <div style="padding:14px" id="bc-all-list"></div>
+          <div style="padding:0 14px 14px">
+            <button class="btn bs2" onclick="printAllLabels()" style="width:100%">🖨️ Print All Product Labels</button>
+          </div>
         </div>
       </div>
 
@@ -2240,6 +2289,40 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
         </div>
         <div class="sbar"><span>🔍</span><input id="bun-q" placeholder="Search bundles..." oninput="renderBundles()"></div>
         <div id="bun-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px"></div>
+      </div>
+
+      <!-- GIFT VOUCHERS -->
+      <div id="pg-gift-vouchers" class="page">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+          <div class="estitle">🎫 Gift Vouchers</div>
+          <button class="btn bp2" onclick="openGiftVoucherModal()">➕ Create Voucher</button>
+        </div>
+        <div class="g2" style="margin-bottom:14px">
+          <div class="tcard" style="margin:0">
+            <div class="thead2"><h3>🔍 Redeem Voucher</h3></div>
+            <div style="padding:14px">
+              <div style="display:grid;grid-template-columns:1fr auto;gap:8px">
+                <input id="gv-redeem-code" placeholder="Enter voucher code..." style="font-size:14px;letter-spacing:2px;text-align:center;text-transform:uppercase">
+                <button class="btn bs2" onclick="checkVoucher()">🔍 Check</button>
+              </div>
+              <div id="gv-redeem-result" style="margin-top:12px;font-size:13px"></div>
+            </div>
+          </div>
+          <div class="tcard" style="margin:0">
+            <div class="thead2"><h3>📊 Summary</h3></div>
+            <div id="gv-summary" style="padding:14px;font-size:13px">
+              <div class="empty"><div class="ei">🎫</div>Loading...</div>
+            </div>
+          </div>
+        </div>
+        <div class="tcard">
+          <div class="thead2"><h3>📋 All Vouchers</h3></div>
+          <div style="padding:14px">
+            <div class="sbar" style="margin:0 0 10px"><span>🔍</span><input id="gv-q" placeholder="Search by code / buyer / recipient..." oninput="renderGiftVouchers()"></div>
+            <table><thead><tr><th>Code</th><th>Value</th><th>Remaining</th><th>Buyer</th><th>Recipient</th><th>Created</th><th>Expiry</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="gv-tbl"></tbody></table>
+          </div>
+        </div>
       </div>
 
       <!-- LOYALTY POINTS -->
@@ -2279,6 +2362,12 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
             <div style="font-size:14px;font-weight:700;margin:8px 0 4px">Tax Summary</div>
             <div style="font-size:11px;color:var(--muted)">GST/Tax collected report</div>
             <div style="margin-top:10px"><button class="btn bs2 bsm">Generate PDF</button></div>
+          </div>
+          <div class="scard s1" onclick="generateDailyReport()" style="cursor:pointer">
+            <div style="font-size:32px">📅</div>
+            <div style="font-size:14px;font-weight:700;margin:8px 0 4px">Daily Sales Report</div>
+            <div style="font-size:11px;color:var(--muted)">Today's sales, repairs & profit</div>
+            <div style="margin-top:10px"><button class="btn bp2 bsm">Generate PDF</button></div>
           </div>
           <div class="scard s3" onclick="generateStockReport()" style="cursor:pointer">
             <div style="font-size:32px">📦</div>
@@ -2661,6 +2750,28 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
           <div style="font-size:11px;color:var(--muted);margin-top:8px">
             ✅ Save කරද්දී auto cloud sync වෙනවා. Real-time sync — devices කිහිපයක් connect කළොත් live update වෙනවා!
           </div>
+
+          <!-- ══ AUTO CLOUD SYNC SCHEDULER ══ -->
+          <div style="background:rgba(0,230,118,0.06);border:1px solid rgba(0,230,118,0.2);border-radius:10px;padding:12px;margin-top:10px">
+            <div style="font-size:12px;font-weight:700;color:var(--success);margin-bottom:8px">⏰ Auto Cloud Sync Scheduler</div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:10px">දවස් පතා / පැය කිහිපයකට වරක් ඉබේම Firebase cloud ලෙල data sync කරන්න.</div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+              <select id="auto-sync-interval" style="width:200px" onchange="saveAutoFirebaseSyncSettings()">
+                <option value="0">🚫 Disabled</option>
+                <option value="60">⏰ Every 1 Hour</option>
+                <option value="180">⏰ Every 3 Hours</option>
+                <option value="360">⏰ Every 6 Hours</option>
+                <option value="720">⏰ Every 12 Hours</option>
+                <option value="1440">📅 Daily (Every Day)</option>
+                <option value="10080">📅 Weekly</option>
+              </select>
+              <button class="btn bs2 bsm" onclick="manualFirebaseSyncNow()">☁️ Sync Now</button>
+              <button class="btn bo bsm" onclick="resetAutoSyncTimer()">🔄 Reset Timer</button>
+            </div>
+            <div id="auto-sync-status" style="font-size:11px;color:var(--muted)">Auto sync loading...</div>
+            <div id="auto-sync-countdown" style="font-size:12px;color:var(--success);margin-top:4px;font-weight:600"></div>
+            <div style="font-size:11px;color:var(--muted);margin-top:6px">💡 Auto sync background ලෙල පැය 5 කට වරක් check කරලා sync කරයි.</div>
+          </div>
         </div>
 
         <button class="btn bp2" onclick="saveSettings()">💾 Save Settings</button>
@@ -2877,6 +2988,25 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
           </div>
         </div>
         <div id="dh-results"></div>
+      </div>
+
+      <!-- ===== REPAIR PARTS INVENTORY ===== -->
+      <div id="pg-repair-parts" class="page">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+          <div class="estitle">🔩 Repair Parts Inventory</div>
+          <button class="btn bp2" onclick="openRepairPartModal()">➕ New Part</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr auto;gap:12px;margin-bottom:14px">
+          <div class="sbar" style="margin:0"><span>🔍</span><input id="rp-q" placeholder="Search parts..." oninput="renderRepairParts()"></div>
+          <select id="rp-cat-filter" onchange="renderRepairParts()" style="padding:9px 11px;border-radius:7px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:13px">
+            <option value="">All Categories</option>
+            <option>Screen</option><option>Battery</option><option>Charging Port</option><option>Camera</option><option>Speaker</option><option>Microphone</option><option>Button</option><option>Connector</option><option>Other</option>
+          </select>
+        </div>
+        <div class="tcard">
+          <table><thead><tr><th>Name</th><th>SKU</th><th>Category</th><th>Brand / Models</th><th>Stock</th><th>Cost (Rs.)</th><th>Price (Rs.)</th><th>Actions</th></tr></thead>
+          <tbody id="rparts-tbl"></tbody></table>
+        </div>
       </div>
 
       <!-- ===== UPSELL ENGINE ===== -->
@@ -3323,10 +3453,46 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
         <div class="fg"><label>👨‍🔧 Technician</label><input id="r-tech" placeholder="Assigned technician name" list="r-tech-list" autocomplete="off"><datalist id="r-tech-list"></datalist></div>
         <div class="fg full"><label>📝 Customer Notes (Bill ේ show වෙයි)</label><textarea id="r-notes" rows="2"></textarea></div>
         <div class="fg full"><label>🔧 Technician Notes (Internal — bill ේ show නොවෙයි)</label><textarea id="r-technotes" rows="2" style="border-color:rgba(255,171,0,0.4);background:rgba(255,171,0,0.04)" placeholder="Internal notes, parts used, diagnosis..."></textarea></div>
+        <div class="fg full" style="border-top:1px solid var(--border);padding-top:12px;margin-top:6px">
+          <label style="color:var(--info);font-weight:700">🔩 Parts Used</label>
+          <div style="display:grid;grid-template-columns:1fr 60px auto;gap:6px;margin-bottom:8px">
+            <select id="r-part-sel" style="font-size:12px;padding:7px 9px;border-radius:6px;border:1px solid var(--border);background:var(--card2);color:var(--text)">
+              <option value="">— Select Part —</option>
+            </select>
+            <input id="r-part-qty" type="number" value="1" min="1" style="font-size:12px;padding:7px 9px">
+            <button class="btn bp2 bsm" onclick="addPartToRepair()" style="white-space:nowrap">➕ Add</button>
+          </div>
+          <div id="r-parts-list" style="font-size:12px"></div>
+          <input type="hidden" id="r-parts-data" value="">
+        </div>
       </div>
       <input type="hidden" id="r-id">
     </div>
     <div class="mftr"><button class="btn bo" onclick="closeM('m-rep')">Cancel</button><button class="btn bs2" onclick="showRepEstimate()">📋 Estimate</button><button class="btn bp2" onclick="saveRep()">💾 Save</button></div>
+  </div>
+</div>
+
+<!-- Repair Part CRUD -->
+<div class="moverlay" id="m-rpart">
+  <div class="modal">
+    <div class="mhdr"><h3>🔩 Repair Part</h3><button class="xbtn" onclick="closeM('m-rpart')">×</button></div>
+    <div class="mbody">
+      <div class="fgrid">
+        <div class="fg full"><label>Part Name *</label><input id="rp-name" placeholder="e.g. iPhone 12 LCD"></div>
+        <div class="fg"><label>SKU</label><input id="rp-sku" placeholder="Optional SKU"></div>
+        <div class="fg"><label>Category</label><select id="rp-cat"><option>Screen</option><option>Battery</option><option>Charging Port</option><option>Camera</option><option>Speaker</option><option>Microphone</option><option>Button</option><option>Connector</option><option>Other</option></select></div>
+        <div class="fg"><label>Brand</label><input id="rp-brand" placeholder="e.g. Samsung, OEM"></div>
+        <div class="fg full"><label>Compatible Models</label><input id="rp-models" placeholder="e.g. iPhone 12, iPhone 12 Pro, iPhone 12 Pro Max"></div>
+        <div class="fg"><label>Stock</label><input id="rp-stock" type="number" value="1" min="0"></div>
+        <div class="fg"><label>Min Stock Alert</label><input id="rp-min" type="number" value="2" min="0"></div>
+        <div class="fg"><label>Cost Price (Rs.)</label><input id="rp-cost" type="number" min="0"></div>
+        <div class="fg"><label>Sell Price (Rs.)</label><input id="rp-price" type="number" min="0"></div>
+        <div class="fg"><label>Location</label><input id="rp-loc" placeholder="e.g. Shelf A3"></div>
+        <div class="fg"><label>Supplier</label><input id="rp-supplier" placeholder="Supplier name"></div>
+      </div>
+      <input type="hidden" id="rp-id">
+    </div>
+    <div class="mftr"><button class="btn bo" onclick="closeM('m-rpart')">Cancel</button><button class="btn bp2" onclick="saveRepairPart()">💾 Save</button></div>
   </div>
 </div>
 
@@ -5880,7 +6046,35 @@ setTimeout(function() {
   </div>
 </div>
 
+<!-- Gift Voucher Modal -->
+<div class="moverlay" id="m-gv">
+  <div class="modal">
+    <div class="mhdr"><h3>🎫 Gift Voucher</h3><button class="xbtn" onclick="closeM('m-gv')">×</button></div>
+    <div class="mbody">
+      <div class="fgrid">
+        <div class="fg full"><label>Voucher Code *</label>
+          <div style="display:flex;gap:6px">
+            <input id="gv-code" placeholder="e.g. GIFT-20240501" style="font-size:14px;letter-spacing:2px;text-transform:uppercase;flex:1">
+            <button class="btn bo bsm" onclick="generateVoucherCode()" style="white-space:nowrap">🔀 Generate</button>
+          </div>
+        </div>
+        <div class="fg"><label>Value (Rs.) *</label><input id="gv-value" type="number" min="100" step="100" placeholder="1000"></div>
+        <div class="fg"><label>Expiry Date</label><input id="gv-expiry" type="date"></div>
+        <div class="fg"><label>Buyer Name</label><input id="gv-buyer" placeholder="Who purchased"></div>
+        <div class="fg"><label>Buyer Phone</label><input id="gv-buyer-phone" placeholder="07X XXX XXXX"></div>
+        <div class="fg"><label>Recipient Name</label><input id="gv-recipient" placeholder="Who receives this"></div>
+        <div class="fg full"><label>Notes</label><input id="gv-notes" placeholder="Optional notes"></div>
+      </div>
+      <input type="hidden" id="gv-id">
+    </div>
+    <div class="mftr"><button class="btn bo" onclick="closeM('m-gv')">Cancel</button><button class="btn bp2" onclick="saveGiftVoucher()">💾 Save Voucher</button></div>
+  </div>
+</div>
+
 <script>
+// =========== XSS SAFE HTML HELPER ===========
+function esc(str) { return String(str).replace(/[&<>"']/g,function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]; }); }
+
 // =========== DATA ===========
 // 🔥 Firebase Realtime Database is the PRIMARY data source.
 // Embedded data is intentionally empty — all data loads from Firebase on startup.
@@ -5914,6 +6108,7 @@ if(!db.staff) db.staff = [];
 if(!db.shifts) db.shifts = [];
 if(!db.diagChecklists) db.diagChecklists = {};
 if(!db.repairParts) db.repairParts = {};
+if(!db.partsInventory) db.partsInventory = [];
 if(!db.warrantyDays) db.warrantyDays = {};
 if(!db.productVariants) db.productVariants = {};
 if(!db.settings.splitPayEnabled) db.settings.splitPayEnabled = true;
@@ -5929,6 +6124,7 @@ if(!db.referrals) db.referrals = [];
 if(!db.timerLogs) db.timerLogs = [];
 if(!db.settings.openChecklist) db.settings.openChecklist = ['Unlock shop','Turn on lights','Boot computer','Count opening cash','Check repairs due today','Check low stock'];
 if(!db.settings.closeChecklist) db.settings.closeChecklist = ['Count cash','Close register','Back up data','Set alarm','Lock shop','Send daily summary'];
+if(!db.giftVouchers) db.giftVouchers = [];
 if(!db.invDesign) db.invDesign = { template:'classic', color:'#6c63ff', footer:'Thank you for choosing ST Mobile!', showQr:false };
 // Clear any old browser-cached data so Firebase is always the source
 // Firebase is primary storage - localStorage not used for data
@@ -6100,12 +6296,19 @@ var _saveDBTimer = null;
 var _saveDBPending = false;
 
 function saveDB() {
-  // ── Firebase Realtime Database sync (primary storage) ──
+  // ── Always persist to localStorage (works fully offline) ──
+  try { localStorage.setItem('stpos-db', JSON.stringify(db)); } catch(e) { console.warn('localStorage save failed', e); }
+  // ── Try Firebase sync (will fail gracefully if offline) ──
   if (typeof window.firebaseSaveDB === 'function') {
-    window.firebaseSaveDB(db);
+    if (navigator.onLine) {
+      window.firebaseSaveDB(db);
+      _clearPendingSync();
+    } else {
+      _markPendingSync();
+    }
   }
-  // Show auto-save indicator
   _showSaveIndicator();
+  _updateOfflineUI();
 }
 
 // Debounced save for auto-save scenarios (avoids too many rapid saves)
@@ -6138,10 +6341,56 @@ function _showSaveIndicator() {
 
 // PIN functions via SQLite
 
+// =========== OFFLINE QUEUE ===========
+var _pendingSyncKey = 'stpos-pending-sync';
+function _markPendingSync() {
+  try { localStorage.setItem(_pendingSyncKey, '1'); } catch(e) {}
+}
+function _clearPendingSync() {
+  try { localStorage.removeItem(_pendingSyncKey); } catch(e) {}
+}
+function _hasPendingSync() {
+  try { return localStorage.getItem(_pendingSyncKey) === '1'; } catch(e) { return false; }
+}
+function _flushPendingSync() {
+  if (_hasPendingSync()) { saveDB(); }
+}
+function _updateOfflineUI() {
+  var ind = document.getElementById('offline-indicator');
+  if (!ind) return;
+  if (navigator.onLine && !_hasPendingSync()) {
+    ind.style.display = 'none';
+  } else if (!navigator.onLine) {
+    ind.style.display = 'block';
+    ind.textContent = '📵 Offline';
+  } else if (_hasPendingSync()) {
+    ind.style.display = 'block';
+    ind.textContent = '☁️ Syncing...';
+  }
+}
 
 // =========== INIT ===========
 function init() {
   ordItems=[];
+  // ── Load from localStorage first (instant offline startup) ──
+  try {
+    var localData = localStorage.getItem('stpos-db');
+    if (localData) {
+      var parsed = JSON.parse(localData);
+      if (parsed && typeof parsed === 'object') {
+        Object.assign(db, parsed);
+        // Fix any array/object corruptions from storage
+        ['products','invoices','repairs','orders','customers','expenses','suppliers','purchases','stockLog','credits','activityLog','loyaltyLog','staff','shifts','rosterShifts','tasks','followups','timerLogs','repTemplates','purchaseOrders','branches','taxProfiles','stockTransfers','batches','kits','upsellRules','referrals','returns','appointments','bundles','cashSessions','coupons','partsInventory','giftVouchers'].forEach(function(k){ if(!Array.isArray(db[k])) db[k]=[]; });
+        if(typeof db.settings !== 'object') db.settings = {};
+        if(typeof db.diagChecklists !== 'object') db.diagChecklists = {};
+        if(typeof db.repairParts !== 'object') db.repairParts = {};
+        if(typeof db.warrantyDays !== 'object') db.warrantyDays = {};
+        if(typeof db.productVariants !== 'object') db.productVariants = {};
+        if(typeof db.invDesign !== 'object') db.invDesign = {};
+        if(typeof db.widgetPrefs !== 'object') db.widgetPrefs = {};
+      }
+    }
+  } catch(e) { console.warn('localStorage load failed', e); }
   initThemeMode();
   initPIN();
   checkOverdueCredits(); // Auto-update overdue credits
@@ -6182,6 +6431,18 @@ function init() {
         if (typeof window.firebaseSaveDB === 'function') window.firebaseSaveDB(db);
         if (typeof window.firebaseStartLiveSync === 'function') window.firebaseStartLiveSync();
         toast('☁️ Firebase connected! (No cloud data yet — add products to get started)');
+        _clearPendingSync();
+        _updateOfflineUI();
+        return;
+      }
+      // ── If there are pending local changes (offline queue), push local data instead of overwriting ──
+      if (_hasPendingSync()) {
+        if (typeof window.firebaseSaveDB === 'function') window.firebaseSaveDB(db);
+        if (typeof window.firebaseStartLiveSync === 'function') window.firebaseStartLiveSync();
+        toast('☁️ Offline changes pushed to cloud!');
+        _clearPendingSync();
+        _updateOfflineUI();
+        renderAll();
         return;
       }
       // Helper: Firebase stores arrays as objects with numeric keys — convert back to real arrays
@@ -6226,6 +6487,9 @@ function init() {
       if (cloudData.warrantyDays)  db.warrantyDays  = cloudData.warrantyDays  || {};
       if (cloudData.productVariants)db.productVariants= cloudData.productVariants||{};
       if (cloudData.invDesign)     db.invDesign     = cloudData.invDesign      || {};
+      // Persist cloud data to localStorage for offline use
+      try { localStorage.setItem('stpos-db', JSON.stringify(db)); } catch(e) {}
+      _clearPendingSync();
       // Sync to SQLite for local queries
       renderAll();
       applyTheme(db.settings.theme || '#6c63ff');
@@ -6250,12 +6514,16 @@ function init() {
       if(fbLoadEl){ fbLoadEl.textContent='⚠️ Firebase load failed'; fbLoadEl.style.opacity='1'; fbLoadEl.style.color='var(--warning)'; }
     }
   }, 500);
+  // Show offline indicator if currently offline
+  updateOnlineStatus();
 }
 
 function renderAll() {
   renderInv(); renderRep(); renderOrd(); renderCust(); renderInv2(); updateDash(); updateBadges(); refreshCustSel(); updateNotifBadge(); renderCredits(); renderSuppliers(); renderPurchases(); renderStockLog(); updateCrBadge();
   if (typeof renderStaff === 'function') renderStaff();
   if (typeof updateStaffSelector === 'function') updateStaffSelector();
+  if (typeof renderRepairParts === 'function') renderRepairParts();
+  if (typeof renderGiftVouchers === 'function') renderGiftVouchers();
 }
 
 // =========== CREDIT AUTO-OVERDUE CHECK ===========
@@ -6283,11 +6551,25 @@ function checkOverdueCredits() {
 }
 
 // =========== MOBILE SIDEBAR ===========
+function filterSidebar(){
+  var q=(document.getElementById('sidebar-q')?document.getElementById('sidebar-q').value:'').toLowerCase().trim();
+  document.querySelectorAll('.sidebar .nitem').forEach(function(el){
+    var txt=el.textContent.toLowerCase();
+    var match=!q||txt.includes(q);
+    el.style.display=match?'flex':'none';
+  });
+  document.querySelectorAll('.sidebar .nlabel').forEach(function(el){
+    var next=el.nextElementSibling;
+    var hasVisible=next&&next.style.display!=='none';
+    el.style.display=(!q||hasVisible)?'block':'none';
+  });
+}
 function toggleSidebar(){
   var sb=document.querySelector('.sidebar');
   var ov=document.getElementById('sb-overlay');
   if(sb) sb.classList.toggle('open');
   if(ov) ov.classList.toggle('open');
+  if(sb&&sb.classList.contains('open')){ var inp=document.getElementById('sidebar-q'); if(inp){ setTimeout(function(){ inp.focus(); },300); } }
 }
 function closeSidebar(){
   var sb=document.querySelector('.sidebar');
@@ -6297,7 +6579,7 @@ function closeSidebar(){
 }
 
 // =========== NAVIGATION ===========
-var pageTitles = { dashboard:'Dashboard', pos:'New Sale 🛍️', cart:'🛒 Cart & Checkout', inventory:'Inventory', repairs:'Repairs', orders:'Online Orders', customers:'Customers', invoices:'Invoices', analytics:'Analytics', credits:'Credit Sales', suppliers:'Suppliers', stocklog:'Stock History', settings:'Settings' };
+var pageTitles = { dashboard:'Dashboard', pos:'New Sale 🛍️', cart:'🛒 Cart & Checkout', inventory:'Inventory', repairs:'Repairs', orders:'Online Orders', customers:'Customers', invoices:'Invoices', analytics:'Analytics', credits:'Credit Sales', suppliers:'Suppliers', stocklog:'Stock History', settings:'Settings', 'repair-parts':'🔩 Repair Parts', 'gift-vouchers':'🎫 Gift Vouchers' };
 function goPage(id) {
   closeSidebar();
   document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
@@ -6316,6 +6598,8 @@ function goPage(id) {
   if (id === 'stocklog') { refreshStockLogFilter(); renderStockLog(); }
   if (id === 'suppliers') { refreshPurchaseSupSel(); refreshPurchaseProdSel(); }
   if (id === 'messages') { msgPageInit(); }
+  if (id === 'repair-parts') { renderRepairParts(); }
+  if (id === 'gift-vouchers') { renderGiftVouchers(); }
 }
 
 // =========== TOAST ===========
@@ -6339,6 +6623,11 @@ function openM(id) {
       techs.sort(function(a,b){ return (a.role==='Technician'?0:1)-(b.role==='Technician'?0:1); });
       dl.innerHTML = techs.map(function(s){ return '<option value="'+s.name+'">'+(s.role ? s.name+' ('+s.role+')' : s.name)+'</option>'; }).join('');
     }
+    // Reset repair parts for new repairs
+    var rId = document.getElementById('r-id');
+    if (rId && !rId.value) { _repParts = []; }
+    refreshRepPartSel();
+    renderRepPartsList();
   }
 }
 // Modals that should NOT have their inputs cleared on close
@@ -6610,6 +6899,7 @@ function periodFilter(dateStr) {
   if(dashPeriod==='all') return true;
   var d;
   if(dateStr && dateStr.includes('/')) { var pts=dateStr.split('/'); d=new Date(pts[2],pts[1]-1,pts[0]); }
+  else if(dateStr && dateStr.includes('-')) { var pts=dateStr.split('T')[0].split('-'); d=new Date(parseInt(pts[0],10),parseInt(pts[1],10)-1,parseInt(pts[2],10)); }
   else { d = new Date(dateStr); }
   if(isNaN(d)) return true;
   var now = new Date();
@@ -6703,14 +6993,14 @@ function updateDash() {
   el = document.getElementById('d-acc-sub'); if(el) el.textContent = accSales+' item(s) sold';
 
   var rt = document.getElementById('d-rep-tbl');
-  if (rt) rt.innerHTML = db.repairs.length ? db.repairs.slice(-5).reverse().map(function(r){ return '<tr><td>'+r.customer+'</td><td>'+r.device+'</td><td>'+sbadge(r.status)+'</td></tr>'; }).join('') : '<tr><td colspan="3" class="empty">No repairs</td></tr>';
+  if (rt) rt.innerHTML = db.repairs.length ? db.repairs.slice(-5).reverse().map(function(r){ return '<tr><td>'+esc(r.customer)+'</td><td>'+esc(r.device)+'</td><td>'+sbadge(r.status)+'</td></tr>'; }).join('') : '<tr><td colspan="3" class="empty">No repairs</td></tr>';
   var ot = document.getElementById('d-ord-tbl');
-  if (ot) ot.innerHTML = db.orders.length ? db.orders.slice(-5).reverse().map(function(o){ return '<tr><td><b>#'+String(o.id).slice(-5)+'</b></td><td>'+o.customer+'</td><td>'+sbadge(o.status)+'</td></tr>'; }).join('') : '<tr><td colspan="3" class="empty">No orders</td></tr>';
+  if (ot) ot.innerHTML = db.orders.length ? db.orders.slice(-5).reverse().map(function(o){ return '<tr><td><b>#'+String(o.id).slice(-5)+'</b></td><td>'+esc(o.customer)+'</td><td>'+sbadge(o.status)+'</td></tr>'; }).join('') : '<tr><td colspan="3" class="empty">No orders</td></tr>';
   var ls = db.products.filter(function(p){ return p.stock <= p.minStock; });
   var lel = document.getElementById('d-lowstock');
   if (lel) lel.innerHTML = ls.length ? '<table><thead><tr><th>Product</th><th>Category</th><th>Stock</th><th>Min</th><th>Status</th></tr></thead><tbody>' + ls.map(function(p){
     var isOut=p.stock===0;
-    return '<tr style="'+(isOut?'background:rgba(255,23,68,0.06)':'')+'"><td><b>'+p.name+'</b></td><td>'+p.category+'</td><td style="color:'+(isOut?'var(--danger)':'var(--warning)')+';font-weight:700">'+p.stock+'</td><td style="color:var(--muted)">'+p.minStock+'</td><td><span class="badge '+(isOut?'bd':'bw')+'">'+(isOut?'🚫 Out of Stock':'⚠️ Low')+'</span></td></tr>';
+    return '<tr style="'+(isOut?'background:rgba(255,23,68,0.06)':'')+'"><td><b>'+esc(p.name)+'</b></td><td>'+esc(p.category)+'</td><td style="color:'+(isOut?'var(--danger)':'var(--warning)')+';font-weight:700">'+p.stock+'</td><td style="color:var(--muted)">'+p.minStock+'</td><td><span class="badge '+(isOut?'bd':'bw')+'">'+(isOut?'🚫 Out of Stock':'⚠️ Low')+'</span></td></tr>';
   }).join('') + '</tbody></table>' : '<div class="empty"><div class="ei">✅</div>All stock OK</div>';
 
   // Render charts (debounced)
@@ -6992,7 +7282,8 @@ function renderInv() {
     var margin = p.price > 0 && p.cost > 0 ? ((p.price - p.cost) / p.price * 100) : (p.cost === 0 && p.price > 0 ? 100 : 0);
     var profit = p.price > 0 ? (p.price - (p.cost||0)) : 0;
     var marginColor = margin >= 30 ? 'var(--success)' : margin >= 10 ? 'var(--warning)' : 'var(--danger)';
-    return '<tr><td><b>'+p.name+'</b>'+(p.desc?'<br><small style="color:var(--muted)">'+p.desc+'</small>':'')+'</td><td><span class="badge bp">'+p.category+'</span></td><td><small style="color:var(--muted);font-family:monospace">'+(p.barcode||'—')+'</small></td><td>Rs. '+p.price.toFixed(2)+'<br><small style="color:var(--muted)">Cost: Rs.'+(p.cost||0).toFixed(2)+'</small></td><td style="color:'+marginColor+';font-weight:700">'+margin.toFixed(0)+'%<br><small style="color:var(--muted)">+Rs.'+profit.toFixed(0)+'</small></td><td style="color:'+stockColor+'"><b>'+p.stock+'</b><div style="display:flex;gap:3px;margin-top:3px"><button class="qbtn" onclick="quickStockAdj('+p.id+',-1)" title="Remove 1">−</button><button class="qbtn" onclick="quickStockAdj('+p.id+',1)" title="Add 1">+</button></div><div class="pbar"><div class="pfill" style="width:'+Math.min(100,p.stock*10)+'%;background:'+stockColor+'"></div></div></td><td><button class="btn bo bsm" onclick="editProd('+p.id+')" style="margin-right:4px">✏️</button><button class="btn bd2 bsm" onclick="delProd('+p.id+')">🗑️</button></td></tr>';
+    var imgThumb = p.img ? '<img src="'+esc(p.img)+'" style="width:36px;height:36px;object-fit:cover;border-radius:6px" onerror="this.style.display=\'none\'"><br>' : '';
+    return '<tr><td>'+imgThumb+'<b>'+esc(p.name)+'</b>'+(p.desc?'<br><small style="color:var(--muted)">'+esc(p.desc)+'</small>':'')+'</td><td><span class="badge bp">'+esc(p.category)+'</span></td><td><small style="color:var(--muted);font-family:monospace">'+esc(p.barcode||'—')+'</small></td><td>Rs. '+p.price.toFixed(2)+'<br><small style="color:var(--muted)">Cost: Rs.'+(p.cost||0).toFixed(2)+'</small></td><td style="color:'+marginColor+';font-weight:700">'+margin.toFixed(0)+'%<br><small style="color:var(--muted)">+Rs.'+profit.toFixed(0)+'</small></td><td style="color:'+stockColor+'"><b>'+p.stock+'</b><div style="display:flex;gap:3px;margin-top:3px"><button class="qbtn" onclick="quickStockAdj('+p.id+',-1)" title="Remove 1">−</button><button class="qbtn" onclick="quickStockAdj('+p.id+',1)" title="Add 1">+</button></div><div class="pbar"><div class="pfill" style="width:'+Math.min(100,p.stock*10)+'%;background:'+stockColor+'"></div></div></td><td><button class="btn bo bsm" onclick="editProd('+p.id+')" style="margin-right:4px">✏️</button><button class="btn bd2 bsm" onclick="delProd('+p.id+')">🗑️</button></td></tr>';
   }).join('');
 
   _renderInvPager(total, displayRows.length);
@@ -7119,7 +7410,8 @@ function renderPos() {
     var isOOS = p.stock === 0;
     var style = isOOS ? 'opacity:0.5;pointer-events:none;' : '';
     var oosTag = isOOS ? '<div style="font-size:10px;background:var(--danger);color:#fff;border-radius:4px;padding:1px 5px;margin-top:2px">Out of Stock</div>' : '';
-    return '<div class="pcard" onclick="addToCart('+p.id+')" style="'+style+'"><div class="picon">'+(ICONS[p.category]||'📦')+'</div><div class="pname">'+p.name+'</div><div class="pprice">Rs. '+p.price.toFixed(2)+'</div><div class="pstock" style="color:'+(p.stock<=p.minStock?'var(--danger)':'var(--muted)')+'">Stock: '+p.stock+'</div>'+oosTag+'</div>';
+    var imgHtml = p.img ? '<img src="'+esc(p.img)+'" style="width:48px;height:48px;object-fit:cover;border-radius:8px;margin-bottom:4px" onerror="this.style.display=\'none\'">' : '<div class="picon">'+(ICONS[p.category]||'📦')+'</div>';
+    return '<div class="pcard" onclick="addToCart('+p.id+')" style="'+style+'">'+imgHtml+'<div class="pname">'+esc(p.name)+'</div><div class="pprice">Rs. '+p.price.toFixed(2)+'</div><div class="pstock" style="color:'+(p.stock<=p.minStock?'var(--danger)':'var(--muted)')+'">Stock: '+p.stock+'</div>'+oosTag+'</div>';
   }).join('') : '<div style="grid-column:1/-1;text-align:center;color:var(--muted);padding:30px"><div style="font-size:32px">📦</div><br>No products found</div>';
 }
 function addToCart(id) {
@@ -7151,7 +7443,7 @@ function renderCart() {
   var el = document.getElementById('cart-list'); if(!el) return;
   if(!cart.length){ el.innerHTML = '<div class="empty" style="padding:16px"><div class="ei">🛒</div>Empty cart</div>'; calcTotal(); return; }
   el.innerHTML = cart.map(function(c,i){
-    return '<div class="citem"><span class="cname">'+c.name+(c.custom?'<small style="color:var(--muted);font-size:9px"> [custom]</small>':'')+'</span><div class="cqty"><button class="qbtn" onclick="chgQty('+i+',-1)">−</button><span style="font-size:12px;min-width:18px;text-align:center">'+c.qty+'</span><button class="qbtn" onclick="chgQty('+i+',1)">+</button></div><input type="number" min="0" value="'+c.price.toFixed(2)+'" style="width:70px;padding:3px 5px;font-size:12px;text-align:right;background:var(--card2);border:1px solid var(--border);border-radius:5px;color:var(--primary);font-weight:700" oninput="editCartPrice('+i+',this.value)" title="Price edit"><button style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:18px;padding:0 2px" onclick="remCart('+i+')">×</button></div>';
+    return '<div class="citem"><span class="cname">'+esc(c.name)+(c.custom?'<small style="color:var(--muted);font-size:9px"> [custom]</small>':'')+'</span><div class="cqty"><button class="qbtn" onclick="chgQty('+i+',-1)">−</button><span style="font-size:12px;min-width:18px;text-align:center">'+c.qty+'</span><button class="qbtn" onclick="chgQty('+i+',1)">+</button></div><input type="number" min="0" value="'+c.price.toFixed(2)+'" style="width:70px;padding:3px 5px;font-size:12px;text-align:right;background:var(--card2);border:1px solid var(--border);border-radius:5px;color:var(--primary);font-weight:700" oninput="editCartPrice('+i+',this.value)" title="Price edit"><button style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:18px;padding:0 2px" onclick="remCart('+i+')">×</button></div>';
   }).join('');
   calcTotal();
 }
@@ -7213,11 +7505,11 @@ function completeSale(){
   var cust=db.customers.find(function(c){ return c.id==custId; });
   var prefix=db.settings.prefix||'INV';
   var maxNum = db.invoices.reduce(function(m,i){
-    var n = parseInt((i.invNo||'').replace(/\D+/g,'')) || 0;
+    var n = parseInt((i.invNo||'').replace(/\D+/g,''),10) || 0;
     return n > m ? n : m;
   }, 0);
   var cashierSel=document.getElementById('cart-cashier-sel');
-  var cashierStaffId = cashierSel ? (parseInt(cashierSel.value)||0) : 0;
+  var cashierStaffId = cashierSel ? (parseInt(cashierSel.value,10)||0) : 0;
   var cashierStaff = cashierStaffId ? (db.staff||[]).find(function(s){ return s.id===cashierStaffId; }) : null;
   var inv={ id:Date.now(), invNo:prefix+'-'+String(maxNum+1).padStart(4,'0'), customer:cust?cust.name:'Walk-in', customerId:custId, items:cart.map(function(c){ return Object.assign({},c); }), subtotal:sub, discount:disc, tax:tax, taxPct:taxP, total:ttl, payment:selPayment, date:new Date().toLocaleDateString('en-GB'), staffId:cashierStaffId, cashierName:cashierStaff?cashierStaff.name:'' };
   cart.forEach(function(c){ if(!c.custom){ var p=db.products.find(function(x){ return x.id===c.id; }); if(p){ p.stock-=c.qty; logStock(p.id, p.name, 'Sale', -c.qty, p.stock, inv.invNo, true); }}});
@@ -7414,7 +7706,7 @@ function renderRep(){
     var techCell=r.tech?('<span style="color:var(--info);font-size:12px">'+r.tech+'</span>'):'<span style="color:var(--muted);font-size:11px">\u2014</span>';
     var waPhone=r.phone?r.phone.replace(/\D/g,'').replace(/^0/,'94'):'';
     var phoneHtml=r.phone?'<br><small style="color:var(--muted)">\ud83d\udcac '+r.phone+'</small>':'';
-    return '<tr class="'+(isOverdue?'overdue':'')+'"><td><b>#'+String(r.id).slice(-4)+'</b></td><td>'+r.customer+phoneHtml+'</td><td>'+r.device+'</td><td style="max-width:130px">'+r.issue+'</td><td>Rs. '+(r.cost||0).toFixed(2)+advTxt+'</td><td>'+techCell+'</td><td>'+sbadge(r.status)+dueTxt+'</td><td>'+r.date+'</td><td style="white-space:nowrap"><button class="btn bo bsm" onclick="editRep('+r.id+')" style="margin-right:3px">\u270f\ufe0f</button><button class="btn bs2 bsm" onclick="cycleRep('+r.id+')" style="margin-right:3px">\u2192</button><button class="btn bp2 bsm" onclick="showRepBill('+r.id+')" style="margin-right:3px">\ud83e\uddfe</button><button class="btn bwa bsm" onclick="waShareRepCustomer('+r.id+')" style="margin-right:3px">\ud83d\udcac</button><button class="btn bd2 bsm" onclick="delRep('+r.id+')">\ud83d\uddd1\ufe0f</button></td></tr>';
+    return '<tr class="'+(isOverdue?'overdue':'')+'"><td><b>#'+String(r.id).slice(-4)+'</b></td><td>'+esc(r.customer)+phoneHtml+'</td><td>'+esc(r.device)+'</td><td style="max-width:130px">'+esc(r.issue)+'</td><td>Rs. '+(r.cost||0).toFixed(2)+advTxt+'</td><td>'+techCell+'</td><td>'+sbadge(r.status)+dueTxt+'</td><td>'+r.date+'</td><td style="white-space:nowrap"><button class="btn bo bsm" onclick="editRep('+r.id+')" style="margin-right:3px">\u270f\ufe0f</button><button class="btn bs2 bsm" onclick="cycleRep('+r.id+')" style="margin-right:3px">\u2192</button><button class="btn bp2 bsm" onclick="showRepBill('+r.id+')" style="margin-right:3px">\ud83e\uddfe</button><button class="btn bwa bsm" onclick="waShareRepCustomer('+r.id+')" style="margin-right:3px">\ud83d\udcac</button><button class="btn bd2 bsm" onclick="delRep('+r.id+')">\ud83d\uddd1\ufe0f</button></td></tr>';
   }).join(''):'<tr><td colspan="9" class="empty"><div class="ei">\ud83d\udd27</div>No repairs</td></tr>';
 }
 function saveRep(){
@@ -7479,6 +7771,190 @@ function delRep(id){
   db.repairs=db.repairs.filter(function(r){ return r.id!==id; });
   saveDB(); renderRep(); updateDash(); updateBadges(); toast('🗑️ Deleted','var(--danger)');
 }
+
+// =========== REPAIR PARTS INVENTORY ===========
+function renderRepairParts() {
+  var q = (document.getElementById('rp-q') ? document.getElementById('rp-q').value : '').toLowerCase();
+  var cat = document.getElementById('rp-cat-filter') ? document.getElementById('rp-cat-filter').value : '';
+  var parts = db.partsInventory.filter(function(p) {
+    var mq = p.name.toLowerCase().includes(q) || (p.sku && p.sku.toLowerCase().includes(q)) || (p.brand && p.brand.toLowerCase().includes(q)) || (p.models && p.models.toLowerCase().includes(q));
+    var mc = !cat || p.category === cat;
+    return mq && mc;
+  });
+  var tb = document.getElementById('rparts-tbl');
+  if (!tb) return;
+  tb.innerHTML = parts.length ? parts.map(function(p) {
+    var sc = p.stock === 0 ? 'var(--danger)' : p.stock <= (p.minStock || 2) ? 'var(--warning)' : 'var(--success)';
+    return '<tr><td><b>' + esc(p.name) + '</b>' + (p.models ? '<br><small style="color:var(--muted)">' + esc(p.models) + '</small>' : '') + '</td>' +
+      '<td><small style="font-family:monospace;color:var(--muted)">' + esc(p.sku || '—') + '</small></td>' +
+      '<td><span class="badge bo">' + esc(p.category) + '</span></td>' +
+      '<td>' + (p.brand ? '<small>' + esc(p.brand) + '</small>' : '—') + '</td>' +
+      '<td style="color:' + sc + ';font-weight:700">' + p.stock + '<div class="pbar"><div class="pfill" style="width:' + Math.min(100, p.stock * 10) + '%;background:' + sc + '"></div></div></td>' +
+      '<td>Rs. ' + (p.cost || 0).toFixed(2) + '</td>' +
+      '<td>Rs. ' + (p.price || 0).toFixed(2) + '</td>' +
+      '<td style="white-space:nowrap"><button class="btn bo bsm" onclick="editRepairPart(' + p.id + ')" style="margin-right:3px">✏️</button><button class="btn bd2 bsm" onclick="delRepairPart(' + p.id + ')">🗑️</button></td></tr>';
+  }).join('') : '<tr><td colspan="8" class="empty"><div class="ei">🔩</div>No parts found</td></tr>';
+  var badge = document.getElementById('rparts-badge');
+  if (badge) {
+    var low = db.partsInventory.filter(function(p){ return p.stock <= (p.minStock || 2) && p.stock > 0; }).length;
+    var oos = db.partsInventory.filter(function(p){ return p.stock === 0; }).length;
+    badge.textContent = low + oos;
+    badge.style.display = (low + oos) > 0 ? 'inline' : 'none';
+  }
+}
+
+function openRepairPartModal() {
+  document.getElementById('rp-id').value = '';
+  document.getElementById('rp-name').value = '';
+  document.getElementById('rp-sku').value = '';
+  document.getElementById('rp-cat').value = 'Screen';
+  document.getElementById('rp-brand').value = '';
+  document.getElementById('rp-models').value = '';
+  document.getElementById('rp-stock').value = '1';
+  document.getElementById('rp-min').value = '2';
+  document.getElementById('rp-cost').value = '';
+  document.getElementById('rp-price').value = '';
+  document.getElementById('rp-loc').value = '';
+  document.getElementById('rp-supplier').value = '';
+  openM('m-rpart');
+}
+
+function saveRepairPart() {
+  var id = document.getElementById('rp-id').value;
+  var nm = document.getElementById('rp-name').value.trim();
+  if (!nm) { toast('❌ Name required', 'var(--danger)'); return; }
+  var p = {
+    id: id ? parseInt(id) : Date.now(),
+    name: nm,
+    sku: document.getElementById('rp-sku').value.trim(),
+    category: document.getElementById('rp-cat').value,
+    brand: document.getElementById('rp-brand').value.trim(),
+    models: document.getElementById('rp-models').value.trim(),
+    stock: parseInt(document.getElementById('rp-stock').value) || 0,
+    minStock: parseInt(document.getElementById('rp-min').value) || 2,
+    cost: parseFloat(document.getElementById('rp-cost').value) || 0,
+    price: parseFloat(document.getElementById('rp-price').value) || 0,
+    location: document.getElementById('rp-loc').value.trim(),
+    supplier: document.getElementById('rp-supplier').value.trim()
+  };
+  if (id) { var i = db.partsInventory.findIndex(function(x) { return x.id === p.id; }); if (i >= 0) db.partsInventory[i] = p; }
+  else db.partsInventory.push(p);
+  saveDB(); renderRepairParts(); closeM('m-rpart'); toast('✅ Part saved!');
+}
+
+function editRepairPart(id) {
+  var p = db.partsInventory.find(function(x) { return x.id === id; });
+  if (!p) return;
+  document.getElementById('rp-id').value = p.id;
+  document.getElementById('rp-name').value = p.name;
+  document.getElementById('rp-sku').value = p.sku || '';
+  document.getElementById('rp-cat').value = p.category;
+  document.getElementById('rp-brand').value = p.brand || '';
+  document.getElementById('rp-models').value = p.models || '';
+  document.getElementById('rp-stock').value = p.stock;
+  document.getElementById('rp-min').value = p.minStock || 2;
+  document.getElementById('rp-cost').value = p.cost || '';
+  document.getElementById('rp-price').value = p.price || '';
+  document.getElementById('rp-loc').value = p.location || '';
+  document.getElementById('rp-supplier').value = p.supplier || '';
+  openM('m-rpart');
+}
+
+function delRepairPart(id) {
+  if (!confirm('Delete this part?')) return;
+  db.partsInventory = db.partsInventory.filter(function(p) { return p.id !== id; });
+  saveDB(); renderRepairParts(); toast('🗑️ Part deleted', 'var(--danger)');
+}
+
+// ---- Parts selection in Repair Modal ----
+var _repParts = [];
+
+function refreshRepPartSel() {
+  var sel = document.getElementById('r-part-sel');
+  if (!sel) return;
+  var used = _repParts.map(function(p){ return p.invId; });
+  sel.innerHTML = '<option value="">— Select Part —</option>' +
+    db.partsInventory.filter(function(p){ return used.indexOf(p.id) < 0; }).map(function(p) {
+      return '<option value="' + p.id + '">' + esc(p.name) + (p.stock > 0 ? ' (Stock: ' + p.stock + ')' : ' ⛔ OOS') + '</option>';
+    }).join('');
+}
+
+function addPartToRepair() {
+  var sel = document.getElementById('r-part-sel');
+  var qty = parseInt(document.getElementById('r-part-qty').value) || 1;
+  var id = parseInt(sel.value);
+  if (!id) { toast('❌ Select a part', 'var(--danger)'); return; }
+  var inv = db.partsInventory.find(function(p) { return p.id === id; });
+  if (!inv) return;
+  var usedQty = _repParts.filter(function(p){ return p.invId === id; }).reduce(function(s, p){ return s + p.qty; }, 0);
+  if (usedQty + qty > inv.stock) { toast('⚠️ Only ' + (inv.stock - usedQty) + ' available in stock', 'var(--warning)'); return; }
+  _repParts.push({ invId: id, name: inv.name, qty: qty, cost: inv.price || 0 });
+  refreshRepPartSel();
+  renderRepPartsList();
+}
+
+function renderRepPartsList() {
+  var el = document.getElementById('r-parts-list');
+  var totalCost = 0;
+  if (!el) return;
+  if (!_repParts.length) {
+    el.innerHTML = '<span style="color:var(--muted)">No parts added yet</span>';
+    document.getElementById('r-parts-data').value = '';
+    return;
+  }
+  el.innerHTML = _repParts.map(function(p, i) {
+    totalCost += p.cost * p.qty;
+    return '<div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--border)">' +
+      '<span style="flex:1;font-size:12px">' + esc(p.name) + ' <small style="color:var(--muted)">x' + p.qty + '</small></span>' +
+      '<span style="font-size:11px;color:var(--primary)">Rs. ' + (p.cost * p.qty).toFixed(2) + '</span>' +
+      '<button class="btn bd2 bsm" style="padding:2px 6px;font-size:11px" onclick="removeRepPart(' + i + ')">✕</button></div>';
+  }).join('') + '<div style="text-align:right;font-size:12px;font-weight:700;color:var(--info);padding-top:4px">Parts Total: Rs. ' + totalCost.toFixed(2) + '</div>';
+  document.getElementById('r-parts-data').value = JSON.stringify(_repParts);
+}
+
+function removeRepPart(i) {
+  _repParts.splice(i, 1);
+  refreshRepPartSel();
+  renderRepPartsList();
+}
+
+// Patch saveRep to handle parts deduction
+var _origSaveRep = saveRep;
+saveRep = function() {
+  var partsData = document.getElementById('r-parts-data') ? document.getElementById('r-parts-data').value : '';
+  var parts = partsData ? JSON.parse(partsData) : [];
+  // Deduct stock from parts inventory
+  parts.forEach(function(p) {
+    var inv = db.partsInventory.find(function(x) { return x.id === p.invId; });
+    if (inv) {
+      inv.stock = Math.max(0, inv.stock - p.qty);
+    }
+  });
+  _origSaveRep();
+  // Save parts to repairParts collection
+  var rId = document.getElementById('r-id') ? document.getElementById('r-id').value : '';
+  if (rId && parts.length) {
+    var repId = parseInt(rId);
+    if (!db.repairParts) db.repairParts = {};
+    db.repairParts[repId] = parts.map(function(p) {
+      var inv = db.partsInventory.find(function(x) { return x.id === p.invId; });
+      return { name: p.name, qty: p.qty, cost: p.cost, invId: p.invId, sku: inv ? inv.sku : '' };
+    });
+    saveDB();
+  }
+  renderRepairParts();
+};
+
+// Patch editRep to load parts
+var _origEditRep = editRep;
+editRep = function(id) {
+  _origEditRep(id);
+  // Load existing parts for this repair
+  var parts = (db.repairParts || {})[id] || [];
+  _repParts = parts.map(function(p) { return { invId: p.invId, name: p.name, qty: p.qty, cost: p.cost }; });
+  refreshRepPartSel();
+  renderRepPartsList();
+};
 var currentRepId = null;
 function showRepBill(id){
   currentRepId = id;
@@ -7816,7 +8292,7 @@ function showInv(id){
   var inv=db.invoices.find(function(i){ return i.id===id; }); if(!inv) return;
   var s=db.settings;
   var el=document.getElementById('inv-content'); if(!el) return;
-  el.innerHTML='<h2>'+s.shopName+'</h2><p style="text-align:center;color:#666;font-size:11px">'+[s.phone,s.email,s.address].filter(Boolean).join(' | ')+'</p><div class="inv-line"></div><div class="inv-row"><span><b>Invoice:</b> '+inv.invNo+'</span><span><b>Date:</b> '+inv.date+'</span></div><div class="inv-row"><span><b>Customer:</b> '+inv.customer+'</span><span><b>Payment:</b> '+inv.payment+'</span></div>'+(inv.cashierName?'<div class="inv-row"><span><b>Cashier:</b> '+inv.cashierName+'</span><span></span></div>':'')+'<div class="inv-line"></div><table style="width:100%;font-size:12px"><tr style="background:#f5f5ff"><th style="padding:5px">Item</th><th style="text-align:center">Qty</th><th style="text-align:right">Price</th><th style="text-align:right">Total</th></tr>'+inv.items.map(function(i){ return '<tr><td style="padding:4px">'+i.name+'</td><td style="text-align:center">'+i.qty+'</td><td style="text-align:right">Rs.'+i.price.toFixed(2)+'</td><td style="text-align:right">Rs.'+(i.price*i.qty).toFixed(2)+'</td></tr>'; }).join('')+'</table><div class="inv-line"></div><div class="inv-row"><span>Subtotal</span><span>Rs. '+inv.subtotal.toFixed(2)+'</span></div>'+(inv.discount>0?'<div class="inv-row"><span>Discount</span><span>- Rs. '+inv.discount.toFixed(2)+'</span></div>':'')+(inv.tax>0?'<div class="inv-row"><span>Tax ('+(inv.taxPct||0)+'%)</span><span>+ Rs. '+inv.tax.toFixed(2)+'</span></div>':'')+'<div class="inv-row" style="font-size:16px;font-weight:800;color:#6c63ff"><span>TOTAL</span><span>Rs. '+inv.total.toFixed(2)+'</span></div><div class="inv-line"></div><p style="text-align:center;color:#888;font-size:11px">'+s.note+'</p>'+(s.whatsapp?'<p style="text-align:center;color:#888;font-size:11px">📱 '+s.whatsapp+'</p>':'')+(s.fb?'<p style="text-align:center;color:#888;font-size:11px">🌐 '+s.fb+'</p>':'');
+  el.innerHTML='<h2>'+esc(s.shopName)+'</h2><p style="text-align:center;color:#666;font-size:11px">'+[s.phone,s.email,s.address].filter(Boolean).map(esc).join(' | ')+'</p><div class="inv-line"></div><div class="inv-row"><span><b>Invoice:</b> '+esc(inv.invNo)+'</span><span><b>Date:</b> '+esc(inv.date)+'</span></div><div class="inv-row"><span><b>Customer:</b> '+esc(inv.customer)+'</span><span><b>Payment:</b> '+esc(inv.payment)+'</span></div>'+(inv.cashierName?'<div class="inv-row"><span><b>Cashier:</b> '+esc(inv.cashierName)+'</span><span></span></div>':'')+'<div class="inv-line"></div><table style="width:100%;font-size:12px"><tr style="background:#f5f5ff"><th style="padding:5px">Item</th><th style="text-align:center">Qty</th><th style="text-align:right">Price</th><th style="text-align:right">Total</th></tr>'+inv.items.map(function(i){ return '<tr><td style="padding:4px">'+esc(i.name)+'</td><td style="text-align:center">'+i.qty+'</td><td style="text-align:right">Rs.'+i.price.toFixed(2)+'</td><td style="text-align:right">Rs.'+(i.price*i.qty).toFixed(2)+'</td></tr>'; }).join('')+'</table><div class="inv-line"></div><div class="inv-row"><span>Subtotal</span><span>Rs. '+inv.subtotal.toFixed(2)+'</span></div>'+(inv.discount>0?'<div class="inv-row"><span>Discount</span><span>- Rs. '+inv.discount.toFixed(2)+'</span></div>':'')+(inv.tax>0?'<div class="inv-row"><span>Tax ('+(inv.taxPct||0)+'%)</span><span>+ Rs. '+inv.tax.toFixed(2)+'</span></div>':'')+'<div class="inv-row" style="font-size:16px;font-weight:800;color:#6c63ff"><span>TOTAL</span><span>Rs. '+inv.total.toFixed(2)+'</span></div><div class="inv-line"></div><p style="text-align:center;color:#888;font-size:11px">'+esc(s.note)+'</p>'+(s.whatsapp?'<p style="text-align:center;color:#888;font-size:11px">📱 '+esc(s.whatsapp)+'</p>':'')+(s.fb?'<p style="text-align:center;color:#888;font-size:11px">🌐 '+esc(s.fb)+'</p>':'');
   openM('m-inv');
 }
 
@@ -8111,6 +8587,120 @@ function showAutoBackupPopup(msg) {
 }
 
 // =========== END AUTO BACKUP ===========
+
+// =========== AUTO FIREBASE SYNC SCHEDULER ===========
+var _autoSyncCheckInterval = null;
+
+function initAutoFirebaseSync() {
+  if (_autoSyncCheckInterval) clearInterval(_autoSyncCheckInterval);
+  _autoSyncCheckInterval = setInterval(checkAutoFirebaseSync, 300000);
+  setTimeout(function() {
+    checkAutoFirebaseSync();
+    updateAutoSyncUI();
+  }, 3000);
+}
+
+function saveAutoFirebaseSyncSettings() {
+  var sel = document.getElementById('auto-sync-interval');
+  if (!sel) return;
+  var mins = parseInt(sel.value);
+  db.settings.autoSyncInterval = mins;
+  if (mins > 0 && !db.settings.autoSyncLastDone) {
+    db.settings.autoSyncLastDone = new Date().toISOString();
+    manualFirebaseSyncNow();
+  }
+  saveDB();
+  updateAutoSyncUI();
+  toast(mins > 0 ? '✅ Auto cloud sync enabled! Every ' + formatSyncInterval(mins) : '🚫 Auto cloud sync disabled.');
+}
+
+function resetAutoSyncTimer() {
+  db.settings.autoSyncLastDone = new Date().toISOString();
+  saveDB();
+  updateAutoSyncUI();
+  toast('🔄 Auto sync timer reset!');
+}
+
+function checkAutoFirebaseSync() {
+  var mins = db.settings.autoSyncInterval || 0;
+  if (mins <= 0) return;
+  if (typeof window.firebaseSaveDB !== 'function') return;
+  var lastDone = db.settings.autoSyncLastDone ? new Date(db.settings.autoSyncLastDone) : null;
+  if (!lastDone) {
+    db.settings.autoSyncLastDone = new Date().toISOString();
+    saveDB();
+    return;
+  }
+  var now = new Date();
+  var diffMins = (now - lastDone) / (1000 * 60);
+  if (diffMins >= mins) {
+    window.firebaseSaveDB(db);
+    db.settings.autoSyncLastDone = new Date().toISOString();
+    saveDB();
+    updateAutoSyncUI();
+  }
+}
+
+function manualFirebaseSyncNow() {
+  if (typeof window.firebaseSaveDB === 'function') {
+    window.firebaseSaveDB(db);
+    db.settings.autoSyncLastDone = new Date().toISOString();
+    saveDB();
+    updateAutoSyncUI();
+    toast('☁️ Firebase sync initiated!');
+  } else {
+    toast('⚠️ Firebase not available', 'var(--warning)');
+  }
+}
+
+function updateAutoSyncUI() {
+  var statusEl = document.getElementById('auto-sync-status');
+  var countdownEl = document.getElementById('auto-sync-countdown');
+  var sel = document.getElementById('auto-sync-interval');
+  if (!statusEl) return;
+  var mins = db.settings.autoSyncInterval || 0;
+  if (sel) sel.value = String(mins);
+  if (mins <= 0) {
+    statusEl.textContent = '🚫 Auto cloud sync disabled.';
+    if (countdownEl) countdownEl.textContent = '';
+    return;
+  }
+  var lastDone = db.settings.autoSyncLastDone ? new Date(db.settings.autoSyncLastDone) : null;
+  if (!lastDone) {
+    statusEl.textContent = '⚠️ Never synced!';
+    if (countdownEl) countdownEl.innerHTML = '<span style="color:var(--warning)">📢 First sync pending...</span>';
+    return;
+  }
+  var now = new Date();
+  var diffMins = (now - lastDone) / (1000 * 60);
+  var nextDue = new Date(lastDone.getTime() + mins * 60 * 1000);
+  var lastStr = lastDone.toLocaleString();
+  statusEl.textContent = '✅ Last sync: ' + lastStr;
+  if (diffMins >= mins) {
+    if (countdownEl) countdownEl.innerHTML = '<span style="color:var(--danger)">🔴 Sync OVERDUE! Syncing...</span>';
+    setTimeout(checkAutoFirebaseSync, 500);
+  } else {
+    var remainingMins = Math.round(mins - diffMins);
+    if (remainingMins < 60) {
+      if (countdownEl) countdownEl.textContent = '🟢 Next sync in ' + remainingMins + ' min(s).';
+    } else if (remainingMins < 1440) {
+      var hrs = Math.floor(remainingMins / 60);
+      var mns = remainingMins % 60;
+      if (countdownEl) countdownEl.textContent = '🟢 Next sync in ' + hrs + 'h ' + mns + 'm.';
+    } else {
+      var days = Math.floor(remainingMins / 1440);
+      if (countdownEl) countdownEl.textContent = '🟢 Next sync in ' + days + ' day(s).';
+    }
+  }
+}
+
+function formatSyncInterval(mins) {
+  if (mins < 60) return mins + ' min(s)';
+  if (mins < 1440) return Math.floor(mins / 60) + ' hour(s)';
+  if (mins < 10080) return Math.floor(mins / 1440) + ' day(s)';
+  return Math.floor(mins / 10080) + ' week(s)';
+}
+// =========== END AUTO FIREBASE SYNC ===========
 
 function exportDB(){
   try {
@@ -8942,6 +9532,233 @@ function renderAnalytics(){
   db.invoices.forEach(function(inv){ inv.items.forEach(function(it){ var p=db.products.find(function(x){ return x.id===it.id; }); var cat=p?p.category:'Other'; catMap[cat]=(catMap[cat]||0)+it.price*it.qty; }); });
   var catEl=document.getElementById('an-categories');
   if(catEl) catEl.innerHTML=Object.keys(catMap).length?Object.keys(catMap).map(function(c){ var pct=totalRev?Math.round((catMap[c]/totalRev)*100):0; return '<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span>'+c+'</span><span style="color:var(--warning)">'+pct+'%</span></div><div class="pbar"><div class="pfill" style="width:'+pct+'%;background:var(--warning);transition:width 0.8s ease"></div></div></div>'; }).join(''):'<div class="empty">No data</div>';
+  // Populate forecast product dropdown always (keeps up with new products)
+  var fcSel=document.getElementById('an-fc-prod');
+  if(fcSel){
+    var curVal=fcSel.value;
+    var prods=[...new Set(db.invoices.reduce(function(a,i){ return a.concat(i.items.map(function(it){ return it.name; })); },[]))].sort();
+    fcSel.innerHTML='<option value="">-- Select Product --</option>'+prods.map(function(n){ return '<option value="'+esc(n)+'"'+(curVal===n?' selected':'')+'>'+esc(n)+'</option>'; }).join('');
+  }
+  anRenderTopProducts();
+  anRenderForecast();
+  anRenderCashFlow();
+}
+
+// ==================== BEST / WORST SELLERS ====================
+function anRenderTopProducts(){
+  var itemMap={};
+  db.invoices.forEach(function(inv){ inv.items.forEach(function(it){ if(!itemMap[it.name]) itemMap[it.name]={qty:0,rev:0,cost:0}; itemMap[it.name].qty+=it.qty; itemMap[it.name].rev+=it.price*it.qty; var p=db.products.find(function(x){ return x.id===it.id; }); if(p) itemMap[it.name].cost+=(p.cost||0)*it.qty; }); });
+  var all=Object.keys(itemMap).map(function(n){ return {name:n,qty:itemMap[n].qty,rev:itemMap[n].rev,profit:itemMap[n].rev-itemMap[n].cost}; }).sort(function(a,b){ return b.rev-a.rev; });
+  var totalRev=all.reduce(function(s,x){ return s+x.rev; },0)||1;
+  function renderList(arr,elId,limit,reverse){
+    var items=reverse?arr.slice().reverse().slice(0,limit):arr.slice(0,limit);
+    var el=document.getElementById(elId); if(!el) return;
+    el.innerHTML=items.length?items.map(function(x,i){
+      var pct=Math.round((x.rev/totalRev)*100);
+      var barClr=reverse?'var(--danger)':'var(--primary)';
+      return '<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span>'+(i+1)+'. '+esc(x.name)+' <small style="color:var(--muted)">('+x.qty+' sold)</small></span><span style="color:'+barClr+'">Rs.'+x.rev.toFixed(0)+'</span></div><div class="pbar"><div class="pfill" style="width:'+pct+'%;background:'+barClr+';transition:width 0.8s ease"></div></div></div>';
+    }).join(''):'<div class="empty">No sales data</div>';
+  }
+  renderList(all,'an-bestsellers2',10,false);
+  renderList(all,'an-worstsellers',10,true);
+}
+
+// ==================== SALES FORECASTING ====================
+function anGetMonthlySales(productName, monthsBack){
+  var data=[];
+  var now=new Date();
+  for(var i=monthsBack-1;i>=0;i--){
+    var d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    var rev=0,qty=0;
+    db.invoices.forEach(function(inv){
+      var parts=inv.date?inv.date.split('/'):null;
+      if(!parts||parts.length<3) return;
+      var invD=new Date(parseInt(parts[2],10),parseInt(parts[1],10)-1,parseInt(parts[0],10));
+      if(invD.getFullYear()===d.getFullYear()&&invD.getMonth()===d.getMonth()){
+        inv.items.forEach(function(it){
+          if(it.name===productName){ rev+=it.price*it.qty; qty+=it.qty; }
+        });
+      }
+    });
+    data.push({ month:d.toLocaleString('en-GB',{month:'short',year:'numeric'}), rev:rev, qty:qty });
+  }
+  return data;
+}
+
+function anForecastNextMonths(historical, months){
+  if(historical.length<2) return [];
+  var vals=historical.map(function(h){ return h.rev; });
+  // Simple linear regression: y = a + bx
+  var n=vals.length;
+  var sumX=0,sumY=0,sumXY=0,sumX2=0;
+  for(var i=0;i<n;i++){ sumX+=i; sumY+=vals[i]; sumXY+=i*vals[i]; sumX2+=i*i; }
+  var slope=(n*sumXY-sumX*sumY)/(n*sumX2-sumX*sumX)||0;
+  var intercept=(sumY-slope*sumX)/n;
+  var lastMonth=new Date();
+  lastMonth.setMonth(lastMonth.getMonth()+1);
+  var result=[];
+  for(var m=0;m<months;m++){
+    var predicted=Math.max(0,intercept+slope*(n+m));
+    var d=new Date(lastMonth.getFullYear(),lastMonth.getMonth()+m,1);
+    result.push({ month:d.toLocaleString('en-GB',{month:'short',year:'numeric'}), rev:Math.round(predicted), forecast:true });
+  }
+  return result;
+}
+
+function anRenderForecast(){
+  var prodSel=document.getElementById('an-fc-prod');
+  var prodName=prodSel?prodSel.value:'';
+  var monthsSel=document.getElementById('an-fc-months');
+  var lookback=parseInt(monthsSel?monthsSel.value:6,10);
+  var canvas=document.getElementById('an-fc-chart');
+  var summaryEl=document.getElementById('an-fc-summary');
+  if(!prodName){ if(canvas){ canvas.style.display='none'; } if(summaryEl) summaryEl.textContent='Select a product above to see sales forecast.'; return; }
+  if(canvas) canvas.style.display='block';
+  var historical=anGetMonthlySales(prodName,lookback);
+  var forecast=anForecastNextMonths(historical,3);
+  if(canvas && typeof Chart !== 'undefined'){
+    if(window._anFcChart){ window._anFcChart.destroy(); }
+    var labels=historical.map(function(h){ return h.month; }).concat(forecast.map(function(f){ return f.month; }));
+    var histData=historical.map(function(h){ return h.rev; });
+    var fcData=new Array(historical.length).fill(null).concat(forecast.map(function(f){ return f.rev; }));
+    var clr=getComputedStyle(document.documentElement).getPropertyValue('--primary').trim()||'#6c63ff';
+    window._anFcChart=new Chart(canvas.getContext('2d'),{
+      type:'bar', data:{
+        labels:labels,
+        datasets:[
+          { label:'Historical', data:histData, backgroundColor:clr+'cc', borderRadius:4 },
+          { label:'Forecast', data:fcData, backgroundColor:'#ffab00cc', borderRadius:4 }
+        ]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{
+          legend:{labels:{color:'#e0e0ff',font:{size:11}}},
+          tooltip:{callbacks:{label:function(c){ return c.dataset.label+': Rs. '+c.raw.toFixed(0); }}}
+        },
+        scales:{
+          x:{ticks:{color:'#7070a0',font:{size:9}},grid:{display:false}},
+          y:{ticks:{color:'#7070a0',font:{size:9},callback:function(v){ return v>=1000?'Rs.'+(v/1000).toFixed(0)+'k':'Rs.'+v; }},grid:{color:'#2a2a4a'}}
+        }
+      }
+    });
+  }
+  if(summaryEl){
+    var avg=historical.length?historical.reduce(function(s,h){ return s+h.rev; },0)/historical.length:0;
+    var totalFc=forecast.reduce(function(s,f){ return s+f.rev; },0);
+    var trend=historical.length>=2?(historical[historical.length-1].rev-historical[0].rev)/(historical.length-1):0;
+    summaryEl.innerHTML='<b>'+esc(prodName)+'</b> — Avg Monthly: Rs.'+avg.toFixed(0)+
+      ' | Projected next 3 months: Rs.'+totalFc.toFixed(0)+
+      ' | Trend: '+(trend>=0?'📈 +':'📉 ')+'Rs.'+Math.abs(trend).toFixed(0)+'/month';
+  }
+}
+
+// ==================== CASH FLOW PROJECTION ====================
+function anGetMonthlyCashFlow(monthsBack){
+  var now=new Date();
+  var data=[];
+  for(var i=monthsBack-1;i>=0;i--){
+    var d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    var income=0,expense=0;
+    // Invoice income
+    db.invoices.forEach(function(inv){
+      var parts=inv.date?inv.date.split('/'):null;
+      if(!parts||parts.length<3) return;
+      var invD=new Date(parseInt(parts[2],10),parseInt(parts[1],10)-1,parseInt(parts[0],10));
+      if(invD.getFullYear()===d.getFullYear()&&invD.getMonth()===d.getMonth()) income+=inv.total||0;
+    });
+    // Repair income
+    db.repairs.forEach(function(r){
+      var parts=r.date?r.date.split('/'):null;
+      if(!parts||parts.length<3) return;
+      var rD=new Date(parseInt(parts[2],10),parseInt(parts[1],10)-1,parseInt(parts[0],10));
+      if(rD.getFullYear()===d.getFullYear()&&rD.getMonth()===d.getMonth()) income+=r.cost||0;
+    });
+    // Order payments
+    db.orders.forEach(function(o){
+      var parts=o.date?o.date.split('/'):null;
+      if(!parts||parts.length<3) return;
+      var oD=new Date(parseInt(parts[2],10),parseInt(parts[1],10)-1,parseInt(parts[0],10));
+      if(oD.getFullYear()===d.getFullYear()&&oD.getMonth()===d.getMonth()){
+        income+=(o.payments||[]).reduce(function(ps,p){ return ps+(p.amount||0); },0);
+      }
+    });
+    // Expenses
+    (db.expenses||[]).forEach(function(e){
+      var parts=e.date?e.date.split('/'):null;
+      if(!parts||parts.length<3) return;
+      var eD=new Date(parseInt(parts[2],10),parseInt(parts[1],10)-1,parseInt(parts[0],10));
+      if(eD.getFullYear()===d.getFullYear()&&eD.getMonth()===d.getMonth()) expense+=e.amount||0;
+    });
+    data.push({ month:d.toLocaleString('en-GB',{month:'short',year:'numeric'}), income:income, expense:expense });
+  }
+  return data;
+}
+
+function anProjectCashFlow(historical, months){
+  if(historical.length<2) return [];
+  var avgIncome=historical.reduce(function(s,h){ return s+h.income; },0)/historical.length;
+  var avgExpense=historical.reduce(function(s,h){ return s+h.expense; },0)/historical.length;
+  var lastMonth=new Date();
+  lastMonth.setMonth(lastMonth.getMonth()+1);
+  var runningBalance=historical[historical.length-1]?(historical[historical.length-1].income-historical[historical.length-1].expense):0;
+  var result=[];
+  for(var m=0;m<months;m++){
+    var d=new Date(lastMonth.getFullYear(),lastMonth.getMonth()+m,1);
+    runningBalance+=avgIncome-avgExpense;
+    result.push({ month:d.toLocaleString('en-GB',{month:'short',year:'numeric'}), income:Math.round(avgIncome), expense:Math.round(avgExpense), balance:Math.round(runningBalance), forecast:true });
+  }
+  return result;
+}
+
+function anRenderCashFlow(){
+  var monthsSel=document.getElementById('an-cf-months');
+  var projMonths=parseInt(monthsSel?monthsSel.value:6,10);
+  var lookback=Math.min(12,projMonths*2);
+  var canvas=document.getElementById('an-cf-chart');
+  var summaryEl=document.getElementById('an-cf-summary');
+  var historical=anGetMonthlyCashFlow(lookback);
+  var forecast=anProjectCashFlow(historical,projMonths);
+  if(canvas && typeof Chart !== 'undefined'){
+    if(window._anCfChart){ window._anCfChart.destroy(); }
+    var labels=historical.map(function(h){ return h.month; }).concat(forecast.map(function(f){ return f.month; }));
+    var incHist=historical.map(function(h){ return h.income; });
+    var expHist=historical.map(function(h){ return h.expense; });
+    var incFc=new Array(historical.length).fill(null).concat(forecast.map(function(f){ return f.income; }));
+    var expFc=new Array(historical.length).fill(null).concat(forecast.map(function(f){ return f.expense; }));
+    window._anCfChart=new Chart(canvas.getContext('2d'),{
+      type:'line', data:{
+        labels:labels,
+        datasets:[
+          { label:'Income', data:incHist, borderColor:'#00e676', backgroundColor:'rgba(0,230,118,0.1)', fill:false, tension:0.3, pointRadius:3 },
+          { label:'Expenses', data:expHist, borderColor:'#ff1744', backgroundColor:'rgba(255,23,68,0.1)', fill:false, tension:0.3, pointRadius:3 },
+          { label:'Income (Projected)', data:incFc, borderColor:'#00e676', borderDash:[5,5], backgroundColor:'rgba(0,230,118,0.05)', fill:false, tension:0.3, pointRadius:4, pointStyle:'triangle' },
+          { label:'Expenses (Projected)', data:expFc, borderColor:'#ff1744', borderDash:[5,5], backgroundColor:'rgba(255,23,68,0.05)', fill:false, tension:0.3, pointRadius:4, pointStyle:'triangle' }
+        ]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{
+          legend:{labels:{color:'#e0e0ff',font:{size:10}}},
+          tooltip:{callbacks:{label:function(c){ return c.dataset.label+': Rs. '+c.raw.toFixed(0); }}}
+        },
+        scales:{
+          x:{ticks:{color:'#7070a0',font:{size:9}},grid:{display:false}},
+          y:{ticks:{color:'#7070a0',font:{size:9},callback:function(v){ return v>=1000?'Rs.'+(v/1000).toFixed(0)+'k':'Rs.'+v; }},grid:{color:'#2a2a4a'}}
+        }
+      }
+    });
+  }
+  if(summaryEl){
+    var avgInc=historical.length?historical.reduce(function(s,h){ return s+h.income; },0)/historical.length:0;
+    var avgExp=historical.length?historical.reduce(function(s,h){ return s+h.expense; },0)/historical.length:0;
+    var netMonthly=avgInc-avgExp;
+    var projBal=forecast.length?forecast[forecast.length-1].balance:0;
+    summaryEl.innerHTML='Avg Monthly Income: Rs.'+Math.round(avgInc).toLocaleString()+
+      ' | Avg Monthly Expenses: Rs.'+Math.round(avgExp).toLocaleString()+
+      ' | Net: <span style="color:'+(netMonthly>=0?'var(--success)':'var(--danger)')+'">Rs.'+Math.round(netMonthly).toLocaleString()+'</span>'+
+      ' | Projected Balance ('+projMonths+'mo): <b>Rs.'+projBal.toLocaleString()+'</b>';
+  }
 }
 
 // =========== STOCK LOG ===========
@@ -9290,13 +10107,6 @@ function waShareEstimate(){
 
   var waNum=phone.replace(/\D/g,'').replace(/^0/,'94');
   window.open('https://wa.me/'+waNum+'?text='+encodeURIComponent(msg),'_blank');
-}
-
-// =========== CUSTOMER LOYALTY POINTS ===========
-function getLoyaltyPoints(custId){
-  var invs=db.invoices.filter(function(i){ return i.customerId==custId; });
-  var total=invs.reduce(function(s,i){ return s+(i.total||0); },0);
-  return Math.floor(total/100); // 1 point per Rs.100
 }
 
 function renderSuppliers(){
@@ -10524,6 +11334,25 @@ function quickPrintLabel(prodId){
   updateBarcodePreview();
   generateBarcodeLabels();
 }
+function printAllLabels(){
+  var s=db.settings;
+  var labels=db.products.map(function(p){
+    return '<div style="background:#fff;color:#111;border:1px solid #ddd;border-radius:4px;padding:8px;width:160px;font-family:monospace;text-align:center;display:inline-block;margin:4px;page-break-inside:avoid">'+
+      '<div style="font-size:9px;font-weight:800;margin-bottom:2px">'+(s.shopName||'ST Mobile')+'</div>'+
+      '<div style="font-size:10px;margin-bottom:2px"><b>'+esc(p.name)+'</b></div>'+
+      (p.img?'<img src="'+esc(p.img)+'" style="width:40px;height:40px;object-fit:cover;border-radius:4px;margin-bottom:2px" onerror="this.style.display=\'none\'">':'')+
+      (p.barcode?'<div style="font-size:8px;background:#f0f0f0;padding:2px;margin:2px;letter-spacing:1.5px;font-family:monospace">||| '+p.barcode+' |||</div>':'<div style="font-size:8px;color:#999">NO BARCODE</div>')+
+      '<div style="font-size:14px;font-weight:900;color:#000;margin-top:2px">Rs. '+p.price.toFixed(2)+'</div>'+
+      '<div style="font-size:7px;color:#666">'+p.category+'</div></div>';
+  }).join('');
+  var w=window.open('','_blank','width=800,height=600');
+  w.document.write('<!DOCTYPE html><html><head><title>All Labels</title><style>body{margin:15px;background:#fff}@media print{@page{margin:10mm}button{display:none}}</style></head><body>'+
+    '<div style="margin-bottom:10px;text-align:center"><button onclick="window.print()" style="padding:8px 20px;background:#6c63ff;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:14px">🖨️ Print All Labels ('+db.products.length+')</button></div>'+
+    '<div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center">'+labels+'</div>'+
+  '</body></html>');
+  w.document.close();
+  toast('🖨️ '+db.products.length+' labels ready for printing!');
+}
 function updateBarcodePreview(){
   var sel=document.getElementById('bc-prod-sel'); if(!sel||!sel.value) return;
   var p=db.products.find(function(x){ return x.id===parseInt(sel.value); }); if(!p) return;
@@ -10680,6 +11509,152 @@ function addBundleToCart(id){
   // Add as single custom cart item
   cart.push({ id:'bundle'+b.id+'_'+Date.now(), name:b.icon+' '+b.name, price:b.price, qty:1, custom:true });
   goPage('pos'); renderCart(); toast('✅ Bundle added to cart!');
+}
+
+// =========== GIFT VOUCHERS ===========
+function renderGiftVouchers() {
+  var q = (document.getElementById('gv-q') ? document.getElementById('gv-q').value : '').toLowerCase();
+  var vouchers = db.giftVouchers || [];
+  if (q) vouchers = vouchers.filter(function(v) {
+    return v.code.toLowerCase().includes(q) || (v.buyer && v.buyer.toLowerCase().includes(q)) || (v.recipient && v.recipient.toLowerCase().includes(q));
+  });
+  var tb = document.getElementById('gv-tbl');
+  if (!tb) return;
+  tb.innerHTML = vouchers.length ? vouchers.slice().reverse().map(function(v) {
+    var today = new Date();
+    var exp = v.expiry ? new Date(v.expiry.split('/').reverse().join('-')) : null;
+    var expired = v.status === 'active' && exp && exp < today;
+    var st = expired ? 'Expired' : v.status;
+    var stClr = st === 'active' ? 'var(--success)' : st === 'redeemed' ? 'var(--muted)' : 'var(--danger)';
+    var remaining = st === 'active' ? 'Rs. ' + (v.remaining || v.value).toFixed(2) : '—';
+    return '<tr><td style="font-family:monospace;letter-spacing:1px;font-weight:700">' + esc(v.code) + '</td>' +
+      '<td>Rs. ' + (v.value || 0).toFixed(2) + '</td>' +
+      '<td style="color:var(--info)">' + remaining + '</td>' +
+      '<td><small>' + esc(v.buyer || '—') + '</small></td>' +
+      '<td><small>' + esc(v.recipient || '—') + '</small></td>' +
+      '<td><small style="color:var(--muted)">' + v.created + '</small></td>' +
+      '<td><small style="color:' + (expired ? 'var(--danger)' : 'var(--muted)') + '">' + (v.expiry || '—') + '</small></td>' +
+      '<td><span class="badge ' + (st === 'active' ? 'bs' : st === 'redeemed' ? 'bo' : 'bd2') + '">' + st + '</span></td>' +
+      '<td><button class="btn bo bsm" onclick="editGiftVoucher(' + v.id + ')" style="margin-right:3px">✏️</button><button class="btn bd2 bsm" onclick="delGiftVoucher(' + v.id + ')">🗑️</button></td></tr>';
+  }).join('') : '<tr><td colspan="9" class="empty"><div class="ei">🎫</div>No vouchers yet</td></tr>';
+  // Summary
+  var el = document.getElementById('gv-summary');
+  if (el) {
+    var active = vouchers.filter(function(v) { return v.status === 'active'; });
+    var activeVal = active.reduce(function(s, v) { return s + (v.remaining || v.value || 0); }, 0);
+    var redeemed = vouchers.filter(function(v) { return v.status === 'redeemed'; }).length;
+    el.innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;text-align:center">' +
+      '<div style="background:rgba(0,200,83,0.1);border-radius:8px;padding:12px"><div style="font-size:20px;font-weight:800;color:var(--success)">' + active.length + '</div><div style="font-size:11px;color:var(--muted)">Active</div></div>' +
+      '<div style="background:rgba(108,99,255,0.1);border-radius:8px;padding:12px"><div style="font-size:20px;font-weight:800;color:var(--primary)">Rs. ' + activeVal.toFixed(0) + '</div><div style="font-size:11px;color:var(--muted)">Outstanding Value</div></div>' +
+      '<div style="background:rgba(255,23,68,0.1);border-radius:8px;padding:12px"><div style="font-size:20px;font-weight:800;color:var(--danger)">' + redeemed + '</div><div style="font-size:11px;color:var(--muted)">Redeemed</div></div></div>';
+  }
+  var badge = document.getElementById('gv-badge');
+  if (badge) {
+    var activeCount = db.giftVouchers.filter(function(v) { return v.status === 'active'; }).length;
+    badge.textContent = activeCount;
+    badge.style.display = activeCount > 0 ? 'inline' : 'none';
+  }
+}
+
+function openGiftVoucherModal() {
+  document.getElementById('gv-id').value = '';
+  document.getElementById('gv-code').value = '';
+  document.getElementById('gv-value').value = '';
+  document.getElementById('gv-expiry').value = '';
+  document.getElementById('gv-buyer').value = '';
+  document.getElementById('gv-buyer-phone').value = '';
+  document.getElementById('gv-recipient').value = '';
+  document.getElementById('gv-notes').value = '';
+  // Set default expiry 1 year from now
+  var d = new Date(); d.setFullYear(d.getFullYear() + 1);
+  document.getElementById('gv-expiry').value = d.toISOString().split('T')[0];
+  openM('m-gv');
+}
+
+function generateVoucherCode() {
+  var p = 'GV';
+  var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  var code = p;
+  for (var i = 0; i < 8; i++) code += chars.charAt(Math.floor(Math.random() * chars.length));
+  document.getElementById('gv-code').value = code;
+  toast('🔀 Code generated!');
+}
+
+function saveGiftVoucher() {
+  var id = document.getElementById('gv-id').value;
+  var code = document.getElementById('gv-code').value.trim().toUpperCase();
+  var value = parseFloat(document.getElementById('gv-value').value) || 0;
+  if (!code) { toast('❌ Voucher code required', 'var(--danger)'); return; }
+  if (value < 100) { toast('❌ Minimum value Rs. 100', 'var(--danger)'); return; }
+  // Check duplicate code
+  var dup = db.giftVouchers.find(function(v) { return v.code === code && v.id !== (id ? parseInt(id) : null); });
+  if (dup) { toast('❌ Code already exists', 'var(--danger)'); return; }
+  var v = {
+    id: id ? parseInt(id) : Date.now(),
+    code: code,
+    value: value,
+    remaining: id ? undefined : value,
+    status: id ? undefined : 'active',
+    buyer: document.getElementById('gv-buyer').value.trim(),
+    buyerPhone: document.getElementById('gv-buyer-phone').value.trim(),
+    recipient: document.getElementById('gv-recipient').value.trim(),
+    notes: document.getElementById('gv-notes').value.trim(),
+    created: id ? undefined : new Date().toLocaleDateString('en-GB'),
+    expiry: document.getElementById('gv-expiry').value
+  };
+  if (id) {
+    var i = db.giftVouchers.findIndex(function(x) { return x.id === v.id; });
+    if (i >= 0) { Object.assign(db.giftVouchers[i], v); }
+  } else { db.giftVouchers.push(v); }
+  saveDB(); renderGiftVouchers(); closeM('m-gv'); toast('✅ Voucher saved!');
+}
+
+function editGiftVoucher(id) {
+  var v = db.giftVouchers.find(function(x) { return x.id === id; });
+  if (!v) return;
+  document.getElementById('gv-id').value = v.id;
+  document.getElementById('gv-code').value = v.code;
+  document.getElementById('gv-value').value = v.value;
+  document.getElementById('gv-expiry').value = v.expiry || '';
+  document.getElementById('gv-buyer').value = v.buyer || '';
+  document.getElementById('gv-buyer-phone').value = v.buyerPhone || '';
+  document.getElementById('gv-recipient').value = v.recipient || '';
+  document.getElementById('gv-notes').value = v.notes || '';
+  openM('m-gv');
+}
+
+function delGiftVoucher(id) {
+  if (!confirm('Delete this voucher?')) return;
+  db.giftVouchers = db.giftVouchers.filter(function(v) { return v.id !== id; });
+  saveDB(); renderGiftVouchers(); toast('🗑️ Deleted', 'var(--danger)');
+}
+
+function checkVoucher() {
+  var code = document.getElementById('gv-redeem-code').value.trim().toUpperCase();
+  var el = document.getElementById('gv-redeem-result');
+  if (!code) { el.innerHTML = '<div style="color:var(--danger)">❌ Enter a voucher code</div>'; return; }
+  var v = db.giftVouchers.find(function(x) { return x.code === code; });
+  if (!v) { el.innerHTML = '<div style="color:var(--danger)">❌ Voucher not found</div>'; return; }
+  if (v.status === 'redeemed') { el.innerHTML = '<div style="color:var(--danger)">❌ This voucher has already been redeemed</div>'; return; }
+  var today = new Date();
+  var exp = v.expiry ? new Date(v.expiry.split('/').reverse().join('-')) : null;
+  if (exp && exp < today) { el.innerHTML = '<div style="color:var(--danger)">❌ This voucher expired on ' + v.expiry + '</div>'; return; }
+  var remaining = v.remaining !== undefined ? v.remaining : v.value;
+  el.innerHTML = '<div style="background:rgba(0,200,83,0.1);border-radius:8px;padding:14px;text-align:center">' +
+    '<div style="font-size:14px;color:var(--success)">✅ Voucher Valid!</div>' +
+    '<div style="font-size:28px;font-weight:800;color:var(--primary);margin:8px 0">Rs. ' + remaining.toFixed(2) + '</div>' +
+    '<div style="font-size:12px;color:var(--muted)">Code: ' + v.code + ' | Expires: ' + (v.expiry || 'Never') + '</div>' +
+    '<button class="btn bp2" style="margin-top:10px" onclick="applyVoucherToSale(\'' + v.code + '\')">🛒 Apply to Current Sale</button></div>';
+}
+
+function applyVoucherToSale(code) {
+  var v = db.giftVouchers.find(function(x) { return x.code === code; });
+  if (!v) return;
+  var remaining = v.remaining !== undefined ? v.remaining : v.value;
+  if (remaining <= 0) { toast('❌ No remaining balance', 'var(--danger)'); return; }
+  // Add as a cart item with negative value (discount)
+  cart.push({ id: 'voucher-' + v.id + '_' + Date.now(), name: '🎫 Gift Voucher (' + v.code + ')', price: -remaining, qty: 1, custom: true, voucherCode: code });
+  goPage('pos'); renderCart(); toast('✅ Voucher applied: -Rs. ' + remaining.toFixed(2));
 }
 
 // Extend db with new tables
@@ -11195,11 +12170,14 @@ function applyRoleUI(){
 
 // ---- OFFLINE DETECTION ----
 function updateOnlineStatus(){
-  var ind=document.getElementById('offline-indicator');
-  if(ind) ind.style.display=navigator.onLine?'none':'block';
+  if (navigator.onLine) {
+    _flushPendingSync();
+  }
+  _updateOfflineUI();
 }
 window.addEventListener('online', updateOnlineStatus);
 window.addEventListener('offline', updateOnlineStatus);
+window.addEventListener('beforeunload', function(){ _flushPendingSync(); try { localStorage.setItem('stpos-db', JSON.stringify(db)); } catch(e) {} });
 
 // ---- REPORTS ----
 function generateProfitLossReport(){
@@ -11280,6 +12258,57 @@ function generateCustomerReport(){
   custData.forEach(function(d,i){ var tier=getLoyaltyTier(d.pts); html+='<tr><td style="font-weight:800;color:#6c63ff">#'+(i+1)+'</td><td><b>'+d.c.name+'</b></td><td>'+d.c.phone+'</td><td>'+d.invCount+'</td><td>'+d.reps+'</td><td>'+d.ords+'</td><td style="font-weight:700;color:#00c853">Rs.'+d.spent.toFixed(0)+'</td><td>'+d.pts+'</td><td>'+tier.label+'</td></tr>'; });
   html+='</tbody></table><div style="text-align:center;margin-top:20px"><button onclick="window.print()" style="padding:10px 24px;background:#6c63ff;color:#fff;border:none;border-radius:8px;cursor:pointer">🖨️ Print PDF</button></div></body></html>';
   var w=window.open('','_blank','width=900,height=600'); w.document.write(html); w.document.close();
+}
+
+function generateDailyReport(){
+  var s=db.settings, now=new Date();
+  var today=now.toLocaleDateString('en-GB');
+  var invs=db.invoices.filter(function(i){ return i.date===today; });
+  var invRev=invs.reduce(function(t,i){ return t+(i.total||0); },0);
+  var invCount=invs.length;
+  var repairsToday=db.repairs.filter(function(r){ return r.date===today; });
+  var repRev=repairsToday.reduce(function(t,r){ return t+(r.cost||0); },0);
+  var repDone=repairsToday.filter(function(r){ return r.status==='Delivered'||r.status==='Done'; }).length;
+  var exps=db.expenses.filter(function(e){ return e.date===today; });
+  var expTot=exps.reduce(function(t,e){ return t+(e.amount||0); },0);
+  var cash=0, card=0, credit=0;
+  invs.forEach(function(i){
+    if(i.payments){ i.payments.forEach(function(p){ if(p.method==='Cash') cash+=p.amount; else if(p.method==='Card') card+=p.amount; else credit+=p.amount; }); }
+    else { cash+=i.total||0; }
+  });
+  var topItems={};
+  invs.forEach(function(i){(i.items||[]).forEach(function(it){ var nm=it.name||'Item'; topItems[nm]=(topItems[nm]||0)+it.qty; });});
+  var topSorted=Object.keys(topItems).sort(function(a,b){ return topItems[b]-topItems[a]; }).slice(0,10);
+  var todayParts=(db.repairParts||{});
+  var partCost=0;
+  Object.keys(todayParts).forEach(function(rid){
+    var rep=db.repairs.find(function(r){ return r.id==rid; });
+    if(rep&&rep.date===today){ todayParts[rid].forEach(function(p){ partCost+=p.cost*p.qty; }); }
+  });
+  var profit=invRev+repRev-expTot-partCost;
+  var html='<!DOCTYPE html><html><head><title>Daily Report</title><style>body{font-family:Segoe UI,sans-serif;padding:30px;color:#111}h1{color:#6c63ff;text-align:center;margin:0 0 4px}h2{text-align:center;color:#666;font-weight:400;margin:0 0 20px;font-size:16px}.kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:0 0 20px}.kpi div{background:#f8f8ff;border-radius:10px;padding:14px;text-align:center;border:1px solid #e8e8ff}.kpi .v{font-size:22px;font-weight:800}.kpi .l{font-size:11px;color:#666;margin-top:4px}table{width:100%;border-collapse:collapse;margin:16px 0}th{background:#6c63ff;color:#fff;padding:9px 10px;font-size:12px;text-align:left}td{padding:8px 10px;border-bottom:1px solid #eee;font-size:12px}.total{font-weight:800;background:#f0f0ff!important;border-top:2px solid #6c63ff}.pos{color:#00c853}.neg{color:#ff1744}@media print{button{display:none}}</style></head><body>';
+  html+='<h1>'+(s.shopName||'ST Mobile & Designing')+'</h1>';
+  html+='<h2>📅 Daily Sales Report — '+today+'</h2>';
+  html+='<div class="kpi"><div><div class="v" style="color:#6c63ff">Rs.'+invRev.toFixed(0)+'</div><div class="l">Sales Revenue</div></div><div><div class="v" style="color:#00c853">Rs.'+repRev.toFixed(0)+'</div><div class="l">Repair Income</div></div><div><div class="v" style="color:#ff1744">Rs.'+expTot.toFixed(0)+'</div><div class="l">Expenses</div></div><div><div class="v" style="color:'+(profit>=0?'#00c853':'#ff1744')+'">Rs.'+profit.toFixed(0)+'</div><div class="l">Net Profit</div></div></div>';
+  html+='<table><thead><tr><th>Metric</th><th>Value</th></tr></thead><tbody>';
+  html+='<tr><td>🧾 Invoices Today</td><td>'+invCount+'</td></tr>';
+  html+='<tr><td>🔧 Repairs Done</td><td>'+repDone+'</td></tr>';
+  html+='<tr><td>💰 Cash Collected</td><td>Rs.'+cash.toFixed(2)+'</td></tr>';
+  html+='<tr><td>💳 Card Payments</td><td>Rs.'+card.toFixed(2)+'</td></tr>';
+  html+='<tr><td>📋 Credit Sales</td><td>Rs.'+credit.toFixed(2)+'</td></tr>';
+  html+='<tr><td>🔩 Parts Cost</td><td class="neg">Rs.'+partCost.toFixed(2)+'</td></tr>';
+  html+='<tr class="total"><td>📊 Net Profit (Sales+Repairs-Expenses-Parts)</td><td class="'+(profit>=0?'pos':'neg')+'">Rs.'+profit.toFixed(2)+'</td></tr>';
+  html+='</tbody></table>';
+  if(topSorted.length){
+    html+='<h3 style="margin-top:20px;font-size:14px">🏆 Top Selling Products Today</h3>';
+    html+='<table><thead><tr><th>#</th><th>Product</th><th>Qty Sold</th></tr></thead><tbody>';
+    topSorted.forEach(function(nm,i){ html+='<tr><td>'+(i+1)+'</td><td>'+nm+'</td><td>'+topItems[nm]+'</td></tr>'; });
+    html+='</tbody></table>';
+  }
+  html+='<div style="text-align:center;margin:24px 0 0;padding-top:16px;border-top:2px solid #eee;font-size:11px;color:#999">Generated on '+now.toLocaleString('en-GB')+' by ST Mobile POS</div>';
+  html+='<div style="text-align:center;margin-top:16px"><button onclick="window.print()" style="padding:10px 28px;background:#6c63ff;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px">🖨️ Print / Save PDF</button></div></body></html>';
+  var w=window.open('','_blank','width=800,height=700'); w.document.write(html); w.document.close();
+  logActivity('SETTINGS','Daily Sales Report generated',today+' — Rev: Rs.'+invRev.toFixed(0)+', Profit: Rs.'+profit.toFixed(0));
 }
 
 function generateSupplierReport(){
@@ -11829,11 +12858,26 @@ loadSettingsFrm = function(){
   updateAutoBackupStatus();
 };
 
+// ---- EXTEND loadSettingsFrm to load auto-sync settings ----
+var _origLoadSettingsForAutoSync = loadSettingsFrm;
+loadSettingsFrm = function(){
+  _origLoadSettingsForAutoSync();
+  updateAutoSyncUI();
+};
+
 // ---- AUTO BACKUP CHECK ON STARTUP (delay to let DB load) ----
 setTimeout(function(){
   checkAutoBackupReminder();
   updateAutoBackupStatus();
 }, 3000);
+
+// ---- AUTO FIREBASE SYNC INIT ON STARTUP ----
+setTimeout(function(){
+  if (typeof window.firebaseSaveDB === 'function') {
+    initAutoFirebaseSync();
+  }
+  updateAutoSyncUI();
+}, 5000);
 
 // ══════════════════════════════════════════════════════════
 // 📱 PHONE MODEL DATABASE (GSMArena — Popular brands)
@@ -12681,39 +13725,6 @@ function fmtDate(d){ if(!d) return '—'; var dt = new Date(d); return dt.toLoca
 function todayStr(){ return new Date().toISOString().split('T')[0]; }
 function thisMonthKey(){ var d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1).toString().padStart(2,'0'); }
 
-
-// ── Sidebar Search ──
-function sidebarSearch(q) {
-  var navSec = document.getElementById('sidebar-nav-sec');
-  if (!navSec) return;
-  var clearBtn = document.getElementById('sidebar-search-clear');
-  if (clearBtn) clearBtn.style.opacity = q ? '1' : '0';
-  var items = navSec.querySelectorAll('.nitem');
-  var labels = navSec.querySelectorAll('.nlabel');
-  var term = q.toLowerCase().trim();
-  if (!term) {
-    items.forEach(function(el){ el.classList.remove('nav-hidden'); });
-    labels.forEach(function(el){ el.classList.remove('nav-hidden'); });
-    return;
-  }
-  // Hide/show items
-  items.forEach(function(el){ 
-    var txt = el.textContent.toLowerCase();
-    el.classList.toggle('nav-hidden', txt.indexOf(term) === -1);
-  });
-  // Hide section labels if no visible items follow them
-  labels.forEach(function(label) {
-    var next = label.nextElementSibling;
-    var hasVisible = false;
-    while (next && !next.classList.contains('nlabel')) {
-      if (next.classList.contains('nitem') && !next.classList.contains('nav-hidden')) {
-        hasVisible = true; break;
-      }
-      next = next.nextElementSibling;
-    }
-    label.classList.toggle('nav-hidden', !hasVisible);
-  });
-}
 
 init();
 </script>

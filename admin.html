@@ -332,6 +332,8 @@ tr:hover td { background:rgba(108,99,255,0.04); }
       <div class="adm-nav-item" onclick="showSection('shop-settings')"><span class="ic">🏪</span> Shop Settings</div>
       <div class="adm-nav-item" onclick="showSection('system')"><span class="ic">⚙️</span> System Info</div>
       <div class="adm-nav-item" onclick="showSection('danger-zone')"><span class="ic">⚠️</span> Danger Zone</div>
+      <div class="sec-label">Online</div>
+      <div class="adm-nav-item" onclick="window.open('customer-portal.html','_blank')"><span class="ic">🌐</span> Customer Portal</div>
 
       <div style="padding:14px 16px;margin-top:auto">
         <a href="index.html" style="color:var(--primary);font-size:12px;text-decoration:none;display:flex;align-items:center;gap:6px">
@@ -493,6 +495,27 @@ tr:hover td { background:rgba(108,99,255,0.04); }
               <button class="btn btn-primary" onclick="manualFirebaseSync()">☁️ Manual Sync Now</button>
               <button class="btn btn-outline" onclick="checkFirebaseConn()">🔍 Test Connection</button>
               <button class="btn btn-danger btn-sm" onclick="confirmClearCloud()">🗑️ Clear Cloud Data</button>
+            </div>
+
+            <!-- ══ ADMIN AUTO CLOUD SYNC SCHEDULER ══ -->
+            <div style="background:rgba(0,230,118,0.06);border:1px solid rgba(0,230,118,0.2);border-radius:10px;padding:12px;margin-top:12px">
+              <div style="font-size:12px;font-weight:700;color:var(--success);margin-bottom:8px">⏰ Auto Cloud Sync Scheduler</div>
+              <div style="font-size:11px;color:var(--muted);margin-bottom:8px">දවස් පතා / පැය කිහිපයකට වරක් ඉබේම Firebase ලෙල data sync කරන්න.</div>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+                <select id="admin-sync-interval" style="width:200px;background:var(--card2);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:7px;font-size:12px;" onchange="adminSaveAutoSyncSettings()">
+                  <option value="0">🚫 Disabled</option>
+                  <option value="60">⏰ Every 1 Hour</option>
+                  <option value="180">⏰ Every 3 Hours</option>
+                  <option value="360">⏰ Every 6 Hours</option>
+                  <option value="720">⏰ Every 12 Hours</option>
+                  <option value="1440">📅 Daily (Every Day)</option>
+                  <option value="10080">📅 Weekly</option>
+                </select>
+                <button class="btn btn-success btn-sm" onclick="adminManualAutoSync()">☁️ Sync Now</button>
+                <button class="btn btn-outline btn-sm" onclick="adminResetAutoSync()">🔄 Reset Timer</button>
+              </div>
+              <div id="admin-sync-status" style="font-size:11px;color:var(--muted)">Auto sync loading...</div>
+              <div id="admin-sync-countdown" style="font-size:12px;color:var(--success);margin-top:4px;font-weight:600"></div>
             </div>
           </div>
         </div>
@@ -1248,6 +1271,140 @@ function confirmClearCloud() {
 }
 
 // ════════════════════════════════════════
+//  ADMIN AUTO FIREBASE SYNC SCHEDULER
+// ════════════════════════════════════════
+var _adminAutoSyncTimer = null;
+
+function adminInitAutoSync() {
+  if (_adminAutoSyncTimer) clearInterval(_adminAutoSyncTimer);
+  _adminAutoSyncTimer = setInterval(adminCheckAutoSync, 300000);
+  setTimeout(function() {
+    adminCheckAutoSync();
+    adminUpdateAutoSyncUI();
+  }, 3000);
+}
+
+function adminSaveAutoSyncSettings() {
+  var sel = document.getElementById('admin-sync-interval');
+  if (!sel) return;
+  var mins = parseInt(sel.value);
+  var db = getPosDb();
+  if (!db.settings) db.settings = {};
+  db.settings.autoSyncInterval = mins;
+  if (mins > 0 && !db.settings.autoSyncLastDone) {
+    db.settings.autoSyncLastDone = new Date().toISOString();
+  }
+  window._posDb = db;
+  localStorage.setItem('stpos-db', JSON.stringify(db));
+  adminUpdateAutoSyncUI();
+  toast(mins > 0 ? '✅ Auto cloud sync set to every ' + adminFormatSyncInterval(mins) : '🚫 Auto cloud sync disabled.');
+}
+
+function adminResetAutoSync() {
+  var db = getPosDb();
+  if (!db.settings) db.settings = {};
+  db.settings.autoSyncLastDone = new Date().toISOString();
+  window._posDb = db;
+  localStorage.setItem('stpos-db', JSON.stringify(db));
+  adminUpdateAutoSyncUI();
+  toast('🔄 Auto sync timer reset!');
+}
+
+function adminCheckAutoSync() {
+  var db = getPosDb();
+  var mins = (db.settings && db.settings.autoSyncInterval) || 0;
+  if (mins <= 0) return;
+  var lastDone = db.settings.autoSyncLastDone ? new Date(db.settings.autoSyncLastDone) : null;
+  if (!lastDone) {
+    db.settings.autoSyncLastDone = new Date().toISOString();
+    localStorage.setItem('stpos-db', JSON.stringify(db));
+    window._posDb = db;
+    return;
+  }
+  var diffMins = (new Date() - lastDone) / (1000 * 60);
+  if (diffMins >= mins) {
+    if (window.savePosDataToFB) {
+      db._lastSync = Date.now();
+      savePosDataToFB(db, function(ok) {
+        if (ok) {
+          db.settings.autoSyncLastDone = new Date().toISOString();
+          localStorage.setItem('stpos-db', JSON.stringify(db));
+          window._posDb = db;
+          adminUpdateAutoSyncUI();
+        }
+      });
+    }
+  }
+}
+
+function adminManualAutoSync() {
+  var db = getPosDb();
+  if (!db || Object.keys(db).length === 0) { toast('❌ Local data නෑ!', 'var(--danger)'); return; }
+  if (window.savePosDataToFB) {
+    db._lastSync = Date.now();
+    if (!db.settings) db.settings = {};
+    db.settings.autoSyncLastDone = new Date().toISOString();
+    savePosDataToFB(db, function(ok) {
+      if (ok) {
+        localStorage.setItem('stpos-db', JSON.stringify(db));
+        window._posDb = db;
+        adminUpdateAutoSyncUI();
+        refreshOverview();
+      }
+    });
+  } else {
+    toast('⚠️ Firebase not loaded', 'var(--warning)');
+  }
+}
+
+function adminUpdateAutoSyncUI() {
+  var db = getPosDb();
+  var sel = document.getElementById('admin-sync-interval');
+  var statusEl = document.getElementById('admin-sync-status');
+  var countdownEl = document.getElementById('admin-sync-countdown');
+  if (!statusEl) return;
+  var mins = (db.settings && db.settings.autoSyncInterval) || 0;
+  if (sel) sel.value = String(mins);
+  if (mins <= 0) {
+    statusEl.textContent = '🚫 Auto cloud sync disabled.';
+    if (countdownEl) countdownEl.textContent = '';
+    return;
+  }
+  var lastDone = db.settings.autoSyncLastDone ? new Date(db.settings.autoSyncLastDone) : null;
+  if (!lastDone) {
+    statusEl.textContent = '⚠️ Never synced!';
+    if (countdownEl) countdownEl.innerHTML = '<span style="color:var(--warning)">📢 First sync pending...</span>';
+    return;
+  }
+  var now = new Date();
+  var diffMins = (now - lastDone) / (1000 * 60);
+  var lastStr = lastDone.toLocaleString();
+  statusEl.textContent = '✅ Last sync: ' + lastStr;
+  if (diffMins >= mins) {
+    if (countdownEl) countdownEl.innerHTML = '<span style="color:var(--danger)">🔴 Sync OVERDUE!</span>';
+  } else {
+    var remainingMins = Math.round(mins - diffMins);
+    if (remainingMins < 60) {
+      if (countdownEl) countdownEl.textContent = '🟢 Next sync in ' + remainingMins + ' min(s).';
+    } else if (remainingMins < 1440) {
+      var hrs = Math.floor(remainingMins / 60);
+      var mns = remainingMins % 60;
+      if (countdownEl) countdownEl.textContent = '🟢 Next sync in ' + hrs + 'h ' + mns + 'm.';
+    } else {
+      var days = Math.floor(remainingMins / 1440);
+      if (countdownEl) countdownEl.textContent = '🟢 Next sync in ' + days + ' day(s).';
+    }
+  }
+}
+
+function adminFormatSyncInterval(mins) {
+  if (mins < 60) return mins + ' min(s)';
+  if (mins < 1440) return Math.floor(mins / 60) + ' hour(s)';
+  if (mins < 10080) return Math.floor(mins / 1440) + ' day(s)';
+  return Math.floor(mins / 10080) + ' week(s)';
+}
+
+// ════════════════════════════════════════
 //  ADMIN USERS
 // ════════════════════════════════════════
 function renderUserList() {
@@ -1570,6 +1727,12 @@ setInterval(function() {
 
 // Init backup history on load
 setTimeout(renderBackupHistory, 500);
+
+// Init auto-sync on login
+setTimeout(function() {
+  adminInitAutoSync();
+  adminUpdateAutoSyncUI();
+}, 2000);
 
 // ════════════════════════════════════════
 //  KEYBOARD SHORTCUTS

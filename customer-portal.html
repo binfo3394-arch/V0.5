@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#6c63ff">
+<title>ST Mobile — Customer Portal</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<style>
+:root {
+  --primary: #6c63ff;
+  --secondary: #f50057;
+  --bg: #0a0a1a;
+  --card: #12122a;
+  --card2: #1a1a35;
+  --border: #2a2a4a;
+  --text: #e0e0ff;
+  --muted: #7070a0;
+  --success: #00e676;
+  --warning: #ffab00;
+  --danger: #ff1744;
+  --info: #00b0ff;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+}
+
+/* Header */
+.header {
+  background: linear-gradient(135deg, rgba(108,99,255,0.2), rgba(0,180,255,0.08));
+  border-bottom: 1px solid var(--border);
+  padding: 14px 16px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  backdrop-filter: blur(12px);
+}
+.header-inner {
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.header-logo { font-size: 18px; font-weight: 800; color: var(--primary); }
+.header-logo span { font-size: 11px; color: var(--muted); display: block; font-weight: 400; margin-top: 2px; }
+.header-status {
+  font-size: 11px; padding: 4px 12px; border-radius: 20px; font-weight: 600;
+  background: rgba(255,171,0,0.15); color: var(--warning); border: 1px solid rgba(255,171,0,0.3);
+}
+
+/* Main */
+.main {
+  flex: 1;
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 20px 16px;
+}
+
+/* Search Card */
+.search-card {
+  background: linear-gradient(135deg, rgba(108,99,255,0.12), rgba(0,230,118,0.06));
+  border: 1px solid rgba(108,99,255,0.3);
+  border-radius: 18px;
+  padding: 24px 20px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+.search-card .icon { font-size: 48px; margin-bottom: 8px; }
+.search-card h1 { font-size: 20px; font-weight: 800; color: var(--primary); margin-bottom: 4px; }
+.search-card p { font-size: 13px; color: var(--muted); margin-bottom: 16px; line-height: 1.6; }
+.search-row {
+  display: flex;
+  gap: 8px;
+  max-width: 420px;
+  margin: 0 auto;
+}
+.search-row input {
+  flex: 1;
+  background: var(--card2);
+  border: 1.5px solid var(--border);
+  color: var(--text);
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 15px;
+  outline: none;
+  transition: 0.2s;
+}
+.search-row input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(108,99,255,0.15); }
+.search-row button {
+  padding: 12px 20px;
+  background: linear-gradient(135deg, var(--primary), #8b5cf6);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s;
+  white-space: nowrap;
+}
+.search-row button:active { transform: scale(0.96); }
+.search-hint { font-size: 11px; color: var(--muted); margin-top: 10px; }
+
+/* Loading */
+#loading {
+  display: none;
+  text-align: center;
+  padding: 40px 0;
+}
+.spinner {
+  width: 40px; height: 40px;
+  border: 3px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 12px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Error */
+#error-msg {
+  display: none;
+  text-align: center;
+  padding: 20px;
+  color: var(--danger);
+  font-size: 14px;
+}
+
+/* Results */
+#results { display: none; }
+
+/* Customer Info Card */
+.cust-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+.cust-avatar {
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 800;
+  color: #fff;
+  flex-shrink: 0;
+}
+.cust-details { flex: 1; }
+.cust-details h2 { font-size: 18px; font-weight: 800; margin-bottom: 3px; }
+.cust-details .phone { font-size: 13px; color: var(--muted); }
+.cust-details .email { font-size: 12px; color: var(--muted); margin-top: 1px; }
+.cust-details .joined { font-size: 11px; color: var(--muted); margin-top: 6px; }
+
+/* Stats row */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.stat-box {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 10px;
+  text-align: center;
+}
+.stat-num { font-size: 22px; font-weight: 800; color: var(--primary); }
+.stat-lbl { font-size: 10px; color: var(--muted); margin-top: 3px; }
+
+/* Section Cards */
+.section-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+.section-header {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.section-header h3 { font-size: 14px; font-weight: 700; }
+.section-header .count { font-size: 12px; color: var(--muted); }
+.section-body { padding: 0; }
+
+/* Item Row */
+.item-row {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  transition: 0.15s;
+}
+.item-row:last-child { border-bottom: none; }
+.item-row:hover { background: rgba(108,99,255,0.04); }
+.item-row-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 4px;
+}
+.item-title { font-size: 14px; font-weight: 700; }
+.item-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.item-meta {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.item-meta span { display: flex; align-items: center; gap: 4px; }
+
+/* Status Badges */
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.badge-pending { background: rgba(255,171,0,0.15); color: var(--warning); }
+.badge-progress { background: rgba(0,176,255,0.15); color: var(--info); }
+.badge-done { background: rgba(0,230,118,0.15); color: var(--success); }
+.badge-delivered { background: rgba(108,99,255,0.15); color: var(--primary); }
+.badge-received { background: rgba(255,171,0,0.15); color: var(--warning); }
+.badge-processing { background: rgba(0,176,255,0.15); color: var(--info); }
+.badge-ready { background: rgba(0,230,118,0.15); color: var(--success); }
+.badge-paid { background: rgba(0,230,118,0.15); color: var(--success); }
+.badge-unpaid { background: rgba(255,23,68,0.15); color: var(--danger); }
+.badge-partial { background: rgba(255,171,0,0.15); color: var(--warning); }
+.badge-overdue { background: rgba(255,23,68,0.2); color: var(--danger); }
+
+/* Empty */
+.empty-state {
+  text-align: center;
+  padding: 32px 18px;
+  color: var(--muted);
+}
+.empty-state .ei { font-size: 36px; margin-bottom: 8px; }
+.empty-state p { font-size: 13px; }
+
+/* Footer */
+.footer {
+  text-align: center;
+  padding: 20px 16px;
+  font-size: 11px;
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+  margin-top: 20px;
+}
+.footer a { color: var(--primary); text-decoration: none; }
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--card2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 10px 20px;
+  border-radius: 30px;
+  font-size: 13px;
+  font-weight: 600;
+  z-index: 999;
+  transition: 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  white-space: nowrap;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  pointer-events: none;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* Mobile */
+@media (max-width: 500px) {
+  .search-row { flex-direction: column; }
+  .search-row button { width: 100%; }
+  .stats-row { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .stat-box { padding: 10px 6px; }
+  .stat-num { font-size: 18px; }
+  .cust-card { flex-direction: column; align-items: center; text-align: center; }
+  .item-row-header { flex-direction: column; gap: 6px; }
+  .item-meta { gap: 8px; }
+}
+
+/* Animations */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.fade-in { animation: fadeIn 0.35s ease both; }
+.fade-in-1 { animation-delay: 0.05s; }
+.fade-in-2 { animation-delay: 0.1s; }
+.fade-in-3 { animation-delay: 0.15s; }
+.fade-in-4 { animation-delay: 0.2s; }
+
+/* Expand/Collapse */
+.item-detail-toggle {
+  font-size: 11px;
+  color: var(--primary);
+  cursor: pointer;
+  margin-top: 6px;
+  display: inline-block;
+  user-select: none;
+}
+.item-detail-toggle:hover { text-decoration: underline; }
+.item-detail-content {
+  display: none;
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: var(--card2);
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.item-detail-content.open { display: block; }
+
+/* Price */
+.price { font-weight: 700; color: var(--primary); }
+.price-success { color: var(--success); }
+.price-danger { color: var(--danger); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <div class="header-logo">
+      📱 ST Mobile Portal
+      <span>Customer Service Tracker</span>
+    </div>
+    <div id="header-status" class="header-status">⏳ Loading...</div>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- Search -->
+  <div class="search-card" id="search-section">
+    <div class="icon">🔍</div>
+    <h1>ඔබගේ Service Status බලන්න</h1>
+    <p>ඔබගේ දුරකථන අංකය ඇතුලත් කරන්න,<br>ඔබගේ repairs, orders හා invoices ගැන details බලන්න.</p>
+    <div class="search-row">
+      <input id="phone-input" type="tel" placeholder="ඔබගේ Phone Number (e.g. 077xxxxxxx)"
+        onkeydown="if(event.key==='Enter') searchCustomer()">
+      <button onclick="searchCustomer()">🔍 Search</button>
+    </div>
+    <div class="search-hint">💡 Repair එකක් දුන් විට දුන් phone number එක ඇතුලත් කරන්න</div>
+  </div>
+
+  <!-- Loading -->
+  <div id="loading">
+    <div class="spinner"></div>
+    <div style="color:var(--muted);font-size:13px">Searching your records...</div>
+  </div>
+
+  <!-- Error -->
+  <div id="error-msg"></div>
+
+  <!-- Results -->
+  <div id="results">
+
+    <!-- Customer Info -->
+    <div id="cust-info"></div>
+
+    <!-- Stats -->
+    <div id="cust-stats"></div>
+
+    <!-- Repairs -->
+    <div id="repairs-section"></div>
+
+    <!-- Orders -->
+    <div id="orders-section"></div>
+
+    <!-- Invoices -->
+    <div id="invoices-section"></div>
+
+    <!-- Credits -->
+    <div id="credits-section"></div>
+
+    <!-- Back to top -->
+    <div style="text-align:center;margin-top:20px">
+      <button class="search-row" style="display:inline-flex;width:auto;background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;padding:8px 16px"
+        onclick="document.getElementById('search-section').scrollIntoView({behavior:'smooth'})">⬆️ Back to Top</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  <a href="index.html">← ST Mobile &amp; Designing POS</a><br>
+  Powered by ST Mobile POS System
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+// ══════════════════════════════════════
+//  FIREBASE INIT
+// ══════════════════════════════════════
+const firebaseConfig = {
+  apiKey:            "AIzaSyA2EprDDYqnR1KTlA3nADdcCcVpi-HaDMk",
+  authDomain:        "stshop-8a875.firebaseapp.com",
+  databaseURL:       "https://stshop-8a875-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:         "stshop-8a875",
+  storageBucket:     "stshop-8a875.firebasestorage.app",
+  messagingSenderId: "778408728987",
+  appId:             "1:778408728987:web:66153a512fd14531fda93e"
+};
+
+firebase.initializeApp(firebaseConfig);
+const database = firebase.database();
+
+var _allData = null;
+var _searchPhone = '';
+var _toastTimer = null;
+
+// ══════════════════════════════════════
+//  LOAD DATA
+// ══════════════════════════════════════
+function loadData(callback) {
+  setStatus('☁️ Loading...', 'var(--warning)');
+  database.ref('pos-data').get().then(function(snap) {
+    if (snap.exists()) {
+      _allData = snap.val();
+      // Convert Firebase objects to arrays
+      function arr(val) {
+        if (!val) return [];
+        if (Array.isArray(val)) return val;
+        return Object.keys(val).sort(function(a,b){ return Number(a)-Number(b); }).map(function(k){ return val[k]; });
+      }
+      _allData.products    = arr(_allData.products);
+      _allData.invoices    = arr(_allData.invoices);
+      _allData.repairs     = arr(_allData.repairs);
+      _allData.orders      = arr(_allData.orders);
+      _allData.customers   = arr(_allData.customers);
+      _allData.credits     = arr(_allData.credits);
+      _allData.staff       = arr(_allData.staff);
+      setStatus('✅ Connected', 'var(--success)');
+      if (callback) callback(true);
+    } else {
+      setStatus('ℹ️ No data', 'var(--muted)');
+      if (callback) callback(false);
+    }
+  }).catch(function(e) {
+    setStatus('❌ Error', 'var(--danger)');
+    console.error('Firebase load error:', e);
+    if (callback) callback(false);
+  });
+}
+
+function setStatus(text, color) {
+  var el = document.getElementById('header-status');
+  if (el) { el.textContent = text; el.style.color = color || 'var(--muted)'; }
+}
+
+// ══════════════════════════════════════
+//  SEARCH
+// ══════════════════════════════════════
+function searchCustomer() {
+  var inp = document.getElementById('phone-input');
+  var phone = inp.value.trim().replace(/\s/g, '');
+  if (!phone) { showToast('❌ Phone number එක ඇතුලත් කරන්න'); return; }
+  if (phone.length < 7) { showToast('❌ Valid phone number එකක් දෙන්න'); return; }
+  _searchPhone = '';
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('error-msg').style.display = 'none';
+  document.getElementById('loading').style.display = 'block';
+
+  if (!_allData) {
+    loadData(function(ok) {
+      if (!ok) {
+        document.getElementById('loading').style.display = 'none';
+        showError('❌ දත්ත load වුනේ නෑ. පසුව නැවත try කරන්න.');
+        return;
+      }
+      doSearch(phone);
+    });
+  } else {
+    doSearch(phone);
+  }
+}
+
+function doSearch(phone) {
+  _searchPhone = phone;
+  // Normalize phone: remove all non-digits
+  var digits = phone.replace(/[^0-9]/g, '');
+  var results = findCustomer(digits);
+  document.getElementById('loading').style.display = 'none';
+
+  if (!results) {
+    showError('❌ "' + phone + '" සඳහා කිසිදු record එකක් හමුවුනේ නෑ.<br><span style="font-size:12px;color:var(--muted)">ඔබගේ phone number එක නිවැරදි දැයි බලන්න, නැතහොත් shop එක අමතන්න.</span>');
+    return;
+  }
+
+  document.getElementById('results').style.display = 'block';
+  renderCustomerInfo(results);
+  renderStats(results);
+  renderRepairs(results.repairs);
+  renderOrders(results.orders);
+  renderInvoices(results.invoices);
+  renderCredits(results.credits);
+  document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function findCustomer(digits) {
+  var data = _allData;
+  if (!data) return null;
+
+  var customers = data.customers || [];
+
+  // Find matching customers by phone
+  var matchedCusts = customers.filter(function(c) {
+    var cDigits = (c.phone || '').replace(/[^0-9]/g, '');
+    return cDigits && (cDigits === digits || cDigits.includes(digits) || digits.includes(cDigits));
+  });
+
+  var matchedPhone = matchedCusts.length > 0 ? matchedCusts[0].phone : null;
+
+  // Search repairs by phone
+  var repairs = (data.repairs || []).filter(function(r) {
+    var rDigits = (r.phone || '').replace(/[^0-9]/g, '');
+    return rDigits && (rDigits === digits || rDigits.includes(digits) || digits.includes(rDigits));
+  });
+
+  // Search orders by phone
+  var orders = (data.orders || []).filter(function(o) {
+    var oDigits = (o.phone || '').replace(/[^0-9]/g, '');
+    return oDigits && (oDigits === digits || oDigits.includes(digits) || digits.includes(oDigits));
+  });
+
+  // Search invoices by customer name if matched customer found
+  var invoices = [];
+  if (matchedCusts.length > 0) {
+    var custNames = matchedCusts.map(function(c) { return c.name.toLowerCase(); });
+    var custIds = matchedCusts.map(function(c) { return c.id; });
+    invoices = (data.invoices || []).filter(function(inv) {
+      // Match by customerId or by name
+      if (inv.customerId && custIds.indexOf(inv.customerId) !== -1) return true;
+      var invName = (inv.customer || '').toLowerCase();
+      return custNames.some(function(n) { return invName.includes(n) || n.includes(invName); });
+    });
+  } else {
+    // Fallback: search invoices by phone in items or customer name containing phone
+    invoices = (data.invoices || []).filter(function(inv) {
+      var invName = (inv.customer || '').toLowerCase();
+      return repairs.some(function(r) { return (r.customer || '').toLowerCase() === invName; }) ||
+             orders.some(function(o) { return (o.customer || '').toLowerCase() === invName; });
+    });
+  }
+
+  // Search credits
+  var credits = [];
+  if (matchedCusts.length > 0) {
+    var custIds2 = matchedCusts.map(function(c) { return c.id; });
+    credits = (data.credits || []).filter(function(cr) {
+      return custIds2.indexOf(cr.customerId) !== -1 || custIds2.indexOf(cr.id) !== -1;
+    });
+  }
+
+  if (repairs.length === 0 && orders.length === 0 && invoices.length === 0 && matchedCusts.length === 0) {
+    return null;
+  }
+
+  return {
+    customers: matchedCusts,
+    repairs: repairs,
+    orders: orders,
+    invoices: invoices,
+    credits: credits
+  };
+}
+
+// ══════════════════════════════════════
+//  RENDER FUNCTIONS
+// ══════════════════════════════════════
+function renderCustomerInfo(results) {
+  var el = document.getElementById('cust-info');
+  if (results.customers.length === 0) {
+    el.innerHTML = '';
+    return;
+  }
+  var c = results.customers[0];
+  var initial = (c.name || '?').charAt(0).toUpperCase();
+  el.innerHTML =
+    '<div class="cust-card fade-in fade-in-1">' +
+      '<div class="cust-avatar">' + initial + '</div>' +
+      '<div class="cust-details">' +
+        '<h2>' + escHtml(c.name) + '</h2>' +
+        '<div class="phone">📞 ' + escHtml(c.phone || '—') + '</div>' +
+        (c.email ? '<div class="email">✉️ ' + escHtml(c.email) + '</div>' : '') +
+        (c.joined ? '<div class="joined">📅 Joined: ' + escHtml(c.joined) + '</div>' : '') +
+      '</div>' +
+    '</div>';
+}
+
+function renderStats(results) {
+  var el = document.getElementById('cust-stats');
+  el.innerHTML =
+    '<div class="stats-row fade-in fade-in-2">' +
+      '<div class="stat-box"><div class="stat-num">' + results.repairs.length + '</div><div class="stat-lbl">🔧 Repairs</div></div>' +
+      '<div class="stat-box"><div class="stat-num">' + results.orders.length + '</div><div class="stat-lbl">🌐 Orders</div></div>' +
+      '<div class="stat-box"><div class="stat-num">' + results.invoices.length + '</div><div class="stat-lbl">🧾 Invoices</div></div>' +
+    '</div>';
+}
+
+function renderRepairs(repairs) {
+  var el = document.getElementById('repairs-section');
+  if (!repairs || repairs.length === 0) { el.innerHTML = ''; return; }
+
+  var items = repairs.slice().reverse().map(function(r, i) {
+    var statusBadge = getRepairBadge(r.status);
+    var priorityLabel = r.priority === 'High' ? ' 🔴' : r.priority === 'Low' ? ' 🟢' : '';
+    return '<div class="item-row fade-in fade-in-3">' +
+      '<div class="item-row-header">' +
+        '<div>' +
+          '<div class="item-title">' + escHtml(r.device || '—') + priorityLabel + '</div>' +
+          '<div class="item-sub">' + escHtml(r.issue || '') + '</div>' +
+        '</div>' +
+        '<div>' + statusBadge + '</div>' +
+      '</div>' +
+      '<div class="item-meta">' +
+        (r.date ? '<span>📅 ' + escHtml(r.date) + '</span>' : '') +
+        (r.dueDate ? '<span>⏰ Due: ' + escHtml(r.dueDate) + '</span>' : '') +
+        (r.cost ? '<span class="price">💰 Rs. ' + Number(r.cost).toLocaleString() + '</span>' : '') +
+        (r.advance ? '<span class="price-success">💳 Adv: Rs. ' + Number(r.advance).toLocaleString() + '</span>' : '') +
+        (r.tech ? '<span>👨‍🔧 ' + escHtml(r.tech) + '</span>' : '') +
+        (r.imei ? '<span>📱 IMEI: ' + escHtml(r.imei) + '</span>' : '') +
+      '</div>' +
+      (r.notes ? '<div class="item-detail-toggle" onclick="toggleDetail(this)">📋 Show notes</div><div class="item-detail-content">' + escHtml(r.notes) + '</div>' : '') +
+    '</div>';
+  }).join('');
+
+  el.innerHTML =
+    '<div class="section-card fade-in fade-in-2">' +
+      '<div class="section-header"><h3>🔧 Repairs</h3><span class="count">' + repairs.length + ' record(s)</span></div>' +
+      '<div class="section-body">' + items + '</div>' +
+    '</div>';
+}
+
+function renderOrders(orders) {
+  var el = document.getElementById('orders-section');
+  if (!orders || orders.length === 0) { el.innerHTML = ''; return; }
+
+  var cid = 0;
+  var items = orders.slice().reverse().map(function(o) {
+    cid++;
+    var statusBadge = getOrderBadge(o.status);
+    var paymentBadge = getPaymentBadge(o.paymentStatus);
+    var detailId = 'ord-detail-' + cid;
+    var itemsHtml = '';
+    if (o.items && o.items.length) {
+      itemsHtml = o.items.map(function(it) {
+        return (it.desc || it.name) + ' — Rs. ' + Number(it.amount || it.price || 0).toLocaleString();
+      }).join('<br>');
+    } else if (o.service) {
+      itemsHtml = escHtml(o.service);
+    }
+    return '<div class="item-row fade-in fade-in-3">' +
+      '<div class="item-row-header">' +
+        '<div>' +
+          '<div class="item-title"># ' + escHtml(o.id || '—') + ' · ' + escHtml(o.customer || '') + '</div>' +
+          (o.category ? '<div class="item-sub">📂 ' + escHtml(o.category) + '</div>' : '') +
+        '</div>' +
+        '<div>' + statusBadge + (paymentBadge ? ' ' + paymentBadge : '') + '</div>' +
+      '</div>' +
+      '<div class="item-meta">' +
+        (o.date ? '<span>📅 ' + escHtml(o.date) + '</span>' : '') +
+        (o.amount ? '<span class="price">💰 Rs. ' + Number(o.amount).toLocaleString() + '</span>' : '') +
+        (o.advance ? '<span class="price-success">💳 Adv: Rs. ' + Number(o.advance).toLocaleString() + '</span>' : '') +
+        (o.platform ? '<span>📱 ' + escHtml(o.platform) + '</span>' : '') +
+        (o.dueDate ? '<span>⏰ Due: ' + escHtml(o.dueDate) + '</span>' : '') +
+      '</div>' +
+      (itemsHtml ? '<div class="item-detail-toggle" onclick="toggleDetail(this)">📋 Show items</div><div class="item-detail-content" id="' + detailId + '">' + itemsHtml + '</div>' : '') +
+    '</div>';
+  }).join('');
+
+  el.innerHTML =
+    '<div class="section-card fade-in fade-in-3">' +
+      '<div class="section-header"><h3>🌐 Orders</h3><span class="count">' + orders.length + ' record(s)</span></div>' +
+      '<div class="section-body">' + items + '</div>' +
+    '</div>';
+}
+
+function renderInvoices(invoices) {
+  var el = document.getElementById('invoices-section');
+  if (!invoices || invoices.length === 0) { el.innerHTML = ''; return; }
+
+  var cid = 0;
+  var items = invoices.slice().reverse().map(function(inv) {
+    cid++;
+    var detailId = 'inv-detail-' + cid;
+    var itemsHtml = '';
+    if (inv.items && inv.items.length) {
+      itemsHtml = inv.items.map(function(it) {
+        return escHtml(it.name) + ' × ' + (it.qty || 1) + ' = Rs. ' + Number((it.price||0) * (it.qty||1)).toLocaleString();
+      }).join('<br>');
+      if (inv.discount) itemsHtml += '<br><span style="color:var(--warning)">Discount: -Rs. ' + Number(inv.discount).toLocaleString() + '</span>';
+      if (inv.tax) itemsHtml += '<br><span style="color:var(--info)">Tax (' + (inv.taxPct||0) + '%): +Rs. ' + Number(inv.tax).toLocaleString() + '</span>';
+    }
+    return '<div class="item-row fade-in fade-in-4">' +
+      '<div class="item-row-header">' +
+        '<div>' +
+          '<div class="item-title">🧾 ' + escHtml(inv.invNo || '# ' + inv.id) + '</div>' +
+          '<div class="item-sub">' + escHtml(inv.customer || '') + (inv.cashierName ? ' · 👤 ' + escHtml(inv.cashierName) : '') + '</div>' +
+        '</div>' +
+        '<div><span class="price">Rs. ' + Number(inv.total || 0).toLocaleString() + '</span></div>' +
+      '</div>' +
+      '<div class="item-meta">' +
+        (inv.date ? '<span>📅 ' + escHtml(inv.date) + '</span>' : '') +
+        (inv.payment ? '<span>💳 ' + escHtml(inv.payment) + '</span>' : '') +
+        (inv.subtotal ? '<span>Sub: Rs. ' + Number(inv.subtotal).toLocaleString() + '</span>' : '') +
+      '</div>' +
+      (itemsHtml ? '<div class="item-detail-toggle" onclick="toggleDetail(this)">📋 Show items</div><div class="item-detail-content" id="' + detailId + '">' + itemsHtml + '</div>' : '') +
+    '</div>';
+  }).join('');
+
+  el.innerHTML =
+    '<div class="section-card fade-in fade-in-4">' +
+      '<div class="section-header"><h3>🧾 Invoices</h3><span class="count">' + invoices.length + ' record(s)</span></div>' +
+      '<div class="section-body">' + items + '</div>' +
+    '</div>';
+}
+
+function renderCredits(credits) {
+  var el = document.getElementById('credits-section');
+  if (!credits || credits.length === 0) { el.innerHTML = ''; return; }
+
+  var totalOutstanding = 0;
+  var items = credits.slice().reverse().map(function(cr) {
+    var badge = cr.status === 'Paid' ? '<span class="badge badge-paid">✅ Paid</span>' :
+                cr.status === 'Overdue' ? '<span class="badge badge-overdue">🔴 Overdue</span>' :
+                '<span class="badge badge-partial">🟡 ' + escHtml(cr.status || 'Active') + '</span>';
+    if (cr.status !== 'Paid') totalOutstanding += (cr.total || 0) - (cr.paid || 0);
+
+    var scheduleHtml = '';
+    if (cr.schedule && cr.schedule.length) {
+      scheduleHtml = cr.schedule.map(function(s) {
+        var sBadge = s.paid ? '✅' : (new Date(s.dueDate) < new Date() ? '🔴' : '⏳');
+        return escHtml(s.dueDate || '—') + ' → Rs. ' + Number(s.amount || 0).toLocaleString() + ' ' + sBadge;
+      }).join('<br>');
+    }
+
+    return '<div class="item-row">' +
+      '<div class="item-row-header">' +
+        '<div>' +
+          '<div class="item-title">💳 Credit #' + escHtml(cr.id || '') + '</div>' +
+          (cr.note ? '<div class="item-sub">' + escHtml(cr.note) + '</div>' : '') +
+        '</div>' +
+        '<div>' + badge + '</div>' +
+      '</div>' +
+      '<div class="item-meta">' +
+        '<span class="price">Total: Rs. ' + Number(cr.total || 0).toLocaleString() + '</span>' +
+        '<span class="price-success">Paid: Rs. ' + Number(cr.paid || 0).toLocaleString() + '</span>' +
+        (cr.status !== 'Paid' ? '<span class="price-danger">Due: Rs. ' + Number((cr.total || 0) - (cr.paid || 0)).toLocaleString() + '</span>' : '') +
+      '</div>' +
+      (scheduleHtml ? '<div class="item-detail-toggle" onclick="toggleDetail(this)">📋 Show schedule</div><div class="item-detail-content">' + scheduleHtml + '</div>' : '') +
+    '</div>';
+  }).join('');
+
+  el.innerHTML =
+    '<div class="section-card">' +
+      '<div class="section-header"><h3>💳 Credits</h3><span class="count">' + credits.length + ' record(s)' +
+        (totalOutstanding > 0 ? ' · <span style="color:var(--danger)">Due: Rs. ' + totalOutstanding.toLocaleString() + '</span>' : '') +
+      '</span></div>' +
+      '<div class="section-body">' + items + '</div>' +
+    '</div>';
+}
+
+// ══════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════
+function getRepairBadge(status) {
+  var s = (status || '').trim();
+  if (s === 'Pending') return '<span class="badge badge-pending">⏳ Pending</span>';
+  if (s === 'In Progress') return '<span class="badge badge-progress">🔄 In Progress</span>';
+  if (s === 'Done') return '<span class="badge badge-done">✅ Done</span>';
+  if (s === 'Delivered') return '<span class="badge badge-delivered">📦 Delivered</span>';
+  return '<span class="badge badge-pending">' + escHtml(s || '—') + '</span>';
+}
+
+function getOrderBadge(status) {
+  var s = (status || '').trim();
+  if (s === 'Received') return '<span class="badge badge-received">📥 Received</span>';
+  if (s === 'Processing') return '<span class="badge badge-processing">⚙️ Processing</span>';
+  if (s === 'Ready') return '<span class="badge badge-ready">✅ Ready</span>';
+  if (s === 'Delivered') return '<span class="badge badge-delivered">📦 Delivered</span>';
+  return '<span class="badge badge-pending">' + escHtml(s || '—') + '</span>';
+}
+
+function getPaymentBadge(status) {
+  var s = (status || '').trim();
+  if (s === 'Paid') return '<span class="badge badge-paid">✅ Paid</span>';
+  if (s === 'Unpaid') return '<span class="badge badge-unpaid">❌ Unpaid</span>';
+  if (s === 'Partial') return '<span class="badge badge-partial">🟡 Partial</span>';
+  return '';
+}
+
+function toggleDetail(el) {
+  var content = el.nextElementSibling;
+  if (content && content.classList) {
+    content.classList.toggle('open');
+    el.textContent = content.classList.contains('open') ? '📋 Hide details' : '📋 Show details';
+  }
+}
+
+function escHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function showError(msg) {
+  var el = document.getElementById('error-msg');
+  el.innerHTML = '<div style="background:var(--card);border:1px solid rgba(255,23,68,0.4);border-radius:14px;padding:24px 18px">' +
+    '<div style="font-size:40px;margin-bottom:8px">😕</div>' +
+    msg +
+    '</div>';
+  el.style.display = 'block';
+}
+
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  if (!t) return;
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(function() { t.classList.remove('show'); }, 3000);
+}
+
+// ══════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════
+// Load data on startup
+loadData(function(ok) {
+  if (!ok) {
+    setStatus('⚠️ No data', 'var(--warning)');
+  }
+  // Check URL params for phone
+  var params = new URLSearchParams(window.location.search);
+  var urlPhone = params.get('phone');
+  if (urlPhone) {
+    document.getElementById('phone-input').value = urlPhone;
+    setTimeout(searchCustomer, 500);
+  }
+});
+
+// Enter key support
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    // no modals
+  }
+});
+
+console.log('✅ ST Customer Portal loaded');
+</script>
+</body>
+</html>
