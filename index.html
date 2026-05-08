@@ -13,7 +13,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <script>
 (function() {
-  var base = window.location.origin + '/V0.5/';
+  var base = (window.location.pathname.indexOf('/V0.5/')>=0) ? window.location.origin + '/V0.5/' : window.location.href.replace(/[^/]*$/,'');
   var manifest = {
     name: "ST Mobile & Designing POS",
     short_name: "ST POS",
