@@ -277,8 +277,8 @@ var openM, closeM, goPage, renderAll;
       if (remote.productVariants) db.productVariants = remote.productVariants|| {};
       if (remote.invDesign)       db.invDesign       = remote.invDesign      || {};
       if (remote.giftVouchers)    db.giftVouchers    = _fbArr(remote.giftVouchers);
-      if (remote.hasOwnProperty('commPayments')) db.commPayments = _fbArr(remote.commPayments);
-      else if (remote.commPayments) db.commPayments = _fbArr(remote.commPayments);
+      if (remote.hasOwnProperty('commPayments') && !window._commPaySyncLock) db.commPayments = _fbArr(remote.commPayments);
+      else if (remote.commPayments && !window._commPaySyncLock) db.commPayments = _fbArr(remote.commPayments);
       renderAll();
       try { localStorage.setItem('stpos-db', JSON.stringify(db)); } catch(e) {}
       _clearPendingSync();
@@ -5903,8 +5903,9 @@ function renderStaff() {
     var orderComm = orderRevenue * (s.commRate||0) / 100;
     var commEarned = salesComm + repairComm + orderComm;
 
-    // Commission payment tracking
-    var paidThisMonth = commPayments.filter(function(p){ return p.staffId===s.id && p.date>=monthStart.getTime(); });
+    // Commission payment tracking — all payments ever for this staff (not just this month)
+    var paidThisMonth = commPayments.filter(function(p){ return String(p.staffId)==String(s.id) && p.date>=monthStart.getTime(); });
+    var paidSum = paidThisMonth.reduce(function(a,p){ return a+(p.amount||0); },0);
     var paidSum = paidThisMonth.reduce(function(a,p){ return a+(p.amount||0); },0);
     var pending = Math.max(0, Math.round(commEarned - paidSum));
 
@@ -6069,12 +6070,15 @@ function confirmCommPay() {
   if (!db.commPayments) db.commPayments = [];
   db.commPayments.push({
     id: Date.now() + '_' + Math.random().toString(36).slice(2,6),
-    staffId: staffId,
+    staffId: _commPayData.staffId,  // original type — no parseInt conversion
     staffName: staff.name,
     amount: amount,
     date: Date.now(),
     note: note || ('Commission for ' + new Date().toLocaleString('en-GB', {month:'long', year:'numeric'}))
   });
+  // Lock live sync briefly so Firebase round-trip doesn't overwrite before cloud write completes
+  window._commPaySyncLock = true;
+  setTimeout(function(){ window._commPaySyncLock = false; }, 5000);
   saveDB();
   closeM('m-comm-pay');
   renderStaff();
