@@ -12,6 +12,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <script>
+// Forward declarations for functions defined in later script blocks
+var openM, closeM, goPage, renderAll;
 (function() {
   var base = (window.location.pathname.indexOf('/V0.5/')>=0) ? window.location.origin + '/V0.5/' : window.location.href.replace(/[^/]*$/,'');
   var manifest = {
@@ -155,7 +157,7 @@
   window.firebaseSaveDB = function(dbObj) {
     if (!firebaseConfig.databaseURL || firebaseConfig.databaseURL.includes('YOUR_PROJECT')) return;
     var uid = auth.currentUser ? auth.currentUser.uid : null;
-    if (!uid) { setFBStatus('❌ No user', 'var(--danger)'); return; }
+    if (!uid) { return; } // silently skip — localStorage already saved
     setFBStatus('☁️ Syncing...', 'var(--warning)');
     var payload = {
       products:      dbObj.products      || [],
@@ -6689,11 +6691,20 @@ window._onAuthChanged = function(user) {
       }).catch(function(){});
     }
     updateAuthUI(user);
+    // Trigger Firebase data load + live sync now that we have a user
+    // (init() defers when auth isn't ready yet)
+    setTimeout(function() {
+      if (typeof window.firebaseLoadDB === 'function' && !window._firebaseLoaded) {
+        window._firebaseLoaded = true;
+        if (typeof window._doFirebaseLoad === 'function') window._doFirebaseLoad();
+      }
+    }, 500);
   } else {
     // No user signed in
     authScreen.style.display = 'flex';
     appEl.style.display = 'none';
     _authUserProfile = null;
+    window._firebaseLoaded = false;
   }
 };
 
@@ -6988,15 +6999,20 @@ function init() {
   if(dbStatusBar) { dbStatusBar.textContent = '🔥 Firebase Mode ✅'; dbStatusBar.style.color = 'var(--success)'; }
 
   // ── Firebase: Load cloud data on startup, then start live sync ──
-  // Uses retry logic because Firebase is a type="module" script (deferred),
-  // so window.firebaseLoadDB may not be ready immediately after init().
-  function _doFirebaseLoad() {
+  // Defined on window so _onAuthChanged can retrigger after sign-in if auth wasn't ready.
+  window._doFirebaseLoad = function() {
+    var uid = window._auth ? window._auth.currentUser : null;
+    if (!uid) {
+      // Auth not ready yet — _onAuthChanged will retrigger this when user signs in
+      console.log('Firebase load deferred — waiting for auth');
+      return;
+    }
     var fbLoadEl = document.getElementById('fb-sync-indicator');
     if(fbLoadEl){ fbLoadEl.textContent='☁️ Loading from Firebase...'; fbLoadEl.style.opacity='1'; fbLoadEl.style.color='var(--info)'; }
     window.firebaseLoadDB(function(cloudData){
       if (!cloudData) {
         // First time — no cloud data yet. Push current empty db to Firebase.
-        if (typeof window.firebaseSaveDB === 'function') window.firebaseSaveDB(db);
+        if (typeof window.firebaseSaveDB === 'function' && window._auth && window._auth.currentUser) window.firebaseSaveDB(db);
         if (typeof window.firebaseStartLiveSync === 'function') window.firebaseStartLiveSync();
         toast('☁️ Firebase connected! (No cloud data yet — add products to get started)');
         _clearPendingSync();
@@ -7005,7 +7021,7 @@ function init() {
       }
       // ── If there are pending local changes (offline queue), push local data instead of overwriting ──
       if (_hasPendingSync()) {
-        if (typeof window.firebaseSaveDB === 'function') window.firebaseSaveDB(db);
+        if (typeof window.firebaseSaveDB === 'function' && window._auth && window._auth.currentUser) window.firebaseSaveDB(db);
         if (typeof window.firebaseStartLiveSync === 'function') window.firebaseStartLiveSync();
         toast('☁️ Offline changes pushed to cloud!');
         _clearPendingSync();
@@ -7067,19 +7083,20 @@ function init() {
       if (typeof window.firebaseStartLiveSync === 'function') window.firebaseStartLiveSync();
     });
   }
-  // Retry every 500ms up to 15 times (7.5s total) waiting for Firebase module
+  // Retry every 500ms up to 30 times (15s total) waiting for Firebase module + auth
   var _fbRetry = 0;
-  var _fbRetryMax = 15;
+  var _fbRetryMax = 30;
   var _fbRetryTimer = setInterval(function(){
     _fbRetry++;
-    if (typeof window.firebaseLoadDB === 'function') {
+    if (typeof window.firebaseLoadDB === 'function' && window._auth && window._auth.currentUser) {
       clearInterval(_fbRetryTimer);
-      _doFirebaseLoad();
+      window._firebaseLoaded = true;
+      window._doFirebaseLoad();
     } else if (_fbRetry >= _fbRetryMax) {
       clearInterval(_fbRetryTimer);
-      console.warn('Firebase module not loaded after ' + _fbRetryMax + ' retries.');
+      console.warn('Firebase not ready after ' + _fbRetryMax + ' retries (auth will retrigger on sign-in).');
       var fbLoadEl = document.getElementById('fb-sync-indicator');
-      if(fbLoadEl){ fbLoadEl.textContent='⚠️ Firebase load failed'; fbLoadEl.style.opacity='1'; fbLoadEl.style.color='var(--warning)'; }
+      if(fbLoadEl){ fbLoadEl.textContent='⏳ Waiting for sign-in...'; fbLoadEl.style.opacity='1'; fbLoadEl.style.color='var(--warning)'; }
     }
   }, 500);
   // Show offline indicator if currently offline
