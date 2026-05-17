@@ -1411,53 +1411,89 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
 .nlabel { cursor: default !important; }
 
 /* ═══════════════════════════════════════════════
-   🖥️ FULL-SCREEN FIT — Desktop & Tablet
-   All pages fit within the viewport without
-   horizontal scrolling or cut-off content.
+   👷 STAFF & COMMISSION PAGE — FULL SCREEN FIT
+   Only this page is targeted. All other pages
+   remain exactly as before.
    ═══════════════════════════════════════════════ */
 
-/* Make the entire app use CSS zoom so content
-   scales down to fit any screen width ≥ 769px.
-   Breakpoints: wide monitor = 100%, medium = 90%, small laptop = 82% */
-@media (min-width: 769px) and (max-width: 1100px) {
-  html { zoom: 0.85; }
-}
-@media (min-width: 1101px) and (max-width: 1366px) {
-  html { zoom: 0.90; }
-}
-@media (min-width: 1367px) {
-  html { zoom: 1; }
-}
-
-/* Force all pages to never overflow the available width */
+/* Desktop: staff table fits full available width */
 @media (min-width: 769px) {
-  .page, .page.active {
-    max-width: calc(100vw - 220px);
+  /* Page container fills sidebar-remaining width */
+  #pg-staff {
+    width: 100%;
     box-sizing: border-box;
     overflow-x: hidden;
   }
-  .content {
-    overflow-x: hidden;
-    box-sizing: border-box;
+
+  /* Stat cards — always 4 columns on desktop */
+  #pg-staff .sgrid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
   }
-  /* Tables that are wider than the content area get a scroll wrapper */
-  .tcard {
+
+  /* Table card — fills full width, scroll if needed */
+  #pg-staff .tcard {
     overflow-x: auto;
-  }
-  /* Stats grid — allow wrapping on narrow windows */
-  .sgrid {
-    flex-wrap: wrap;
-  }
-  /* POS wrap — prevent overflow */
-  .pos-wrap {
-    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
     box-sizing: border-box;
   }
-  /* Charts grid — 2 col on medium, 1 col on small */
-  @media (max-width: 1100px) {
-    .dash-charts-grid { grid-template-columns: 1fr !important; }
-    .sgrid { grid-template-columns: repeat(2, 1fr); }
-    .pos-wrap { grid-template-columns: 1fr 300px; }
+
+  /* Table — fixed layout, fills 100% width with proportional columns */
+  #pg-staff .tcard table {
+    width: 100%;
+    min-width: 860px;
+    table-layout: fixed;
+    border-collapse: collapse;
+  }
+
+  /* Column widths — proportional to content importance */
+  #pg-staff .tcard table th:nth-child(1),
+  #pg-staff .tcard table td:nth-child(1) { width: 13%; } /* Staff Name */
+  #pg-staff .tcard table th:nth-child(2),
+  #pg-staff .tcard table td:nth-child(2) { width: 10%; } /* Role/Status */
+  #pg-staff .tcard table th:nth-child(3),
+  #pg-staff .tcard table td:nth-child(3) { width: 9%; }  /* Sales */
+  #pg-staff .tcard table th:nth-child(4),
+  #pg-staff .tcard table td:nth-child(4) { width: 11%; } /* Repairs */
+  #pg-staff .tcard table th:nth-child(5),
+  #pg-staff .tcard table td:nth-child(5) { width: 10%; } /* Orders */
+  #pg-staff .tcard table th:nth-child(6),
+  #pg-staff .tcard table td:nth-child(6) { width: 12%; } /* Commission Rate */
+  #pg-staff .tcard table th:nth-child(7),
+  #pg-staff .tcard table td:nth-child(7) { width: 11%; } /* Earned */
+  #pg-staff .tcard table th:nth-child(8),
+  #pg-staff .tcard table td:nth-child(8) { width: 8%; }  /* Paid */
+  #pg-staff .tcard table th:nth-child(9),
+  #pg-staff .tcard table td:nth-child(9) { width: 8%; }  /* Pending */
+  #pg-staff .tcard table th:nth-child(10),
+  #pg-staff .tcard table td:nth-child(10) { width: 8%; } /* Actions */
+
+  /* Tight padding, wrapped text allowed */
+  #pg-staff .tcard th {
+    padding: 9px 8px;
+    font-size: 11px;
+    white-space: normal;
+    word-break: break-word;
+    line-height: 1.3;
+  }
+  #pg-staff .tcard td {
+    padding: 8px 8px;
+    font-size: 12px;
+    white-space: normal;
+    word-break: break-word;
+    vertical-align: middle;
+  }
+
+  /* Commission history table */
+  #comm-history-wrap .tcard {
+    overflow-x: auto;
+    width: 100%;
+  }
+  #comm-history-wrap table {
+    width: 100%;
+    min-width: 420px;
   }
 }
 
@@ -5765,9 +5801,9 @@ function renderStaff() {
         (commEarned>0?
           '<span style="color:var(--success);font-weight:700;font-size:15px">Rs. '+Math.round(commEarned).toLocaleString()+'</span>':
           '<span style="color:var(--danger);font-weight:700;font-size:14px">Rs. 0</span>')+
-        '<br><span style="font-size:10px;color:var(--muted)">POS: Rs.'+Math.round(salesComm).toLocaleString()+' + Rep: Rs.'+Math.round(repairComm).toLocaleString()+' + Ord: Rs.'+Math.round(orderComm).toLocaleString()+'</span>'+
+        '<br><span style="font-size:10px;color:var(--muted)">POS:'+Math.round(salesComm).toLocaleString()+' Rep:'+Math.round(repairComm).toLocaleString()+' Ord:'+Math.round(orderComm).toLocaleString()+'</span>'+
         (commEarned===0 && (staffRepsAll.length>0||staffInvs.length>0||staffOrdsMonth.length>0)?
-          '<br><span style="font-size:10px;color:var(--danger)">⚠️ Rate 0% — set කරන්න!</span>':'')+'</td>'+
+          '<br><span style="font-size:10px;color:var(--danger)">⚠️ Rate 0%!</span>':'')+'</td>'+
       '<td style="font-weight:700;color:'+(paidSum>0?'var(--success)':'var(--muted)')+'">Rs. '+paidSum.toLocaleString()+'</td>'+
       '<td style="font-weight:800;color:'+(pending>0?'var(--warning)':'var(--muted)')+'">Rs. '+pending.toLocaleString()+'</td>'+
       '<td>'+
