@@ -145,11 +145,18 @@
     }
   }
 
-  // ── Firebase Save (push db to Realtime DB) ──
+  // ── Get user-scoped data path ──
+  function _userDataPath() {
+    var u = auth.currentUser;
+    return u ? 'pos-data/' + u.uid : 'pos-data/_shared';
+  }
+
+  // ── Firebase Save (push db to Realtime DB, per-user) ──
   window.firebaseSaveDB = function(dbObj) {
     if (!firebaseConfig.databaseURL || firebaseConfig.databaseURL.includes('YOUR_PROJECT')) return;
+    var uid = auth.currentUser ? auth.currentUser.uid : null;
+    if (!uid) { setFBStatus('❌ No user', 'var(--danger)'); return; }
     setFBStatus('☁️ Syncing...', 'var(--warning)');
-    // Save ALL data collections — no limit, unlimited save
     var payload = {
       products:      dbObj.products      || [],
       invoices:      dbObj.invoices      || [],
@@ -190,25 +197,27 @@
       commPayments:  dbObj.commPayments    || [],
       _lastSync:     Date.now()
     };
-    set(ref(database, 'pos-data'), payload)
+    set(ref(database, 'pos-data/' + uid), payload)
       .then(function(){ setFBStatus('✅ Cloud Saved', 'var(--success)'); })
       .catch(function(e){ setFBStatus('❌ Sync Error', 'var(--danger)'); console.error('Firebase save error:', e); });
   };
 
-  // ── Firebase Load (pull from Realtime DB on startup) ──
+  // ── Firebase Load (pull user's data from Realtime DB) ──
   window.firebaseLoadDB = function(callback) {
     if (!firebaseConfig.databaseURL || firebaseConfig.databaseURL.includes('YOUR_PROJECT')) {
       if (callback) callback(null);
       return;
     }
+    var uid = auth.currentUser ? auth.currentUser.uid : null;
+    if (!uid) { setFBStatus('❌ Not signed in', 'var(--danger)'); if (callback) callback(null); return; }
     setFBStatus('☁️ Loading...', 'var(--info)');
-    get(ref(database, 'pos-data')).then(function(snapshot) {
+    get(ref(database, 'pos-data/' + uid)).then(function(snapshot) {
       if (snapshot.exists()) {
         var data = snapshot.val();
         setFBStatus('✅ Cloud Loaded', 'var(--success)');
         if (callback) callback(data);
       } else {
-        setFBStatus('☁️ No cloud data', 'var(--muted)');
+        setFBStatus('☁️ No cloud data — fresh start!', 'var(--muted)');
         if (callback) callback(null);
       }
     }).catch(function(e){
@@ -218,20 +227,20 @@
     });
   };
 
-  // ── Real-time listener (live sync across devices) ──
+  // ── Real-time listener (live sync per-user) ──
   window.firebaseStartLiveSync = function() {
     if (!firebaseConfig.databaseURL || firebaseConfig.databaseURL.includes('YOUR_PROJECT')) return;
-    onValue(ref(database, 'pos-data'), function(snapshot) {
+    var uid = auth.currentUser ? auth.currentUser.uid : null;
+    if (!uid) return;
+    onValue(ref(database, 'pos-data/' + uid), function(snapshot) {
       if (!snapshot.exists()) return;
       var remote = snapshot.val();
       if (typeof db === 'undefined' || typeof renderAll !== 'function') return;
-      // Helper: Firebase stores arrays as objects with numeric keys — convert back to real arrays
       function _fbArr(val) {
         if (!val) return [];
         if (Array.isArray(val)) return val;
         return Object.keys(val).sort(function(a,b){ return Number(a)-Number(b); }).map(function(k){ return val[k]; });
       }
-      // Always load all data from Firebase on every change
       if (remote.products)    db.products    = _fbArr(remote.products);
       if (remote.invoices)    db.invoices    = _fbArr(remote.invoices);
       if (remote.repairs)     db.repairs     = _fbArr(remote.repairs);
@@ -270,7 +279,6 @@
       if (remote.giftVouchers)    db.giftVouchers    = _fbArr(remote.giftVouchers);
       if (remote.commPayments)    db.commPayments    = _fbArr(remote.commPayments);
       renderAll();
-      // Persist synced data locally for offline use
       try { localStorage.setItem('stpos-db', JSON.stringify(db)); } catch(e) {}
       _clearPendingSync();
       setFBStatus('\uD83D\uDD04 Live synced', 'var(--info)');
@@ -1500,10 +1508,6 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
           </div>
           <div style="text-align:center;margin-top:6px">
             <span style="font-size:12px;color:var(--muted);cursor:pointer" onclick="authShowReset()">Forgot password?</span>
-          </div>
-          <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
-            <button class="btn" style="width:100%;background:rgba(0,230,118,0.12);color:var(--success);border:1px solid rgba(0,230,118,0.3);padding:10px;font-size:13px" onclick="quickSetupDefault()">⚡ Quick Setup — Create Default Admin</button>
-            <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:6px">Creates: binfo3394@gmail.com / Tharutomy&11</div>
           </div>
         </div>
         <!-- Signup Fields -->

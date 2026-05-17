@@ -292,10 +292,6 @@ tr:hover td { background:rgba(108,99,255,0.04); }
       <div style="text-align:center;margin-top:6px">
         <span style="font-size:12px;color:var(--muted);cursor:pointer" onclick="adminShowReset()">Forgot password?</span>
       </div>
-      <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
-        <button class="login-btn" style="background:rgba(0,230,118,0.2);color:var(--success);border:1px solid rgba(0,230,118,0.4);padding:10px;font-size:13px" onclick="quickSetupAdminDefault()">⚡ Quick Setup — Default Admin</button>
-        <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:6px">Creates: binfo3394@gmail.com / Tharutomy&11</div>
-      </div>
     </div>
     <div id="admin-auth-signup-fields" style="display:none">
       <div class="login-field">
@@ -923,10 +919,12 @@ window._adminAuthUnsub = onAuthStateChanged(auth, function(user) {
   if (window._onAdminAuthChanged) window._onAdminAuthChanged(user);
 });
 
-// Load POS data from Firebase
+// Load POS data from Firebase (per-user)
 window.loadPosDataFromFB = function(callback) {
+  var uid = auth.currentUser ? auth.currentUser.uid : null;
+  if (!uid) { setFbStatus('❌ Not signed in', 'var(--danger)'); if (callback) callback(null); return; }
   setFbStatus('☁️ Loading...', 'var(--warning)');
-  get(ref(database, 'pos-data')).then(function(snapshot) {
+  get(ref(database, 'pos-data/' + uid)).then(function(snapshot) {
     if (snapshot.exists()) {
       var data = snapshot.val();
       // Convert Firebase objects back to arrays
@@ -968,8 +966,10 @@ window.loadPosDataFromFB = function(callback) {
 };
 
 window.savePosDataToFB = function(dbObj, callback) {
+  var uid = auth.currentUser ? auth.currentUser.uid : null;
+  if (!uid) { setFbStatus('❌ Not signed in', 'var(--danger)'); if (callback) callback(false); return; }
   setFbStatus('☁️ Saving...', 'var(--warning)');
-  set(ref(database, 'pos-data'), dbObj)
+  set(ref(database, 'pos-data/' + uid), dbObj)
     .then(function() {
       setFbStatus('✅ Saved', 'var(--success)');
       toast('✅ Firebase ලෙල saved!');
@@ -989,9 +989,15 @@ function setFbStatus(text, color) {
 
 // Check connection
 window.checkFirebaseConn = function() {
+  var uid = auth.currentUser ? auth.currentUser.uid : null;
+  if (!uid) {
+    var el = document.getElementById('fb-conn-status');
+    if (el) el.innerHTML = '<span style="color:var(--danger)">❌ Not signed in</span>';
+    return;
+  }
   var el = document.getElementById('fb-conn-status');
   if (el) el.innerHTML = '🔄 Testing connection...';
-  get(ref(database, 'pos-data')).then(function(snap) {
+  get(ref(database, 'pos-data/' + uid)).then(function(snap) {
     if (el) el.innerHTML = '<span style="color:var(--success)">✅ Firebase Connected!</span> — Data exists: ' + snap.exists();
     updateFbInfoDisplay(snap.exists() ? snap.val() : null);
   }).catch(function(e) {
@@ -1032,7 +1038,9 @@ window.updateFbInfoDisplay = function(data) {
 };
 
 window.clearCloudData = function() {
-  remove(ref(database, 'pos-data'))
+  var uid = auth.currentUser ? auth.currentUser.uid : null;
+  if (!uid) { toast('❌ Not signed in', 'var(--danger)'); return; }
+  remove(ref(database, 'pos-data/' + uid))
     .then(function() { toast('✅ Cloud data cleared!'); checkFirebaseConn(); })
     .catch(function(e) { toast('❌ Error: ' + e.message, 'var(--danger)'); });
 };
