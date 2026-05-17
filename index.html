@@ -6766,6 +6766,7 @@ if(!db.timerLogs) db.timerLogs = [];
 if(!db.settings.openChecklist) db.settings.openChecklist = ['Unlock shop','Turn on lights','Boot computer','Count opening cash','Check repairs due today','Check low stock'];
 if(!db.settings.closeChecklist) db.settings.closeChecklist = ['Count cash','Close register','Back up data','Set alarm','Lock shop','Send daily summary'];
 if(!db.giftVouchers) db.giftVouchers = [];
+if(!db.commPayments) db.commPayments = [];
 if(!db.invDesign) db.invDesign = { template:'classic', color:'#6c63ff', footer:'Thank you for choosing ST Mobile!', showQr:false };
 // Clear any old browser-cached data so Firebase is always the source
 // Firebase is primary storage - localStorage not used for data
@@ -7300,7 +7301,7 @@ function init() {
       if (parsed && typeof parsed === 'object') {
         Object.assign(db, parsed);
         // Fix any array/object corruptions from storage
-        ['products','invoices','repairs','orders','customers','expenses','suppliers','purchases','stockLog','credits','activityLog','loyaltyLog','staff','shifts','rosterShifts','tasks','followups','timerLogs','repTemplates','purchaseOrders','branches','taxProfiles','stockTransfers','batches','kits','upsellRules','referrals','returns','appointments','bundles','cashSessions','coupons','partsInventory','giftVouchers'].forEach(function(k){ if(!Array.isArray(db[k])) db[k]=[]; });
+        ['products','invoices','repairs','orders','customers','expenses','suppliers','purchases','stockLog','credits','activityLog','loyaltyLog','staff','shifts','rosterShifts','tasks','followups','timerLogs','repTemplates','purchaseOrders','branches','taxProfiles','stockTransfers','batches','kits','upsellRules','referrals','returns','appointments','bundles','cashSessions','coupons','partsInventory','giftVouchers','commPayments'].forEach(function(k){ if(!Array.isArray(db[k])) db[k]=[]; });
         if(typeof db.settings !== 'object') db.settings = {};
         if(typeof db.diagChecklists !== 'object') db.diagChecklists = {};
         if(typeof db.repairParts !== 'object') db.repairParts = {};
@@ -7419,6 +7420,9 @@ function init() {
       if (cloudData.warrantyDays)  db.warrantyDays  = cloudData.warrantyDays  || {};
       if (cloudData.productVariants)db.productVariants= cloudData.productVariants||{};
       if (cloudData.invDesign)     db.invDesign     = cloudData.invDesign      || {};
+      if (cloudData.giftVouchers)  db.giftVouchers  = _fbArr(cloudData.giftVouchers);
+      if (cloudData.commPayments)  db.commPayments  = _fbArr(cloudData.commPayments);
+      if (cloudData.partsInventory)db.partsInventory= _fbArr(cloudData.partsInventory);
       // Persist cloud data to localStorage for offline use
       try { localStorage.setItem('stpos-db', JSON.stringify(db)); } catch(e) {}
       _clearPendingSync();
