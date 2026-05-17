@@ -147,12 +147,6 @@ var openM, closeM, goPage, renderAll;
     }
   }
 
-  // ── Get user-scoped data path ──
-  function _userDataPath() {
-    var u = auth.currentUser;
-    return u ? 'pos-data/' + u.uid : 'pos-data/_shared';
-  }
-
   // ── Firebase Save (push db to Realtime DB, per-user) ──
   window.firebaseSaveDB = function(dbObj) {
     if (!firebaseConfig.databaseURL || firebaseConfig.databaseURL.includes('YOUR_PROJECT')) return;
@@ -230,11 +224,15 @@ var openM, closeM, goPage, renderAll;
   };
 
   // ── Real-time listener (live sync per-user) ──
+  window._liveSyncUnsub = null;
   window.firebaseStartLiveSync = function() {
+    // Detach any previous listener first
+    if (window._liveSyncUnsub) { window._liveSyncUnsub(); window._liveSyncUnsub = null; }
     if (!firebaseConfig.databaseURL || firebaseConfig.databaseURL.includes('YOUR_PROJECT')) return;
     var uid = auth.currentUser ? auth.currentUser.uid : null;
     if (!uid) return;
-    onValue(ref(database, 'pos-data/' + uid), function(snapshot) {
+    window._firebaseUid = uid;
+    window._liveSyncUnsub = onValue(ref(database, 'pos-data/' + uid), function(snapshot) {
       if (!snapshot.exists()) return;
       var remote = snapshot.val();
       if (typeof db === 'undefined' || typeof renderAll !== 'function') return;
@@ -1485,7 +1483,7 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
 </div>
 
 <!-- ══════════════ AUTH SCREEN (Login / Sign Up) ══════════════ -->
-<div id="auth-screen" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:99999;overflow-y:auto">
+<div id="auth-screen" style="display:flex;position:fixed;inset:0;background:var(--bg);z-index:99999;overflow-y:auto">
   <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:radial-gradient(ellipse at 30% 40%,rgba(108,99,255,0.18) 0%,transparent 60%),radial-gradient(ellipse at 80% 80%,rgba(245,0,87,0.12) 0%,transparent 50%),var(--bg)">
     <div style="background:var(--card);border:1px solid var(--border);border-radius:20px;padding:36px 32px;width:400px;max-width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.5);animation:loginAnim 0.5s cubic-bezier(0.16,1,0.3,1)">
       <div style="text-align:center;margin-bottom:24px">
@@ -6691,20 +6689,27 @@ window._onAuthChanged = function(user) {
       }).catch(function(){});
     }
     updateAuthUI(user);
+    // If user changed (different UID from previous), reset flag to force reload
+    if (window._firebaseUid && window._firebaseUid !== user.uid) {
+      window._firebaseLoaded = false;
+    }
     // Trigger Firebase data load + live sync now that we have a user
     // (init() defers when auth isn't ready yet)
     setTimeout(function() {
       if (typeof window.firebaseLoadDB === 'function' && !window._firebaseLoaded) {
         window._firebaseLoaded = true;
+        window._firebaseUid = user.uid;
         if (typeof window._doFirebaseLoad === 'function') window._doFirebaseLoad();
       }
     }, 500);
   } else {
-    // No user signed in
+    // No user signed in — detach live listener and reset state
+    if (window._liveSyncUnsub) { window._liveSyncUnsub(); window._liveSyncUnsub = null; }
     authScreen.style.display = 'flex';
     appEl.style.display = 'none';
     _authUserProfile = null;
     window._firebaseLoaded = false;
+    window._firebaseUid = null;
   }
 };
 

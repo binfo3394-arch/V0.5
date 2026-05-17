@@ -934,7 +934,7 @@ window._adminAuthUnsub = onAuthStateChanged(auth, function(user) {
 // Load POS data from Firebase (per-user)
 window.loadPosDataFromFB = function(callback) {
   var uid = auth.currentUser ? auth.currentUser.uid : null;
-  if (!uid) { setFbStatus('❌ Not signed in', 'var(--danger)'); if (callback) callback(null); return; }
+  if (!uid) { if (callback) callback(null); return; }
   setFbStatus('☁️ Loading...', 'var(--warning)');
   get(ref(database, 'pos-data/' + uid)).then(function(snapshot) {
     if (snapshot.exists()) {
@@ -946,22 +946,44 @@ window.loadPosDataFromFB = function(callback) {
         return Object.keys(val).sort(function(a,b){ return Number(a)-Number(b); }).map(function(k){ return val[k]; });
       }
       window._posDb = {
-        products:     arr(data.products),
-        invoices:     arr(data.invoices),
-        repairs:      arr(data.repairs),
-        orders:       arr(data.orders),
-        customers:    arr(data.customers),
-        expenses:     arr(data.expenses),
-        suppliers:    arr(data.suppliers),
-        activityLog:  arr(data.activityLog),
-        staff:        arr(data.staff),
-        shifts:       arr(data.shifts),
-        tasks:        arr(data.tasks),
-        followups:    arr(data.followups),
-        credits:      arr(data.credits),
-        commPayments: arr(data.commPayments),
-        settings:     data.settings || {},
-        _lastSync:    data._lastSync
+        products:        arr(data.products),
+        invoices:        arr(data.invoices),
+        repairs:         arr(data.repairs),
+        orders:          arr(data.orders),
+        customers:       arr(data.customers),
+        expenses:        arr(data.expenses),
+        suppliers:       arr(data.suppliers),
+        purchases:       arr(data.purchases),
+        stockLog:        arr(data.stockLog),
+        activityLog:     arr(data.activityLog),
+        staff:           arr(data.staff),
+        shifts:          arr(data.shifts),
+        rosterShifts:    arr(data.rosterShifts),
+        tasks:           arr(data.tasks),
+        followups:       arr(data.followups),
+        timerLogs:       arr(data.timerLogs),
+        repTemplates:    arr(data.repTemplates),
+        purchaseOrders:  arr(data.purchaseOrders),
+        branches:        arr(data.branches),
+        taxProfiles:     arr(data.taxProfiles),
+        stockTransfers:  arr(data.stockTransfers),
+        credits:         arr(data.credits),
+        commPayments:    arr(data.commPayments),
+        loyaltyLog:      arr(data.loyaltyLog),
+        batches:         arr(data.batches),
+        kits:            arr(data.kits),
+        upsellRules:     arr(data.upsellRules),
+        referrals:       arr(data.referrals),
+        partsInventory:  arr(data.partsInventory),
+        giftVouchers:    arr(data.giftVouchers),
+        settings:        data.settings || {},
+        widgetPrefs:     data.widgetPrefs || {},
+        diagChecklists:  data.diagChecklists || {},
+        repairParts:     data.repairParts || {},
+        warrantyDays:    data.warrantyDays || {},
+        productVariants: data.productVariants || {},
+        invDesign:       data.invDesign || {},
+        _lastSync:       data._lastSync
       };
       setFbStatus('✅ Synced', 'var(--success)');
       if (callback) callback(window._posDb);
@@ -979,9 +1001,50 @@ window.loadPosDataFromFB = function(callback) {
 
 window.savePosDataToFB = function(dbObj, callback) {
   var uid = auth.currentUser ? auth.currentUser.uid : null;
-  if (!uid) { setFbStatus('❌ Not signed in', 'var(--danger)'); if (callback) callback(false); return; }
+  if (!uid) { if (callback) callback(false); return; }
   setFbStatus('☁️ Saving...', 'var(--warning)');
-  set(ref(database, 'pos-data/' + uid), dbObj)
+  // Build complete payload with defaults to prevent data loss on partial objects
+  var payload = {
+    products:        dbObj.products        || [],
+    invoices:        dbObj.invoices        || [],
+    repairs:         dbObj.repairs         || [],
+    orders:          dbObj.orders          || [],
+    customers:       dbObj.customers       || [],
+    expenses:        dbObj.expenses        || [],
+    suppliers:       dbObj.suppliers       || [],
+    purchases:       dbObj.purchases       || [],
+    stockLog:        dbObj.stockLog        || [],
+    activityLog:     dbObj.activityLog     || [],
+    staff:           dbObj.staff           || [],
+    shifts:          dbObj.shifts          || [],
+    rosterShifts:    dbObj.rosterShifts    || [],
+    tasks:           dbObj.tasks           || [],
+    followups:       dbObj.followups       || [],
+    timerLogs:       dbObj.timerLogs       || [],
+    repTemplates:    dbObj.repTemplates    || [],
+    purchaseOrders:  dbObj.purchaseOrders  || [],
+    branches:        dbObj.branches        || [],
+    taxProfiles:     dbObj.taxProfiles     || [],
+    stockTransfers:  dbObj.stockTransfers  || [],
+    credits:         dbObj.credits         || [],
+    commPayments:    dbObj.commPayments    || [],
+    loyaltyLog:      dbObj.loyaltyLog      || [],
+    batches:         dbObj.batches         || [],
+    kits:            dbObj.kits            || [],
+    upsellRules:     dbObj.upsellRules     || [],
+    referrals:       dbObj.referrals       || [],
+    partsInventory:  dbObj.partsInventory  || [],
+    giftVouchers:    dbObj.giftVouchers    || [],
+    settings:        dbObj.settings        || {},
+    widgetPrefs:     dbObj.widgetPrefs     || {},
+    diagChecklists:  dbObj.diagChecklists  || {},
+    repairParts:     dbObj.repairParts     || {},
+    warrantyDays:    dbObj.warrantyDays    || {},
+    productVariants: dbObj.productVariants || {},
+    invDesign:       dbObj.invDesign       || {},
+    _lastSync:       Date.now()
+  };
+  set(ref(database, 'pos-data/' + uid), payload)
     .then(function() {
       setFbStatus('✅ Saved', 'var(--success)');
       toast('✅ Firebase ලෙල saved!');
@@ -1059,13 +1122,8 @@ window.clearCloudData = function() {
 
 console.log('🔥 Admin Firebase loaded');
 
-// Auto-load on start
+// Auto-load on start (also triggered by _onAdminAuthChanged on sign-in)
 setTimeout(function() {
-  if (typeof window._adminLoggedIn !== 'undefined' && window._adminLoggedIn) {
-    window.loadPosDataFromFB(function(data) {
-      if (data) { window.refreshOverview(); }
-    });
-  }
   checkFirebaseConn();
 }, 500);
 </script>
@@ -2199,8 +2257,13 @@ function dangerFullReset() {
   showConfirm('💀', 'FULL SYSTEM RESET', 'සියලු data — products, invoices, repairs, customers, orders, staff, settings — EVERYTHING permanently delete වෙනවා! Firebase cloud data ද clear වෙනවා!', function() {
     var emptyDb = {
       products:[], invoices:[], repairs:[], orders:[], customers:[], expenses:[], suppliers:[],
-      staff:[], shifts:[], tasks:[], followups:[], credits:[], activityLog:[], loyaltyLog:[], commPayments:[],
-      settings:{ shopName:'ST Mobile & Designing' }
+      purchases:[], stockLog:[], staff:[], shifts:[], rosterShifts:[], tasks:[], followups:[],
+      timerLogs:[], repTemplates:[], purchaseOrders:[], branches:[], taxProfiles:[],
+      stockTransfers:[], credits:[], commPayments:[], loyaltyLog:[], batches:[], kits:[],
+      upsellRules:[], referrals:[], partsInventory:[], giftVouchers:[],
+      settings:{ shopName:'ST Mobile & Designing' },
+      widgetPrefs:{}, diagChecklists:{}, repairParts:{}, warrantyDays:{},
+      productVariants:{}, invDesign:{}
     };
     window._posDb = emptyDb;
     localStorage.setItem('stpos-db', JSON.stringify(emptyDb));
