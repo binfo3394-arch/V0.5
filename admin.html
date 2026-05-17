@@ -249,6 +249,18 @@ tr:hover td { background:rgba(108,99,255,0.04); }
 .confirm-box p { font-size:13px; color:var(--muted); margin-bottom:20px; }
 .confirm-btns { display:flex; gap:10px; justify-content:center; }
 
+/* ── Modal (for admin profile) ── */
+.moverlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(4px);z-index:9000;display:none;align-items:center;justify-content:center;padding:16px;}
+.moverlay.open{display:flex;animation:fadeIn 0.2s;}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:18px;width:540px;max-width:100%;max-height:90vh;overflow-y:auto;animation:slideUp 0.25s;}
+.mhdr{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--card);z-index:10;}
+.mhdr h3{font-size:15px;font-weight:700;}
+.mbody{padding:22px;}
+.mftr{padding:14px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;}
+.xbtn{background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;line-height:1;padding:0 4px;}
+.xbtn:hover{color:var(--danger);}
+@keyframes slideUp{from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:translateY(0)}}
+@media(max-width:768px){.moverlay{padding:16px !important;}.modal{width:100% !important;}}
 /* ── Scrollbar ── */
 ::-webkit-scrollbar { width:5px; }
 ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
@@ -2204,6 +2216,10 @@ function dangerFullReset() {
 function el(id, val) { var e = document.getElementById(id); if (e) e.textContent = val; }
 function setVal(id, val) { var e = document.getElementById(id); if (e) e.value = val || ''; }
 function getVal(id) { var e = document.getElementById(id); return e ? e.value.trim() : ''; }
+
+// Modal helpers
+function openM(id) { var el = document.getElementById(id); if (el) el.classList.add('open'); }
+function closeM(id) { var el = document.getElementById(id); if (el) el.classList.remove('open'); }
 
 function downloadFile(content, filename, type) {
   var blob = new Blob([content], { type });
