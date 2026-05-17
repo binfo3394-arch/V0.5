@@ -394,7 +394,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary)
 select option{background:var(--card2);}
 /* Modal */
 .moverlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(4px);z-index:9000;display:none;align-items:center;justify-content:center;padding:16px 16px 16px 236px;}
-@media(max-width:768px){.moverlay{padding:16px!important;}}
+/* .moverlay mobile override — see main @media(max-width:768px) block below */
 .moverlay.open{display:flex;animation:fadeIn 0.2s;}
 .modal{background:var(--card);border:1px solid var(--border);border-radius:18px;width:540px;max-width:100%;max-height:90vh;overflow-y:auto;animation:slideUp 0.25s;}
 .mhdr{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--card);z-index:10;}
@@ -571,12 +571,7 @@ body {
     touch-action: pan-y !important;
   }
 
-  /* Tables: shrink columns, no horizontal scroll by default */
-  .tcard {
-    overflow-x: hidden !important;
-    overflow-y: visible !important;
-    touch-action: pan-y !important;
-  }
+  /* Tables: shrink columns for unlisted pages; per-page rules below enable horizontal scroll */
   table  { width: 100% !important; min-width: 0 !important; table-layout: fixed !important; font-size: 11px !important; }
   th, td { padding: 5px 6px !important; font-size: 11px !important; white-space: normal !important; word-break: break-word !important; overflow: hidden !important; }
 
@@ -618,7 +613,21 @@ body {
   #pg-followups .tcard,
   #pg-repair-timer .tcard,
   #pg-repair-templates .tcard,
-  #pg-device-history .tcard {
+  #pg-device-history .tcard,
+  #pg-purchase-orders .tcard,
+  #pg-multi-branch .tcard,
+  #pg-tax-manager .tcard,
+  #pg-advanced-reports .tcard,
+  #pg-dashboard-builder .tcard,
+  #pg-roster .tcard,
+  #pg-referrals .tcard,
+  #pg-upsell .tcard,
+  #pg-sales-compare .tcard,
+  #pg-invoice-designer .tcard,
+  #pg-open-close-checklist .tcard,
+  #pg-dead-stock .tcard,
+  #pg-gift-vouchers .tcard,
+  #pg-repair-parts .tcard {
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch !important;
     touch-action: pan-x pan-y !important;
@@ -667,7 +676,20 @@ body {
   #pg-followups .tcard table,
   #pg-repair-timer .tcard table,
   #pg-repair-templates .tcard table,
-  #pg-device-history .tcard table {
+  #pg-device-history .tcard table,
+  #pg-purchase-orders .tcard table,
+  #pg-multi-branch .tcard table,
+  #pg-tax-manager .tcard table,
+  #pg-advanced-reports .tcard table,
+  #pg-dashboard-builder .tcard table,
+  #pg-roster .tcard table,
+  #pg-referrals .tcard table,
+  #pg-upsell .tcard table,
+  #pg-sales-compare .tcard table,
+  #pg-invoice-designer .tcard table,
+  #pg-open-close-checklist .tcard table,
+  #pg-gift-vouchers .tcard table,
+  #pg-repair-parts .tcard table {
     min-width: 700px !important;
     table-layout: auto !important;
     width: max-content !important;
@@ -732,7 +754,7 @@ body {
   .sidebar.open{transform:translateX(0);}
   .sidebar-overlay.open{display:block;}
   .main{margin-left:0;}
-  .moverlay{padding:16px;}
+  /* .moverlay mobile — controlled in main @media block as bottom-sheet */
   .pos-wrap{grid-template-columns:1fr;}
   .pgrid{grid-template-columns:repeat(2,1fr);}
   .sgrid{grid-template-columns:1fr 1fr;}
@@ -782,8 +804,7 @@ body {
   .nitem  { min-height: 44px; }
   .qbtn   { width: 28px; height: 28px; }
 
-  /* ── Modal → full-screen bottom sheet ── */
-  .moverlay { padding: 0 !important; align-items: flex-end; }
+  /* ── Modal → full-screen bottom sheet (authoritative rule in main @media block) ── */
   .modal {
     width: 100% !important;
     max-width: 100% !important;
@@ -794,7 +815,7 @@ body {
   }
 
   /* ── Content bottom padding for bottom nav + safe area ── */
-  .content { padding: 10px 10px calc(72px + var(--sab)) 10px; }
+  /* ── Content bottom padding (authoritative rule is in the later media block) ── */
   .main    { padding-bottom: 0; }
 
   /* ── Forms full width ── */
@@ -823,8 +844,7 @@ body {
   #fab     { bottom: calc(74px + var(--sab)); right: 14px; width: 46px; height: 46px; font-size: 20px; }
   #fab-menu{ bottom: calc(130px + var(--sab)); right: 14px; }
 
-  /* ── PWA banner above bottom nav ── */
-  #pwa-banner { bottom: calc(62px + var(--sab)); }
+  /* ── PWA banner (authoritative rule in later media block) ── */
 
   /* ── Scrollable areas ── */
   .nav-sec, .cpanel-inner, .citems, #gsearch-results { -webkit-overflow-scrolling: touch; }
@@ -873,7 +893,7 @@ body.fs-lg{font-size:16px;}
 /* Floating action button */
 #fab{position:fixed;bottom:80px;right:24px;width:52px;height:52px;border-radius:50%;background:var(--primary);color:#fff;border:none;font-size:22px;cursor:pointer;box-shadow:0 4px 20px rgba(108,99,255,0.5);z-index:500;transition:0.3s;display:flex;align-items:center;justify-content:center;}
 #fab:hover{transform:scale(1.1);box-shadow:0 8px 30px rgba(108,99,255,0.7);}
-#fab-menu{position:fixed;bottom:140px;right:24px;display:flex;flex-direction:column;gap:8px;z-index:499;display:none;}
+#fab-menu{position:fixed;bottom:140px;right:24px;flex-direction:column;gap:8px;z-index:499;display:none;}
 #fab-menu.open{display:flex;animation:slideUp 0.3s;}
 .fab-item{display:flex;align-items:center;gap:8px;justify-content:flex-end;}
 .fab-item button{padding:6px 12px;border-radius:20px;font-size:12px;font-weight:700;}
@@ -1068,13 +1088,15 @@ body.fs-lg{font-size:16px;}
 tr { transition: background 0.15s; }
 tr:hover td { background: rgba(108,99,255,0.07) !important; }
 
-/* Card hover */
+/* Card hover — only on devices with a real pointer (not touch) */
 .tcard {
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition: box-shadow 0.3s ease;
 }
-.tcard:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 30px rgba(108,99,255,0.12);
+@media (hover: hover) and (pointer: fine) {
+  .tcard:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(108,99,255,0.12);
+  }
 }
 
 /* Product card in POS */
@@ -1182,7 +1204,7 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
   .sidebar          { display: none !important; }
   .sidebar-overlay  { display: none !important; }
   .mob-toggle       { display: none !important; }
-  .main             { margin-left: 0 !important; padding-bottom: 72px; }
+  .main             { margin-left: 0 !important; padding-bottom: calc(72px + var(--sab)); }
 
   /* ── Bottom nav bar ── */
   #mobile-bottom-nav {
@@ -1259,20 +1281,18 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
 
   .mmore-handle { width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 14px; }
   .mmore-title  { font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;padding:8px 8px 4px;font-weight:700; }
-  .mmore-grid   { display:flex;gap:8px;margin-bottom:4px;overflow-x:auto;-webkit-overflow-scrolling:touch;scroll-snap-type:x mandatory;padding:0 4px 4px; }
-  .mmore-grid::-webkit-scrollbar { height:3px; }
-  .mmore-grid::-webkit-scrollbar-thumb { background:var(--border);border-radius:3px; }
+  .mmore-grid   { display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:8px;margin-bottom:4px;padding:0 4px 4px; }
   .mmore-item   {
     display:flex;flex-direction:column;align-items:center;justify-content:center;
-    gap:5px;padding:12px 4px;border-radius:12px;cursor:pointer;
+    gap:5px;padding:12px 6px;border-radius:12px;cursor:pointer;
     background:var(--card2);border:1px solid var(--border);
     transition:all .18s;-webkit-tap-highlight-color:transparent;
     position:relative;user-select:none;touch-action:manipulation;
-    flex:0 0 auto;width:65px;scroll-snap-align:start;
+    min-width:0;
   }
   .mmore-item:active { transform:scale(.92); }
   .mmore-ic  { font-size:20px; }
-  .mmore-lbl { font-size:10px;color:var(--muted);text-align:center;line-height:1.2;font-weight:600; }
+  .mmore-lbl { font-size:10px;color:var(--muted);text-align:center;line-height:1.2;font-weight:600;word-break:break-word; }
   .mmore-item.mmore-active { background:rgba(108,99,255,.18);border-color:var(--primary); }
   .mmore-item.mmore-active .mmore-lbl { color:var(--primary); }
   .mmore-dot { position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:var(--danger); }
@@ -1322,7 +1342,7 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
 
   /* ── Toast / PWA ── */
   .toast      { bottom: calc(74px + var(--sab)); right:12px; left:12px; max-width:none; font-size:12px; }
-  #pwa-banner { bottom: calc(62px + var(--sab)); }
+  #pwa-banner { bottom: calc(62px + var(--sab)); z-index: 590 !important; }
 
   /* ── Inputs ── */
   input,select,textarea { font-size:16px !important; padding:11px 12px; }
@@ -1389,6 +1409,57 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
 .nitem.sortable-chosen { background: rgba(108,99,255,0.18) !important; box-shadow: 0 4px 16px rgba(0,0,0,0.3); border-radius: 8px; }
 .nitem.sortable-ghost { opacity: 0.35; background: rgba(108,99,255,0.08) !important; }
 .nlabel { cursor: default !important; }
+
+/* ═══════════════════════════════════════════════
+   🖥️ FULL-SCREEN FIT — Desktop & Tablet
+   All pages fit within the viewport without
+   horizontal scrolling or cut-off content.
+   ═══════════════════════════════════════════════ */
+
+/* Make the entire app use CSS zoom so content
+   scales down to fit any screen width ≥ 769px.
+   Breakpoints: wide monitor = 100%, medium = 90%, small laptop = 82% */
+@media (min-width: 769px) and (max-width: 1100px) {
+  html { zoom: 0.85; }
+}
+@media (min-width: 1101px) and (max-width: 1366px) {
+  html { zoom: 0.90; }
+}
+@media (min-width: 1367px) {
+  html { zoom: 1; }
+}
+
+/* Force all pages to never overflow the available width */
+@media (min-width: 769px) {
+  .page, .page.active {
+    max-width: calc(100vw - 220px);
+    box-sizing: border-box;
+    overflow-x: hidden;
+  }
+  .content {
+    overflow-x: hidden;
+    box-sizing: border-box;
+  }
+  /* Tables that are wider than the content area get a scroll wrapper */
+  .tcard {
+    overflow-x: auto;
+  }
+  /* Stats grid — allow wrapping on narrow windows */
+  .sgrid {
+    flex-wrap: wrap;
+  }
+  /* POS wrap — prevent overflow */
+  .pos-wrap {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  /* Charts grid — 2 col on medium, 1 col on small */
+  @media (max-width: 1100px) {
+    .dash-charts-grid { grid-template-columns: 1fr !important; }
+    .sgrid { grid-template-columns: repeat(2, 1fr); }
+    .pos-wrap { grid-template-columns: 1fr 300px; }
+  }
+}
 
 </style>
 </head>
@@ -1478,6 +1549,30 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
     <div class="mmore-item" data-mmr="device-history"><span class="mmore-ic">📱</span><span class="mmore-lbl">Device Hist</span></div>
     <div class="mmore-item" data-mmr="repair-advanced"><span class="mmore-ic">🛠️</span><span class="mmore-lbl">Diagnostics</span></div>
     <div class="mmore-item" data-mmr="repair-parts"><span class="mmore-ic">🔩</span><span class="mmore-lbl">Parts</span></div>
+  </div>
+  <div style="height:12px"></div>
+
+  <div class="mmore-title">V28+ &amp; Advanced</div>
+  <div class="mmore-grid">
+    <div class="mmore-item" data-mmr="purchase-orders"><span class="mmore-ic">🛍️</span><span class="mmore-lbl">Purchase Orders</span></div>
+    <div class="mmore-item" data-mmr="multi-branch"><span class="mmore-ic">🏢</span><span class="mmore-lbl">Branches</span></div>
+    <div class="mmore-item" data-mmr="tax-manager"><span class="mmore-ic">🧮</span><span class="mmore-lbl">VAT / Tax</span></div>
+    <div class="mmore-item" data-mmr="advanced-reports"><span class="mmore-ic">📈</span><span class="mmore-lbl">Adv. Reports</span></div>
+    <div class="mmore-item" data-mmr="dashboard-builder"><span class="mmore-ic">🎛️</span><span class="mmore-lbl">Dash Builder</span></div>
+    <div class="mmore-item" data-mmr="activitylog"><span class="mmore-ic">🔍</span><span class="mmore-lbl">Activity Log</span></div>
+    <div class="mmore-item" data-mmr="abc-analysis"><span class="mmore-ic">🔢</span><span class="mmore-lbl">ABC Analysis</span></div>
+    <div class="mmore-item" data-mmr="dead-stock"><span class="mmore-ic">💤</span><span class="mmore-lbl">Dead Stock</span></div>
+    <div class="mmore-item" data-mmr="stock-audit"><span class="mmore-ic">📋</span><span class="mmore-lbl">Stock Audit</span></div>
+    <div class="mmore-item" data-mmr="roster"><span class="mmore-ic">📅</span><span class="mmore-lbl">Staff Roster</span></div>
+    <div class="mmore-item" data-mmr="upsell"><span class="mmore-ic">💡</span><span class="mmore-lbl">Upsell Engine</span></div>
+    <div class="mmore-item" data-mmr="referrals"><span class="mmore-ic">🎁</span><span class="mmore-lbl">Referrals</span></div>
+    <div class="mmore-item" data-mmr="sales-compare"><span class="mmore-ic">📊</span><span class="mmore-lbl">Sales Compare</span></div>
+    <div class="mmore-item" data-mmr="invoice-designer"><span class="mmore-ic">🎨</span><span class="mmore-lbl">Inv. Designer</span></div>
+    <div class="mmore-item" data-mmr="batch-tracking"><span class="mmore-ic">📦</span><span class="mmore-lbl">Batch Track</span></div>
+    <div class="mmore-item" data-mmr="cust-segments"><span class="mmore-ic">👥</span><span class="mmore-lbl">Cust. Segments</span></div>
+    <div class="mmore-item" data-mmr="cust-timeline"><span class="mmore-ic">📅</span><span class="mmore-lbl">Cust. Timeline</span></div>
+    <div class="mmore-item" data-mmr="open-close-checklist"><span class="mmore-ic">✅</span><span class="mmore-lbl">Checklist</span></div>
+    <div class="mmore-item" data-mmr="kit-assembly"><span class="mmore-ic">🔧</span><span class="mmore-lbl">Kit Assembly</span></div>
   </div>
   <div style="height:12px"></div>
 </div>
@@ -14432,6 +14527,9 @@ function setFontSize(size) {
 function setSidebarWidth(w) {
   document.querySelector('.sidebar').style.width = w + 'px';
   document.querySelector('.main').style.marginLeft = w + 'px';
+  // Keep modal overlay centered past the sidebar
+  var mo = document.querySelector('.moverlay');
+  if (mo) mo.style.paddingLeft = (w + 16) + 'px';
   if(!db.settings) db.settings = {};
   db.settings.sidebarWidth = w;
   saveDB(); toast('📐 Sidebar width: ' + w + 'px');
@@ -14458,6 +14556,8 @@ setTimeout(function() {
   if(db.settings && db.settings.sidebarWidth) {
     document.querySelector('.sidebar').style.width = db.settings.sidebarWidth + 'px';
     document.querySelector('.main').style.marginLeft = db.settings.sidebarWidth + 'px';
+    var mo = document.querySelector('.moverlay');
+    if (mo) mo.style.paddingLeft = (db.settings.sidebarWidth + 16) + 'px';
   }
 }, 1200);
 
