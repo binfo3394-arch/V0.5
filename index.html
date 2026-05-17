@@ -12,6 +12,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <script>
+// Forward declarations for functions defined in later script blocks
+var openM, closeM, goPage, renderAll;
 (function() {
   var base = (window.location.pathname.indexOf('/V0.5/')>=0) ? window.location.origin + '/V0.5/' : window.location.href.replace(/[^/]*$/,'');
   var manifest = {
@@ -46,6 +48,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import { getDatabase, ref, set, onValue, get, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile, updatePassword, reauthenticateWithCredential, EmailAuthProvider, deleteUser, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
   // ══════════════════════════════════════════════════
   //  🔥 ඔබේ Firebase config එක මෙතන දාන්න
@@ -64,6 +67,72 @@
 
   const app = initializeApp(firebaseConfig);
   const database = getDatabase(app);
+  const auth = getAuth(app);
+
+  // ── Auth: expose to global scope ──
+  window._auth = auth;
+  window._fbDb = database;
+  window._fbRef = ref;
+  window._fbSet = set;
+
+  window.firebaseSignUp = function(email, password, displayName, phone) {
+    return createUserWithEmailAndPassword(auth, email, password)
+      .then(function(cred) {
+        if (displayName) {
+          return updateProfile(cred.user, { displayName: displayName }).then(function() {
+            return cred;
+          });
+        }
+        return cred;
+      });
+  };
+
+  window.firebaseSignIn = function(email, password) {
+    return signInWithEmailAndPassword(auth, email, password);
+  };
+
+  window.firebaseSignOut = function() {
+    return signOut(auth);
+  };
+
+  window.firebaseResetPassword = function(email) {
+    return sendPasswordResetEmail(auth, email);
+  };
+
+  window.firebaseUpdateProfile = function(displayName, photoURL) {
+    var user = auth.currentUser;
+    if (!user) return Promise.reject('No user');
+    return updateProfile(user, { displayName: displayName, photoURL: photoURL || null });
+  };
+
+  window.firebaseUpdatePassword = function(currentPassword, newPassword) {
+    var user = auth.currentUser;
+    if (!user || !user.email) return Promise.reject('No user or email');
+    var cred = EmailAuthProvider.credential(user.email, currentPassword);
+    return reauthenticateWithCredential(user, cred).then(function() {
+      return updatePassword(user, newPassword);
+    });
+  };
+
+  window.firebaseDeleteAccount = function() {
+    var user = auth.currentUser;
+    if (!user) return Promise.reject('No user');
+    return deleteUser(user);
+  };
+
+  // ── Save user profile to Firebase DB ──
+  window.firebaseSaveUserProfile = function(uid, data) {
+    return set(ref(database, 'users/' + uid), data);
+  };
+
+  window.firebaseGetUserProfile = function(uid) {
+    return get(ref(database, 'users/' + uid));
+  };
+
+  // ── Auth state listener ──
+  window._authUnsub = onAuthStateChanged(auth, function(user) {
+    if (window._onAuthChanged) window._onAuthChanged(user);
+  });
 
   // ── Firebase sync status indicator ──
   function setFBStatus(text, color) {
@@ -78,11 +147,12 @@
     }
   }
 
-  // ── Firebase Save (push db to Realtime DB) ──
+  // ── Firebase Save (push db to Realtime DB, per-user) ──
   window.firebaseSaveDB = function(dbObj) {
     if (!firebaseConfig.databaseURL || firebaseConfig.databaseURL.includes('YOUR_PROJECT')) return;
+    var uid = auth.currentUser ? auth.currentUser.uid : null;
+    if (!uid) { return; } // silently skip — localStorage already saved
     setFBStatus('☁️ Syncing...', 'var(--warning)');
-    // Save ALL data collections — no limit, unlimited save
     var payload = {
       products:      dbObj.products      || [],
       invoices:      dbObj.invoices      || [],
@@ -123,25 +193,27 @@
       commPayments:  dbObj.commPayments    || [],
       _lastSync:     Date.now()
     };
-    set(ref(database, 'pos-data'), payload)
+    set(ref(database, 'pos-data/' + uid), payload)
       .then(function(){ setFBStatus('✅ Cloud Saved', 'var(--success)'); })
       .catch(function(e){ setFBStatus('❌ Sync Error', 'var(--danger)'); console.error('Firebase save error:', e); });
   };
 
-  // ── Firebase Load (pull from Realtime DB on startup) ──
+  // ── Firebase Load (pull user's data from Realtime DB) ──
   window.firebaseLoadDB = function(callback) {
     if (!firebaseConfig.databaseURL || firebaseConfig.databaseURL.includes('YOUR_PROJECT')) {
       if (callback) callback(null);
       return;
     }
+    var uid = auth.currentUser ? auth.currentUser.uid : null;
+    if (!uid) { setFBStatus('❌ Not signed in', 'var(--danger)'); if (callback) callback(null); return; }
     setFBStatus('☁️ Loading...', 'var(--info)');
-    get(ref(database, 'pos-data')).then(function(snapshot) {
+    get(ref(database, 'pos-data/' + uid)).then(function(snapshot) {
       if (snapshot.exists()) {
         var data = snapshot.val();
         setFBStatus('✅ Cloud Loaded', 'var(--success)');
         if (callback) callback(data);
       } else {
-        setFBStatus('☁️ No cloud data', 'var(--muted)');
+        setFBStatus('☁️ No cloud data — fresh start!', 'var(--muted)');
         if (callback) callback(null);
       }
     }).catch(function(e){
@@ -151,20 +223,24 @@
     });
   };
 
-  // ── Real-time listener (live sync across devices) ──
+  // ── Real-time listener (live sync per-user) ──
+  window._liveSyncUnsub = null;
   window.firebaseStartLiveSync = function() {
+    // Detach any previous listener first
+    if (window._liveSyncUnsub) { window._liveSyncUnsub(); window._liveSyncUnsub = null; }
     if (!firebaseConfig.databaseURL || firebaseConfig.databaseURL.includes('YOUR_PROJECT')) return;
-    onValue(ref(database, 'pos-data'), function(snapshot) {
+    var uid = auth.currentUser ? auth.currentUser.uid : null;
+    if (!uid) return;
+    window._firebaseUid = uid;
+    window._liveSyncUnsub = onValue(ref(database, 'pos-data/' + uid), function(snapshot) {
       if (!snapshot.exists()) return;
       var remote = snapshot.val();
       if (typeof db === 'undefined' || typeof renderAll !== 'function') return;
-      // Helper: Firebase stores arrays as objects with numeric keys — convert back to real arrays
       function _fbArr(val) {
         if (!val) return [];
         if (Array.isArray(val)) return val;
         return Object.keys(val).sort(function(a,b){ return Number(a)-Number(b); }).map(function(k){ return val[k]; });
       }
-      // Always load all data from Firebase on every change
       if (remote.products)    db.products    = _fbArr(remote.products);
       if (remote.invoices)    db.invoices    = _fbArr(remote.invoices);
       if (remote.repairs)     db.repairs     = _fbArr(remote.repairs);
@@ -203,7 +279,6 @@
       if (remote.giftVouchers)    db.giftVouchers    = _fbArr(remote.giftVouchers);
       if (remote.commPayments)    db.commPayments    = _fbArr(remote.commPayments);
       renderAll();
-      // Persist synced data locally for offline use
       try { localStorage.setItem('stpos-db', JSON.stringify(db)); } catch(e) {}
       _clearPendingSync();
       setFBStatus('\uD83D\uDD04 Live synced', 'var(--info)');
@@ -371,6 +446,14 @@ select option{background:var(--card2);}
 .ssec h3{font-size:14px;font-weight:700;margin-bottom:14px;color:var(--primary);}
 .cswatch{width:30px;height:30px;border-radius:7px;cursor:pointer;border:2px solid transparent;transition:0.2s;display:inline-block;margin:3px;}
 .cswatch.ac{border-color:#fff;transform:scale(1.15);}
+/* Auth Screen */
+#auth-screen{z-index:99999!important;}
+#auth-screen .fg{margin-bottom:14px;}
+#auth-screen input{font-size:15px!important;}
+.auth-profile-btn{background:rgba(108,99,255,0.12);color:var(--primary);border:1px solid rgba(108,99,255,0.3);cursor:pointer;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;transition:0.2s;display:flex;align-items:center;gap:5px;white-space:nowrap;}
+.auth-profile-btn:hover{background:rgba(108,99,255,0.25);}
+@keyframes loginAnim{from{opacity:0;transform:translateY(30px) scale(0.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+
 /* Toast */
 .toast{position:fixed;bottom:20px;right:20px;background:var(--card);border:1px solid var(--border);border-left:3px solid var(--success);border-radius:10px;padding:12px 16px;font-size:13px;z-index:9999;animation:slideUp 0.3s;box-shadow:0 8px 30px rgba(0,0,0,0.3);display:none;max-width:300px;}
 /* Keyboard shortcut badge */
@@ -1399,6 +1482,81 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
   <div style="height:12px"></div>
 </div>
 
+<!-- ══════════════ AUTH SCREEN (Login / Sign Up) ══════════════ -->
+<div id="auth-screen" style="display:flex;position:fixed;inset:0;background:var(--bg);z-index:99999;overflow-y:auto">
+  <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:radial-gradient(ellipse at 30% 40%,rgba(108,99,255,0.18) 0%,transparent 60%),radial-gradient(ellipse at 80% 80%,rgba(245,0,87,0.12) 0%,transparent 50%),var(--bg)">
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:20px;padding:36px 32px;width:400px;max-width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.5);animation:loginAnim 0.5s cubic-bezier(0.16,1,0.3,1)">
+      <div style="text-align:center;margin-bottom:24px">
+        <div style="font-size:52px;margin-bottom:8px">📱</div>
+        <h1 style="font-size:22px;font-weight:800;color:var(--primary)">ST Mobile POS</h1>
+        <p style="font-size:13px;color:var(--muted);margin-top:4px" id="auth-subtitle">Sign in to your account</p>
+      </div>
+      <div id="auth-form">
+        <!-- Login Fields -->
+        <div id="auth-login-fields">
+          <div class="fg">
+            <label>Email</label>
+            <input type="email" id="auth-email" placeholder="your@email.com" autocomplete="email" onkeydown="if(event.key==='Enter')authLogin()">
+          </div>
+          <div class="fg">
+            <label>Password</label>
+            <input type="password" id="auth-pass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')authLogin()">
+          </div>
+          <button class="btn bp2" style="width:100%;padding:12px;font-size:15px;margin-top:6px" onclick="authLogin()">🔐 Sign In</button>
+          <div style="text-align:center;margin-top:10px">
+            <span style="font-size:12px;color:var(--muted);cursor:pointer" onclick="authShowSignup()">Don't have an account? <strong style="color:var(--primary)">Sign Up</strong></span>
+          </div>
+          <div style="text-align:center;margin-top:6px">
+            <span style="font-size:12px;color:var(--muted);cursor:pointer" onclick="authShowReset()">Forgot password?</span>
+          </div>
+        </div>
+        <!-- Signup Fields -->
+        <div id="auth-signup-fields" style="display:none">
+          <div class="fg">
+            <label>Full Name</label>
+            <input type="text" id="auth-signup-name" placeholder="Your full name" autocomplete="name">
+          </div>
+          <div class="fg">
+            <label>Email *</label>
+            <input type="email" id="auth-signup-email" placeholder="your@email.com" autocomplete="email">
+          </div>
+          <div class="fg">
+            <label>Phone</label>
+            <input type="tel" id="auth-signup-phone" placeholder="+94 XX XXX XXXX" autocomplete="tel">
+          </div>
+          <div class="fg">
+            <label>Password *</label>
+            <input type="password" id="auth-signup-pass" placeholder="At least 6 characters" autocomplete="new-password">
+          </div>
+          <div class="fg">
+            <label>Confirm Password *</label>
+            <input type="password" id="auth-signup-pass2" placeholder="Confirm password" autocomplete="new-password">
+          </div>
+          <button class="btn bp2" style="width:100%;padding:12px;font-size:15px;margin-top:6px" onclick="authSignup()">📝 Create Account</button>
+          <div style="text-align:center;margin-top:10px">
+            <span style="font-size:12px;color:var(--muted);cursor:pointer" onclick="authShowLogin()">Already have an account? <strong style="color:var(--primary)">Sign In</strong></span>
+          </div>
+        </div>
+        <!-- Reset Password Fields -->
+        <div id="auth-reset-fields" style="display:none">
+          <div class="fg">
+            <label>Email</label>
+            <input type="email" id="auth-reset-email" placeholder="your@email.com" autocomplete="email" onkeydown="if(event.key==='Enter')authResetPass()">
+          </div>
+          <button class="btn bp2" style="width:100%;padding:12px;font-size:15px;margin-top:6px" onclick="authResetPass()">📧 Send Reset Link</button>
+          <div style="text-align:center;margin-top:10px">
+            <span style="font-size:12px;color:var(--muted);cursor:pointer" onclick="authShowLogin()"><strong style="color:var(--primary)">← Back to Sign In</strong></span>
+          </div>
+        </div>
+      </div>
+      <!-- Auth Error -->
+      <div id="auth-err" style="color:var(--danger);font-size:13px;text-align:center;margin-top:12px;min-height:20px"></div>
+      <!-- Status info -->
+      <div id="auth-info" style="font-size:11px;color:var(--muted);text-align:center;margin-top:12px"></div>
+    </div>
+  </div>
+</div>
+
 <!-- PIN LOCK SCREEN -->
 <div id="pin-screen" style="display:none">
   <div style="font-size:36px;margin-bottom:4px">🔐</div>
@@ -1441,6 +1599,37 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
   <div id="gsearch-box">
     <input id="gsearch-input" placeholder="🔍 Search products, customers, invoices, repairs..." oninput="doGSearch()" onkeydown="gsearchKey(event)" autocomplete="off">
     <div id="gsearch-results"><div style="padding:20px;text-align:center;color:var(--muted);font-size:12px">Type to search everything... <span class="kbd">Esc</span> to close</div></div>
+  </div>
+</div>
+
+<!-- Profile Modal -->
+<div class="moverlay" id="m-profile">
+  <div class="modal" style="width:440px">
+    <div class="mhdr"><h3>👤 My Profile</h3><button class="xbtn" onclick="closeProfileModal()">×</button></div>
+    <div class="mbody">
+      <div style="background:var(--card2);border-radius:10px;padding:14px;margin-bottom:14px;text-align:center">
+        <div style="font-size:36px;margin-bottom:4px">👤</div>
+        <div style="font-size:16px;font-weight:800;color:var(--primary)" id="prof-email">—</div>
+      </div>
+      <div class="fg"><label>Display Name</label><input id="prof-name" placeholder="Your name"></div>
+      <div class="fg"><label>Phone</label><input id="prof-phone" placeholder="+94 XX XXX XXXX"></div>
+      <button class="btn bp2" style="width:100%" onclick="authUpdateProfile()">💾 Save Profile</button>
+
+      <div style="border-top:1px solid var(--border);margin:16px 0 14px;padding-top:14px">
+        <h4 style="font-size:13px;font-weight:700;margin-bottom:10px">🔑 Change Password</h4>
+        <div class="fg"><label>Current Password</label><input type="password" id="prof-pass-old" placeholder="Current password"></div>
+        <div class="fg"><label>New Password</label><input type="password" id="prof-pass-new" placeholder="New password (min 6 chars)"></div>
+        <div class="fg"><label>Confirm New Password</label><input type="password" id="prof-pass-new2" placeholder="Confirm new password"></div>
+        <button class="btn" style="width:100%;background:rgba(0,230,118,0.15);color:var(--success);border:1px solid rgba(0,230,118,0.3)" onclick="authUpdatePassword()">🔑 Update Password</button>
+      </div>
+
+      <div id="prof-err" style="color:var(--danger);font-size:12px;text-align:center;min-height:16px;margin-top:6px"></div>
+      <div id="prof-success" style="color:var(--success);font-size:12px;text-align:center;min-height:16px;margin-top:4px"></div>
+    </div>
+    <div class="mftr">
+      <button class="btn bd2" onclick="authLogout()">🚪 Sign Out</button>
+      <button class="btn bo" onclick="closeProfileModal()">Close</button>
+    </div>
   </div>
 </div>
 
@@ -1489,6 +1678,7 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
   <div class="fab-item"><span class="fab-label">New Customer</span><button class="btn bi" onclick="goPage('customers');openM('m-cust');toggleFAB()">👤</button></div>
   <div class="fab-item"><span class="fab-label">Search Everything</span><button class="btn bo" onclick="openGSearch();toggleFAB()">🔍</button></div>
 </div>
+<div id="main-app-wrap">
 <div class="app">
   <!-- Sidebar -->
   <div class="sidebar">
@@ -1582,6 +1772,7 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
       <div class="tright">
         <div class="clock" id="clk"></div>
         <div id="offline-indicator" style="display:none;font-size:11px;color:var(--warning);background:rgba(255,171,0,0.1);padding:3px 10px;border-radius:20px;border:1px solid rgba(255,171,0,0.3)">📵 Offline</div>
+        <div id="auth-profile-btn" class="auth-profile-btn" onclick="openProfileModal()" style="display:none" title="My Profile">👤 User</div>
         <div id="role-badge" onclick="openAdminPanel()" style="font-size:11px;padding:3px 10px;border-radius:20px;background:rgba(108,99,255,0.15);color:var(--primary);border:1px solid rgba(108,99,255,0.3);cursor:pointer;transition:0.2s" title="Open Admin Panel">👑 Admin</div>
         <div id="autosave-indicator" style="font-size:11px;color:var(--success);opacity:0;transition:opacity 0.3s;background:var(--card2);padding:3px 10px;border-radius:20px;white-space:nowrap">✅ Saved</div>
         <div id="fb-sync-indicator" style="font-size:11px;color:var(--info);opacity:0;transition:opacity 0.3s;background:var(--card2);padding:3px 10px;border-radius:20px;white-space:nowrap;border:1px solid rgba(0,176,255,0.2)">☁️ Firebase</div>
@@ -2883,6 +3074,18 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
           <button class="btn bp2 bsm" onclick="saveCoupon()">➕ Create Coupon</button>
           <div class="tcard" style="margin-top:14px">
             <table><thead><tr><th>Code</th><th>Name</th><th>Discount</th><th>Expiry</th><th>Uses</th><th>Status</th><th>Actions</th></tr></thead><tbody id="coupon-list-body"></tbody></table>
+          </div>
+        </div>
+
+        <!-- ACCOUNT SECTION -->
+        <div class="ssec" style="margin-top:18px">
+          <h3>👤 My Account</h3>
+          <div id="settings-account-info" style="font-size:12px;color:var(--muted);margin-bottom:10px">
+            <span id="sett-auth-email" style="color:var(--primary);font-weight:600">Loading...</span>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn bp2 bsm" onclick="openProfileModal()">👤 Edit Profile</button>
+            <button class="btn bd2 bsm" onclick="authLogout()">🚪 Sign Out</button>
           </div>
         </div>
       </div>
@@ -6166,6 +6369,7 @@ setTimeout(function() {
     <div class="mftr"><button class="btn bo" onclick="closeM('m-gv')">Cancel</button><button class="btn bp2" onclick="saveGiftVoucher()">💾 Save Voucher</button></div>
   </div>
 </div>
+</div><!-- end main-app-wrap -->
 
 <script>
 // =========== XSS SAFE HTML HELPER ===========
@@ -6465,6 +6669,283 @@ function _updateOfflineUI() {
   }
 }
 
+// =========== FIREBASE AUTH ===========
+var _authUser = null;
+var _authUserProfile = null;
+
+window._onAuthChanged = function(user) {
+  _authUser = user;
+  var authScreen = document.getElementById('auth-screen');
+  var appEl = document.getElementById('main-app-wrap');
+  if (!authScreen || !appEl) return;
+  if (user) {
+    // User is signed in
+    authScreen.style.display = 'none';
+    appEl.style.display = '';
+    // Load user profile from Firebase DB
+    if (typeof window.firebaseGetUserProfile === 'function') {
+      window.firebaseGetUserProfile(user.uid).then(function(snap) {
+        if (snap.exists()) _authUserProfile = snap.val();
+      }).catch(function(){});
+    }
+    updateAuthUI(user);
+    // If user changed (different UID from previous), reset flag to force reload
+    if (window._firebaseUid && window._firebaseUid !== user.uid) {
+      window._firebaseLoaded = false;
+    }
+    // Trigger Firebase data load + live sync now that we have a user
+    // (init() defers when auth isn't ready yet)
+    setTimeout(function() {
+      if (typeof window.firebaseLoadDB === 'function' && !window._firebaseLoaded) {
+        window._firebaseLoaded = true;
+        window._firebaseUid = user.uid;
+        if (typeof window._doFirebaseLoad === 'function') window._doFirebaseLoad();
+      }
+    }, 500);
+  } else {
+    // No user signed in — detach live listener and reset state
+    if (window._liveSyncUnsub) { window._liveSyncUnsub(); window._liveSyncUnsub = null; }
+    authScreen.style.display = 'flex';
+    appEl.style.display = 'none';
+    _authUserProfile = null;
+    window._firebaseLoaded = false;
+    window._firebaseUid = null;
+  }
+};
+
+function updateAuthUI(user) {
+  var btn = document.getElementById('auth-profile-btn');
+  if (!btn) return;
+  if (user) {
+    btn.style.display = 'flex';
+    var name = user.displayName || user.email || 'User';
+    btn.innerHTML = '👤 ' + name.substring(0, 12) + (name.length > 12 ? '..' : '');
+  } else {
+    btn.style.display = 'none';
+  }
+}
+
+function quickSetupDefault() {
+  var errEl = document.getElementById('auth-err');
+  var infoEl = document.getElementById('auth-info');
+  errEl.textContent = '';
+  infoEl.textContent = '⏳ Creating default admin account...';
+  if (typeof window.firebaseSignUp !== 'function') { errEl.textContent = '❌ Firebase not ready'; infoEl.textContent = ''; return; }
+  window.firebaseSignUp('binfo3394@gmail.com', 'Tharutomy&11', 'Admin', '')
+    .then(function(cred) {
+      if (typeof window.firebaseSaveUserProfile === 'function') {
+        window.firebaseSaveUserProfile(cred.user.uid, {
+          email: 'binfo3394@gmail.com',
+          displayName: 'Admin',
+          role: 'admin',
+          createdAt: Date.now()
+        }).catch(function(){});
+      }
+      errEl.style.color = 'var(--success)';
+      errEl.textContent = '✅ Default admin account created! Signing in...';
+      infoEl.textContent = '';
+    })
+    .catch(function(err) {
+      infoEl.textContent = '';
+      if (err.code === 'auth/email-already-in-use') {
+        // Account already exists - try signing in
+        infoEl.textContent = '⚠️ Account exists. Try signing in with those credentials.';
+        // Pre-fill login
+        document.getElementById('auth-email').value = 'binfo3394@gmail.com';
+        document.getElementById('auth-pass').value = 'Tharutomy&11';
+        errEl.style.color = 'var(--success)';
+        errEl.textContent = '✅ Account already exists! Click Sign In above.';
+      } else {
+        errEl.textContent = '❌ ' + err.message;
+      }
+    });
+}
+
+function authShowSignup() {
+  document.getElementById('auth-login-fields').style.display = 'none';
+  document.getElementById('auth-reset-fields').style.display = 'none';
+  document.getElementById('auth-signup-fields').style.display = 'block';
+  document.getElementById('auth-subtitle').textContent = 'Create a new account';
+  document.getElementById('auth-err').textContent = '';
+}
+
+function authShowLogin() {
+  document.getElementById('auth-login-fields').style.display = 'block';
+  document.getElementById('auth-signup-fields').style.display = 'none';
+  document.getElementById('auth-reset-fields').style.display = 'none';
+  document.getElementById('auth-subtitle').textContent = 'Sign in to your account';
+  document.getElementById('auth-err').textContent = '';
+}
+
+function authShowReset() {
+  document.getElementById('auth-login-fields').style.display = 'none';
+  document.getElementById('auth-signup-fields').style.display = 'none';
+  document.getElementById('auth-reset-fields').style.display = 'block';
+  document.getElementById('auth-subtitle').textContent = 'Reset your password';
+  document.getElementById('auth-err').textContent = '';
+}
+
+function authLogin() {
+  var email = document.getElementById('auth-email').value.trim();
+  var pass = document.getElementById('auth-pass').value;
+  var errEl = document.getElementById('auth-err');
+  errEl.textContent = '';
+  if (!email || !pass) { errEl.textContent = '❌ Email and password required'; return; }
+  if (typeof window.firebaseSignIn !== 'function') { errEl.textContent = '❌ Firebase not ready'; return; }
+  window.firebaseSignIn(email, pass)
+    .then(function(cred) {
+      // Save user data to DB on successful login
+      if (typeof window.firebaseSaveUserProfile === 'function') {
+        window.firebaseSaveUserProfile(cred.user.uid, {
+          email: cred.user.email,
+          displayName: cred.user.displayName || '',
+          lastLogin: Date.now(),
+          uid: cred.user.uid
+        }).catch(function(){});
+      }
+    })
+    .catch(function(err) {
+      var msg = err.code === 'auth/user-not-found' ? '❌ No account with this email' :
+                err.code === 'auth/wrong-password' ? '❌ Wrong password' :
+                err.code === 'auth/invalid-email' ? '❌ Invalid email' :
+                err.code === 'auth/too-many-requests' ? '❌ Too many attempts. Try again later.' :
+                err.code === 'auth/user-disabled' ? '❌ Account disabled' :
+                '❌ ' + err.message;
+      errEl.textContent = msg;
+    });
+}
+
+function authSignup() {
+  var name = document.getElementById('auth-signup-name').value.trim();
+  var email = document.getElementById('auth-signup-email').value.trim();
+  var phone = document.getElementById('auth-signup-phone').value.trim();
+  var pass = document.getElementById('auth-signup-pass').value;
+  var pass2 = document.getElementById('auth-signup-pass2').value;
+  var errEl = document.getElementById('auth-err');
+  errEl.textContent = '';
+  if (!email || !pass) { errEl.textContent = '❌ Email and password required'; return; }
+  if (pass.length < 6) { errEl.textContent = '❌ Password must be at least 6 characters'; return; }
+  if (pass !== pass2) { errEl.textContent = '❌ Passwords do not match'; return; }
+  if (typeof window.firebaseSignUp !== 'function') { errEl.textContent = '❌ Firebase not ready'; return; }
+  window.firebaseSignUp(email, pass, name, phone)
+    .then(function(cred) {
+      // Save user profile to Firebase DB
+      if (typeof window.firebaseSaveUserProfile === 'function') {
+        window.firebaseSaveUserProfile(cred.user.uid, {
+          email: email,
+          displayName: name || '',
+          phone: phone || '',
+          createdAt: Date.now(),
+          uid: cred.user.uid
+        }).catch(function(){});
+      }
+    })
+    .catch(function(err) {
+      var msg = err.code === 'auth/email-already-in-use' ? '❌ This email is already registered. Try signing in.' :
+                err.code === 'auth/weak-password' ? '❌ Password is too weak (min 6 chars)' :
+                err.code === 'auth/invalid-email' ? '❌ Invalid email format' :
+                '❌ ' + err.message;
+      errEl.textContent = msg;
+    });
+}
+
+function authResetPass() {
+  var email = document.getElementById('auth-reset-email').value.trim();
+  var errEl = document.getElementById('auth-err');
+  errEl.textContent = '';
+  if (!email) { errEl.textContent = '❌ Enter your email'; return; }
+  if (typeof window.firebaseResetPassword !== 'function') { errEl.textContent = '❌ Firebase not ready'; return; }
+  window.firebaseResetPassword(email)
+    .then(function() {
+      errEl.style.color = 'var(--success)';
+      errEl.textContent = '✅ Password reset link sent to ' + email;
+      setTimeout(function() { errEl.style.color = 'var(--danger)'; authShowLogin(); }, 3000);
+    })
+    .catch(function(err) {
+      errEl.textContent = '❌ ' + err.message;
+    });
+}
+
+function authLogout() {
+  if (typeof window.firebaseSignOut === 'function') {
+    closeProfileModal();
+    window.firebaseSignOut().catch(function(e) { console.error('Logout error:', e); });
+  }
+}
+
+// ── Profile Modal ──
+function openProfileModal() {
+  var user = _authUser;
+  if (!user) return;
+  document.getElementById('prof-email').textContent = user.email || '';
+  document.getElementById('prof-name').value = user.displayName || '';
+  document.getElementById('prof-phone').value = (_authUserProfile && _authUserProfile.phone) || '';
+  document.getElementById('prof-pass-old').value = '';
+  document.getElementById('prof-pass-new').value = '';
+  document.getElementById('prof-pass-new2').value = '';
+  document.getElementById('prof-err').textContent = '';
+  document.getElementById('prof-success').textContent = '';
+  openM('m-profile');
+}
+
+function closeProfileModal() {
+  closeM('m-profile');
+}
+
+function authUpdateProfile() {
+  var name = document.getElementById('prof-name').value.trim();
+  var phone = document.getElementById('prof-phone').value.trim();
+  var errEl = document.getElementById('prof-err');
+  var sucEl = document.getElementById('prof-success');
+  errEl.textContent = '';
+  sucEl.textContent = '';
+  if (typeof window.firebaseUpdateProfile === 'function') {
+    window.firebaseUpdateProfile(name, null)
+      .then(function() {
+        // Also save to DB
+        if (_authUser && typeof window.firebaseSaveUserProfile === 'function') {
+          window.firebaseSaveUserProfile(_authUser.uid, {
+            email: _authUser.email,
+            displayName: name,
+            phone: phone,
+            lastLogin: Date.now(),
+            uid: _authUser.uid
+          }).catch(function(){});
+        }
+        _authUserProfile = _authUserProfile || {};
+        _authUserProfile.phone = phone;
+        sucEl.textContent = '✅ Profile updated!';
+        updateAuthUI(_authUser);
+      })
+      .catch(function(err) { errEl.textContent = '❌ ' + err.message; });
+  }
+}
+
+function authUpdatePassword() {
+  var oldP = document.getElementById('prof-pass-old').value;
+  var newP = document.getElementById('prof-pass-new').value;
+  var newP2 = document.getElementById('prof-pass-new2').value;
+  var errEl = document.getElementById('prof-err');
+  var sucEl = document.getElementById('prof-success');
+  errEl.textContent = '';
+  sucEl.textContent = '';
+  if (!oldP || !newP) { errEl.textContent = '❌ Current and new password required'; return; }
+  if (newP.length < 6) { errEl.textContent = '❌ New password must be at least 6 characters'; return; }
+  if (newP !== newP2) { errEl.textContent = '❌ New passwords do not match'; return; }
+  if (typeof window.firebaseUpdatePassword === 'function') {
+    window.firebaseUpdatePassword(oldP, newP)
+      .then(function() {
+        sucEl.textContent = '✅ Password updated!';
+        document.getElementById('prof-pass-old').value = '';
+        document.getElementById('prof-pass-new').value = '';
+        document.getElementById('prof-pass-new2').value = '';
+      })
+      .catch(function(err) {
+        errEl.textContent = err.code === 'auth/wrong-password' ? '❌ Current password is wrong' : '❌ ' + err.message;
+      });
+  }
+}
+
 // =========== INIT ===========
 function init() {
   ordItems=[];
@@ -6523,15 +7004,20 @@ function init() {
   if(dbStatusBar) { dbStatusBar.textContent = '🔥 Firebase Mode ✅'; dbStatusBar.style.color = 'var(--success)'; }
 
   // ── Firebase: Load cloud data on startup, then start live sync ──
-  // Uses retry logic because Firebase is a type="module" script (deferred),
-  // so window.firebaseLoadDB may not be ready immediately after init().
-  function _doFirebaseLoad() {
+  // Defined on window so _onAuthChanged can retrigger after sign-in if auth wasn't ready.
+  window._doFirebaseLoad = function() {
+    var uid = window._auth ? window._auth.currentUser : null;
+    if (!uid) {
+      // Auth not ready yet — _onAuthChanged will retrigger this when user signs in
+      console.log('Firebase load deferred — waiting for auth');
+      return;
+    }
     var fbLoadEl = document.getElementById('fb-sync-indicator');
     if(fbLoadEl){ fbLoadEl.textContent='☁️ Loading from Firebase...'; fbLoadEl.style.opacity='1'; fbLoadEl.style.color='var(--info)'; }
     window.firebaseLoadDB(function(cloudData){
       if (!cloudData) {
         // First time — no cloud data yet. Push current empty db to Firebase.
-        if (typeof window.firebaseSaveDB === 'function') window.firebaseSaveDB(db);
+        if (typeof window.firebaseSaveDB === 'function' && window._auth && window._auth.currentUser) window.firebaseSaveDB(db);
         if (typeof window.firebaseStartLiveSync === 'function') window.firebaseStartLiveSync();
         toast('☁️ Firebase connected! (No cloud data yet — add products to get started)');
         _clearPendingSync();
@@ -6540,7 +7026,7 @@ function init() {
       }
       // ── If there are pending local changes (offline queue), push local data instead of overwriting ──
       if (_hasPendingSync()) {
-        if (typeof window.firebaseSaveDB === 'function') window.firebaseSaveDB(db);
+        if (typeof window.firebaseSaveDB === 'function' && window._auth && window._auth.currentUser) window.firebaseSaveDB(db);
         if (typeof window.firebaseStartLiveSync === 'function') window.firebaseStartLiveSync();
         toast('☁️ Offline changes pushed to cloud!');
         _clearPendingSync();
@@ -6602,19 +7088,20 @@ function init() {
       if (typeof window.firebaseStartLiveSync === 'function') window.firebaseStartLiveSync();
     });
   }
-  // Retry every 500ms up to 15 times (7.5s total) waiting for Firebase module
+  // Retry every 500ms up to 30 times (15s total) waiting for Firebase module + auth
   var _fbRetry = 0;
-  var _fbRetryMax = 15;
+  var _fbRetryMax = 30;
   var _fbRetryTimer = setInterval(function(){
     _fbRetry++;
-    if (typeof window.firebaseLoadDB === 'function') {
+    if (typeof window.firebaseLoadDB === 'function' && window._auth && window._auth.currentUser) {
       clearInterval(_fbRetryTimer);
-      _doFirebaseLoad();
+      window._firebaseLoaded = true;
+      window._doFirebaseLoad();
     } else if (_fbRetry >= _fbRetryMax) {
       clearInterval(_fbRetryTimer);
-      console.warn('Firebase module not loaded after ' + _fbRetryMax + ' retries.');
+      console.warn('Firebase not ready after ' + _fbRetryMax + ' retries (auth will retrigger on sign-in).');
       var fbLoadEl = document.getElementById('fb-sync-indicator');
-      if(fbLoadEl){ fbLoadEl.textContent='⚠️ Firebase load failed'; fbLoadEl.style.opacity='1'; fbLoadEl.style.color='var(--warning)'; }
+      if(fbLoadEl){ fbLoadEl.textContent='⏳ Waiting for sign-in...'; fbLoadEl.style.opacity='1'; fbLoadEl.style.color='var(--warning)'; }
     }
   }, 500);
   // Show offline indicator if currently offline
@@ -8910,6 +9397,15 @@ function loadSettingsFrm(){
   ids.forEach(function(id,i){ var el=document.getElementById(id); if(el) el.value=s[keys[i]]||''; });
   var st=document.getElementById('pin-status');
   if(st){ var p=getSQLPin(); st.textContent=p?'✅ PIN active':'❌ PIN disabled'; }
+  // Auth info
+  var authEmailEl = document.getElementById('sett-auth-email');
+  if (authEmailEl) {
+    if (_authUser) {
+      authEmailEl.innerHTML = '✅ Signed in as <strong>' + (_authUser.displayName || _authUser.email || '—') + '</strong> (' + (_authUser.email || '—') + ')';
+    } else {
+      authEmailEl.textContent = '⚠️ Not signed in. Restart the app to sign in.';
+    }
+  }
 }
 function saveSettings(){
   var s=db.settings;
