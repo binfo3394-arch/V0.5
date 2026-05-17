@@ -2919,7 +2919,7 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
         <div id="comm-history-wrap" style="margin-top:16px;display:none">
           <div class="tcard">
             <div class="thead2"><h3>💳 Commission Payment History</h3></div>
-            <table><thead><tr><th>Date</th><th>Staff</th><th>Amount</th><th>Note</th></tr></thead><tbody id="comm-hist-tbl"></tbody></table>
+            <table><thead><tr><th>Date</th><th>Staff</th><th>Amount</th><th>Method</th><th>Note</th></tr></thead><tbody id="comm-hist-tbl"></tbody></table>
           </div>
         </div>
       </div>
@@ -5398,6 +5398,64 @@ setTimeout(function(){
   </div>
 </div>
 
+<!-- COMMISSION PAY MODAL -->
+<div class="moverlay" id="m-comm-pay">
+  <div class="modal" style="width:520px">
+    <div class="mhdr">
+      <h3>💵 Commission Pay &mdash; <span id="cpay-staff-name" style="color:var(--primary)"></span></h3>
+      <button class="xbtn" onclick="closeM('m-comm-pay')">&#215;</button>
+    </div>
+    <div class="mbody">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">
+        <div style="background:var(--card2);border-radius:10px;padding:12px;text-align:center;border:1px solid var(--border)">
+          <div style="font-size:10px;color:var(--muted);margin-bottom:4px">Earned This Month</div>
+          <div id="cpay-earned" style="font-size:16px;font-weight:800;color:var(--success)">Rs. 0</div>
+        </div>
+        <div style="background:var(--card2);border-radius:10px;padding:12px;text-align:center;border:1px solid var(--border)">
+          <div style="font-size:10px;color:var(--muted);margin-bottom:4px">Already Paid</div>
+          <div id="cpay-paid" style="font-size:16px;font-weight:800;color:var(--info)">Rs. 0</div>
+        </div>
+        <div style="background:rgba(255,171,0,0.08);border-radius:10px;padding:12px;text-align:center;border:1px solid rgba(255,171,0,0.3)">
+          <div style="font-size:10px;color:var(--muted);margin-bottom:4px">Balance Due</div>
+          <div id="cpay-balance" style="font-size:16px;font-weight:800;color:var(--warning)">Rs. 0</div>
+        </div>
+      </div>
+      <div class="fg" style="margin-bottom:10px">
+        <label>Pay Amount (Rs.)</label>
+        <div style="display:flex;gap:8px">
+          <input type="number" id="cpay-amount" placeholder="Enter amount" min="1" step="1" style="flex:1">
+          <button class="btn bo bsm" onclick="cpaySetFull()" style="white-space:nowrap">Full Balance</button>
+        </div>
+      </div>
+      <div class="fg" style="margin-bottom:14px">
+        <label>Note (optional)</label>
+        <input id="cpay-note" placeholder="e.g. March commission payment">
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap">
+        <span style="font-size:11px;color:var(--muted);align-self:center">Method:</span>
+        <button class="btn bo bsm cpay-method-btn" onclick="cpayMethod(this,'Cash')" style="border-color:var(--primary);color:var(--primary)">&#x1F4B5; Cash</button>
+        <button class="btn bo bsm cpay-method-btn" onclick="cpayMethod(this,'Bank Transfer')">&#x1F3E6; Bank</button>
+        <button class="btn bo bsm cpay-method-btn" onclick="cpayMethod(this,'Card')">&#x1F4B3; Card</button>
+      </div>
+      <input type="hidden" id="cpay-method-val" value="Cash">
+      <input type="hidden" id="cpay-staff-id" value="">
+      <div style="border-top:1px solid var(--border);padding-top:14px">
+        <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+          <span>&#x1F4CB; Payment History</span>
+          <span id="cpay-hist-count" style="font-size:10px"></span>
+        </div>
+        <div id="cpay-history" style="max-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:6px">
+          <div style="text-align:center;color:var(--muted);font-size:12px;padding:12px">No payments yet</div>
+        </div>
+      </div>
+    </div>
+    <div class="mftr">
+      <button class="btn bo" onclick="closeM('m-comm-pay')">Cancel</button>
+      <button class="btn bp2" onclick="doPayCommission()">&#x1F4B5; Pay Now</button>
+    </div>
+  </div>
+</div>
+
 <!-- SPLIT PAYMENT MODAL -->
 <div class="moverlay" id="m-split-pay">
   <div class="modal" style="width:480px">
@@ -5830,7 +5888,7 @@ function renderStaff() {
       '<td style="font-weight:700;color:'+(paidSum>0?'var(--success)':'var(--muted)')+'">Rs. '+paidSum.toLocaleString()+'</td>'+
       '<td style="font-weight:800;color:'+(pending>0?'var(--warning)':'var(--muted)')+'">Rs. '+pending.toLocaleString()+'</td>'+
       '<td>'+
-        (pending>0?'<button class="btn bs bsm" onclick="payCommission('+s.id+','+pending+')">💵 Pay Rs.'+pending.toLocaleString()+'</button>':'<span style="color:var(--muted);font-size:11px">✅ Cleared</span>')+
+        '<button class="btn bs2 bsm" onclick="payCommission('+s.id+','+pending+')" style="white-space:nowrap">💵 Pay'+(pending>0?' Rs.'+pending.toLocaleString():'')+'</button>'+
         ' <button class="btn bo bsm" onclick="editStaff('+s.id+')" title="Edit">✏️</button>'+
         ' <button class="btn bd2 bsm" onclick="deleteStaff('+s.id+')" title="Delete">🗑️</button></td></tr>';
   }).join('') : '<tr><td colspan="10" class="empty" style="text-align:center;padding:20px;color:var(--muted)">No staff added yet</td></tr>';
@@ -5847,7 +5905,7 @@ function renderStaff() {
     if (commPayments.length) {
       histWrap.style.display = 'block';
       histTbl.innerHTML = commPayments.slice().reverse().map(function(p){
-        return '<tr><td>'+new Date(p.date).toLocaleDateString('en-GB')+'</td><td>'+(p.staffName||'—')+'</td><td style="font-weight:700;color:var(--success)">Rs. '+(p.amount||0).toLocaleString()+'</td><td style="color:var(--muted)">'+(p.note||'')+'</td></tr>';
+        return '<tr><td>'+new Date(p.date).toLocaleDateString('en-GB')+'</td><td>'+(p.staffName||'—')+'</td><td style="font-weight:700;color:var(--success)">Rs. '+(p.amount||0).toLocaleString()+'</td><td style="color:var(--info);font-size:11px">'+(p.method||'Cash')+'</td><td style="color:var(--muted)">'+(p.note||'')+'</td></tr>';
       }).join('');
     } else {
       histWrap.style.display = 'none';
@@ -5908,20 +5966,149 @@ function deleteStaff(id) {
   saveDB(); renderStaff(); toast('🗑️ Deleted');
 }
 
+// ── Commission Pay Modal ──────────────────────────────
 function payCommission(staffId, amount) {
-  if (!confirm('Pay Rs. '+amount.toLocaleString()+' commission to this staff member?')) return;
+  var staff = (db.staff||[]).find(function(s){ return s.id===staffId; });
+  if (!staff) { toast('❌ Staff not found', 'var(--danger)'); return; }
+  openCommPayModal(staffId, staff, amount);
+}
+
+function openCommPayModal(staffId, staff, suggestedBalance) {
+  // Calculate earned & paid
+  var now = new Date();
+  var monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  var invoices = db.invoices || [];
+  var repairs  = db.repairs  || [];
+  var orders   = db.orders   || [];
+  var commPayments = db.commPayments || [];
+
+  var staffInvs = invoices.filter(function(inv){
+    var d=parseDate(inv.date); return inv.staffId===staff.id && d && d>=monthStart;
+  });
+  var staffRevenue = staffInvs.reduce(function(a,inv){ return a+(inv.total||0); },0);
+  var staffProfit  = staffInvs.reduce(function(a,inv){
+    var p=0; (inv.items||[]).forEach(function(it){
+      var prod=(db.products||[]).find(function(pr){ return pr.id===it.id; });
+      p+=(it.price-(prod?prod.cost:0))*(it.qty||1);
+    }); return a+p;
+  },0);
+  var staffRepsMonth = repairs.filter(function(r){
+    var d=parseDate(r.date);
+    return r.tech && r.tech.trim().toLowerCase()===staff.name.trim().toLowerCase()
+      && (r.status==="Delivered"||r.status==="Done") && d && d>=monthStart;
+  });
+  var repairRevenue = staffRepsMonth.reduce(function(a,r){ return a+(r.cost||0); },0);
+  var staffOrdsMonth = orders.filter(function(o){
+    var d=parseDate(o.date); return String(o.staffId)===String(staff.id) && d && d>=monthStart;
+  });
+  var orderRevenue = staffOrdsMonth.reduce(function(a,o){ return a+(o.amount||0); },0);
+  var commBase  = staff.commBase==="profit" ? staffProfit : staffRevenue;
+  var salesComm = commBase * (staff.commRate||0) / 100;
+  var repairComm= repairRevenue * (staff.repairCommRate||0) / 100;
+  var orderComm = orderRevenue  * (staff.commRate||0) / 100;
+  var earned    = salesComm + repairComm + orderComm;
+
+  var paidThisMonth = commPayments.filter(function(p){
+    return p.staffId===staff.id && p.date>=monthStart.getTime();
+  });
+  var paid    = paidThisMonth.reduce(function(a,p){ return a+(p.amount||0); },0);
+  var balance = Math.max(0, Math.round(earned - paid));
+
+  // Populate modal
+  document.getElementById('cpay-staff-name').textContent = staff.name;
+  document.getElementById('cpay-earned').textContent  = 'Rs. ' + Math.round(earned).toLocaleString();
+  document.getElementById('cpay-paid').textContent    = 'Rs. ' + Math.round(paid).toLocaleString();
+  document.getElementById('cpay-balance').textContent = 'Rs. ' + balance.toLocaleString();
+  document.getElementById('cpay-amount').value = balance > 0 ? balance : '';
+  document.getElementById('cpay-note').value   = '';
+  document.getElementById('cpay-staff-id').value = staff.id;
+
+  // Reset method buttons
+  document.querySelectorAll('.cpay-method-btn').forEach(function(b){
+    b.style.borderColor=''; b.style.color=''; b.style.background='';
+  });
+  var cashBtn = document.querySelector('.cpay-method-btn');
+  if(cashBtn){ cashBtn.style.borderColor='var(--primary)'; cashBtn.style.color='var(--primary)'; cashBtn.style.background='rgba(108,99,255,0.1)'; }
+  document.getElementById('cpay-method-val').value = 'Cash';
+
+  // Payment history for this staff (all time)
+  var allPaid = commPayments.filter(function(p){ return p.staffId===staff.id; }).slice().reverse();
+  document.getElementById('cpay-hist-count').textContent = allPaid.length ? allPaid.length+' payment'+(allPaid.length>1?'s':'') : '';
+  var histEl = document.getElementById('cpay-history');
+  if (!allPaid.length) {
+    histEl.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:12px;padding:12px">No payments yet</div>';
+  } else {
+    histEl.innerHTML = allPaid.map(function(p){
+      return '<div style="display:flex;align-items:center;justify-content:space-between;background:var(--card2);border-radius:8px;padding:9px 12px;font-size:12px">'+
+        '<div>'+
+          '<div style="font-weight:700;color:var(--success)">Rs. '+Number(p.amount||0).toLocaleString()+'</div>'+
+          '<div style="font-size:10px;color:var(--muted)">'+new Date(p.date).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})+'</div>'+
+        '</div>'+
+        '<div style="text-align:right">'+
+          '<div style="font-size:11px;color:var(--info)">'+(p.method||'Cash')+'</div>'+
+          '<div style="font-size:10px;color:var(--muted)">'+(p.note||'')+'</div>'+
+        '</div>'+
+        '<button onclick="deleteCommPayment(''+p.id+'')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:0 0 0 8px" title="Delete">&#x1F5D1;</button>'+
+      '</div>';
+    }).join('');
+  }
+
+  openM('m-comm-pay');
+}
+
+function cpaySetFull() {
+  var balText = document.getElementById('cpay-balance').textContent.replace(/[^0-9]/g,'');
+  document.getElementById('cpay-amount').value = balText || 0;
+}
+
+function cpayMethod(btn, method) {
+  document.querySelectorAll('.cpay-method-btn').forEach(function(b){
+    b.style.borderColor=''; b.style.color=''; b.style.background='';
+  });
+  btn.style.borderColor='var(--primary)';
+  btn.style.color='var(--primary)';
+  btn.style.background='rgba(108,99,255,0.1)';
+  document.getElementById('cpay-method-val').value = method;
+}
+
+function doPayCommission() {
+  var staffId = parseInt(document.getElementById('cpay-staff-id').value);
+  var amount  = parseFloat(document.getElementById('cpay-amount').value);
+  var note    = document.getElementById('cpay-note').value.trim();
+  var method  = document.getElementById('cpay-method-val').value || 'Cash';
+  var balNum  = parseFloat((document.getElementById('cpay-balance').textContent||'0').replace(/[^0-9.]/g,''));
+  if (!amount || amount <= 0) { toast('❌ Amount ඕනේ!', 'var(--danger)'); return; }
+  if (amount > balNum + 0.01) {
+    if (!confirm('Balance Due Rs.'+Math.round(balNum).toLocaleString()+' ට වඩා Rs.'+Math.round(amount).toLocaleString()+' pay කරනවාද?')) return;
+  }
   var staff = (db.staff||[]).find(function(s){ return s.id===staffId; });
   if (!staff) { toast('❌ Staff not found', 'var(--danger)'); return; }
   if (!db.commPayments) db.commPayments = [];
   db.commPayments.push({
-    id: Date.now() + '_' + Math.random().toString(36).slice(2,6),
+    id: Date.now()+'_'+Math.random().toString(36).slice(2,6),
     staffId: staffId,
     staffName: staff.name,
     amount: amount,
+    method: method,
     date: Date.now(),
-    note: 'Commission for ' + new Date().toLocaleString('en-GB', {month:'long', year:'numeric'})
+    note: note || ('Commission — '+new Date().toLocaleString('en-GB',{month:'long',year:'numeric'}))
   });
-  saveDB(); renderStaff(); toast('✅ Paid Rs.'+amount.toLocaleString()+' commission to '+staff.name);
+  saveDB();
+  renderStaff();
+  closeM('m-comm-pay');
+  toast('✅ Rs.'+Math.round(amount).toLocaleString()+' paid to '+staff.name+' via '+method);
+}
+
+function deleteCommPayment(payId) {
+  if (!confirm('This payment record delete කරනවාද?')) return;
+  db.commPayments = (db.commPayments||[]).filter(function(p){ return p.id!==payId; });
+  saveDB();
+  // Refresh modal & table
+  var staffId = parseInt(document.getElementById('cpay-staff-id').value);
+  var staff = (db.staff||[]).find(function(s){ return s.id===staffId; });
+  if (staff) openCommPayModal(staffId, staff, 0);
+  renderStaff();
+  toast('🗑️ Payment record deleted');
 }
 
 // Staff selector in POS cart
