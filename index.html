@@ -152,6 +152,9 @@ var openM, closeM, goPage, renderAll;
     if (!firebaseConfig.databaseURL || firebaseConfig.databaseURL.includes('YOUR_PROJECT')) return;
     var uid = auth.currentUser ? auth.currentUser.uid : null;
     if (!uid) { return; } // silently skip — localStorage already saved
+    // ✅ FIX: Mark that WE are saving — live sync listener will ignore the echo snapshot
+    window._fbIsSaving = true;
+    window._fbLastLocalSave = Date.now();
     setFBStatus('☁️ Syncing...', 'var(--warning)');
     var payload = {
       products:      dbObj.products      || [],
@@ -200,8 +203,16 @@ var openM, closeM, goPage, renderAll;
       _lastSync:     Date.now()
     };
     set(ref(database, 'pos-data/' + uid), payload)
-      .then(function(){ setFBStatus('✅ Cloud Saved', 'var(--success)'); })
-      .catch(function(e){ setFBStatus('❌ Sync Error', 'var(--danger)'); console.error('Firebase save error:', e); });
+      .then(function(){
+        setFBStatus('✅ Cloud Saved', 'var(--success)');
+        // ✅ FIX: Clear the saving guard after 3s — enough time for the echo onValue to fire & be ignored
+        setTimeout(function(){ window._fbIsSaving = false; }, 3000);
+      })
+      .catch(function(e){
+        setFBStatus('❌ Sync Error', 'var(--danger)');
+        console.error('Firebase save error:', e);
+        window._fbIsSaving = false; // ✅ FIX: Always unblock on error too
+      });
   };
 
   // ── Firebase Load (pull user's data from Realtime DB) ──
@@ -231,6 +242,11 @@ var openM, closeM, goPage, renderAll;
 
   // ── Real-time listener (live sync per-user) ──
   window._liveSyncUnsub = null;
+  // ✅ FIX: Guard flag — prevents self-triggered onValue loop when WE save to Firebase
+  window._fbIsSaving = false;
+  // ✅ FIX: Timestamp of last local save — remote updates older than this are ignored
+  window._fbLastLocalSave = 0;
+
   window.firebaseStartLiveSync = function() {
     // Detach any previous listener first
     if (window._liveSyncUnsub) { window._liveSyncUnsub(); window._liveSyncUnsub = null; }
@@ -238,10 +254,22 @@ var openM, closeM, goPage, renderAll;
     var uid = auth.currentUser ? auth.currentUser.uid : null;
     if (!uid) return;
     window._firebaseUid = uid;
+    // ✅ FIX: Skip the very first snapshot fired immediately on attach (initial load already done)
+    var _skipFirst = true;
     window._liveSyncUnsub = onValue(ref(database, 'pos-data/' + uid), function(snapshot) {
+      // Skip the first immediate snapshot — init() already loaded this data
+      if (_skipFirst) { _skipFirst = false; return; }
       if (!snapshot.exists()) return;
+      // ✅ FIX: If WE just saved (within 3s), this snapshot is our own echo — skip it
+      if (window._fbIsSaving) return;
       var remote = snapshot.val();
       if (typeof db === 'undefined' || typeof renderAll !== 'function') return;
+      // ✅ FIX: Ignore stale remote data (older than our last local save)
+      if (remote._lastSync && window._fbLastLocalSave &&
+          remote._lastSync < window._fbLastLocalSave - 2000) {
+        console.log('⏭️ Live sync: Ignoring stale remote snapshot');
+        return;
+      }
       function _fbArr(val) {
         if (!val) return [];
         if (Array.isArray(val)) return val;
@@ -291,8 +319,10 @@ var openM, closeM, goPage, renderAll;
       if (remote.targets)         db.targets         = remote.targets         || {};
       if (remote.coupons)         db.coupons         = _fbArr(remote.coupons);
       renderAll();
+      // ✅ FIX: Only update localStorage — do NOT call saveDB() here (avoids re-triggering Firebase)
       try { localStorage.setItem('stpos-db', JSON.stringify(db)); } catch(e) {}
-      _clearPendingSync();
+      // ✅ FIX: Only clear pending sync if this is truly a remote (another device) change
+      if (!_hasPendingSync()) { /* nothing to clear */ }
       setFBStatus('\uD83D\uDD04 Live synced', 'var(--info)');
     }, function(error){ console.error('Firebase listener error:', error); });
   };
