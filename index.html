@@ -277,8 +277,7 @@ var openM, closeM, goPage, renderAll;
       if (remote.productVariants) db.productVariants = remote.productVariants|| {};
       if (remote.invDesign)       db.invDesign       = remote.invDesign      || {};
       if (remote.giftVouchers)    db.giftVouchers    = _fbArr(remote.giftVouchers);
-      if (remote.hasOwnProperty('commPayments') && !window._commPaySyncLock) db.commPayments = _fbArr(remote.commPayments);
-      else if (remote.commPayments && !window._commPaySyncLock) db.commPayments = _fbArr(remote.commPayments);
+      if (remote.commPayments)    db.commPayments    = _fbArr(remote.commPayments);
       renderAll();
       try { localStorage.setItem('stpos-db', JSON.stringify(db)); } catch(e) {}
       _clearPendingSync();
@@ -760,78 +759,8 @@ body {
   .pos-wrap{grid-template-columns:1fr;}
   .pgrid{grid-template-columns:repeat(2,1fr);}
   .sgrid{grid-template-columns:1fr 1fr;}
-  /* ── WhatsApp Messages page: full mobile fix ── */
-  #msg-main-grid{
-    grid-template-columns:1fr!important;
-    height:auto!important;
-    min-height:0!important;
-    gap:10px!important;
-  }
-  /* Contact list panel — compact height */
-  #msg-main-grid>div:first-child{
-    height:auto!important;
-    max-height:280px!important;
-    min-height:0!important;
-    overflow:hidden!important;
-    border-radius:12px!important;
-    display:flex!important;
-    flex-direction:column!important;
-  }
-  #msg-contact-list{
-    flex:1!important;
-    overflow-y:auto!important;
-    -webkit-overflow-scrolling:touch!important;
-    max-height:160px!important;
-  }
-  /* Compose panel */
-  #msg-main-grid>div:last-child{
-    height:auto!important;
-    min-height:0!important;
-    overflow:visible!important;
-  }
-  /* Message log area */
-  #msg-log{
-    min-height:80px!important;
-    max-height:150px!important;
-    overflow-y:auto!important;
-    -webkit-overflow-scrolling:touch!important;
-  }
-  /* Template buttons wrap */
-  #msg-templates-bar{
-    display:flex!important;
-    flex-wrap:wrap!important;
-    gap:4px!important;
-  }
-  #msg-templates-bar .btn{
-    min-height:30px!important;
-    padding:4px 8px!important;
-    font-size:11px!important;
-  }
-  /* Compose textarea + send button: stack vertically */
-  #msg-compose-text{
-    width:100%!important;
-    min-height:70px!important;
-    max-height:120px!important;
-    box-sizing:border-box!important;
-  }
-  /* Fix the flex row inside compose box */
-  #pg-messages [style*="align-items:flex-end"]{
-    flex-direction:column!important;
-    align-items:stretch!important;
-    gap:8px!important;
-  }
-  #pg-messages [style*="align-items:flex-end"]>div[style*="flex-direction:column"]{
-    flex-direction:row!important;
-    gap:6px!important;
-  }
-  #pg-messages [style*="align-items:flex-end"]>div[style*="flex-direction:column"] button{
-    flex:1!important;
-    min-height:42px!important;
-    font-size:13px!important;
-  }
-  /* History table */
+  #pg-messages>div:first-of-type[style*="grid"]{grid-template-columns:1fr!important;height:auto!important;min-height:0!important;}
   #pg-messages #msg-history-table-wrap{overflow-x:auto!important;-webkit-overflow-scrolling:touch!important;}
-  #pg-messages .tcard{width:100%!important;box-sizing:border-box!important;}
   #pg-notifications #notif-page-list{max-height:calc(100vh - 220px)!important;}
   .g2{grid-template-columns:1fr;}
   .fgrid{grid-template-columns:1fr;}
@@ -1968,6 +1897,7 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
       <button class="btn bp2 bsm" style="width:100%;margin-bottom:5px;font-size:11px" onclick="exportDB()">📤 JSON Backup</button>
       <button class="btn bsm" onclick="openAdminPanel()" id="admin-panel-btn" style="width:100%;margin-bottom:5px;font-size:11px;background:rgba(255,23,68,0.12);color:#ff1744;border:1px solid rgba(255,23,68,0.3)">🛡️ Admin Panel</button>
       <button class="btn bsm" onclick="window.open('customer-portal.html','_blank')" style="width:100%;margin-bottom:5px;font-size:11px;background:rgba(0,176,255,0.12);color:var(--info);border:1px solid rgba(0,176,255,0.3)">🌐 Customer Portal</button>
+      <a href="https://github.com/binfo3394-arch/V0.5/raw/main/ST-POS.apk" target="_blank" style="text-decoration:none;width:100%"><button class="btn bsm" style="width:100%;font-size:11px;background:rgba(108,99,255,0.15);color:var(--primary);border:1px solid rgba(108,99,255,0.3)">📲 Download Android App</button></a>
     </div>
   </div>
 
@@ -1985,6 +1915,7 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
         <div id="role-badge" onclick="openAdminPanel()" style="font-size:11px;padding:3px 10px;border-radius:20px;background:rgba(108,99,255,0.15);color:var(--primary);border:1px solid rgba(108,99,255,0.3);cursor:pointer;transition:0.2s" title="Open Admin Panel">👑 Admin</div>
         <div id="autosave-indicator" style="font-size:11px;color:var(--success);opacity:0;transition:opacity 0.3s;background:var(--card2);padding:3px 10px;border-radius:20px;white-space:nowrap">✅ Saved</div>
         <div id="fb-sync-indicator" style="font-size:11px;color:var(--info);opacity:0;transition:opacity 0.3s;background:var(--card2);padding:3px 10px;border-radius:20px;white-space:nowrap;border:1px solid rgba(0,176,255,0.2)">☁️ Firebase</div>
+        <a href="https://github.com/binfo3394-arch/V0.5/raw/main/ST-POS.apk" target="_blank" class="btn bp2 bsm" style="font-size:11px;text-decoration:none" title="Download Android App">📲 APK</a>
         <button class="btn bo bsm" onclick="toggleDark()" id="dark-btn" title="Dark/Light Mode [Alt+D]">🌙</button>
         <button class="btn bo bsm" onclick="openM('m-shortcuts')" title="Keyboard Shortcuts [?]">⌨️</button>
         <div style="display:flex;gap:2px;align-items:center" title="Theme">
@@ -2330,7 +2261,7 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
           </div>
         </div>
 
-        <div id="msg-main-grid" style="display:grid;grid-template-columns:300px 1fr;gap:16px;height:calc(100vh - 160px);min-height:500px">
+        <div style="display:grid;grid-template-columns:300px 1fr;gap:16px;height:calc(100vh - 160px);min-height:500px">
 
           <!-- LEFT: Contact list -->
           <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;display:flex;flex-direction:column;overflow:hidden">
@@ -5453,56 +5384,6 @@ setTimeout(function(){
   </div>
 </div>
 
-<!-- COMMISSION PAYMENT MODAL -->
-<div class="moverlay" id="m-comm-pay">
-  <div class="modal" style="width:420px">
-    <div class="mhdr"><h3>💵 Commission Payment</h3><button class="xbtn" onclick="closeM('m-comm-pay')">×</button></div>
-    <div class="mbody">
-      <input type="hidden" id="comm-pay-staff-id">
-      <!-- Staff info strip -->
-      <div style="background:var(--card2);border-radius:10px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:12px">
-        <div style="width:40px;height:40px;border-radius:50%;background:rgba(108,99,255,0.2);display:flex;align-items:center;justify-content:center;font-size:20px">👷</div>
-        <div>
-          <div id="comm-pay-staff-name" style="font-size:15px;font-weight:700;color:var(--text)"></div>
-          <div id="comm-pay-staff-role" style="font-size:12px;color:var(--muted)"></div>
-        </div>
-      </div>
-      <!-- Summary -->
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">
-        <div style="background:var(--card2);border-radius:9px;padding:10px;text-align:center">
-          <div style="font-size:10px;color:var(--muted);margin-bottom:4px">Earned</div>
-          <div id="comm-pay-earned" style="font-size:14px;font-weight:800;color:var(--success)">Rs. 0</div>
-        </div>
-        <div style="background:var(--card2);border-radius:9px;padding:10px;text-align:center">
-          <div style="font-size:10px;color:var(--muted);margin-bottom:4px">Already Paid</div>
-          <div id="comm-pay-paid" style="font-size:14px;font-weight:800;color:var(--info)">Rs. 0</div>
-        </div>
-        <div style="background:rgba(255,171,0,0.1);border:1px solid rgba(255,171,0,0.3);border-radius:9px;padding:10px;text-align:center">
-          <div style="font-size:10px;color:var(--muted);margin-bottom:4px">Pending</div>
-          <div id="comm-pay-pending" style="font-size:14px;font-weight:800;color:var(--warning)">Rs. 0</div>
-        </div>
-      </div>
-      <!-- Amount input -->
-      <div class="fg" style="margin-bottom:10px">
-        <label style="font-size:13px;font-weight:600;color:var(--text)">💰 Pay Amount (Rs.)</label>
-        <input type="number" id="comm-pay-amount" placeholder="0.00" min="1" step="1"
-          style="font-size:18px;font-weight:700;color:var(--success);text-align:center;padding:12px">
-        <!-- Quick amount buttons -->
-        <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap" id="comm-pay-quick-btns"></div>
-      </div>
-      <!-- Payment note -->
-      <div class="fg">
-        <label>Note (optional)</label>
-        <input id="comm-pay-note" placeholder="e.g. Commission for May 2026">
-      </div>
-    </div>
-    <div class="mftr">
-      <button class="btn bo" onclick="closeM('m-comm-pay')">Cancel</button>
-      <button class="btn bp2" onclick="confirmCommPay()" style="background:var(--success);min-width:130px">✅ Pay Commission</button>
-    </div>
-  </div>
-</div>
-
 <!-- SPLIT PAYMENT MODAL -->
 <div class="moverlay" id="m-split-pay">
   <div class="modal" style="width:480px">
@@ -5903,9 +5784,8 @@ function renderStaff() {
     var orderComm = orderRevenue * (s.commRate||0) / 100;
     var commEarned = salesComm + repairComm + orderComm;
 
-    // Commission payment tracking — all payments ever for this staff (not just this month)
-    var paidThisMonth = commPayments.filter(function(p){ return String(p.staffId)==String(s.id) && p.date>=monthStart.getTime(); });
-    var paidSum = paidThisMonth.reduce(function(a,p){ return a+(p.amount||0); },0);
+    // Commission payment tracking
+    var paidThisMonth = commPayments.filter(function(p){ return p.staffId===s.id && p.date>=monthStart.getTime(); });
     var paidSum = paidThisMonth.reduce(function(a,p){ return a+(p.amount||0); },0);
     var pending = Math.max(0, Math.round(commEarned - paidSum));
 
@@ -5936,7 +5816,7 @@ function renderStaff() {
       '<td style="font-weight:700;color:'+(paidSum>0?'var(--success)':'var(--muted)')+'">Rs. '+paidSum.toLocaleString()+'</td>'+
       '<td style="font-weight:800;color:'+(pending>0?'var(--warning)':'var(--muted)')+'">Rs. '+pending.toLocaleString()+'</td>'+
       '<td>'+
-        (pending>0?'<button class="btn bs bsm" onclick="payCommission('+s.id+','+pending+','+Math.round(commEarned)+','+Math.round(paidSum)+')">💵 Pay Rs.'+pending.toLocaleString()+'</button>':'<span style="color:var(--muted);font-size:11px">✅ Cleared</span>')+
+        (pending>0?'<button class="btn bs bsm" onclick="payCommission('+s.id+','+pending+')">💵 Pay Rs.'+pending.toLocaleString()+'</button>':'<span style="color:var(--muted);font-size:11px">✅ Cleared</span>')+
         ' <button class="btn bo bsm" onclick="editStaff('+s.id+')" title="Edit">✏️</button>'+
         ' <button class="btn bd2 bsm" onclick="deleteStaff('+s.id+')" title="Delete">🗑️</button></td></tr>';
   }).join('') : '<tr><td colspan="10" class="empty" style="text-align:center;padding:20px;color:var(--muted)">No staff added yet</td></tr>';
@@ -6014,75 +5894,20 @@ function deleteStaff(id) {
   saveDB(); renderStaff(); toast('🗑️ Deleted');
 }
 
-// Store current commission modal data safely
-var _commPayData = { staffId: null, pending: 0, earned: 0, paidSum: 0 };
-
-function payCommission(staffId, pending, earned, paidSum) {
+function payCommission(staffId, amount) {
+  if (!confirm('Pay Rs. '+amount.toLocaleString()+' commission to this staff member?')) return;
   var staff = (db.staff||[]).find(function(s){ return s.id===staffId; });
   if (!staff) { toast('❌ Staff not found', 'var(--danger)'); return; }
-
-  earned  = Number(earned)  || 0;
-  paidSum = Number(paidSum) || 0;
-  pending = Number(pending) || 0;
-
-  // Store safely for confirmCommPay
-  _commPayData = { staffId: staffId, pending: pending, earned: earned, paidSum: paidSum };
-
-  // Fill modal
-  document.getElementById('comm-pay-staff-id').value = staffId;
-  document.getElementById('comm-pay-staff-name').textContent = staff.name;
-  document.getElementById('comm-pay-staff-role').textContent = staff.role || '';
-  document.getElementById('comm-pay-earned').textContent  = 'Rs. ' + Math.round(earned).toLocaleString();
-  document.getElementById('comm-pay-paid').textContent    = 'Rs. ' + Math.round(paidSum).toLocaleString();
-  document.getElementById('comm-pay-pending').textContent = 'Rs. ' + Math.round(pending).toLocaleString();
-  document.getElementById('comm-pay-amount').value = Math.round(pending);
-  document.getElementById('comm-pay-note').value = 'Commission for ' + new Date().toLocaleString('en-GB', {month:'long', year:'numeric'});
-
-  // Quick amount buttons
-  var qBtns = document.getElementById('comm-pay-quick-btns');
-  if (qBtns) {
-    var amounts = [];
-    if (pending > 0) amounts.push({label: '💯 Full (Rs.'+Math.round(pending).toLocaleString()+')', val: Math.round(pending)});
-    var half = Math.round(pending/2);
-    if (half > 0 && half !== Math.round(pending)) amounts.push({label: '½ Rs.'+half.toLocaleString(), val: half});
-    [5000,2000,1000].forEach(function(v){ if(v > 0 && v < pending) amounts.push({label:'Rs.'+v.toLocaleString(), val:v}); });
-    qBtns.innerHTML = amounts.slice(0,4).map(function(a){
-      return '<button class="btn bo bsm" onclick="document.getElementById(\'comm-pay-amount\').value='+a.val+'" style="font-size:11px">'+a.label+'</button>';
-    }).join('');
-  }
-  openM('m-comm-pay');
-}
-
-function confirmCommPay() {
-  // Use stored data — never read from DOM text for logic
-  var staffId = _commPayData.staffId;
-  var pending = _commPayData.pending;
-  var amount  = parseFloat(document.getElementById('comm-pay-amount').value);
-  var note    = document.getElementById('comm-pay-note').value.trim();
-
-  var staff = (db.staff||[]).find(function(s){ return s.id===staffId; });
-  if (!staff) { toast('❌ Staff not found', 'var(--danger)'); return; }
-  if (!amount || amount <= 0) { toast('❌ Valid amount enter කරන්න!', 'var(--danger)'); return; }
-  if (amount > pending + 1) {
-    if (!confirm('⚠️ Pending amount (Rs.'+Math.round(pending).toLocaleString()+') වඩා වැඩි amount enter කළා.\n\nContinue කරන්නද?')) return;
-  }
-
   if (!db.commPayments) db.commPayments = [];
   db.commPayments.push({
     id: Date.now() + '_' + Math.random().toString(36).slice(2,6),
-    staffId: _commPayData.staffId,  // original type — no parseInt conversion
+    staffId: staffId,
     staffName: staff.name,
     amount: amount,
     date: Date.now(),
-    note: note || ('Commission for ' + new Date().toLocaleString('en-GB', {month:'long', year:'numeric'}))
+    note: 'Commission for ' + new Date().toLocaleString('en-GB', {month:'long', year:'numeric'})
   });
-  // Lock live sync briefly so Firebase round-trip doesn't overwrite before cloud write completes
-  window._commPaySyncLock = true;
-  setTimeout(function(){ window._commPaySyncLock = false; }, 5000);
-  saveDB();
-  closeM('m-comm-pay');
-  renderStaff();
-  toast('✅ Rs.'+amount.toLocaleString()+' paid to '+staff.name+'!', 'var(--success)');
+  saveDB(); renderStaff(); toast('✅ Paid Rs.'+amount.toLocaleString()+' commission to '+staff.name);
 }
 
 // Staff selector in POS cart
@@ -6740,7 +6565,6 @@ if(!db.timerLogs) db.timerLogs = [];
 if(!db.settings.openChecklist) db.settings.openChecklist = ['Unlock shop','Turn on lights','Boot computer','Count opening cash','Check repairs due today','Check low stock'];
 if(!db.settings.closeChecklist) db.settings.closeChecklist = ['Count cash','Close register','Back up data','Set alarm','Lock shop','Send daily summary'];
 if(!db.giftVouchers) db.giftVouchers = [];
-if(!db.commPayments) db.commPayments = [];
 if(!db.invDesign) db.invDesign = { template:'classic', color:'#6c63ff', footer:'Thank you for choosing ST Mobile!', showQr:false };
 // Clear any old browser-cached data so Firebase is always the source
 // Firebase is primary storage - localStorage not used for data
@@ -7276,7 +7100,7 @@ function init() {
       if (parsed && typeof parsed === 'object') {
         Object.assign(db, parsed);
         // Fix any array/object corruptions from storage
-        ['products','invoices','repairs','orders','customers','expenses','suppliers','purchases','stockLog','credits','activityLog','loyaltyLog','staff','shifts','rosterShifts','tasks','followups','timerLogs','repTemplates','purchaseOrders','branches','taxProfiles','stockTransfers','batches','kits','upsellRules','referrals','returns','appointments','bundles','cashSessions','coupons','partsInventory','giftVouchers','commPayments'].forEach(function(k){ if(!Array.isArray(db[k])) db[k]=[]; });
+        ['products','invoices','repairs','orders','customers','expenses','suppliers','purchases','stockLog','credits','activityLog','loyaltyLog','staff','shifts','rosterShifts','tasks','followups','timerLogs','repTemplates','purchaseOrders','branches','taxProfiles','stockTransfers','batches','kits','upsellRules','referrals','returns','appointments','bundles','cashSessions','coupons','partsInventory','giftVouchers'].forEach(function(k){ if(!Array.isArray(db[k])) db[k]=[]; });
         if(typeof db.settings !== 'object') db.settings = {};
         if(typeof db.diagChecklists !== 'object') db.diagChecklists = {};
         if(typeof db.repairParts !== 'object') db.repairParts = {};
@@ -7395,9 +7219,6 @@ function init() {
       if (cloudData.warrantyDays)  db.warrantyDays  = cloudData.warrantyDays  || {};
       if (cloudData.productVariants)db.productVariants= cloudData.productVariants||{};
       if (cloudData.invDesign)     db.invDesign     = cloudData.invDesign      || {};
-      if (cloudData.partsInventory)db.partsInventory= _fbArr(cloudData.partsInventory);
-      if (cloudData.giftVouchers)  db.giftVouchers  = _fbArr(cloudData.giftVouchers);
-      if (cloudData.commPayments)  db.commPayments  = _fbArr(cloudData.commPayments);
       // Persist cloud data to localStorage for offline use
       try { localStorage.setItem('stpos-db', JSON.stringify(db)); } catch(e) {}
       _clearPendingSync();
