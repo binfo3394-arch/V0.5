@@ -2905,7 +2905,10 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
       <div id="pg-staff" class="page">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
           <div class="estitle">👷 Staff & Commission Tracking</div>
-          <button class="btn bp2" onclick="openStaffModal()">➕ Add Staff</button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn bs2" onclick="openManualPayModal()">💵 Manual Pay</button>
+            <button class="btn bp2" onclick="openStaffModal()">➕ Add Staff</button>
+          </div>
         </div>
         <div class="sgrid" style="margin-bottom:16px">
           <div class="scard s1"><div style="font-size:22px">👷</div><div class="sval" id="staff-count">0</div><div class="slabel">Total Staff</div></div>
@@ -2917,7 +2920,7 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
         <div id="comm-history-wrap" style="margin-top:16px;display:none">
           <div class="tcard">
             <div class="thead2"><h3>💳 Commission Payment History</h3></div>
-            <table><thead><tr><th>Date</th><th>Staff</th><th>Amount</th><th>Note</th></tr></thead><tbody id="comm-hist-tbl"></tbody></table>
+            <table><thead><tr><th>Date</th><th>Staff</th><th>Type</th><th>Amount</th><th>Paid By</th><th>Note</th></tr></thead><tbody id="comm-hist-tbl"></tbody></table>
           </div>
         </div>
       </div>
@@ -5396,6 +5399,85 @@ setTimeout(function(){
   </div>
 </div>
 
+<!-- ===== MANUAL COMMISSION PAY MODAL ===== -->
+<div class="moverlay" id="m-manual-pay">
+  <div class="modal" style="width:460px">
+    <div class="mhdr">
+      <h3>💵 Manual Commission Payment</h3>
+      <button class="xbtn" onclick="closeM('m-manual-pay')">×</button>
+    </div>
+    <div class="mbody">
+      <div style="background:rgba(108,99,255,0.08);border:1px solid rgba(108,99,255,0.2);border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:12px;color:var(--muted)">
+        💡 Commission amount manually type කරලා pay කරන්න. Expense ලෙස auto-record වෙනවා.
+      </div>
+      <div class="fgrid">
+        <div class="fg full">
+          <label>👷 Staff Member *</label>
+          <select id="mpay-staff-sel" onchange="updateManualPayPending()">
+            <option value="">— Select Staff —</option>
+          </select>
+        </div>
+        <div class="fg full" id="mpay-pending-info" style="display:none">
+          <div style="background:rgba(0,230,118,0.08);border:1px solid rgba(0,230,118,0.2);border-radius:8px;padding:10px 12px;font-size:12px">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+              <span style="color:var(--muted)">🧮 Auto-Calculated Pending:</span>
+              <span style="font-weight:800;color:var(--warning);font-size:15px" id="mpay-auto-pending">Rs. 0</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-top:4px">
+              <span style="color:var(--muted)">✅ Already Paid This Month:</span>
+              <span style="font-weight:700;color:var(--success)" id="mpay-already-paid">Rs. 0</span>
+            </div>
+            <button class="btn bsm" style="margin-top:8px;background:rgba(255,171,0,0.15);color:var(--warning);border:1px solid rgba(255,171,0,0.3);font-size:11px" onclick="fillAutoPending()">
+              ↩️ Auto amount fill කරන්න
+            </button>
+          </div>
+        </div>
+        <div class="fg">
+          <label>💰 Amount (Rs.) *</label>
+          <input type="number" id="mpay-amount" placeholder="e.g. 5000" min="1" step="0.01">
+        </div>
+        <div class="fg">
+          <label>📅 Date</label>
+          <input type="date" id="mpay-date">
+        </div>
+        <div class="fg">
+          <label>💳 Paid By</label>
+          <select id="mpay-paid-by">
+            <option value="Cash">💵 Cash</option>
+            <option value="Bank Transfer">🏦 Bank Transfer</option>
+            <option value="Cheque">📄 Cheque</option>
+            <option value="Online">📱 Online</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>🏷️ Payment Type</label>
+          <select id="mpay-type">
+            <option value="Commission">Commission</option>
+            <option value="Bonus">Bonus</option>
+            <option value="Advance">Advance</option>
+            <option value="Salary">Salary</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="fg full">
+          <label>📝 Note (Optional)</label>
+          <input type="text" id="mpay-note" placeholder="e.g. May 2025 commission, Bonus for target hit...">
+        </div>
+        <div class="fg full">
+          <label style="display:flex;align-items:center;gap:7px;cursor:pointer">
+            <input type="checkbox" id="mpay-add-expense" checked style="width:15px;height:15px;accent-color:var(--primary)">
+            <span>💸 Expenses ලෙසත් add කරන්න (auto)</span>
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="mftr">
+      <button class="btn bo" onclick="closeM('m-manual-pay')">Cancel</button>
+      <button class="btn bp2" onclick="saveManualPay()">✅ Pay Now</button>
+    </div>
+  </div>
+</div>
+
 <!-- SPLIT PAYMENT MODAL -->
 <div class="moverlay" id="m-split-pay">
   <div class="modal" style="width:480px">
@@ -5845,7 +5927,11 @@ function renderStaff() {
     if (commPayments.length) {
       histWrap.style.display = 'block';
       histTbl.innerHTML = commPayments.slice().reverse().map(function(p){
-        return '<tr><td>'+new Date(p.date).toLocaleDateString('en-GB')+'</td><td>'+(p.staffName||'—')+'</td><td style="font-weight:700;color:var(--success)">Rs. '+(p.amount||0).toLocaleString()+'</td><td style="color:var(--muted)">'+(p.note||'')+'</td></tr>';
+        return '<tr><td>'+new Date(p.date).toLocaleDateString('en-GB')+'</td><td>'+(p.staffName||'—')+'</td>'+
+          '<td><span class="badge bp">'+(p.payType||'Commission')+'</span>'+(p.manual?'<br><span style="font-size:10px;color:var(--muted)">Manual</span>':'')+'</td>'+
+          '<td style="font-weight:700;color:var(--success)">Rs. '+(p.amount||0).toLocaleString()+'</td>'+
+          '<td style="color:var(--info)">'+(p.paidBy||'Cash')+'</td>'+
+          '<td style="color:var(--muted)">'+(p.note||'')+'</td></tr>';
       }).join('');
     } else {
       histWrap.style.display = 'none';
@@ -5922,8 +6008,7 @@ function payCommission(staffId, amount) {
     date: payDate.getTime(),
     note: 'Commission for ' + monthLabel
   });
-
-  // ── Auto-add to Expenses ──
+  // Auto-add to Expenses
   if (!db.expenses) db.expenses = [];
   db.expenses.push({
     id: Date.now() + Math.floor(Math.random()*9999),
@@ -5934,9 +6019,132 @@ function payCommission(staffId, amount) {
     paidBy: 'Cash',
     notes: 'Auto-added from Staff & Commission tracking. Ref: ' + payId
   });
-
-  saveDB(); renderStaff(); renderExpenses();
+  saveDB(); renderStaff(); if(typeof renderExpenses==='function') renderExpenses();
   toast('✅ Commission paid & Expense recorded for ' + staff.name);
+}
+
+// ── Manual Commission Pay ──
+function openManualPayModal() {
+  var staff = (db.staff||[]).filter(function(s){ return s.status!=='Inactive'; });
+  var sel = document.getElementById('mpay-staff-sel');
+  if (sel) {
+    sel.innerHTML = '<option value="">— Select Staff —</option>' +
+      staff.map(function(s){
+        return '<option value="'+s.id+'">'+s.name+' ('+s.role+')</option>';
+      }).join('');
+  }
+  var dateEl = document.getElementById('mpay-date');
+  if (dateEl) dateEl.value = new Date().toISOString().split('T')[0];
+  var amtEl = document.getElementById('mpay-amount');
+  if (amtEl) amtEl.value = '';
+  var noteEl = document.getElementById('mpay-note');
+  if (noteEl) noteEl.value = '';
+  var pendInfo = document.getElementById('mpay-pending-info');
+  if (pendInfo) pendInfo.style.display = 'none';
+  openM('m-manual-pay');
+}
+
+function updateManualPayPending() {
+  var sel = document.getElementById('mpay-staff-sel');
+  var pendInfo = document.getElementById('mpay-pending-info');
+  if (!sel || !sel.value) { if(pendInfo) pendInfo.style.display='none'; return; }
+  var staffId = parseInt(sel.value);
+  var staff = (db.staff||[]).find(function(s){ return s.id===staffId; });
+  if (!staff) { if(pendInfo) pendInfo.style.display='none'; return; }
+
+  var now = new Date();
+  var monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  var invoices = db.invoices||[], repairs = db.repairs||[], orders = db.orders||[];
+  var commPayments = db.commPayments||[];
+
+  var staffInvs = invoices.filter(function(inv){ var d=parseDate(inv.date); return inv.staffId===staffId && d && d>=monthStart; });
+  var staffRevenue = staffInvs.reduce(function(a,inv){ return a+(inv.total||0);},0);
+  var staffProfit = staffInvs.reduce(function(a,inv){
+    var p=0; (inv.items||[]).forEach(function(it){ var prod=(db.products||[]).find(function(pr){ return pr.id===it.id; }); p+=(it.price-(prod?prod.cost:0))*(it.qty||1); }); return a+p;
+  },0);
+  var repsMonth = repairs.filter(function(r){ var d=parseDate(r.date); return r.tech&&r.tech.trim().toLowerCase()===staff.name.trim().toLowerCase()&&(r.status==='Delivered'||r.status==='Done')&&d&&d>=monthStart; });
+  var repairRevenue = repsMonth.reduce(function(a,r){ return a+(r.cost||0);},0);
+  var ordsMonth = orders.filter(function(o){ var d=parseDate(o.date); return String(o.staffId)===String(staffId)&&d&&d>=monthStart; });
+  var orderRevenue = ordsMonth.reduce(function(a,o){ return a+(o.amount||0);},0);
+
+  var commBase = staff.commBase==='profit' ? staffProfit : staffRevenue;
+  var commEarned = commBase*(staff.commRate||0)/100 + repairRevenue*(staff.repairCommRate||0)/100 + orderRevenue*(staff.commRate||0)/100;
+  var paidSum = commPayments.filter(function(p){ return p.staffId===staffId && p.date>=monthStart.getTime(); }).reduce(function(a,p){ return a+(p.amount||0);},0);
+  var pending = Math.max(0, Math.round(commEarned - paidSum));
+
+  var pendEl = document.getElementById('mpay-auto-pending');
+  var paidEl = document.getElementById('mpay-already-paid');
+  if (pendEl) pendEl.textContent = 'Rs. '+pending.toLocaleString();
+  if (paidEl) paidEl.textContent = 'Rs. '+paidSum.toLocaleString();
+  if (pendInfo) pendInfo.style.display = 'block';
+}
+
+function fillAutoPending() {
+  var pendEl = document.getElementById('mpay-auto-pending');
+  var amtEl = document.getElementById('mpay-amount');
+  if (!pendEl || !amtEl) return;
+  var val = parseInt(pendEl.textContent.replace(/[^0-9]/g,''))||0;
+  if (val > 0) { amtEl.value = val; amtEl.focus(); }
+  else toast('⚠️ Auto-pending amount is 0', 'var(--warning)');
+}
+
+function saveManualPay() {
+  var sel = document.getElementById('mpay-staff-sel');
+  var amtEl = document.getElementById('mpay-amount');
+  var dateEl = document.getElementById('mpay-date');
+  var noteEl = document.getElementById('mpay-note');
+  var paidByEl = document.getElementById('mpay-paid-by');
+  var typeEl = document.getElementById('mpay-type');
+  var addExpCb = document.getElementById('mpay-add-expense');
+
+  var staffId = sel ? parseInt(sel.value) : 0;
+  var amount = amtEl ? parseFloat(amtEl.value)||0 : 0;
+  var dateVal = dateEl ? dateEl.value : '';
+  var note = noteEl ? noteEl.value.trim() : '';
+  var paidBy = paidByEl ? paidByEl.value : 'Cash';
+  var payType = typeEl ? typeEl.value : 'Commission';
+  var addExp = addExpCb ? addExpCb.checked : true;
+
+  if (!staffId) { toast('❌ Staff member select කරන්න', 'var(--danger)'); return; }
+  if (!amount || amount <= 0) { toast('❌ Valid amount enter කරන්න', 'var(--danger)'); return; }
+
+  var staff = (db.staff||[]).find(function(s){ return s.id===staffId; });
+  if (!staff) { toast('❌ Staff not found', 'var(--danger)'); return; }
+
+  var payDate = dateVal ? new Date(dateVal) : new Date();
+  var monthLabel = payDate.toLocaleString('en-GB', {month:'long', year:'numeric'});
+  var autoNote = note || (payType + ' for ' + monthLabel);
+  var payId = Date.now() + '_' + Math.random().toString(36).slice(2,6);
+
+  if (!db.commPayments) db.commPayments = [];
+  db.commPayments.push({
+    id: payId,
+    staffId: staffId,
+    staffName: staff.name,
+    amount: amount,
+    date: payDate.getTime(),
+    note: autoNote,
+    payType: payType,
+    paidBy: paidBy,
+    manual: true
+  });
+
+  if (addExp) {
+    if (!db.expenses) db.expenses = [];
+    db.expenses.push({
+      id: Date.now() + Math.floor(Math.random()*9999),
+      date: payDate.toLocaleDateString('en-GB'),
+      category: 'Staff',
+      description: payType + ' — ' + staff.name + ' (' + monthLabel + ')',
+      amount: amount,
+      paidBy: paidBy,
+      notes: (note ? note + ' | ' : '') + 'Manual pay. Ref: ' + payId
+    });
+  }
+
+  saveDB(); renderStaff(); if(typeof renderExpenses==='function') renderExpenses();
+  closeM('m-manual-pay');
+  toast('✅ Rs.'+amount.toLocaleString()+' paid to '+staff.name+(addExp?' & Expense recorded':''));
 }
 
 // Staff selector in POS cart
