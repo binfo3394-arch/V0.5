@@ -191,6 +191,12 @@ var openM, closeM, goPage, renderAll;
       invDesign:     dbObj.invDesign       || {},
       giftVouchers:  dbObj.giftVouchers    || [],
       commPayments:  dbObj.commPayments    || [],
+      returns:       dbObj.returns         || [],
+      appointments:  dbObj.appointments    || [],
+      bundles:       dbObj.bundles         || [],
+      cashSessions:  dbObj.cashSessions    || [],
+      targets:       dbObj.targets         || {},
+      coupons:       dbObj.coupons         || [],
       _lastSync:     Date.now()
     };
     set(ref(database, 'pos-data/' + uid), payload)
@@ -278,6 +284,12 @@ var openM, closeM, goPage, renderAll;
       if (remote.invDesign)       db.invDesign       = remote.invDesign      || {};
       if (remote.giftVouchers)    db.giftVouchers    = _fbArr(remote.giftVouchers);
       if (remote.commPayments)    db.commPayments    = _fbArr(remote.commPayments);
+      if (remote.returns)         db.returns         = _fbArr(remote.returns);
+      if (remote.appointments)    db.appointments    = _fbArr(remote.appointments);
+      if (remote.bundles)         db.bundles         = _fbArr(remote.bundles);
+      if (remote.cashSessions)    db.cashSessions    = _fbArr(remote.cashSessions);
+      if (remote.targets)         db.targets         = remote.targets         || {};
+      if (remote.coupons)         db.coupons         = _fbArr(remote.coupons);
       renderAll();
       try { localStorage.setItem('stpos-db', JSON.stringify(db)); } catch(e) {}
       _clearPendingSync();
@@ -7117,7 +7129,7 @@ function init() {
       if (parsed && typeof parsed === 'object') {
         Object.assign(db, parsed);
         // Fix any array/object corruptions from storage
-        ['products','invoices','repairs','orders','customers','expenses','suppliers','purchases','stockLog','credits','activityLog','loyaltyLog','staff','shifts','rosterShifts','tasks','followups','timerLogs','repTemplates','purchaseOrders','branches','taxProfiles','stockTransfers','batches','kits','upsellRules','referrals','returns','appointments','bundles','cashSessions','coupons','partsInventory','giftVouchers'].forEach(function(k){ if(!Array.isArray(db[k])) db[k]=[]; });
+        ['products','invoices','repairs','orders','customers','expenses','suppliers','purchases','stockLog','credits','activityLog','loyaltyLog','staff','shifts','rosterShifts','tasks','followups','timerLogs','repTemplates','purchaseOrders','branches','taxProfiles','stockTransfers','batches','kits','upsellRules','referrals','returns','appointments','bundles','cashSessions','coupons','partsInventory','giftVouchers','commPayments'].forEach(function(k){ if(!Array.isArray(db[k])) db[k]=[]; });
         if(typeof db.settings !== 'object') db.settings = {};
         if(typeof db.diagChecklists !== 'object') db.diagChecklists = {};
         if(typeof db.repairParts !== 'object') db.repairParts = {};
@@ -7125,6 +7137,7 @@ function init() {
         if(typeof db.productVariants !== 'object') db.productVariants = {};
         if(typeof db.invDesign !== 'object') db.invDesign = {};
         if(typeof db.widgetPrefs !== 'object') db.widgetPrefs = {};
+        if(typeof db.targets !== 'object' || Array.isArray(db.targets)) db.targets = {};
       }
     }
   } catch(e) { console.warn('localStorage load failed', e); }
@@ -7236,6 +7249,14 @@ function init() {
       if (cloudData.warrantyDays)  db.warrantyDays  = cloudData.warrantyDays  || {};
       if (cloudData.productVariants)db.productVariants= cloudData.productVariants||{};
       if (cloudData.invDesign)     db.invDesign     = cloudData.invDesign      || {};
+      if (cloudData.giftVouchers)  db.giftVouchers  = _fbArr(cloudData.giftVouchers);
+      if (cloudData.commPayments)  db.commPayments  = _fbArr(cloudData.commPayments);
+      if (cloudData.returns)       db.returns       = _fbArr(cloudData.returns);
+      if (cloudData.appointments)  db.appointments  = _fbArr(cloudData.appointments);
+      if (cloudData.bundles)       db.bundles       = _fbArr(cloudData.bundles);
+      if (cloudData.cashSessions)  db.cashSessions  = _fbArr(cloudData.cashSessions);
+      if (cloudData.targets)       db.targets       = cloudData.targets       || {};
+      if (cloudData.coupons)       db.coupons       = _fbArr(cloudData.coupons);
       // Persist cloud data to localStorage for offline use
       try { localStorage.setItem('stpos-db', JSON.stringify(db)); } catch(e) {}
       _clearPendingSync();
