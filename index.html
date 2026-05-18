@@ -5899,15 +5899,32 @@ function payCommission(staffId, amount) {
   var staff = (db.staff||[]).find(function(s){ return s.id===staffId; });
   if (!staff) { toast('❌ Staff not found', 'var(--danger)'); return; }
   if (!db.commPayments) db.commPayments = [];
+  var payId = Date.now() + '_' + Math.random().toString(36).slice(2,6);
+  var payDate = new Date();
+  var monthLabel = payDate.toLocaleString('en-GB', {month:'long', year:'numeric'});
   db.commPayments.push({
-    id: Date.now() + '_' + Math.random().toString(36).slice(2,6),
+    id: payId,
     staffId: staffId,
     staffName: staff.name,
     amount: amount,
-    date: Date.now(),
-    note: 'Commission for ' + new Date().toLocaleString('en-GB', {month:'long', year:'numeric'})
+    date: payDate.getTime(),
+    note: 'Commission for ' + monthLabel
   });
-  saveDB(); renderStaff(); toast('✅ Paid Rs.'+amount.toLocaleString()+' commission to '+staff.name);
+
+  // ── Auto-add to Expenses ──
+  if (!db.expenses) db.expenses = [];
+  db.expenses.push({
+    id: Date.now() + Math.floor(Math.random()*9999),
+    date: payDate.toLocaleDateString('en-GB'),
+    category: 'Staff',
+    description: 'Commission — ' + staff.name + ' (' + monthLabel + ')',
+    amount: amount,
+    paidBy: 'Cash',
+    notes: 'Auto-added from Staff & Commission tracking. Ref: ' + payId
+  });
+
+  saveDB(); renderStaff(); renderExpenses();
+  toast('✅ Commission paid & Expense recorded for ' + staff.name);
 }
 
 // Staff selector in POS cart
