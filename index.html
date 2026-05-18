@@ -152,7 +152,6 @@ var openM, closeM, goPage, renderAll;
     if (!firebaseConfig.databaseURL || firebaseConfig.databaseURL.includes('YOUR_PROJECT')) return;
     var uid = auth.currentUser ? auth.currentUser.uid : null;
     if (!uid) { return; } // silently skip — localStorage already saved
-    // ✅ FIX: Mark that WE are saving — live sync listener will ignore the echo snapshot
     window._fbIsSaving = true;
     window._fbLastLocalSave = Date.now();
     setFBStatus('☁️ Syncing...', 'var(--warning)');
@@ -205,13 +204,12 @@ var openM, closeM, goPage, renderAll;
     set(ref(database, 'pos-data/' + uid), payload)
       .then(function(){
         setFBStatus('✅ Cloud Saved', 'var(--success)');
-        // ✅ FIX: Clear the saving guard after 3s — enough time for the echo onValue to fire & be ignored
         setTimeout(function(){ window._fbIsSaving = false; }, 3000);
       })
       .catch(function(e){
         setFBStatus('❌ Sync Error', 'var(--danger)');
         console.error('Firebase save error:', e);
-        window._fbIsSaving = false; // ✅ FIX: Always unblock on error too
+        window._fbIsSaving = false;
       });
   };
 
@@ -242,11 +240,8 @@ var openM, closeM, goPage, renderAll;
 
   // ── Real-time listener (live sync per-user) ──
   window._liveSyncUnsub = null;
-  // ✅ FIX: Guard flag — prevents self-triggered onValue loop when WE save to Firebase
   window._fbIsSaving = false;
-  // ✅ FIX: Timestamp of last local save — remote updates older than this are ignored
   window._fbLastLocalSave = 0;
-
   window.firebaseStartLiveSync = function() {
     // Detach any previous listener first
     if (window._liveSyncUnsub) { window._liveSyncUnsub(); window._liveSyncUnsub = null; }
@@ -254,22 +249,14 @@ var openM, closeM, goPage, renderAll;
     var uid = auth.currentUser ? auth.currentUser.uid : null;
     if (!uid) return;
     window._firebaseUid = uid;
-    // ✅ FIX: Skip the very first snapshot fired immediately on attach (initial load already done)
     var _skipFirst = true;
     window._liveSyncUnsub = onValue(ref(database, 'pos-data/' + uid), function(snapshot) {
-      // Skip the first immediate snapshot — init() already loaded this data
       if (_skipFirst) { _skipFirst = false; return; }
-      if (!snapshot.exists()) return;
-      // ✅ FIX: If WE just saved (within 3s), this snapshot is our own echo — skip it
       if (window._fbIsSaving) return;
+      if (!snapshot.exists()) return;
       var remote = snapshot.val();
       if (typeof db === 'undefined' || typeof renderAll !== 'function') return;
-      // ✅ FIX: Ignore stale remote data (older than our last local save)
-      if (remote._lastSync && window._fbLastLocalSave &&
-          remote._lastSync < window._fbLastLocalSave - 2000) {
-        console.log('⏭️ Live sync: Ignoring stale remote snapshot');
-        return;
-      }
+      if (remote._lastSync && window._fbLastLocalSave && remote._lastSync < window._fbLastLocalSave - 2000) { return; }
       function _fbArr(val) {
         if (!val) return [];
         if (Array.isArray(val)) return val;
@@ -319,10 +306,8 @@ var openM, closeM, goPage, renderAll;
       if (remote.targets)         db.targets         = remote.targets         || {};
       if (remote.coupons)         db.coupons         = _fbArr(remote.coupons);
       renderAll();
-      // ✅ FIX: Only update localStorage — do NOT call saveDB() here (avoids re-triggering Firebase)
       try { localStorage.setItem('stpos-db', JSON.stringify(db)); } catch(e) {}
-      // ✅ FIX: Only clear pending sync if this is truly a remote (another device) change
-      if (!_hasPendingSync()) { /* nothing to clear */ }
+      _clearPendingSync();
       setFBStatus('\uD83D\uDD04 Live synced', 'var(--info)');
     }, function(error){ console.error('Firebase listener error:', error); });
   };
@@ -6023,34 +6008,46 @@ function deleteStaff(id) {
 }
 
 function payCommission(staffId, amount) {
-  if (!confirm('Pay Rs. '+amount.toLocaleString()+' commission to this staff member?')) return;
+  var staff = (db.staff||[]).find(function(s){ return s.id===staffId; });
+  if (!staff) { toast('❌ Staff not found', 'var(--danger)'); return; }
+  document.getElementById('qpay-staff-id').value = staffId;
+  document.getElementById('qpay-staff-name').textContent = staff.name + ' (' + (staff.role||'') + ')';
+  document.getElementById('qpay-amount').value = amount;
+  document.getElementById('qpay-method').value = 'Cash';
+  document.getElementById('qpay-note').value = '';
+  openM('m-quick-pay');
+}
+
+function confirmQuickPay() {
+  var staffId = parseInt(document.getElementById('qpay-staff-id').value);
+  var amount = parseFloat(document.getElementById('qpay-amount').value) || 0;
+  var method = document.getElementById('qpay-method').value;
+  var note = document.getElementById('qpay-note').value.trim();
+  if (!staffId) { toast('❌ Staff ID missing', 'var(--danger)'); return; }
+  if (amount <= 0) { toast('❌ Valid amount enter කරන්න', 'var(--danger)'); return; }
   var staff = (db.staff||[]).find(function(s){ return s.id===staffId; });
   if (!staff) { toast('❌ Staff not found', 'var(--danger)'); return; }
   if (!db.commPayments) db.commPayments = [];
   var payId = Date.now() + '_' + Math.random().toString(36).slice(2,6);
   var payDate = new Date();
   var monthLabel = payDate.toLocaleString('en-GB', {month:'long', year:'numeric'});
+  var autoNote = note || ('Commission for ' + monthLabel);
   db.commPayments.push({
-    id: payId,
-    staffId: staffId,
-    staffName: staff.name,
-    amount: amount,
-    date: payDate.getTime(),
-    note: 'Commission for ' + monthLabel
+    id: payId, staffId: staffId, staffName: staff.name,
+    amount: amount, date: payDate.getTime(), note: autoNote, paidBy: method
   });
-  // Auto-add to Expenses
   if (!db.expenses) db.expenses = [];
   db.expenses.push({
     id: Date.now() + Math.floor(Math.random()*9999),
     date: payDate.toLocaleDateString('en-GB'),
     category: 'Staff',
     description: 'Commission — ' + staff.name + ' (' + monthLabel + ')',
-    amount: amount,
-    paidBy: 'Cash',
-    notes: 'Auto-added from Staff & Commission tracking. Ref: ' + payId
+    amount: amount, paidBy: method,
+    notes: (note ? note + ' | ' : '') + 'Auto-added. Ref: ' + payId
   });
+  closeM('m-quick-pay');
   saveDB(); renderStaff(); if(typeof renderExpenses==='function') renderExpenses();
-  toast('✅ Commission paid & Expense recorded for ' + staff.name);
+  toast('✅ Rs.' + amount.toLocaleString() + ' paid to ' + staff.name + ' via ' + method);
 }
 
 // ── Manual Commission Pay ──
@@ -14922,4 +14919,51 @@ function thisMonthKey(){ var d=new Date(); return d.getFullYear()+'-'+(d.getMont
 init();
 </script>
 </body>
+
+<!-- QUICK PAY COMMISSION MODAL -->
+<div class="moverlay" id="m-quick-pay">
+  <div class="modal" style="width:420px">
+    <div class="mhdr">
+      <h3>&#x1F4B5; Pay Commission</h3>
+      <button class="xbtn" onclick="closeM('m-quick-pay')">&times;</button>
+    </div>
+    <div class="mbody">
+      <input type="hidden" id="qpay-staff-id">
+      <div style="background:var(--card2);border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px">
+        <span style="font-size:26px">&#x1F477;</span>
+        <div>
+          <div style="font-size:14px;font-weight:700;color:var(--text)" id="qpay-staff-name">Staff Name</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">Commission Payment</div>
+        </div>
+      </div>
+      <div class="fgrid">
+        <div class="fg full">
+          <label style="font-size:12px;color:var(--muted)">Amount (Rs.) &mdash; <span style="color:var(--warning)">edit කරන්නත් කරයයි</span></label>
+          <input type="number" id="qpay-amount" min="0" step="1" placeholder="0"
+            style="font-size:22px;font-weight:800;color:var(--success);text-align:center;padding:12px">
+        </div>
+        <div class="fg">
+          <label>Payment Method</label>
+          <select id="qpay-method">
+            <option>Cash</option>
+            <option>Bank Transfer</option>
+            <option>Online</option>
+            <option>Card</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>Note (Optional)</label>
+          <input id="qpay-note" placeholder="e.g. May 2026 commission">
+        </div>
+      </div>
+      <div style="background:rgba(0,230,118,0.08);border:1px solid rgba(0,230,118,0.2);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--muted);margin-top:8px">
+        &#x2705; Auto-expense කරනවා &mdash; Expenses tab ඇතට automatically add ගනි
+      </div>
+    </div>
+    <div class="mftr">
+      <button class="btn bo" onclick="closeM('m-quick-pay')">Cancel</button>
+      <button class="btn bp2" onclick="confirmQuickPay()" style="min-width:130px;font-size:14px">&#x1F4B5; Confirm Pay</button>
+    </div>
+  </div>
+</div>
 </html>
