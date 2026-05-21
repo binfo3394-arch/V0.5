@@ -582,20 +582,20 @@ body {
 
   /* Main scroll container */
   .main {
-    overflow-x: hidden !important;
+    overflow-x: clip !important;
     overflow-y: visible !important;
     touch-action: pan-y !important;
   }
 
   .content {
-    overflow-x: hidden !important;
+    overflow-x: visible !important;
     overflow-y: visible !important;
     touch-action: pan-y !important;
   }
 
   /* Pages */
   .page, .page.active {
-    overflow-x: hidden !important;
+    overflow-x: visible !important;
     touch-action: pan-y !important;
   }
 
@@ -723,6 +723,10 @@ body {
     width: max-content !important;
     font-size: 12px !important;
   }
+
+  /* Orders table — wider for 8 columns */
+  #pg-orders .tcard { overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; }
+  #pg-orders .tcard table { min-width: 900px !important; }
 
   /* Show ALL columns, no hiding */
   .tcard th, .tcard td {
