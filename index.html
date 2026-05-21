@@ -2275,7 +2275,7 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
           <button class="btn bo bsm ord-filter-btn" data-f="cat:design" onclick="setOrdF('cat:design')">🎨 Design</button>
           <button class="btn bo bsm ord-filter-btn" data-f="cat:other" onclick="setOrdF('cat:other')">📦 Other</button>
         </div>
-        <div class="sbar"><span>🔍</span><input id="ord-q" placeholder="Customer name / phone search..." oninput="renderOrd()"></div>
+        <div class="sbar"><span>🔍</span><input id="ord-q" placeholder="Customer name / phone / #ID / service search..." oninput="renderOrd()"></div>
         <div class="tcard"><table><thead><tr><th>ID</th><th>Customer</th><th>Service</th><th>Amount</th><th>Status</th><th>Staff</th><th>Date</th><th>Actions</th></tr></thead><tbody id="ord-tbl"></tbody></table></div>
       </div>
 
@@ -7659,6 +7659,7 @@ function goPage(id) {
   if (id === 'notifications') { renderNotifPage(); }
   if (id === 'repair-parts') { renderRepairParts(); }
   if (id === 'gift-vouchers') { renderGiftVouchers(); }
+  if (id === 'orders') { renderOrd(); }
 }
 
 // =========== TOAST ===========
@@ -9059,7 +9060,13 @@ function setOrdF(s){
 function renderOrd(){
   var q=(document.getElementById('ord-q')?document.getElementById('ord-q').value:'').toLowerCase();
   var rows=db.orders.filter(function(o){
-    var matchQ=q?(o.customer.toLowerCase().includes(q)||(o.phone&&o.phone.includes(q))):true;
+    var matchQ=q?(
+      (o.customer&&o.customer.toLowerCase().includes(q)) ||
+      (o.phone&&o.phone.includes(q)) ||
+      (o.service&&o.service.toLowerCase().includes(q)) ||
+      (o.notes&&o.notes.toLowerCase().includes(q)) ||
+      (String(o.id).slice(-5).includes(q.replace('#','')))
+    ):true;
     if(!matchQ) return false;
     if(!ordF) return true;
     if(ordF.startsWith('status:')){
@@ -9069,8 +9076,9 @@ function renderOrd(){
       var parts=ordF.slice(4).split(':');
       var cat=parts[0]; var sub=parts[1];
       if(!o.category) return o.service.toLowerCase().includes(cat);
-      if(!sub) return o.category===cat;
-      return o.category===cat && o.service.toLowerCase().includes(sub.toLowerCase());
+      if(!sub) return o.category===cat || o.service.toLowerCase().includes(cat);
+      return (o.category===cat && o.service.toLowerCase().includes(sub.toLowerCase())) ||
+             o.service.toLowerCase().includes(sub.toLowerCase());
     }
     return true;
   });
@@ -9080,7 +9088,7 @@ function renderOrd(){
     var pc=ps==='Paid'?'bs':ps==='Partial'?'bw':'bd';
     var svcDisplay=o.items&&o.items.length>1?'<b>'+o.items.length+' items</b><br>'+o.items.map(function(i){return '<small style="color:var(--muted)">• '+i.desc+'</small>';}).join('<br>'):o.service+(o.frameSize?'<br><small style="color:var(--muted)">🖼️ '+o.frameSize+'</small>':'');
     var assignedStaff = o.staffId ? ((db.staff||[]).find(function(s){return String(s.id)===String(o.staffId);})||{}).name||'—' : '<span style="color:var(--muted);font-size:11px">—</span>';
-    return '<tr><td><b>#'+String(o.id).slice(-5)+'</b></td><td>'+o.customer+'<br><small style="color:var(--muted)">'+o.phone+'</small></td><td>'+svcDisplay+'<br><small style="color:var(--muted)">'+o.platform+'</small></td><td><b>Rs. '+(o.amount||0).toFixed(2)+'</b>'+(o.delivery>0?'<br><small style="color:var(--muted)">🚚 Rs.'+o.delivery.toFixed(2)+'</small>':'')+(o.advance>0?'<br><small style="color:var(--success)">Adv: Rs.'+o.advance.toFixed(0)+'</small>':'')+'</td><td>'+sbadge(o.status)+'<br><span class="badge '+pc+'" style="margin-top:2px">'+(ps==='Paid'?'💰 Paid':ps==='Partial'?'⚠️ Partial':'❌ Unpaid')+'</span></td><td style="font-size:12px">'+assignedStaff+'</td><td>'+o.date+'</td><td style="white-space:nowrap"><button class="btn bo bsm" onclick="editOrd('+o.id+')" style="margin-right:3px">✏️</button><button class="btn bs2 bsm" onclick="cycleOrd('+o.id+')" style="margin-right:3px">→</button><button class="btn bp2 bsm" onclick="showOBill('+o.id+')" style="margin-right:3px">🧾</button><button class="btn bsm" style="background:rgba(0,230,118,0.15);color:var(--success);border:1px solid rgba(0,230,118,0.3);margin-right:3px" onclick="openPay('+o.id+')">💳</button><button class="btn bd2 bsm" onclick="delOrd('+o.id+')">🗑️</button></td></tr>';
+    return '<tr><td><b>#'+String(o.id).slice(-5)+'</b></td><td>'+esc(o.customer)+'<br><small style="color:var(--muted)">'+esc(o.phone)+'</small></td><td>'+svcDisplay+'<br><small style="color:var(--muted)">'+esc(o.platform||'')+'</small></td><td><b>Rs. '+(o.amount||0).toFixed(2)+'</b>'+(o.delivery>0?'<br><small style="color:var(--muted)">🚚 Rs.'+o.delivery.toFixed(2)+'</small>':'')+(o.advance>0?'<br><small style="color:var(--success)">Adv: Rs.'+o.advance.toFixed(0)+'</small>':'')+'</td><td>'+sbadge(o.status)+'<br><span class="badge '+pc+'" style="margin-top:2px">'+(ps==='Paid'?'💰 Paid':ps==='Partial'?'⚠️ Partial':'❌ Unpaid')+'</span></td><td style="font-size:12px">'+assignedStaff+'</td><td>'+o.date+'</td><td style="white-space:nowrap"><button class="btn bo bsm" onclick="editOrd('+o.id+')" style="margin-right:3px">✏️</button><button class="btn bs2 bsm" onclick="cycleOrd('+o.id+')" style="margin-right:3px">→</button><button class="btn bp2 bsm" onclick="showOBill('+o.id+')" style="margin-right:3px">🧾</button><button class="btn bsm" style="background:rgba(0,230,118,0.15);color:var(--success);border:1px solid rgba(0,230,118,0.3);margin-right:3px" onclick="openPay('+o.id+')">💳</button><button class="btn bd2 bsm" onclick="delOrd('+o.id+')">🗑️</button></td></tr>';
   }).join(''):'<tr><td colspan="8" class="empty"><div class="ei">🌐</div>No orders</td></tr>';
 }
 function saveOrd(){
@@ -9115,7 +9123,12 @@ function saveOrd(){
     staffId: document.getElementById('o-staff') ? (document.getElementById('o-staff').value || '') : ''
   };
   if(id){ var i=db.orders.findIndex(function(x){ return x.id===o.id; }); if(i>=0){ o.payments=db.orders[i].payments||[]; o.paymentStatus=db.orders[i].paymentStatus||'Unpaid'; db.orders[i]=o; } }
-  else db.orders.push(o);
+  else { o.payments=[]; o.paymentStatus='Unpaid'; db.orders.push(o); }
+  // Auto-reflect advance in paymentStatus
+  if(o.advance>0 && o.paymentStatus==='Unpaid'){
+    var totalPaidWithAdv=(o.payments||[]).reduce(function(s,p){return s+p.amount;},0);
+    if(totalPaidWithAdv===0) o.paymentStatus = o.advance>=(o.amount||0) ? 'Paid' : 'Partial';
+  }
   saveDB(); renderOrd(); updateDash(); updateBadges(); closeM('m-ord'); toast('✅ Order saved!');
 }
 function editOrd(id){
