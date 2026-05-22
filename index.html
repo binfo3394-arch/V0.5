@@ -5405,6 +5405,7 @@ setTimeout(function(){
           <select id="staff-comm-base"><option value="revenue">On Revenue</option><option value="profit">On Profit</option></select>
         </div>
         <div class="fg"><label>🔧 Repair Commission Rate (%) <span style="color:var(--warning);font-size:10px">— repair cost ගෙන් %</span></label><input type="number" id="staff-repair-comm" placeholder="e.g. 10" min="0" max="100" step="0.5" value="0"></div>
+        <div class="fg"><label>🌐 Online Order Commission Rate (%) <span style="color:var(--info);font-size:10px">— order amount ගෙන් %</span></label><input type="number" id="staff-order-comm" placeholder="e.g. 5" min="0" max="100" step="0.5" value="0"></div>
         <div class="fg"><label>Status</label>
           <select id="staff-status"><option>Active</option><option>Inactive</option></select>
         </div>
@@ -5889,8 +5890,8 @@ function renderStaff() {
     var salesComm = commBase * (s.commRate||0) / 100;
     // Repair commission
     var repairComm = repairRevenue * (s.repairCommRate||0) / 100;
-    // Order commission (use same sales commission rate)
-    var orderComm = orderRevenue * (s.commRate||0) / 100;
+    // Order commission (use separate order commission rate)
+    var orderComm = orderRevenue * (s.orderCommRate||0) / 100;
     var commEarned = salesComm + repairComm + orderComm;
 
     // Commission payment tracking
@@ -5913,6 +5914,12 @@ function renderStaff() {
           '🔧 Repair: '+(s.repairCommRate||0)+'%'+
           ((s.repairCommRate===0||!s.repairCommRate)?
             ' <button class="btn bsm" style="background:rgba(255,171,0,0.2);color:var(--warning);border:1px solid rgba(255,171,0,0.4);padding:1px 7px;font-size:10px" onclick="editStaff('+s.id+')">⚠️ Set</button>':
+            '')+
+        '</span>'+
+        '<br><span style="font-size:11px;color:'+(s.orderCommRate>0?'var(--info)':'var(--danger)')+'">'+
+          '🌐 Order: '+(s.orderCommRate||0)+'%'+
+          ((s.orderCommRate===0||!s.orderCommRate)?
+            ' <button class="btn bsm" style="background:rgba(0,180,255,0.15);color:var(--info);border:1px solid rgba(0,180,255,0.3);padding:1px 7px;font-size:10px" onclick="editStaff('+s.id+')">⚠️ Set</button>':
             '')+
         '</span></td>'+
       '<td>'+
@@ -5963,6 +5970,7 @@ function openStaffModal(id) {
   document.getElementById('staff-comm').value = s ? (s.commRate||0) : 0;
   document.getElementById('staff-comm-base').value = s ? (s.commBase||'revenue') : 'revenue';
   document.getElementById('staff-repair-comm').value = s ? (s.repairCommRate||0) : 0;
+  document.getElementById('staff-order-comm').value = s ? (s.orderCommRate||0) : 0;
   document.getElementById('staff-status').value = s ? (s.status||'Active') : 'Active';
   // Highlight repair commission field if it's 0 and role is Technician
   var rcField = document.getElementById('staff-repair-comm');
@@ -5993,6 +6001,7 @@ function saveStaff() {
     commRate: parseFloat(document.getElementById('staff-comm').value)||0,
     commBase: document.getElementById('staff-comm-base').value,
     repairCommRate: parseFloat(document.getElementById('staff-repair-comm').value)||0,
+    orderCommRate: parseFloat(document.getElementById('staff-order-comm').value)||0,
     status: document.getElementById('staff-status').value
   };
   if (!db.staff) db.staff = [];
@@ -6095,7 +6104,7 @@ function updateManualPayPending() {
   var orderRevenue = ordsMonth.reduce(function(a,o){ return a+(o.amount||0);},0);
 
   var commBase = staff.commBase==='profit' ? staffProfit : staffRevenue;
-  var commEarned = commBase*(staff.commRate||0)/100 + repairRevenue*(staff.repairCommRate||0)/100 + orderRevenue*(staff.commRate||0)/100;
+  var commEarned = commBase*(staff.commRate||0)/100 + repairRevenue*(staff.repairCommRate||0)/100 + orderRevenue*(staff.orderCommRate||0)/100;
   var paidSum = commPayments.filter(function(p){ return p.staffId===staffId && p.date>=monthStart.getTime(); }).reduce(function(a,p){ return a+(p.amount||0);},0);
   var pending = Math.max(0, Math.round(commEarned - paidSum));
 
