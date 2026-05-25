@@ -2256,6 +2256,13 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
       </div>
 
       <!-- ORDERS -->
+<style>
+#pg-orders .tcard { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+#pg-orders .tcard table { min-width:900px; table-layout:fixed; }
+#pg-orders .tcard td, #pg-orders .tcard th { overflow:hidden; text-overflow:ellipsis; }
+#pg-orders .tcard td:nth-child(3) { white-space:normal; word-break:break-word; font-size:12px; overflow:visible; }
+#pg-orders .tcard td:nth-child(8) { white-space:nowrap; overflow:visible; text-overflow:clip; }
+</style>
       <div id="pg-orders" class="page">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
           <div class="estitle">🌐 Online Orders</div>
@@ -2276,7 +2283,7 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
           <button class="btn bo bsm ord-filter-btn" data-f="cat:other" onclick="setOrdF('cat:other')">📦 Other</button>
         </div>
         <div class="sbar"><span>🔍</span><input id="ord-q" placeholder="Customer name / phone search..." oninput="renderOrd()"></div>
-        <div class="tcard"><table><thead><tr><th>ID</th><th>Customer</th><th>Service</th><th>Amount</th><th>Status</th><th>Staff</th><th>Date</th><th>Actions</th></tr></thead><tbody id="ord-tbl"></tbody></table></div>
+        <div class="tcard" style="overflow-x:auto;-webkit-overflow-scrolling:touch"><table style="min-width:1020px;table-layout:fixed;width:100%"><thead><tr><th style="width:65px">ID</th><th style="width:125px">Customer</th><th style="width:230px">Service</th><th style="width:95px">Amount</th><th style="width:105px">Status</th><th style="width:75px">Staff</th><th style="width:85px">Date</th><th style="width:225px">Actions</th></tr></thead><tbody id="ord-tbl"></tbody></table></div>
       </div>
 
       <!-- MESSAGES PAGE -->
@@ -4721,7 +4728,7 @@ function finalizeAudit() {
       p.stock = auditData[p.id];
     }
   });
-  db.settings.lastAuditDate = new Date().toLocaleDateString();
+  db.settings.lastAuditDate = new Date().toLocaleDateString('en-GB');
   auditData={};
   saveDB(); renderStockAudit(); toast('✅ Audit finalized! Stock updated.');
 }
@@ -5916,9 +5923,9 @@ function renderStaff() {
             ' <button class="btn bsm" style="background:rgba(255,171,0,0.2);color:var(--warning);border:1px solid rgba(255,171,0,0.4);padding:1px 7px;font-size:10px" onclick="editStaff('+s.id+')">⚠️ Set</button>':
             '')+
         '</span>'+
-        '<br><span style="font-size:11px;color:'+(s.orderCommRate>0?'var(--info)':'var(--danger)')+'">'+
+        '<br><span style="font-size:11px;color:'+(s.orderCommRate>0?'var(--info)':'var(--muted)')+'">'+
           '🌐 Order: '+(s.orderCommRate||0)+'%'+
-          ((s.orderCommRate===0||!s.orderCommRate)?
+          ((s.orderCommRate===0||!s.orderCommRate)&&(s.role==='Sales'||s.role==='Cashier'||s.role==='Other')?
             ' <button class="btn bsm" style="background:rgba(0,180,255,0.15);color:var(--info);border:1px solid rgba(0,180,255,0.3);padding:1px 7px;font-size:10px" onclick="editStaff('+s.id+')">⚠️ Set</button>':
             '')+
         '</span></td>'+
@@ -7759,7 +7766,7 @@ function renderDashCharts() {
   // Monthly revenue data (current + prev year)
   function getMonthlyRev(year) {
     return months.map(function(_, mi) {
-      return db.invoices.filter(function(inv) {
+      return (db.invoices||[]).filter(function(inv) {
         var d = new Date(inv.date.split('/').reverse().join('-'));
         return d.getFullYear() === year && d.getMonth() === mi;
       }).reduce(function(s, i) { return s + (i.total||0); }, 0);
@@ -7823,9 +7830,9 @@ function renderDashCharts() {
 
   // ---- 2. Donut Chart - Sales by Category ----
   var catMap = {};
-  db.invoices.forEach(function(inv) {
-    inv.items.forEach(function(it) {
-      var p = db.products.find(function(x){ return x.id === it.id; });
+  (db.invoices||[]).forEach(function(inv) {
+    (inv.items||[]).forEach(function(it) {
+      var p = (db.products||[]).find(function(x){ return x.id === it.id; });
       var cat = p ? p.category : 'Other';
       catMap[cat] = (catMap[cat]||0) + (it.price * it.qty);
     });
@@ -7905,7 +7912,7 @@ function renderDashCharts() {
   }
 
   // ---- 4. Radar Chart - Stock Levels ----
-  var topProds = db.products.slice().sort(function(a,b){ return b.stock - a.stock; }).slice(0, 7);
+  var topProds = (db.products||[]).slice().sort(function(a,b){ return b.stock - a.stock; }).slice(0, 7);
   destroyChart('radar');
   var radCtx = document.getElementById('d-chart-radar');
   if (radCtx) {
@@ -7982,9 +7989,9 @@ function updateDash() {
   var lbls={today:'('+now.toLocaleDateString('en-GB')+')',monthly:'('+now.toLocaleString('en-GB',{month:'long',year:'numeric'})+')',yearly:'('+now.getFullYear()+')',all:'(All Time)'};
   if(lbl) lbl.textContent=lbls[dashPeriod]||'';
 
-  var filtInv=db.invoices.filter(function(i){ return periodFilter(i.date); });
-  var filtOrd=db.orders.filter(function(o){ return periodFilter(o.date); });
-  var filtRep=db.repairs.filter(function(r){ return periodFilter(r.date); });
+  var filtInv=(db.invoices||[]).filter(function(i){ return periodFilter(i.date); });
+  var filtOrd=(db.orders||[]).filter(function(o){ return periodFilter(o.date); });
+  var filtRep=(db.repairs||[]).filter(function(r){ return periodFilter(r.date); });
 
   var invRev = filtInv.reduce(function(s,i){ return s+(i.total||0); },0);
   var ordRev = filtOrd.reduce(function(s,o){
@@ -8061,10 +8068,10 @@ function updateDash() {
   el = document.getElementById('d-acc-sub'); if(el) el.textContent = accSales+' item(s) sold';
 
   var rt = document.getElementById('d-rep-tbl');
-  if (rt) rt.innerHTML = db.repairs.length ? db.repairs.slice(-5).reverse().map(function(r){ return '<tr><td>'+esc(r.customer)+'</td><td>'+esc(r.device)+'</td><td>'+sbadge(r.status)+'</td></tr>'; }).join('') : '<tr><td colspan="3" class="empty">No repairs</td></tr>';
+  if (rt) rt.innerHTML = (db.repairs||[]).length ? (db.repairs||[]).slice(-5).reverse().map(function(r){ return '<tr><td>'+esc(r.customer)+'</td><td>'+esc(r.device)+'</td><td>'+sbadge(r.status)+'</td></tr>'; }).join('') : '<tr><td colspan="3" class="empty">No repairs</td></tr>';
   var ot = document.getElementById('d-ord-tbl');
-  if (ot) ot.innerHTML = db.orders.length ? db.orders.slice(-5).reverse().map(function(o){ return '<tr><td><b>#'+String(o.id).slice(-5)+'</b></td><td>'+esc(o.customer)+'</td><td>'+sbadge(o.status)+'</td></tr>'; }).join('') : '<tr><td colspan="3" class="empty">No orders</td></tr>';
-  var ls = db.products.filter(function(p){ return p.stock <= p.minStock; });
+  if (ot) ot.innerHTML = (db.orders||[]).length ? (db.orders||[]).slice(-5).reverse().map(function(o){ return '<tr><td><b>#'+String(o.id).slice(-5)+'</b></td><td>'+esc(o.customer)+'</td><td>'+sbadge(o.status)+'</td></tr>'; }).join('') : '<tr><td colspan="3" class="empty">No orders</td></tr>';
+  var ls = (db.products||[]).filter(function(p){ return p.stock <= (p.minStock||2); });
   var lel = document.getElementById('d-lowstock');
   if (lel) lel.innerHTML = ls.length ? '<table><thead><tr><th>Product</th><th>Category</th><th>Stock</th><th>Min</th><th>Status</th></tr></thead><tbody>' + ls.map(function(p){
     var isOut=p.stock===0;
@@ -8570,9 +8577,10 @@ function completeSale(){
   var tax=after*taxP/100;
   var ttl=after+tax;
   var custId=document.getElementById('cart-cust')?document.getElementById('cart-cust').value:'';
-  var cust=db.customers.find(function(c){ return c.id==custId; });
+  var cust=(db.customers||[]).find(function(c){ return c.id==custId; });
   var prefix=db.settings.prefix||'INV';
-  var maxNum = db.invoices.reduce(function(m,i){
+  // FIX: prefix-aware invoice numbering — restart from 1 when prefix changes
+  var maxNum = (db.invoices||[]).filter(function(i){ return (i.invNo||'').startsWith(prefix+'-'); }).reduce(function(m,i){
     var n = parseInt((i.invNo||'').replace(/\D+/g,''),10) || 0;
     return n > m ? n : m;
   }, 0);
@@ -8580,8 +8588,29 @@ function completeSale(){
   var cashierStaffId = cashierSel ? (parseInt(cashierSel.value,10)||0) : 0;
   var cashierStaff = cashierStaffId ? (db.staff||[]).find(function(s){ return s.id===cashierStaffId; }) : null;
   var inv={ id:Date.now(), invNo:prefix+'-'+String(maxNum+1).padStart(4,'0'), customer:cust?cust.name:'Walk-in', customerId:custId, items:cart.map(function(c){ return Object.assign({},c); }), subtotal:sub, discount:disc, tax:tax, taxPct:taxP, total:ttl, payment:selPayment, date:new Date().toLocaleDateString('en-GB'), staffId:cashierStaffId, cashierName:cashierStaff?cashierStaff.name:'' };
-  cart.forEach(function(c){ if(!c.custom){ var p=db.products.find(function(x){ return x.id===c.id; }); if(p){ p.stock-=c.qty; logStock(p.id, p.name, 'Sale', -c.qty, p.stock, inv.invNo, true); }}});
+  cart.forEach(function(c){ if(!c.custom){ var p=(db.products||[]).find(function(x){ return x.id===c.id; }); if(p){ p.stock-=c.qty; logStock(p.id, p.name, 'Sale', -c.qty, p.stock, inv.invNo, true); }}});
   db.invoices.push(inv);
+  // FIX: Coupon usedCount increment after sale
+  var couponEl=document.getElementById('c-coupon');
+  if(couponEl && couponEl.value){
+    var usedCode=couponEl.value.toUpperCase().trim();
+    var usedCoupon=(db.coupons||[]).find(function(c){ return c.code===usedCode; });
+    if(usedCoupon){ usedCoupon.usedCount=(usedCoupon.usedCount||0)+1; }
+    couponEl.value='';
+    var msgEl=document.getElementById('c-coupon-msg'); if(msgEl) msgEl.style.display='none';
+  }
+  // FIX: Gift Voucher remaining balance deduct after sale
+  cart.forEach(function(c){
+    if(c.custom && c.voucherCode){
+      var v=(db.giftVouchers||[]).find(function(x){ return x.code===c.voucherCode; });
+      if(v){
+        var used=Math.abs(c.price*(c.qty||1));
+        var prev=v.remaining!==undefined?v.remaining:v.value;
+        v.remaining=Math.max(0,prev-used);
+        if(v.remaining<=0){ v.status='redeemed'; }
+      }
+    }
+  });
   selPayment = 'Cash';
   document.querySelectorAll('.paybtn').forEach(function(b){ b.classList.remove('ap'); });
   var cashBtn = document.querySelector('#pg-cart .paybtn');
@@ -9087,9 +9116,9 @@ function renderOrd(){
   tb.innerHTML=rows.length?rows.slice().reverse().map(function(o){
     var ps=o.paymentStatus||'Unpaid';
     var pc=ps==='Paid'?'bs':ps==='Partial'?'bw':'bd';
-    var svcDisplay=o.items&&o.items.length>1?'<b>'+o.items.length+' items</b><br>'+o.items.map(function(i){return '<small style="color:var(--muted)">• '+i.desc+'</small>';}).join('<br>'):o.service+(o.frameSize?'<br><small style="color:var(--muted)">🖼️ '+o.frameSize+'</small>':'');
+    var svcFull=o.items&&o.items.length>1?o.items[0].desc+(o.items.length>1?' <span style="color:var(--muted);font-size:10px">(+' +(o.items.length-1)+' more)</span>':''):o.service; var svcShort=svcFull.length>60?svcFull.slice(0,58)+'…':svcFull; var svcDisplay='<span title="'+o.service.replace(/"/g,'&quot;')+'">'+svcShort+'</span>'+(o.frameSize?'<br><small style="color:var(--muted)">🖼️ '+o.frameSize+'</small>':'')+(o.platform?'<br><small style="color:var(--muted);font-size:10px">'+o.platform+'</small>':'');
     var assignedStaff = o.staffId ? ((db.staff||[]).find(function(s){return String(s.id)===String(o.staffId);})||{}).name||'—' : '<span style="color:var(--muted);font-size:11px">—</span>';
-    return '<tr><td><b>#'+String(o.id).slice(-5)+'</b></td><td>'+o.customer+'<br><small style="color:var(--muted)">'+o.phone+'</small></td><td>'+svcDisplay+'<br><small style="color:var(--muted)">'+o.platform+'</small></td><td><b>Rs. '+(o.amount||0).toFixed(2)+'</b>'+(o.delivery>0?'<br><small style="color:var(--muted)">🚚 Rs.'+o.delivery.toFixed(2)+'</small>':'')+(o.advance>0?'<br><small style="color:var(--success)">Adv: Rs.'+o.advance.toFixed(0)+'</small>':'')+'</td><td>'+sbadge(o.status)+'<br><span class="badge '+pc+'" style="margin-top:2px">'+(ps==='Paid'?'💰 Paid':ps==='Partial'?'⚠️ Partial':'❌ Unpaid')+'</span></td><td style="font-size:12px">'+assignedStaff+'</td><td>'+o.date+'</td><td style="white-space:nowrap"><button class="btn bo bsm" onclick="editOrd('+o.id+')" style="margin-right:3px">✏️</button><button class="btn bs2 bsm" onclick="cycleOrd('+o.id+')" style="margin-right:3px">→</button><button class="btn bp2 bsm" onclick="showOBill('+o.id+')" style="margin-right:3px">🧾</button><button class="btn bsm" style="background:rgba(0,230,118,0.15);color:var(--success);border:1px solid rgba(0,230,118,0.3);margin-right:3px" onclick="openPay('+o.id+')">💳</button><button class="btn bd2 bsm" onclick="delOrd('+o.id+')">🗑️</button></td></tr>';
+    return '<tr><td><b>#'+String(o.id).slice(-5)+'</b></td><td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+o.customer+'<br><small style="color:var(--muted)">'+o.phone+'</small></td><td style="word-break:break-word;white-space:normal;font-size:12px">'+svcDisplay+'</td><td><b>Rs. '+(o.amount||0).toFixed(2)+'</b>'+(o.delivery>0?'<br><small style="color:var(--muted)">🚚 Rs.'+o.delivery.toFixed(2)+'</small>':'')+(o.advance>0?'<br><small style="color:var(--success)">Adv: Rs.'+o.advance.toFixed(0)+'</small>':'')+'</td><td>'+sbadge(o.status)+'<br><span class="badge '+pc+'" style="margin-top:2px">'+(ps==='Paid'?'💰 Paid':ps==='Partial'?'⚠️ Partial':'❌ Unpaid')+'</span></td><td style="font-size:12px">'+assignedStaff+'</td><td>'+o.date+'</td><td style="white-space:nowrap"><div style="display:flex;gap:2px;align-items:center"><button class="btn bo bsm" onclick="editOrd('+o.id+')">✏️</button><button class="btn bs2 bsm" onclick="cycleOrd('+o.id+')">→</button><button class="btn bp2 bsm" onclick="showOBill('+o.id+')">🧾</button><button class="btn bsm" style="background:rgba(0,230,118,0.15);color:var(--success);border:1px solid rgba(0,230,118,0.3)" onclick="openPay('+o.id+')">💳</button><button class="btn bd2 bsm" onclick="delOrd('+o.id+')">🗑️</button></div></td></tr>';
   }).join(''):'<tr><td colspan="8" class="empty"><div class="ei">🌐</div>No orders</td></tr>';
 }
 function saveOrd(){
@@ -10644,7 +10673,7 @@ function renderAnalytics(){
   var yr=parseInt(yrSel?yrSel.value:new Date().getFullYear());
   var months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   var totalRev=db.invoices.reduce(function(s,i){ return s+(i.total||0); },0);
-  var totalCost=db.invoices.reduce(function(s,inv){ return s+inv.items.reduce(function(ss,it){ var p=db.products.find(function(x){ return x.id===it.id; }); return ss+(p?(p.cost||0)*it.qty:0); },0); },0);
+  var totalCost=(db.invoices||[]).reduce(function(s,inv){ return s+(inv.items||[]).reduce(function(ss,it){ var p=(db.products||[]).find(function(x){ return x.id===it.id; }); return ss+(p?(p.cost||0)*it.qty:0); },0); },0);
   var totalRepairIncome=db.repairs.reduce(function(s,r){ return s+(r.cost||0); },0);
   var totalOrderIncome=db.orders.reduce(function(s,o){ return s+(o.payments||[]).reduce(function(ps,p){ return ps+(p.amount||0); },0); },0);
   var totalExpenses=(db.expenses||[]).reduce(function(s,e){ return s+(e.amount||0); },0);
@@ -10715,7 +10744,7 @@ function renderAnalytics(){
   var pmEl=document.getElementById('an-payments');
   if(pmEl) pmEl.innerHTML=Object.keys(pmMap).length?Object.keys(pmMap).map(function(m){ var pct=Math.round((pmMap[m]/totalRev)*100)||0; return '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:8px;align-items:center"><span>'+m+'</span><div style="flex:1;margin:0 8px"><div class="pbar"><div class="pfill" style="width:'+pct+'%;background:var(--success);transition:width 0.8s ease"></div></div></div><span style="color:var(--success)">'+pct+'%</span></div>'; }).join(''):'<div class="empty">No data</div>';
   var catMap={};
-  db.invoices.forEach(function(inv){ inv.items.forEach(function(it){ var p=db.products.find(function(x){ return x.id===it.id; }); var cat=p?p.category:'Other'; catMap[cat]=(catMap[cat]||0)+it.price*it.qty; }); });
+  (db.invoices||[]).forEach(function(inv){ (inv.items||[]).forEach(function(it){ var p=(db.products||[]).find(function(x){ return x.id===it.id; }); var cat=p?p.category:'Other'; catMap[cat]=(catMap[cat]||0)+it.price*it.qty; }); });
   var catEl=document.getElementById('an-categories');
   if(catEl) catEl.innerHTML=Object.keys(catMap).length?Object.keys(catMap).map(function(c){ var pct=totalRev?Math.round((catMap[c]/totalRev)*100):0; return '<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span>'+c+'</span><span style="color:var(--warning)">'+pct+'%</span></div><div class="pbar"><div class="pfill" style="width:'+pct+'%;background:var(--warning);transition:width 0.8s ease"></div></div></div>'; }).join(''):'<div class="empty">No data</div>';
   // Populate forecast product dropdown always (keeps up with new products)
@@ -10733,7 +10762,7 @@ function renderAnalytics(){
 // ==================== BEST / WORST SELLERS ====================
 function anRenderTopProducts(){
   var itemMap={};
-  db.invoices.forEach(function(inv){ inv.items.forEach(function(it){ if(!itemMap[it.name]) itemMap[it.name]={qty:0,rev:0,cost:0}; itemMap[it.name].qty+=it.qty; itemMap[it.name].rev+=it.price*it.qty; var p=db.products.find(function(x){ return x.id===it.id; }); if(p) itemMap[it.name].cost+=(p.cost||0)*it.qty; }); });
+  (db.invoices||[]).forEach(function(inv){ (inv.items||[]).forEach(function(it){ if(!itemMap[it.name]) itemMap[it.name]={qty:0,rev:0,cost:0}; itemMap[it.name].qty+=it.qty; itemMap[it.name].rev+=it.price*it.qty; var p=(db.products||[]).find(function(x){ return x.id===it.id; }); if(p) itemMap[it.name].cost+=(p.cost||0)*it.qty; }); });
   var all=Object.keys(itemMap).map(function(n){ return {name:n,qty:itemMap[n].qty,rev:itemMap[n].rev,profit:itemMap[n].rev-itemMap[n].cost}; }).sort(function(a,b){ return b.rev-a.rev; });
   var totalRev=all.reduce(function(s,x){ return s+x.rev; },0)||1;
   function renderList(arr,elId,limit,reverse){
@@ -12114,6 +12143,7 @@ function saveReturn(){
   var cust=document.getElementById('ret-cust').value.trim();
   var amount=parseFloat(document.getElementById('ret-amount').value)||0;
   if(!cust||!amount){ toast('❌ Customer & Amount required','var(--danger)'); return; }
+  var newStatus=document.getElementById('ret-status').value;
   var r={
     id:id?parseInt(id):Date.now(),
     invNo:document.getElementById('ret-inv').value.trim(),
@@ -12122,12 +12152,35 @@ function saveReturn(){
     amount:amount,
     reason:document.getElementById('ret-reason').value,
     method:document.getElementById('ret-method').value,
-    status:document.getElementById('ret-status').value,
+    status:newStatus,
     notes:document.getElementById('ret-notes').value.trim(),
     date:new Date().toLocaleDateString('en-GB')
   };
+  // FIX: Stock restore when return is Approved or Completed (only once — check previous status)
+  var prevStatus='';
+  if(id){
+    var existing=(db.returns||[]).find(function(x){ return x.id===r.id; });
+    if(existing) prevStatus=existing.status||'';
+  }
+  var nowApproved=(newStatus==='Approved'||newStatus==='Completed');
+  var wasApproved=(prevStatus==='Approved'||prevStatus==='Completed');
+  if(nowApproved && !wasApproved && r.invNo){
+    // Find original invoice and restore stock for each item
+    var origInv=(db.invoices||[]).find(function(i){ return i.invNo===r.invNo; });
+    if(origInv){
+      (origInv.items||[]).forEach(function(item){
+        if(!item.custom){
+          var p=(db.products||[]).find(function(x){ return x.id===item.id; });
+          if(p){ p.stock+=(item.qty||1); logStock(p.id,p.name,'Return',+(item.qty||1),p.stock,r.invNo); }
+        }
+      });
+      toast('✅ Return saved & stock restored!');
+    } else { toast('✅ Return saved! (Invoice not found — stock not restored)','var(--warning)'); }
+  } else {
+    toast('✅ Return saved!');
+  }
   if(id){ var i=db.returns.findIndex(function(x){ return x.id===r.id; }); if(i>=0) db.returns[i]=r; } else db.returns.push(r);
-  saveDB(); renderReturns(); closeM('m-return'); toast('✅ Return saved!');
+  saveDB(); renderReturns(); closeM('m-return');
 }
 function editReturn(id){
   var r=db.returns.find(function(x){ return x.id===id; }); if(!r) return;
@@ -12280,12 +12333,15 @@ function closeCashSession(){
   var closeAmt=parseFloat(document.getElementById('cr-close-amt').value)||0;
   var todayInv=db.invoices.filter(function(i){ return i.date===todayStr; });
   var cashSales=todayInv.filter(function(i){ return i.payment==='Cash'; }).reduce(function(s,i){ return s+(i.total||0); },0);
-  var expected=session.openAmt+cashSales;
+  // FIX: subtract today's cash expenses for accurate variance
+  var cashExp=(db.expenses||[]).filter(function(e){ return e.paidBy==='Cash'&&e.date===todayStr; }).reduce(function(s,e){ return s+(e.amount||0); },0);
+  var expected=session.openAmt+cashSales-cashExp;
   session.closed=true;
   session.closeAmt=closeAmt;
   session.closedTime=new Date().toLocaleTimeString('en-GB');
   session.variance=closeAmt-expected;
   session.cashSales=cashSales;
+  session.cashExpenses=cashExp;
   saveDB(); renderCashRegister(); toast('✅ Register closed! Variance: Rs.'+session.variance.toFixed(2));
 }
 function calcCashVariance(){
@@ -12296,7 +12352,9 @@ function calcCashVariance(){
   var closeAmt=parseFloat(document.getElementById('cr-close-amt').value)||0;
   var todayInv=db.invoices.filter(function(i){ return i.date===todayStr; });
   var cashSales=todayInv.filter(function(i){ return i.payment==='Cash'; }).reduce(function(s,i){ return s+(i.total||0); },0);
-  var expected=session.openAmt+cashSales;
+  // FIX: subtract cash expenses
+  var cashExp=(db.expenses||[]).filter(function(e){ return e.paidBy==='Cash'&&e.date===todayStr; }).reduce(function(s,e){ return s+(e.amount||0); },0);
+  var expected=session.openAmt+cashSales-cashExp;
   var variance=closeAmt-expected;
   var el=document.getElementById('cr-variance-display'); if(!el) return;
   el.innerHTML='Expected: <b>Rs.'+expected.toFixed(2)+'</b> | Variance: <b style="color:'+(variance<0?'var(--danger)':'var(--success)')+'">Rs.'+(variance>=0?'+':'')+variance.toFixed(2)+'</b>';
@@ -12610,7 +12668,7 @@ function renderBundles(){
     return '<div class="scard s1" style="cursor:default"><div style="font-size:28px;margin-bottom:6px">'+(b.icon||'🎁')+'</div>'+
       '<div style="font-weight:800;font-size:14px;margin-bottom:4px">'+b.name+'</div>'+
       '<div style="font-size:11px;color:var(--muted);margin-bottom:8px">'+b.desc+'</div>'+
-      '<div style="font-size:11px;margin-bottom:6px">'+b.items.map(function(i){ var p=db.products.find(function(x){ return x.id===i.prodId; }); return p?'• '+p.name+' ×'+i.qty:'?'; }).join('<br>')+'</div>'+
+      '<div style="font-size:11px;margin-bottom:6px">'+b.items.map(function(i){ var p=(db.products||[]).find(function(x){ return x.id===i.prodId; }); return p?'• '+p.name+' ×'+i.qty:'?'; }).join('<br>')+'</div>'+
       '<div style="font-size:11px;color:var(--muted);text-decoration:line-through">Rs. '+cost.toFixed(2)+'</div>'+
       '<div style="font-size:18px;font-weight:800;color:var(--primary)">Rs. '+b.price.toFixed(2)+'</div>'+
       (saving>0?'<div style="font-size:11px;color:var(--success)">Save Rs. '+saving.toFixed(2)+'!</div>':'')+
@@ -13600,7 +13658,7 @@ completeSale = function(){
   if(inv){
     if(inv.customerId){
       var cust=db.customers.find(function(c){ return c.id==inv.customerId; });
-      if(cust) addLoyaltyPointsForSale(inv.customerId, cust.name, inv.total, inv.invNo);
+      if(cust) addLoyaltyPointsForSale(inv.customerId, cust.name, inv.subtotal||inv.total, inv.invNo); // FIX: use subtotal so voucher/coupon discount doesn't reduce points
     }
     logActivity('SALE','Sale completed',inv.invNo+' Rs.'+inv.total.toFixed(0)+' '+(inv.customer||'Walk-in'));
     saveDB();
