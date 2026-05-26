@@ -2936,13 +2936,13 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
           <div class="scard s1"><div style="font-size:22px">👷</div><div class="sval" id="staff-count">0</div><div class="slabel">Total Staff</div></div>
           <div class="scard s2"><div style="font-size:22px">💰</div><div class="sval" id="staff-total-comm">Rs. 0</div><div class="slabel">Total Commission This Month</div></div>
           <div class="scard s3"><div style="font-size:22px">🏆</div><div class="sval" id="staff-top">—</div><div class="slabel">Top Performer</div></div>
-          <div class="scard s4"><div style="font-size:22px">🔧</div><div class="sval" id="staff-repairs-done">0</div><div class="slabel">Repairs Completed</div></div>
+          <div class="scard s4"><div style="font-size:22px">🔧</div><div class="sval" id="staff-repairs-done">0</div><div class="slabel">Repairs Done (Shop Total)</div></div>
         </div>
         <div class="tcard"><table><thead><tr><th>Staff Name</th><th>Role / Status</th><th>Sales (This Month)</th><th>Repairs Done (This Month)</th><th>Online Orders (This Month)</th><th>Commission Rate</th><th>Earned</th><th>Paid</th><th>Pending</th><th>Actions</th></tr></thead><tbody id="staff-tbl"></tbody></table></div>
         <div id="comm-history-wrap" style="margin-top:16px;display:none">
           <div class="tcard">
             <div class="thead2"><h3>💳 Commission Payment History</h3></div>
-            <table><thead><tr><th>Date</th><th>Staff</th><th>Type</th><th>Amount</th><th>Paid By</th><th>Note</th></tr></thead><tbody id="comm-hist-tbl"></tbody></table>
+            <table><thead><tr><th>Date</th><th>Staff</th><th>Type</th><th>Amount</th><th>Paid By</th><th>Note</th><th></th></tr></thead><tbody id="comm-hist-tbl"></tbody></table>
           </div>
         </div>
       </div>
@@ -3887,7 +3887,7 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
         <div class="fg"><label>⏰ Due Date</label><input id="r-due" type="date"></div>
         <div class="fg"><label>Advance Paid (Rs.)</label><input id="r-adv" type="number" min="0" placeholder="0.00"></div>
         <div class="fg"><label>🔴 Priority</label><select id="r-priority"><option value="Normal">Normal</option><option value="High">🔴 High</option><option value="Medium">🟡 Medium</option><option value="Low">🟢 Low</option></select></div>
-        <div class="fg"><label>👨‍🔧 Technician</label><input id="r-tech" placeholder="Assigned technician name" list="r-tech-list" autocomplete="off"><datalist id="r-tech-list"></datalist></div>
+        <div class="fg"><label>👨‍🔧 Technician</label><input id="r-tech" placeholder="Assigned technician name" list="r-tech-list" autocomplete="off" oninput="syncRepTechId(this.value)"><datalist id="r-tech-list"></datalist><input type="hidden" id="r-tech-id"></div>
         <div class="fg full"><label>📝 Customer Notes (Bill ේ show වෙයි)</label><textarea id="r-notes" rows="2"></textarea></div>
         <div class="fg full"><label>🔧 Technician Notes (Internal — bill ේ show නොවෙයි)</label><textarea id="r-technotes" rows="2" style="border-color:rgba(255,171,0,0.4);background:rgba(255,171,0,0.04)" placeholder="Internal notes, parts used, diagnosis..."></textarea></div>
         <div class="fg full" style="border-top:1px solid var(--border);padding-top:12px;margin-top:6px">
@@ -5861,14 +5861,15 @@ function renderStaff() {
   var commPayments = db.commPayments || [];
   var now = new Date();
   var monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  
+  var monthEnd   = new Date(now.getFullYear(), now.getMonth()+1, 1);
+
   var totalComm = 0, topName = '—', topComm = 0;
   var repairsDone = repairs.filter(function(r){ return r.status==='Delivered'||r.status==='Done'; }).length;
   
   tbody.innerHTML = staff.length ? staff.map(function(s) {
     // Sales: match by staffId (POS invoices)
     var staffInvs = invoices.filter(function(inv) {
-      var d=parseDate(inv.date); return inv.staffId===s.id && d && d>=monthStart;
+      var d=parseDate(inv.date); return String(inv.staffId)===String(s.id) && d && d>=monthStart && d<monthEnd;
     });
     var staffRevenue = staffInvs.reduce(function(a,inv){ return a+(inv.total||0); }, 0);
     var staffProfit = staffInvs.reduce(function(a,inv) {
@@ -5879,21 +5880,22 @@ function renderStaff() {
       });
       return a+p;
     }, 0);
-    // Repairs: match by tech name (r.tech === s.name), this month
+    // Repairs: match by techId (new records) OR tech name fallback (legacy records)
     var staffRepsAll = repairs.filter(function(r){
+      if (r.techId) return String(r.techId)===String(s.id) && (r.status==='Delivered'||r.status==='Done');
       return r.tech && r.tech.trim().toLowerCase()===s.name.trim().toLowerCase() && (r.status==='Delivered'||r.status==='Done');
     });
     var staffRepsMonth = staffRepsAll.filter(function(r){
-      var d=parseDate(r.date); return d && d>=monthStart;
+      var d=parseDate(r.date); return d && d>=monthStart && d<monthEnd;
     });
     var repairRevenue = staffRepsMonth.reduce(function(a,r){ return a+(r.cost||0); }, 0);
-    // Online Orders: match by staffId, this month, paid or delivered
+    // Online Orders: match by staffId, this month
     var staffOrdsMonth = orders.filter(function(o){
-      var d=parseDate(o.date); return String(o.staffId)===String(s.id) && d && d>=monthStart;
+      var d=parseDate(o.date); return String(o.staffId)===String(s.id) && d && d>=monthStart && d<monthEnd;
     });
     var orderRevenue = staffOrdsMonth.reduce(function(a,o){ return a+(o.amount||0); }, 0);
     // Sales commission (on POS invoices)
-    var commBase = s.commBase==='profit' ? staffProfit : staffRevenue;
+    var commBase = Math.max(0, s.commBase==='profit' ? staffProfit : staffRevenue);
     var salesComm = commBase * (s.commRate||0) / 100;
     // Repair commission
     var repairComm = repairRevenue * (s.repairCommRate||0) / 100;
@@ -5902,16 +5904,16 @@ function renderStaff() {
     var commEarned = salesComm + repairComm + orderComm;
 
     // Commission payment tracking
-    var paidThisMonth = commPayments.filter(function(p){ return p.staffId===s.id && p.date>=monthStart.getTime(); });
+    var paidThisMonth = commPayments.filter(function(p){ return String(p.staffId)===String(s.id) && p.date>=monthStart.getTime() && p.date<monthEnd.getTime(); });
     var paidSum = paidThisMonth.reduce(function(a,p){ return a+(p.amount||0); },0);
     var pending = Math.max(0, Math.round(commEarned - paidSum));
 
-    totalComm += commEarned;
-    if (commEarned > topComm) { topComm = commEarned; topName = s.name; }
+    if (s.status !== 'Inactive') totalComm += commEarned;
+    if (s.status !== 'Inactive' && commEarned > topComm) { topComm = commEarned; topName = s.name; }
     var statusBadge = s.status==='Inactive' ? '<span class="badge bd">Inactive</span>' : '<span class="badge bs">Active</span>';
     return '<tr>'+
-      '<td><strong>'+s.name+'</strong><br><span style="font-size:11px;color:var(--muted)">'+s.phone+'</span></td>'+
-      '<td><span class="badge bp">'+s.role+'</span><br>'+statusBadge+'</td>'+
+      '<td><strong>'+esc(s.name)+'</strong><br><span style="font-size:11px;color:var(--muted)">'+esc(s.phone||'')+'</span></td>'+
+      '<td><span class="badge bp">'+esc(s.role)+'</span><br>'+statusBadge+'</td>'+
       '<td>'+staffInvs.length+'<br><span style="font-size:11px;color:var(--muted)">Rs. '+staffRevenue.toLocaleString()+'</span></td>'+
       '<td>'+staffRepsMonth.length+' <span style="font-size:10px;color:var(--muted)">('+staffRepsAll.length+' total)</span><br><span style="font-size:11px;color:var(--info)">Rs. '+repairRevenue.toLocaleString()+'</span></td>'+
       '<td>'+staffOrdsMonth.length+'<br><span style="font-size:11px;color:var(--warning)">Rs. '+orderRevenue.toLocaleString()+'</span></td>'+
@@ -5936,7 +5938,7 @@ function renderStaff() {
         '<br><span style="font-size:10px;color:var(--muted)">POS:'+Math.round(salesComm).toLocaleString()+' Rep:'+Math.round(repairComm).toLocaleString()+' Ord:'+Math.round(orderComm).toLocaleString()+'</span>'+
         (commEarned===0 && (staffRepsAll.length>0||staffInvs.length>0||staffOrdsMonth.length>0)?
           '<br><span style="font-size:10px;color:var(--danger)">⚠️ Rate 0%!</span>':'')+'</td>'+
-      '<td style="font-weight:700;color:'+(paidSum>0?'var(--success)':'var(--muted)')+'">Rs. '+paidSum.toLocaleString()+'</td>'+
+      '<td style="font-weight:700;color:'+(paidSum>0?'var(--success)':'var(--muted)')+'">Rs. '+Math.round(paidSum).toLocaleString()+'</td>'+
       '<td style="font-weight:800;color:'+(pending>0?'var(--warning)':'var(--muted)')+'">Rs. '+pending.toLocaleString()+'</td>'+
       '<td>'+
         (pending>0?'<button class="btn bs bsm" onclick="payCommission('+s.id+','+pending+')">💵 Pay Rs.'+pending.toLocaleString()+'</button>':'<span style="color:var(--muted);font-size:11px">✅ Cleared</span>')+
@@ -5956,11 +5958,12 @@ function renderStaff() {
     if (commPayments.length) {
       histWrap.style.display = 'block';
       histTbl.innerHTML = commPayments.slice().reverse().map(function(p){
-        return '<tr><td>'+new Date(p.date).toLocaleDateString('en-GB')+'</td><td>'+(p.staffName||'—')+'</td>'+
-          '<td><span class="badge bp">'+(p.payType||'Commission')+'</span>'+(p.manual?'<br><span style="font-size:10px;color:var(--muted)">Manual</span>':'')+'</td>'+
+        return '<tr><td>'+new Date(p.date).toLocaleDateString('en-GB')+'</td><td>'+esc(p.staffName||'—')+'</td>'+
+          '<td><span class="badge bp">'+esc(p.payType||'Commission')+'</span>'+(p.manual?'<br><span style="font-size:10px;color:var(--muted)">Manual</span>':'')+'</td>'+
           '<td style="font-weight:700;color:var(--success)">Rs. '+(p.amount||0).toLocaleString()+'</td>'+
-          '<td style="color:var(--info)">'+(p.paidBy||'Cash')+'</td>'+
-          '<td style="color:var(--muted)">'+(p.note||'')+'</td></tr>';
+          '<td style="color:var(--info)">'+esc(p.paidBy||'Cash')+'</td>'+
+          '<td style="color:var(--muted)">'+esc(p.note||'')+'</td>'+
+          '<td><button class="btn bd2 bsm" onclick="delCommPayment(\''+p.id+'\')" title="Delete">🗑️</button></td></tr>';
       }).join('');
     } else {
       histWrap.style.display = 'none';
@@ -5982,7 +5985,7 @@ function openStaffModal(id) {
   // Highlight repair commission field if it's 0 and role is Technician
   var rcField = document.getElementById('staff-repair-comm');
   if (rcField) {
-    var isTech = s && (s.role==='Technician'||s.role==='Other');
+    var isTech = s && (s.role==='Technician'||s.role==='Other'||s.role==='Manager');
     var rateIsZero = !s || !s.repairCommRate || s.repairCommRate===0;
     rcField.style.borderColor = (isTech && rateIsZero) ? 'var(--warning)' : '';
     rcField.style.boxShadow = (isTech && rateIsZero) ? '0 0 0 3px rgba(255,171,0,0.18)' : '';
@@ -6023,6 +6026,29 @@ function deleteStaff(id) {
   saveDB(); renderStaff(); toast('🗑️ Deleted');
 }
 
+// Sync r-tech-id hidden field when technician name is typed/selected
+function syncRepTechId(val) {
+  var ti = document.getElementById('r-tech-id');
+  if (!ti) return;
+  var m = val ? (db.staff||[]).find(function(s){ return s.name.trim().toLowerCase()===val.trim().toLowerCase(); }) : null;
+  ti.value = m ? m.id : '';
+}
+
+// Delete a commission payment record (and its matching auto-expense if present)
+function delCommPayment(payId) {
+  if (!confirm('Commission payment delete කරන්නද? Matching expense ද remove වෙනවා.')) return;
+  var pay = (db.commPayments||[]).find(function(p){ return String(p.id)===String(payId); });
+  db.commPayments = (db.commPayments||[]).filter(function(p){ return String(p.id)!==String(payId); });
+  // Remove matching auto-expense by Ref ID
+  if (pay) {
+    db.expenses = (db.expenses||[]).filter(function(e){
+      return !(e.notes && e.notes.indexOf('Ref: '+payId) !== -1);
+    });
+  }
+  saveDB(); renderStaff(); if(typeof renderExpenses==='function') renderExpenses();
+  toast('🗑️ Commission payment deleted');
+}
+
 function payCommission(staffId, amount) {
   var staff = (db.staff||[]).find(function(s){ return s.id===staffId; });
   if (!staff) { toast('❌ Staff not found', 'var(--danger)'); return; }
@@ -6050,7 +6076,7 @@ function confirmQuickPay() {
   var autoNote = note || ('Commission for ' + monthLabel);
   db.commPayments.push({
     id: payId, staffId: staffId, staffName: staff.name,
-    amount: amount, date: payDate.getTime(), note: autoNote, paidBy: method
+    amount: amount, date: payDate.getTime(), note: autoNote, paidBy: method, payType: 'Commission'
   });
   if (!db.expenses) db.expenses = [];
   db.expenses.push({
@@ -6097,22 +6123,27 @@ function updateManualPayPending() {
 
   var now = new Date();
   var monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  var monthEnd   = new Date(now.getFullYear(), now.getMonth()+1, 1);
   var invoices = db.invoices||[], repairs = db.repairs||[], orders = db.orders||[];
   var commPayments = db.commPayments||[];
 
-  var staffInvs = invoices.filter(function(inv){ var d=parseDate(inv.date); return inv.staffId===staffId && d && d>=monthStart; });
+  var staffInvs = invoices.filter(function(inv){ var d=parseDate(inv.date); return String(inv.staffId)===String(staffId) && d && d>=monthStart && d<monthEnd; });
   var staffRevenue = staffInvs.reduce(function(a,inv){ return a+(inv.total||0);},0);
   var staffProfit = staffInvs.reduce(function(a,inv){
     var p=0; (inv.items||[]).forEach(function(it){ var prod=(db.products||[]).find(function(pr){ return pr.id===it.id; }); p+=(it.price-(prod?prod.cost:0))*(it.qty||1); }); return a+p;
   },0);
-  var repsMonth = repairs.filter(function(r){ var d=parseDate(r.date); return r.tech&&r.tech.trim().toLowerCase()===staff.name.trim().toLowerCase()&&(r.status==='Delivered'||r.status==='Done')&&d&&d>=monthStart; });
+  var repsMonth = repairs.filter(function(r){
+    var d=parseDate(r.date);
+    var matchStaff = r.techId ? String(r.techId)===String(staffId) : (r.tech&&r.tech.trim().toLowerCase()===staff.name.trim().toLowerCase());
+    return matchStaff&&(r.status==='Delivered'||r.status==='Done')&&d&&d>=monthStart&&d<monthEnd;
+  });
   var repairRevenue = repsMonth.reduce(function(a,r){ return a+(r.cost||0);},0);
-  var ordsMonth = orders.filter(function(o){ var d=parseDate(o.date); return String(o.staffId)===String(staffId)&&d&&d>=monthStart; });
+  var ordsMonth = orders.filter(function(o){ var d=parseDate(o.date); return String(o.staffId)===String(staffId)&&d&&d>=monthStart&&d<monthEnd; });
   var orderRevenue = ordsMonth.reduce(function(a,o){ return a+(o.amount||0);},0);
 
-  var commBase = staff.commBase==='profit' ? staffProfit : staffRevenue;
+  var commBase = Math.max(0, staff.commBase==='profit' ? staffProfit : staffRevenue);
   var commEarned = commBase*(staff.commRate||0)/100 + repairRevenue*(staff.repairCommRate||0)/100 + orderRevenue*(staff.orderCommRate||0)/100;
-  var paidSum = commPayments.filter(function(p){ return p.staffId===staffId && p.date>=monthStart.getTime(); }).reduce(function(a,p){ return a+(p.amount||0);},0);
+  var paidSum = commPayments.filter(function(p){ return String(p.staffId)===String(staffId) && p.date>=monthStart.getTime() && p.date<monthEnd.getTime(); }).reduce(function(a,p){ return a+(p.amount||0);},0);
   var pending = Math.max(0, Math.round(commEarned - paidSum));
 
   var pendEl = document.getElementById('mpay-auto-pending');
@@ -6154,7 +6185,7 @@ function saveManualPay() {
   var staff = (db.staff||[]).find(function(s){ return s.id===staffId; });
   if (!staff) { toast('❌ Staff not found', 'var(--danger)'); return; }
 
-  var payDate = dateVal ? new Date(dateVal) : new Date();
+  var payDate = dateVal ? new Date(dateVal + 'T00:00:00') : new Date();
   var monthLabel = payDate.toLocaleString('en-GB', {month:'long', year:'numeric'});
   var autoNote = note || (payType + ' for ' + monthLabel);
   var payId = Date.now() + '_' + Math.random().toString(36).slice(2,6);
@@ -7696,7 +7727,7 @@ function openM(id) {
     if (dl && typeof db !== 'undefined' && db.staff) {
       var techs = (db.staff||[]).filter(function(s){ return s.status !== 'Inactive'; });
       techs.sort(function(a,b){ return (a.role==='Technician'?0:1)-(b.role==='Technician'?0:1); });
-      dl.innerHTML = techs.map(function(s){ return '<option value="'+s.name+'">'+(s.role ? s.name+' ('+s.role+')' : s.name)+'</option>'; }).join('');
+      dl.innerHTML = techs.map(function(s){ return '<option value="'+s.name+'" data-id="'+s.id+'">'+(s.role ? s.name+' ('+s.role+')' : s.name)+'</option>'; }).join('');
     }
     // Reset repair parts for new repairs
     var rId = document.getElementById('r-id');
@@ -8809,7 +8840,7 @@ function renderRep(){
 function saveRep(){
   var id=document.getElementById('r-id').value;
   var existing = id ? db.repairs.find(function(x){ return x.id===parseInt(id); }) : null;
-  var r={ id:id?parseInt(id):Date.now(), customer:document.getElementById('r-cust').value.trim(), phone:document.getElementById('r-phone').value.trim(), device:document.getElementById('r-dev').value.trim(), imei:document.getElementById('r-imei').value.trim(), issue:document.getElementById('r-issue').value.trim(), cost:parseFloat(document.getElementById('r-cost').value)||0, status:document.getElementById('r-status').value, notes:document.getElementById('r-notes').value.trim(), date: existing ? existing.date : new Date().toLocaleDateString('en-GB'), dueDate:document.getElementById('r-due').value, advance:parseFloat(document.getElementById('r-adv').value)||0, priority:document.getElementById('r-priority')?document.getElementById('r-priority').value:'Normal', tech:document.getElementById('r-tech')?document.getElementById('r-tech').value.trim():'', techNotes:document.getElementById('r-technotes')?document.getElementById('r-technotes').value.trim():'' };
+  var r={ id:id?parseInt(id):Date.now(), customer:document.getElementById('r-cust').value.trim(), phone:document.getElementById('r-phone').value.trim(), device:document.getElementById('r-dev').value.trim(), imei:document.getElementById('r-imei').value.trim(), issue:document.getElementById('r-issue').value.trim(), cost:parseFloat(document.getElementById('r-cost').value)||0, status:document.getElementById('r-status').value, notes:document.getElementById('r-notes').value.trim(), date: existing ? existing.date : new Date().toLocaleDateString('en-GB'), dueDate:document.getElementById('r-due').value, advance:parseFloat(document.getElementById('r-adv').value)||0, priority:document.getElementById('r-priority')?document.getElementById('r-priority').value:'Normal', tech:document.getElementById('r-tech')?document.getElementById('r-tech').value.trim():'', techId:(function(){ var ti=document.getElementById('r-tech-id'); var tn=document.getElementById('r-tech'); if(ti&&ti.value) return parseInt(ti.value); if(tn&&tn.value.trim()){ var m=(db.staff||[]).find(function(s){ return s.name.trim().toLowerCase()===tn.value.trim().toLowerCase(); }); return m?m.id:null; } return null; })(), techNotes:document.getElementById('r-technotes')?document.getElementById('r-technotes').value.trim():'' };
   if(!r.customer||!r.device||!r.issue){ toast('❌ Fill required fields','var(--danger)'); return; }
   var isNew = !id;
   if(id){ var i=db.repairs.findIndex(function(x){ return x.id===r.id; }); if(i>=0) db.repairs[i]=r; } else db.repairs.push(r);
@@ -8845,6 +8876,7 @@ function editRep(id){
   document.getElementById('r-adv').value=r.advance||'';
   var tn=document.getElementById('r-technotes'); if(tn) tn.value=r.techNotes||'';
   var te=document.getElementById('r-tech'); if(te) te.value=r.tech||'';
+  var ti=document.getElementById('r-tech-id'); if(ti) ti.value=r.techId||'';
   var pr=document.getElementById('r-priority'); if(pr) pr.value=r.priority||'Normal';
   openM('m-rep');
 }
