@@ -496,12 +496,39 @@ select option{background:var(--card2);}
 @keyframes loginAnim{from{opacity:0;transform:translateY(30px) scale(0.95)}to{opacity:1;transform:translateY(0) scale(1)}}
 
 /* Toast */
-.toast{position:fixed;bottom:20px;right:20px;background:var(--card);border:1px solid var(--border);border-left:3px solid var(--success);border-radius:10px;padding:12px 16px;font-size:13px;z-index:9999;animation:slideUp 0.3s;box-shadow:0 8px 30px rgba(0,0,0,0.3);display:none;max-width:300px;}
+@keyframes toastIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes toastOut{from{transform:translateX(0);opacity:1}to{transform:translateX(100%);opacity:0}}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--card);border:1px solid var(--border);border-left:3px solid var(--success);border-radius:10px;padding:12px 16px;font-size:13px;z-index:9999;animation:toastIn 0.3s ease;box-shadow:0 8px 30px rgba(0,0,0,0.3);display:none;max-width:320px;display:flex;align-items:center;gap:10px;pointer-events:auto}
+.toast.t-hide{animation:toastOut 0.25s ease forwards}
+.toast-icon{font-size:18px;flex-shrink:0}
+.toast-msg{flex:1;line-height:1.4}
+.toast-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:0 4px;opacity:0.6;transition:opacity 0.2s}
+.toast-close:hover{opacity:1}
+#toast-stack{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column-reverse;gap:8px;pointer-events:none}
+@media(max-width:768px){.toast{right:12px;left:12px;max-width:none;font-size:12px}#toast-stack{right:12px;left:12px;bottom:calc(72px + var(--sab) + 8px)}}
+/* Skeleton loaders */
+@keyframes shimmer{0%{background-position:-200px 0}100%{background-position:200px 0}}
+.skel{background:linear-gradient(90deg,var(--card2) 25%,var(--border) 37%,var(--card2) 63%);background-size:400px 100%;animation:shimmer 1.4s ease infinite;border-radius:6px;}
+.skel-line{height:14px;margin-bottom:10px;width:100%;}
+.skel-line.w60{width:60%}.skel-line.w40{width:40%}.skel-line.w80{width:80%}
+.skel-card{height:90px;border-radius:12px;margin-bottom:12px;}
+.skel-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.skel-overlay{position:absolute;inset:0;z-index:10;background:var(--bg);padding:16px;overflow:hidden}
+.skel-overlay.skel-hidden{display:none!important}
+.skel-hidden{display:none!important}
+@media(max-width:768px){.skel-grid{grid-template-columns:repeat(2,1fr)}}
+/* Pull to refresh */
+.ptr-wrap{position:relative;overflow:auto;-webkit-overflow-scrolling:touch}
+.ptr-indicator{position:absolute;top:-50px;left:0;right:0;height:50px;display:flex;align-items:center;justify-content:center;transition:transform 0.2s;color:var(--muted);font-size:13px;gap:8px;z-index:5}
+.ptr-indicator.ptr-visible{transform:translateY(50px)}
+.ptr-spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin 0.6s linear infinite;display:none}
+.ptr-indicator.ptr-spin .ptr-spinner{display:block}
+@keyframes spin{to{transform:rotate(360deg)}}
 /* Keyboard shortcut badge */
 .kbd{display:inline-block;background:var(--card2);border:1px solid var(--border);border-radius:5px;padding:2px 7px;font-size:11px;font-family:monospace;color:var(--primary);font-weight:700;}
 /* Misc */
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
-.estitle{font-size:15px;font-weight:700;margin-bottom:14px;}
+.estitle,#ptitle{display:none;}
 .empty{text-align:center;padding:30px;color:var(--muted);font-size:13px;}
 .empty .ei{font-size:36px;margin-bottom:8px;}
 .pbar{height:5px;background:var(--card2);border-radius:3px;overflow:hidden;margin-top:3px;}
@@ -799,8 +826,13 @@ body {
   .pos-wrap{grid-template-columns:1fr;}
   .pgrid{grid-template-columns:repeat(2,1fr);}
   .sgrid{grid-template-columns:1fr 1fr;}
-  #pg-messages>div:first-of-type[style*="grid"]{grid-template-columns:1fr!important;height:auto!important;min-height:0!important;}
+  #pg-messages>div[style*="grid-template-columns"]{grid-template-columns:1fr!important;height:auto!important;min-height:0!important;max-height:none!important;}
+  #pg-messages>div[style*="grid-template-columns"]>div{min-height:0!important;max-height:300px!important;}
+  #pg-messages>div[style*="grid-template-columns"]>div:last-child{max-height:none!important;min-height:350px!important;}
   #pg-messages #msg-history-table-wrap{overflow-x:auto!important;-webkit-overflow-scrolling:touch!important;}
+  #pg-messages #msg-compose-text{min-height:60px!important;font-size:14px!important;}
+  #pg-messages #msg-templates-bar{flex-wrap:wrap!important;}
+  #pg-messages #msg-templates-bar button{font-size:10px!important;padding:5px 8px!important;}
   #pg-notifications #notif-page-list{max-height:calc(100vh - 220px)!important;}
   .g2{grid-template-columns:1fr;}
   .fgrid{grid-template-columns:1fr;}
@@ -854,6 +886,38 @@ body {
     max-height: 92vh;
     padding-bottom: var(--sab);
   }
+
+  /* ── Auth/Login Screen Mobile ── */
+  #auth-screen > div {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    padding: 8vh 16px 16px !important;
+    min-height: 100vh !important;
+    box-sizing: border-box !important;
+  }
+  #auth-screen > div > div {
+    padding: 24px 20px !important;
+    border-radius: 16px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+  }
+  #auth-screen h1 { font-size: 18px !important; text-align: center !important; }
+  #auth-screen p { text-align: center !important; }
+  #auth-screen div[style*="font-size:52px"] { font-size: 40px !important; text-align: center !important; }
+  #auth-screen .fg { margin-bottom: 12px !important; text-align: left !important; }
+  #auth-screen .fg label { font-size: 12px !important; }
+  #auth-screen input { font-size: 14px !important; padding: 10px 12px !important; width: 100% !important; box-sizing: border-box !important; }
+  #auth-screen .btn { padding: 10px !important; font-size: 14px !important; }
+  #auth-screen #auth-form { text-align: center !important; }
+  #auth-screen #auth-form span { display: block !important; text-align: center !important; }
+
+  /* ── PIN Screen Mobile ── */
+  #pin-screen { padding: 20px 16px !important; }
+  #pin-screen input[type="password"] { font-size: 28px !important; width: 48px !important; height: 48px !important; }
 
   /* ── Content bottom padding for bottom nav + safe area ── */
   /* ── Content bottom padding (authoritative rule is in the later media block) ── */
@@ -1352,12 +1416,21 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
   #fab-menu  { bottom: calc(130px + var(--sab)); right:14px; }
 
   /* ── Topbar ── */
-  .topbar    { padding: calc(10px + var(--sat)) 14px 10px; }
-  .topbar h2 { font-size:15px; }
-  .tright    { gap:6px; }
+  .topbar    { padding: calc(8px + var(--sat)) 10px 8px; flex-wrap:wrap; gap:6px; }
+  .topbar h2 { font-size:14px; }
+  .tright    { gap:4px; flex-wrap:wrap; justify-content:flex-end; }
   .clock     { display:none; }
-  #autosave-indicator,#fb-sync-indicator,#offline-indicator { font-size:10px;padding:2px 7px; }
-  .theme-btn { width:20px;height:20px; }
+  #autosave-indicator,#fb-sync-indicator,#offline-indicator { display:none!important; }
+  .theme-btn { display:none; }
+  #role-badge { display:none; }
+  #auth-profile-btn { display:none; }
+  .topbar [title="Keyboard Shortcuts [?]"] { display:none; }
+  .topbar [title="Connect mobile phone as barcode scanner"] { display:none; }
+  .topbar [title="Download Android App"] { display:none; }
+  .topbar [title="Scan barcode → Direct Sale"] { display:none; }
+  .topbar #dark-btn { padding:6px 8px; min-height:32px; font-size:14px; }
+  .topbar .notif-wrap .btn { padding:6px 8px; min-height:32px; font-size:14px; }
+  .topbar [title="New Sale [F2]"] { padding:6px 10px; min-height:32px; font-size:12px; }
 
   /* ── Stats ── */
   .sgrid { grid-template-columns:1fr 1fr; gap:10px; }
@@ -1982,12 +2055,32 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
         <button class="btn bp2 bsm" onclick="goPage('pos')" title="New Sale [F2]">➕ New Sale</button>
       </div>
     </div>
-    <div class="content">
+    <div class="content" id="main-content">
+      <!-- Pull to Refresh Indicator -->
+      <div class="ptr-indicator" id="ptr-indicator">
+        <div class="ptr-spinner"></div>
+        <span id="ptr-text">Pull to refresh</span>
+      </div>
 
       <!-- DASHBOARD -->
       <div id="pg-dashboard" class="page active">
+        <!-- Dashboard Skeleton -->
+        <div id="dash-skeleton">
+          <div class="skel-grid">
+            <div class="skel skel-card"></div><div class="skel skel-card"></div>
+            <div class="skel skel-card"></div><div class="skel skel-card"></div>
+          </div>
+          <div class="skel-grid">
+            <div class="skel skel-card"></div><div class="skel skel-card"></div>
+            <div class="skel skel-card"></div><div class="skel skel-card"></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div class="skel" style="height:180px;border-radius:12px"></div>
+            <div class="skel" style="height:180px;border-radius:12px"></div>
+          </div>
+        </div>
         <!-- Profit Strip -->
-        <div id="profit-strip">
+        <div id="profit-strip" class="skel-hidden">
           <div style="font-size:12px;color:var(--muted);white-space:nowrap">📊 Live Overview</div>
           <div style="text-align:center"><div style="font-size:16px;font-weight:800;color:var(--success)" id="ps-profit">Rs. 0</div><div style="font-size:10px;color:var(--muted)">Today's Profit</div></div>
           <div style="text-align:center"><div style="font-size:16px;font-weight:800;color:var(--primary)" id="ps-margin">0%</div><div style="font-size:10px;color:var(--muted)">Margin</div></div>
@@ -2139,6 +2232,15 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
 
       <!-- POS -->
       <div id="pg-pos" class="page">
+        <!-- POS Skeleton -->
+        <div id="pos-skeleton" class="skel-overlay">
+          <div class="skel skel-line w60" style="height:36px;margin-bottom:14px"></div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+            <div class="skel" style="height:120px;border-radius:10px"></div><div class="skel" style="height:120px;border-radius:10px"></div>
+            <div class="skel" style="height:120px;border-radius:10px"></div><div class="skel" style="height:120px;border-radius:10px"></div>
+            <div class="skel" style="height:120px;border-radius:10px"></div><div class="skel" style="height:120px;border-radius:10px"></div>
+          </div>
+        </div>
         <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
           <div class="sbar" style="flex:1;margin:0;min-width:150px"><span>🔍</span><input id="pos-q" placeholder="Search products..." oninput="renderPos()"></div>
           <button class="btn bo bsm" onclick="openBarcodeScanner()" title="Barcode Scan">📷</button>
@@ -2240,6 +2342,16 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
 
       <!-- INVENTORY -->
       <div id="pg-inventory" class="page">
+        <!-- Inventory Skeleton -->
+        <div id="inventory-skeleton" class="skel-overlay skel-hidden">
+          <div class="skel skel-line w40" style="height:28px;margin-bottom:14px"></div>
+          <div class="skel skel-line w60" style="height:36px;margin-bottom:14px"></div>
+          <div class="skel skel-line" style="height:40px;margin-bottom:8px"></div>
+          <div class="skel skel-line" style="height:40px;margin-bottom:8px"></div>
+          <div class="skel skel-line" style="height:40px;margin-bottom:8px"></div>
+          <div class="skel skel-line" style="height:40px;margin-bottom:8px"></div>
+          <div class="skel skel-line" style="height:40px;margin-bottom:8px"></div>
+        </div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
           <div class="estitle">📦 Inventory</div>
           <div style="display:flex;gap:6px;flex-wrap:wrap">
@@ -2256,6 +2368,15 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
 
       <!-- REPAIRS -->
       <div id="pg-repairs" class="page">
+        <!-- Repairs Skeleton -->
+        <div id="repairs-skeleton" class="skel-overlay skel-hidden">
+          <div class="skel skel-line w40" style="height:28px;margin-bottom:14px"></div>
+          <div class="skel skel-line w80" style="height:32px;margin-bottom:10px"></div>
+          <div class="skel skel-line" style="height:40px;margin-bottom:8px"></div>
+          <div class="skel skel-line" style="height:40px;margin-bottom:8px"></div>
+          <div class="skel skel-line" style="height:40px;margin-bottom:8px"></div>
+          <div class="skel skel-line" style="height:40px;margin-bottom:8px"></div>
+        </div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
           <div class="estitle">🔧 Repairs</div>
           <button class="btn bp2" onclick="openM('m-rep')">➕ New Repair</button>
@@ -2417,6 +2538,15 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
         </div>
       </div>
       <div id="pg-customers" class="page">
+        <!-- Customers Skeleton -->
+        <div id="customers-skeleton" class="skel-overlay skel-hidden">
+          <div class="skel skel-line w40" style="height:28px;margin-bottom:14px"></div>
+          <div class="skel skel-line w60" style="height:36px;margin-bottom:14px"></div>
+          <div class="skel skel-line" style="height:40px;margin-bottom:8px"></div>
+          <div class="skel skel-line" style="height:40px;margin-bottom:8px"></div>
+          <div class="skel skel-line" style="height:40px;margin-bottom:8px"></div>
+          <div class="skel skel-line" style="height:40px;margin-bottom:8px"></div>
+        </div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
           <div class="estitle">👥 Customers</div>
           <div style="display:flex;gap:6px">
@@ -4401,8 +4531,6 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
     </div>
   </div>
 </div>
-
-<div class="toast" id="toast"></div>
 
 <!-- RETURN MODAL -->
 <div class="moverlay" id="m-return">
@@ -7717,6 +7845,8 @@ function goPage(id) {
   if (ni) ni.classList.add('active');
   var t = document.getElementById('ptitle');
   if (t) t.textContent = pageTitles[id] || id;
+  // Show skeleton on first visit to data-heavy pages
+  if (['dashboard','pos','inventory','repairs','customers'].indexOf(id) !== -1) showSkel(id);
   if (id === 'pos') renderPos();
   if (id === 'cart') { renderCart(); calcTotal(); }
   if (id === 'dashboard') { updateDash(); }
@@ -7733,12 +7863,38 @@ function goPage(id) {
 // =========== TOAST ===========
 function toast(msg, clr) {
   clr = clr || 'var(--success)';
-  var el = document.getElementById('toast');
-  if (!el) return;
-  el.textContent = msg;
+  // Get or create toast stack
+  var stack = document.getElementById('toast-stack');
+  if (!stack) {
+    stack = document.createElement('div');
+    stack.id = 'toast-stack';
+    document.body.appendChild(stack);
+  }
+  // Create toast element
+  var el = document.createElement('div');
+  el.className = 'toast';
   el.style.borderLeftColor = clr;
-  el.style.display = 'block';
-  setTimeout(function() { el.style.display = 'none'; }, 3000);
+  el.style.display = 'flex';
+  // Extract emoji icon from message if present
+  var iconMatch = msg.match(/^([\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}✅❌⚠️🚫])/u);
+  var icon = iconMatch ? iconMatch[1] : '';
+  var text = icon ? msg.replace(icon, '').trim() : msg;
+  if (!icon) {
+    if (clr === 'var(--danger)' || clr === 'var(--secondary)') icon = '❌';
+    else if (clr === 'var(--warning)') icon = '⚠️';
+    else if (clr === 'var(--info)') icon = 'ℹ️';
+    else icon = '✅';
+  }
+  el.innerHTML = '<span class="toast-icon">' + icon + '</span><span class="toast-msg">' + text + '</span><button class="toast-close" onclick="this.parentElement.remove()">×</button>';
+  stack.appendChild(el);
+  // Auto remove after 3.5s
+  setTimeout(function() {
+    el.classList.add('t-hide');
+    setTimeout(function() { if (el.parentNode) el.remove(); }, 300);
+  }, 3500);
+  // Limit stack to 5 toasts
+  var toasts = stack.querySelectorAll('.toast');
+  if (toasts.length > 5) { toasts[0].remove(); }
 }
 
 // =========== MODALS ===========
@@ -8036,6 +8192,118 @@ function periodFilter(dateStr) {
   if(dashPeriod==='yearly') { return d.getFullYear()===now.getFullYear(); }
   return true;
 }
+// ── Skeleton Loaders ──
+var _skelShown = {};
+function showSkel(pageId) {
+  if (_skelShown[pageId]) return;
+  _skelShown[pageId] = true;
+  var pg = document.getElementById('pg-' + pageId);
+  if (pg) pg.style.position = 'relative';
+  var skel = document.getElementById(pageId + '-skeleton');
+  if (skel) skel.classList.remove('skel-hidden');
+}
+function hideSkel(pageId) {
+  _skelShown[pageId] = false;
+  var skel = document.getElementById(pageId + '-skeleton');
+  if (skel) skel.classList.add('skel-hidden');
+}
+
+// ── Pull to Refresh (Mobile) ──
+(function(){
+  var content, indicator, ptrText;
+  var startY=0, pulling=false, refreshing=false, pullDist=0;
+  var threshold=70;
+  var _ptrInit=false;
+
+  function initPtr(){
+    if(_ptrInit) return;
+    content=document.getElementById('main-content');
+    indicator=document.getElementById('ptr-indicator');
+    ptrText=document.getElementById('ptr-text');
+    if(!content||!indicator) return;
+    content.addEventListener('touchstart',onStart,{passive:true});
+    content.addEventListener('touchmove',onMove,{passive:false});
+    content.addEventListener('touchend',onEnd,{passive:true});
+    _ptrInit=true;
+  }
+
+  function getActivePage(){
+    var pg=document.querySelector('.page.active');
+    if(!pg) return null;
+    return pg.id.replace('pg-','');
+  }
+
+  function onStart(e){
+    if(refreshing) return;
+    if(content.scrollTop>5) return;
+    startY=e.touches[0].clientY;
+    pulling=true;
+  }
+
+  function onMove(e){
+    if(!pulling||refreshing) return;
+    pullDist=e.touches[0].clientY-startY;
+    if(pullDist<0){ pullDist=0; return; }
+    if(content.scrollTop>5){ pulling=false; pullDist=0; return; }
+    if(e.cancelable) e.preventDefault();
+    var pct=Math.min(pullDist/threshold,1);
+    indicator.style.transform='translateY('+Math.min(pullDist,threshold+20)+'px)';
+    if(pullDist>=threshold){
+      indicator.classList.add('ptr-visible');
+      if(ptrText) ptrText.textContent='Release to refresh';
+    } else {
+      indicator.classList.add('ptr-visible');
+      if(ptrText) ptrText.textContent='Pull to refresh';
+    }
+  }
+
+  function onEnd(){
+    if(!pulling) return;
+    pulling=false;
+    if(pullDist>=threshold&&!refreshing){
+      doRefresh();
+    } else {
+      resetPtr();
+    }
+    pullDist=0;
+  }
+
+  function doRefresh(){
+    refreshing=true;
+    indicator.classList.add('ptr-spin');
+    if(ptrText) ptrText.textContent='Refreshing...';
+    var page=getActivePage();
+    var refreshMap={
+      'dashboard':function(){ if(typeof updateDash==='function') updateDash(); },
+      'pos':function(){ if(typeof renderPos==='function') renderPos(); },
+      'inventory':function(){ if(typeof renderInv==='function') renderInv(); },
+      'repairs':function(){ if(typeof renderRep==='function') renderRep(); },
+      'customers':function(){ if(typeof renderCust==='function') renderCust(); },
+      'orders':function(){ if(typeof renderOrd==='function') renderOrd(); },
+      'invoices':function(){ if(typeof renderInvoices==='function') renderInvoices(); },
+      'analytics':function(){ if(typeof renderAnalytics==='function') renderAnalytics(); },
+      'messages':function(){ if(typeof msgPageInit==='function') msgPageInit(); }
+    };
+    var fn=refreshMap[page];
+    if(fn) fn();
+    setTimeout(function(){
+      resetPtr();
+      refreshing=false;
+      if(typeof toast==='function') toast('✅ Refreshed','var(--success)');
+    },600);
+  }
+
+  function resetPtr(){
+    indicator.classList.remove('ptr-visible','ptr-spin');
+    indicator.style.transform='';
+    if(ptrText) ptrText.textContent='Pull to refresh';
+  }
+
+  // Init on mobile
+  if(window.innerWidth<=768) initPtr();
+  window.addEventListener('resize',function(){ if(window.innerWidth<=768) initPtr(); });
+})();
+
 function updateDash() {
   var lbl=document.getElementById('dash-period-label');
   var now=new Date();
@@ -8046,6 +8314,10 @@ function updateDash() {
   var filtOrd=(db.orders||[]).filter(function(o){ return periodFilter(o.date); });
   var filtRep=(db.repairs||[]).filter(function(r){ return periodFilter(r.date); });
 
+  // Pre-build product lookup Map for O(1) access instead of O(n) .find()
+  var prodMap = {};
+  (db.products||[]).forEach(function(p){ prodMap[p.id] = p; });
+
   var invRev = filtInv.reduce(function(s,i){ return s+(i.total||0); },0);
   var ordRev = filtOrd.reduce(function(s,o){
     var paid=(o.payments||[]).reduce(function(ps,p){ return ps+p.amount; },0);
@@ -8054,42 +8326,26 @@ function updateDash() {
   var rev = invRev + ordRev;
 
   // Repair Revenue (from repair cost, paid repairs)
-  var repRev = filtRep.reduce(function(s,r){ return s+(r.cost||0); },0);
-  var repDone = filtRep.filter(function(r){ return r.status==='Done'||r.status==='Delivered'; }).length;
-  var repPending = filtRep.filter(function(r){ return r.status==='Pending'||r.status==='In Progress'; }).length;
+  var repRev=0, repDone=0, repPending=0;
+  filtRep.forEach(function(r){
+    repRev+=(r.cost||0);
+    if(r.status==='Done'||r.status==='Delivered') repDone++;
+    else if(r.status==='Pending'||r.status==='In Progress') repPending++;
+  });
 
-  // Accessories sales from invoices
-  var accRev = filtInv.reduce(function(s,inv){
-    return s+(inv.items||[]).reduce(function(si,it){
-      var prod=db.products.find(function(p){ return p.id===it.id; });
-      if(prod && prod.category==='Accessories') return si+(it.price*it.qty);
-      // fallback: check name match for custom items
-      return si;
-    },0);
-  },0);
-  var accSales = filtInv.reduce(function(s,inv){
-    return s+(inv.items||[]).filter(function(it){
-      var prod=db.products.find(function(p){ return p.id===it.id; });
-      return prod && prod.category==='Accessories';
-    }).length;
-  },0);
-
-  // Estimated profit (subtract expenses for this period)
-  // 1) Invoice profit (selling price - cost)
-  var invProfit = filtInv.reduce(function(s,inv){
-    return s+(inv.items||[]).reduce(function(si,it){
-      var prod=db.products.find(function(p){ return p.id===it.id; });
-      var cost=prod?prod.cost:0;
-      return si+(it.price-cost)*it.qty;
-    },0);
-  },0);
-  // 2) Repair income — full repair cost is profit (labour/parts already in cost field if tracked)
-  var repProfit = filtRep.reduce(function(s,r){ return s+(r.cost||0); },0);
-  // 3) Online order income — payments received count as revenue/profit
-  var ordProfit = filtOrd.reduce(function(s,o){
-    return s+(o.payments||[]).reduce(function(ps,p){ return ps+(p.amount||0); },0);
-  },0);
-  var profit = invProfit + repProfit + ordProfit;
+  // Single pass: accessories revenue + count + invoice profit
+  var accRev=0, accSales=0, invProfit=0;
+  filtInv.forEach(function(inv){
+    (inv.items||[]).forEach(function(it){
+      var prod=prodMap[it.id];
+      if(prod){
+        if(prod.category==='Accessories'){ accRev+=(it.price*it.qty); accSales++; }
+        invProfit+=(it.price-prod.cost)*it.qty;
+      }
+    });
+  });
+  // 2) Repair income + 3) Order income — already calculated above (repRev, ordRev)
+  var profit = invProfit + repRev + ordRev;
   // Subtract expenses for same period
   var filtExp=(db.expenses||[]).filter(function(e){ return periodFilter(e.date); });
   var totalExp=filtExp.reduce(function(s,e){ return s+(e.amount||0); },0);
@@ -8157,6 +8413,7 @@ function updateTodaySummary() {
   var todayApt=(db.appointments||[]).filter(function(a){ return a.date===todayStr&&a.status!=='Done'&&a.status!=='Cancelled'; }).length;
   el=document.getElementById('today-exp-dash'); if(el) el.textContent='Rs. '+todayExp.toFixed(0);
   el=document.getElementById('today-apt-dash'); if(el) el.textContent=todayApt+(todayApt?'  🔔':'');
+  hideSkel('dash');
 }
 
 // =========== HOLD / PARK SALE ===========
@@ -8418,6 +8675,7 @@ function renderInv() {
   }).join('');
 
   _renderInvPager(total, displayRows.length);
+  hideSkel('inventory');
 }
 
 function _renderInvPager(total, shown){
@@ -8544,6 +8802,7 @@ function renderPos() {
     var imgHtml = p.img ? '<img src="'+esc(p.img)+'" style="width:48px;height:48px;object-fit:cover;border-radius:8px;margin-bottom:4px" onerror="this.style.display=\'none\'">' : '<div class="picon">'+(ICONS[p.category]||'📦')+'</div>';
     return '<div class="pcard" onclick="addToCart('+p.id+')" style="'+style+'">'+imgHtml+'<div class="pname">'+esc(p.name)+'</div><div class="pprice">Rs. '+p.price.toFixed(2)+'</div><div class="pstock" style="color:'+(p.stock<=p.minStock?'var(--danger)':'var(--muted)')+'">Stock: '+p.stock+'</div>'+oosTag+'</div>';
   }).join('') : '<div style="grid-column:1/-1;text-align:center;color:var(--muted);padding:30px"><div style="font-size:32px">📦</div><br>No products found</div>';
+  hideSkel('pos');
 }
 function addToCart(id) {
   var p = db.products.find(function(x){ return x.id===id; }); if(!p) return;
@@ -8876,6 +9135,7 @@ function renderRep(){
     }
     ph+='</td></tr>'; tb.innerHTML+=ph;
   }
+  hideSkel('repairs');
 }
 function saveRep(){
   var id=document.getElementById('r-id').value;
@@ -9304,6 +9564,7 @@ function renderCust(){
     }
     ph+='</td></tr>'; tb.innerHTML+=ph;
   }
+  hideSkel('customers');
 }
 function saveCust(){
   var id=document.getElementById('cu-id').value;
