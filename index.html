@@ -90,6 +90,9 @@ var openM, closeM, goPage, renderAll;
   window._fbDb = database;
   window._fbRef = ref;
   window._fbSet = set;
+  window._fbGet = get;
+  window._fbOnValue = onValue;
+  window._fbRemove = remove;
 
   window.firebaseSignUp = function(email, password, displayName, phone) {
     return createUserWithEmailAndPassword(auth, email, password)
@@ -1989,7 +1992,7 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
 
       <!-- Actions -->
       <div style="text-align:center;margin-top:20px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
-        <button class="btn bp2" style="padding:8px 20px;font-size:12px" onclick="checkSubscription(firebase.auth().currentUser)">🔄 Check Again</button>
+        <button class="btn bp2" style="padding:8px 20px;font-size:12px" onclick="checkSubscription(window._auth ? window._auth.currentUser : null)">🔄 Check Again</button>
         <button class="btn" style="background:rgba(255,23,68,0.12);color:var(--danger);border:1px solid rgba(255,23,68,0.3);padding:8px 20px;font-size:12px" onclick="subLogout()">🚪 Sign Out</button>
       </div>
     </div>
@@ -2187,6 +2190,7 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
       <div class="nitem" data-page="reports"><span class="ic">📑</span><span>Reports</span></div>
       <div class="nitem" data-page="activitylog"><span class="ic">🔍</span><span>Activity Log</span></div>
       <div class="nitem" data-page="settings"><span class="ic">⚙️</span><span>Settings</span></div>
+      <div class="nitem" data-page="subscriptions"><span class="ic">💎</span><span>Subscriptions</span></div>
       <div class="nlabel">Advanced</div>
       <div class="nitem" data-page="advanced-analytics"><span class="ic">🔮</span><span>AI Forecasting</span></div>
       <div class="nitem" data-page="abc-analysis"><span class="ic">🔢</span><span>ABC Analysis</span></div>
@@ -4121,6 +4125,71 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
             <div class="kbd-row"><span>Global Search</span><span class="kbd">Ctrl+K</span></div>
             <div class="kbd-row"><span>New Repair</span><span class="kbd">F4</span></div>
             <div class="kbd-row"><span>Close Modal</span><span class="kbd">Esc</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUBSCRIPTIONS -->
+      <div id="pg-subscriptions" class="page">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <h3 style="font-size:16px;font-weight:800;color:var(--primary)">💎 Subscription Manager</h3>
+          <button class="btn bp2 bsm" onclick="renderSubscriptions()">🔄 Refresh</button>
+        </div>
+        <!-- Stats -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">
+          <div class="scard s3"><div style="font-size:24px;font-weight:800;color:var(--warning)" id="sub-pending-count">0</div><div style="font-size:11px;color:var(--muted)">Pending Requests</div></div>
+          <div class="scard s2"><div style="font-size:24px;font-weight:800;color:var(--success)" id="sub-active-count">0</div><div style="font-size:11px;color:var(--muted)">Active Subscriptions</div></div>
+          <div class="scard s1"><div style="font-size:24px;font-weight:800;color:var(--primary)" id="sub-revenue">Rs. 0</div><div style="font-size:11px;color:var(--muted)">Total Revenue</div></div>
+        </div>
+        <!-- Grant Access -->
+        <div class="ssec">
+          <h3>🔑 Grant Access by Email</h3>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end">
+            <div class="fg" style="flex:1;min-width:200px;margin-bottom:0">
+              <label>User Email</label>
+              <input type="email" id="grant-email" placeholder="user@email.com">
+            </div>
+            <div class="fg" style="min-width:140px;margin-bottom:0">
+              <label>Plan</label>
+              <select id="grant-plan" style="width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);padding:9px 10px;border-radius:7px;font-size:12px">
+                <option value="1m">1 Month - Rs.350</option>
+                <option value="3m">3 Months - Rs.500</option>
+                <option value="6m">6 Months - Rs.750</option>
+                <option value="1y">1 Year - Rs.1000</option>
+              </select>
+            </div>
+            <button class="btn bs2" onclick="grantAccessByEmail()" style="height:38px">✅ Grant Access</button>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:8px">Directly activate subscription for a user by their email. User must have signed up to POS first.</div>
+        </div>
+        <!-- Pending Requests -->
+        <div class="ssec">
+          <h3>⏳ Pending Activation Requests</h3>
+          <div style="overflow-x:auto">
+            <table>
+              <thead><tr><th>Date</th><th>Name</th><th>Email</th><th>Phone</th><th>Plan</th><th>Amount</th><th>Pay Ref</th><th>Action</th></tr></thead>
+              <tbody id="sub-pending-tbl"><tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+        <!-- Active Subscriptions -->
+        <div class="ssec">
+          <h3>✅ Active Subscriptions</h3>
+          <div style="overflow-x:auto">
+            <table>
+              <thead><tr><th>Email</th><th>Name</th><th>Plan</th><th>Activated</th><th>Expires</th><th>Days Left</th><th>Status</th><th>Action</th></tr></thead>
+              <tbody id="sub-active-tbl"><tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+        <!-- History -->
+        <div class="ssec">
+          <h3>📋 All Requests History</h3>
+          <div style="overflow-x:auto">
+            <table>
+              <thead><tr><th>Date</th><th>Email</th><th>Name</th><th>Plan</th><th>Amount</th><th>Status</th></tr></thead>
+              <tbody id="sub-history-tbl"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">Loading...</td></tr></tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -8053,7 +8122,7 @@ function _initSidebarSortable() {
 }
 
 // =========== NAVIGATION ===========
-var pageTitles = { dashboard:'Dashboard', pos:'New Sale 🛍️', cart:'🛒 Cart & Checkout', inventory:'Inventory', repairs:'Repairs', orders:'Online Orders', customers:'Customers', invoices:'Invoices', analytics:'Analytics', credits:'Credit Sales', suppliers:'Suppliers', stocklog:'Stock History', settings:'Settings', 'repair-parts':'🔩 Repair Parts', 'gift-vouchers':'🎫 Gift Vouchers', notifications:'🔔 Notifications' };
+var pageTitles = { dashboard:'Dashboard', pos:'New Sale 🛍️', cart:'🛒 Cart & Checkout', inventory:'Inventory', repairs:'Repairs', orders:'Online Orders', customers:'Customers', invoices:'Invoices', analytics:'Analytics', credits:'Credit Sales', suppliers:'Suppliers', stocklog:'Stock History', settings:'Settings', 'repair-parts':'🔩 Repair Parts', 'gift-vouchers':'🎫 Gift Vouchers', notifications:'🔔 Notifications', subscriptions:'💎 Subscriptions' };
 function goPage(id) {
   closeSidebar();
   document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
@@ -8082,6 +8151,133 @@ function goPage(id) {
   if (id === 'notifications') { renderNotifPage(); }
   if (id === 'repair-parts') { renderRepairParts(); }
   if (id === 'gift-vouchers') { renderGiftVouchers(); }
+  if (id === 'subscriptions') { renderSubscriptions(); }
+}
+
+// =========== SUBSCRIPTION MANAGER ===========
+function emailToKey(email) { return (email||'').replace(/\./g,'_').replace(/@/g,'_at_'); }
+
+function renderSubscriptions() {
+  var pendingTbl = document.getElementById('sub-pending-tbl');
+  var activeTbl = document.getElementById('sub-active-tbl');
+  var historyTbl = document.getElementById('sub-history-tbl');
+  if (!pendingTbl || !activeTbl) return;
+  pendingTbl.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">Loading...</td></tr>';
+  activeTbl.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">Loading...</td></tr>';
+
+  if (!window._fbRef || !window._fbGet || !window._fbDb) {
+    pendingTbl.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--warning);padding:20px">⚠️ Firebase not connected</td></tr>';
+    activeTbl.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--warning);padding:20px">⚠️ Firebase not connected</td></tr>';
+    return;
+  }
+
+  window._fbGet(window._fbRef(window._fbDb, 'subscription-requests')).then(function(snap) {
+    var requests = snap.val() || {};
+    var pending = [], allReqs = [], revenue = 0;
+    Object.keys(requests).forEach(function(ek) {
+      var r = requests[ek]; r.emailKey = ek; allReqs.push(r);
+      if (r.status === 'pending') pending.push(r);
+      if (r.status === 'approved') revenue += (r.amount || 0);
+    });
+    var pc = document.getElementById('sub-pending-count');
+    if (pc) pc.textContent = pending.length;
+
+    if (pending.length === 0) {
+      pendingTbl.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">No pending requests</td></tr>';
+    } else {
+      pendingTbl.innerHTML = pending.sort(function(a,b){ return new Date(b.requestedAt||0)-new Date(a.requestedAt||0); }).map(function(r) {
+        var d = r.requestedAt ? new Date(r.requestedAt).toLocaleDateString() : '—';
+        return '<tr><td>'+d+'</td><td><b>'+esc(r.name||'—')+'</b></td><td>'+esc(r.email||'—')+'</td><td>'+esc(r.phone||'—')+'</td><td><span class="badge" style="background:rgba(108,99,255,0.15);color:var(--primary)">'+esc(r.planName||r.plan||'—')+'</span></td><td style="font-weight:700;color:var(--success)">Rs. '+(r.amount||0).toLocaleString()+'</td><td style="font-size:11px;font-family:monospace">'+esc(r.payRef||'—')+'</td><td><button class="btn bs2 bsm" onclick="approveSub(\''+esc(emailToKey(r.email))+'\',\''+esc(r.plan||'1m')+'\')" style="margin-right:4px">✅ Approve</button><button class="btn bd2 bsm" onclick="rejectSub(\''+esc(emailToKey(r.email))+'\')">❌ Reject</button></td></tr>';
+      }).join('');
+    }
+
+    if (historyTbl) {
+      if (allReqs.length === 0) {
+        historyTbl.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">No requests yet</td></tr>';
+      } else {
+        historyTbl.innerHTML = allReqs.sort(function(a,b){ return new Date(b.requestedAt||0)-new Date(a.requestedAt||0); }).map(function(r) {
+          var d = r.requestedAt ? new Date(r.requestedAt).toLocaleDateString() : '—';
+          var sb = r.status==='approved' ? '<span class="badge" style="background:rgba(0,230,118,0.15);color:var(--success)">✅ Approved</span>' : r.status==='rejected' ? '<span class="badge" style="background:rgba(255,23,68,0.15);color:var(--danger)">❌ Rejected</span>' : '<span class="badge" style="background:rgba(255,171,0,0.15);color:var(--warning)">⏳ Pending</span>';
+          return '<tr><td>'+d+'</td><td>'+esc(r.email||'—')+'</td><td>'+esc(r.name||'—')+'</td><td>'+esc(r.planName||'—')+'</td><td>Rs. '+(r.amount||0).toLocaleString()+'</td><td>'+sb+'</td></tr>';
+        }).join('');
+      }
+    }
+
+    return window._fbGet(window._fbRef(window._fbDb, 'subscriptions'));
+  }).then(function(subSnap) {
+    var subs = (subSnap && subSnap.val()) || {};
+    var activeList = [], now = new Date();
+    Object.keys(subs).forEach(function(ek) {
+      var s = subs[ek];
+      if (s.active && s.expiresAt && new Date(s.expiresAt) > now) { s.emailKey = ek; activeList.push(s); }
+    });
+    var ac = document.getElementById('sub-active-count');
+    if (ac) ac.textContent = activeList.length;
+
+    if (activeList.length === 0) {
+      activeTbl.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">No active subscriptions</td></tr>';
+    } else {
+      activeTbl.innerHTML = activeList.map(function(s) {
+        var exp = new Date(s.expiresAt), dl = Math.ceil((exp-now)/(1000*60*60*24));
+        var sc = dl<=7?'var(--danger)':dl<=30?'var(--warning)':'var(--success)';
+        return '<tr><td><b>'+esc(s.email||'—')+'</b></td><td>'+esc(s.userName||'—')+'</td><td><span class="badge" style="background:rgba(108,99,255,0.15);color:var(--primary)">'+esc(s.planName||'—')+'</span></td><td>'+(s.activatedAt?new Date(s.activatedAt).toLocaleDateString():'—')+'</td><td>'+exp.toLocaleDateString()+'</td><td style="color:'+sc+';font-weight:700">'+dl+' days</td><td style="color:var(--success);font-size:11px">✅ Active</td><td><button class="btn bd2 bsm" onclick="revokeSub(\''+esc(s.emailKey)+'\')">🚫 Revoke</button></td></tr>';
+      }).join('');
+    }
+    var re = document.getElementById('sub-revenue');
+    if (re) re.textContent = 'Rs. ' + revenue.toLocaleString();
+  }).catch(function(e) {
+    console.error('Sub load error:', e);
+    pendingTbl.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--danger)">Error: ' + e.message + '</td></tr>';
+  });
+}
+
+function approveSub(emailKey, plan) {
+  if (!confirm('Approve this subscription?')) return;
+  var p = SUB_PLANS[plan] || SUB_PLANS['1m'];
+  var now = new Date(), expires = new Date(now.getTime() + p.days * 86400000);
+  window._fbGet(window._fbRef(window._fbDb, 'subscription-requests/' + emailKey)).then(function(snap) {
+    var req = snap.val() || {};
+    return window._fbSet(window._fbRef(window._fbDb, 'subscriptions/' + emailKey), {
+      active:true, plan:plan, planName:p.name, email:req.email||'', userName:req.name||'',
+      activatedAt:now.toISOString(), expiresAt:expires.toISOString(), activatedBy:'admin'
+    });
+  }).then(function() {
+    return window._fbSet(window._fbRef(window._fbDb, 'subscription-requests/' + emailKey + '/status'), 'approved');
+  }).then(function() {
+    toast('✅ Approved! Expires: ' + expires.toLocaleDateString()); renderSubscriptions();
+  }).catch(function(e) { toast('❌ Error: ' + e.message, 'var(--danger)'); });
+}
+
+function rejectSub(emailKey) {
+  if (!confirm('Reject this request?')) return;
+  window._fbSet(window._fbRef(window._fbDb, 'subscription-requests/' + emailKey + '/status'), 'rejected').then(function() {
+    toast('❌ Rejected'); renderSubscriptions();
+  }).catch(function(e) { toast('❌ Error: ' + e.message, 'var(--danger)'); });
+}
+
+function revokeSub(emailKey) {
+  if (!confirm('Revoke subscription? User loses access immediately.')) return;
+  window._fbSet(window._fbRef(window._fbDb, 'subscriptions/' + emailKey + '/active'), false).then(function() {
+    toast('🚫 Revoked'); renderSubscriptions();
+  }).catch(function(e) { toast('❌ Error: ' + e.message, 'var(--danger)'); });
+}
+
+function grantAccessByEmail() {
+  var email = document.getElementById('grant-email').value.trim();
+  var plan = document.getElementById('grant-plan').value;
+  if (!email || !email.includes('@')) { toast('❌ Enter valid email', 'var(--danger)'); return; }
+  var p = SUB_PLANS[plan] || SUB_PLANS['1m'];
+  var now = new Date(), expires = new Date(now.getTime() + p.days * 86400000);
+  var ek = emailToKey(email);
+  if (!confirm('Grant ' + p.name + ' access to ' + email + '?')) return;
+  window._fbSet(window._fbRef(window._fbDb, 'subscriptions/' + ek), {
+    active:true, plan:plan, planName:p.name, email:email, userName:'',
+    activatedAt:now.toISOString(), expiresAt:expires.toISOString(), activatedBy:'admin-manual'
+  }).then(function() {
+    toast('✅ Granted! ' + email + ' → ' + p.name);
+    document.getElementById('grant-email').value = '';
+    renderSubscriptions();
+  }).catch(function(e) { toast('❌ Error: ' + e.message, 'var(--danger)'); });
 }
 
 // =========== TOAST ===========
@@ -10566,7 +10762,7 @@ function submitSubRequest() {
   if (!ref) { toast('❌ Enter payment reference', 'var(--danger)'); return; }
   if (!_selectedPlan) { toast('❌ Select a plan first', 'var(--danger)'); return; }
 
-  var user = firebase.auth().currentUser;
+  var user = window._auth ? window._auth.currentUser : null;
   if (!user) { toast('❌ Not signed in', 'var(--danger)'); return; }
 
   var emailKey = user.email.replace(/\./g, '_').replace(/@/g, '_at_');
@@ -10585,8 +10781,7 @@ function submitSubRequest() {
   };
 
   // Save to Firebase by email key
-  var dbRef = firebase.database().ref('subscription-requests/' + emailKey);
-  dbRef.set(reqData).then(function() {
+  window._fbSet(window._fbRef(window._fbDb, 'subscription-requests/' + emailKey), reqData).then(function() {
     toast('✅ Request sent to admin! Wait for activation.');
     document.getElementById('sub-status-icon').textContent = '⏳';
     document.getElementById('sub-status-text').textContent = 'Request Sent to Admin';
@@ -10619,8 +10814,8 @@ function checkSubscription(user) {
   if (appEl) appEl.style.display = 'none';
 
   var emailKey = user.email.replace(/\./g, '_').replace(/@/g, '_at_');
-  var subRef = firebase.database().ref('subscriptions/' + emailKey);
-  subRef.on('value', function(snap) {
+  var subRef = window._fbRef(window._fbDb, 'subscriptions/' + emailKey);
+  window._fbOnValue(subRef, function(snap) {
     _subData = snap.val();
     var subScreen = document.getElementById('sub-screen');
     var appEl = document.getElementById('main-app-wrap');
@@ -10649,8 +10844,8 @@ function checkSubscription(user) {
     }
 
     // Check pending request
-    var reqRef = firebase.database().ref('subscription-requests/' + emailKey);
-    reqRef.on('value', function(reqSnap) {
+    var reqRef = window._fbRef(window._fbDb, 'subscription-requests/' + emailKey);
+    window._fbOnValue(reqRef, function(reqSnap) {
       var req = reqSnap.val();
       if (req && req.status === 'pending') {
         showSubScreen('pending');
@@ -10701,7 +10896,7 @@ function showSubScreen(status, expires) {
 }
 
 function subLogout() {
-  firebase.auth().signOut().then(function() {
+  window._auth.signOut().then(function() {
     document.getElementById('sub-screen').style.display = 'none';
     document.getElementById('auth-screen').style.display = 'flex';
     document.getElementById('main-app-wrap').style.display = 'none';
