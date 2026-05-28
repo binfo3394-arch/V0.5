@@ -90,9 +90,6 @@ var openM, closeM, goPage, renderAll;
   window._fbDb = database;
   window._fbRef = ref;
   window._fbSet = set;
-  window._fbGet = get;
-  window._fbOnValue = onValue;
-  window._fbRemove = remove;
 
   window.firebaseSignUp = function(email, password, displayName, phone) {
     return createUserWithEmailAndPassword(auth, email, password)
@@ -1824,213 +1821,6 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
   </div>
 </div>
 
-<!-- SUBSCRIPTION SCREEN -->
-<div id="sub-screen" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:99998;overflow-y:auto">
-  <div style="min-height:100vh;padding:20px;background:radial-gradient(ellipse at 30% 40%,rgba(108,99,255,0.18) 0%,transparent 60%),radial-gradient(ellipse at 80% 80%,rgba(245,0,87,0.12) 0%,transparent 50%),var(--bg)">
-    <div style="max-width:600px;margin:0 auto">
-      <!-- Header -->
-      <div style="text-align:center;margin-bottom:24px">
-        <div style="font-size:48px;margin-bottom:8px">📱</div>
-        <h1 style="font-size:22px;font-weight:800;color:var(--primary)">ST Mobile POS</h1>
-        <p style="font-size:13px;color:var(--muted);margin-top:4px">Activate your subscription to continue</p>
-        <p id="sub-user-email" style="font-size:12px;color:var(--primary);margin-top:6px;font-weight:600"></p>
-      </div>
-
-      <!-- Current Status -->
-      <div id="sub-status-card" style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:20px;text-align:center">
-        <div id="sub-status-icon" style="font-size:32px;margin-bottom:6px">⏳</div>
-        <div id="sub-status-text" style="font-size:14px;font-weight:700;color:var(--warning)">Checking subscription...</div>
-        <div id="sub-status-detail" style="font-size:12px;color:var(--muted);margin-top:4px"></div>
-      </div>
-
-      <!-- Price List + Bank Details (Always Visible) -->
-      <div id="sub-pricing-section">
-        <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:16px">
-          <div style="font-size:15px;font-weight:700;margin-bottom:14px;color:var(--text);text-align:center">📦 Subscription Plans</div>
-
-          <!-- Price Table -->
-          <div style="background:var(--card2);border-radius:10px;overflow:hidden;margin-bottom:16px">
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--border)">
-              <div style="background:var(--primary);color:#fff;padding:10px;font-size:12px;font-weight:700;text-align:center">Plan</div>
-              <div style="background:var(--primary);color:#fff;padding:10px;font-size:12px;font-weight:700;text-align:center">Duration</div>
-              <div style="background:var(--primary);color:#fff;padding:10px;font-size:12px;font-weight:700;text-align:center">Price</div>
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--border)">
-              <div style="background:var(--card);padding:10px;font-size:12px;text-align:center">📅</div>
-              <div style="background:var(--card);padding:10px;font-size:12px;text-align:center">1 Month</div>
-              <div style="background:var(--card);padding:10px;font-size:13px;font-weight:700;text-align:center;color:var(--primary)">Rs. 350</div>
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--border)">
-              <div style="background:var(--card);padding:10px;font-size:12px;text-align:center">📅</div>
-              <div style="background:var(--card);padding:10px;font-size:12px;text-align:center">3 Months</div>
-              <div style="background:var(--card);padding:10px;font-size:13px;font-weight:700;text-align:center;color:var(--success)">Rs. 500</div>
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--border)">
-              <div style="background:var(--card);padding:10px;font-size:12px;text-align:center">📅</div>
-              <div style="background:var(--card);padding:10px;font-size:12px;text-align:center">6 Months</div>
-              <div style="background:var(--card);padding:10px;font-size:13px;font-weight:700;text-align:center;color:var(--info)">Rs. 750</div>
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--border)">
-              <div style="background:var(--card);padding:10px;font-size:12px;text-align:center">⭐</div>
-              <div style="background:var(--card);padding:10px;font-size:12px;text-align:center">1 Year</div>
-              <div style="background:var(--card);padding:10px;font-size:13px;font-weight:700;text-align:center;color:var(--warning)">Rs. 1,000</div>
-            </div>
-          </div>
-
-          <!-- Bank Details -->
-          <div style="background:linear-gradient(135deg,rgba(108,99,255,0.1),rgba(0,230,118,0.08));border:1px solid var(--border);border-radius:10px;padding:14px">
-            <div style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--primary);text-align:center">📌 ගෙවීම් විස්තර / Payment Details</div>
-            <div style="display:grid;gap:8px">
-              <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
-                <span style="font-size:12px;color:var(--muted)">💳 බැංකුව / Bank</span>
-                <span style="font-size:13px;font-weight:700">BOC Bank</span>
-              </div>
-              <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
-                <span style="font-size:12px;color:var(--muted)">📍 ගිණුම් අංකය / Account No</span>
-                <span style="font-size:14px;font-weight:800;color:var(--primary);cursor:pointer" onclick="copyText('92949122')">92949122 📋</span>
-              </div>
-              <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
-                <span style="font-size:12px;color:var(--muted)">📝 නම / Name</span>
-                <span style="font-size:13px;font-weight:700">D T Rajapaksha</span>
-              </div>
-              <div style="display:flex;justify-content:space-between;padding:8px 0">
-                <span style="font-size:12px;color:var(--muted)">🌍 ස්ථානය / Location</span>
-                <span style="font-size:13px;font-weight:700">Norochchole</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Instructions -->
-          <div style="background:var(--card2);border-radius:10px;padding:12px;margin-top:12px;font-size:12px;color:var(--muted);line-height:1.6">
-            <div style="font-weight:700;color:var(--text);margin-bottom:6px">📋 How to activate:</div>
-            1. Select a plan below and transfer the amount to the above bank account<br>
-            2. Submit your payment reference below<br>
-            3. Your request will be sent to admin for verification<br>
-            4. Admin will activate your account after verifying payment<br>
-            5. Click "Check Again" or refresh this page after activation
-            <div style="margin-top:8px;padding:8px;background:rgba(108,99,255,0.1);border-radius:6px;color:var(--primary);font-weight:600">
-              📤 Activation request එක admin panel එකට යනවා. Admin verify කරලා activate කරනවා.
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Select Plan Button -->
-      <div id="sub-select-section" style="text-align:center;margin-bottom:16px">
-        <button class="btn bp2" style="padding:12px 32px;font-size:14px" onclick="showPlanSelector()">📦 Select Plan & Pay</button>
-      </div>
-
-      <!-- Plan Selector (Hidden by default) -->
-      <div id="sub-plans-section" style="display:none">
-        <div style="font-size:15px;font-weight:700;margin-bottom:12px;color:var(--text);text-align:center">📦 Select Your Plan</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
-          <div class="sub-plan" data-plan="1m" onclick="selectPlan('1m')">
-            <div style="font-size:20px;margin-bottom:4px">📅</div>
-            <div style="font-size:14px;font-weight:800;color:var(--primary)">1 Month</div>
-            <div style="font-size:18px;font-weight:800;margin:4px 0">Rs. 350</div>
-          </div>
-          <div class="sub-plan" data-plan="3m" onclick="selectPlan('3m')">
-            <div style="font-size:20px;margin-bottom:4px">📅</div>
-            <div style="font-size:14px;font-weight:800;color:var(--success)">3 Months</div>
-            <div style="font-size:18px;font-weight:800;margin:4px 0">Rs. 500</div>
-          </div>
-          <div class="sub-plan" data-plan="6m" onclick="selectPlan('6m')">
-            <div style="font-size:20px;margin-bottom:4px">📅</div>
-            <div style="font-size:14px;font-weight:800;color:var(--info)">6 Months</div>
-            <div style="font-size:18px;font-weight:800;margin:4px 0">Rs. 750</div>
-          </div>
-          <div class="sub-plan recommended" data-plan="1y" onclick="selectPlan('1y')">
-            <div style="position:absolute;top:-8px;right:10px;background:var(--primary);color:#fff;font-size:9px;padding:2px 8px;border-radius:10px;font-weight:700">BEST</div>
-            <div style="font-size:20px;margin-bottom:4px">⭐</div>
-            <div style="font-size:14px;font-weight:800;color:var(--warning)">1 Year</div>
-            <div style="font-size:18px;font-weight:800;margin:4px 0">Rs. 1,000</div>
-          </div>
-        </div>
-        <div style="text-align:center">
-          <span style="font-size:12px;color:var(--muted);cursor:pointer" onclick="document.getElementById('sub-plans-section').style.display='none';document.getElementById('sub-select-section').style.display=''">← Cancel</span>
-        </div>
-      </div>
-
-      <!-- Submit Payment Proof -->
-      <div id="sub-payment-section" style="display:none">
-        <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:16px">
-          <div style="font-size:15px;font-weight:700;margin-bottom:14px;color:var(--text)">📤 Submit Payment Proof</div>
-          <div style="background:var(--card2);border-radius:10px;padding:12px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center">
-            <span style="font-size:12px;color:var(--muted)">Selected Plan</span>
-            <span id="sub-sel-plan" style="font-size:13px;font-weight:700;color:var(--primary)">—</span>
-            <span id="sub-sel-amount" style="font-size:15px;font-weight:800;color:var(--success)">—</span>
-          </div>
-          <!-- Quick bank reminder -->
-          <div style="background:rgba(108,99,255,0.08);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:14px;font-size:11px;color:var(--muted);text-align:center">
-            Transfer to: <b style="color:var(--primary)">BOC Bank</b> | Acc: <b style="color:var(--primary);cursor:pointer" onclick="copyText('92949122')">92949122 📋</b> | <b>D T Rajapaksha</b>
-          </div>
-          <div class="fg">
-            <label>Your Name</label>
-            <input type="text" id="sub-pay-name" placeholder="Enter your name">
-          </div>
-          <div class="fg">
-            <label>Phone Number</label>
-            <input type="tel" id="sub-pay-phone" placeholder="07X XXX XXXX">
-          </div>
-          <div class="fg">
-            <label>Payment Reference / Slip No</label>
-            <input type="text" id="sub-pay-ref" placeholder="Bank reference number">
-          </div>
-          <button class="btn bp2" style="width:100%;padding:12px;font-size:14px;margin-top:8px" onclick="submitSubRequest()">📤 Submit to Admin for Activation</button>
-        </div>
-
-        <div style="text-align:center;margin-bottom:16px">
-          <a href="https://wa.me/94781530627?text=Hi%2C%20I%20want%20to%20activate%20ST%20Mobile%20POS%20subscription" target="_blank" class="btn bwa" style="padding:10px 24px;font-size:13px;text-decoration:none">
-            💬 WhatsApp: +94 78 153 0627
-          </a>
-        </div>
-
-        <div style="text-align:center">
-          <span style="font-size:12px;color:var(--muted);cursor:pointer" onclick="document.getElementById('sub-payment-section').style.display='none';document.getElementById('sub-select-section').style.display=''">← Back</span>
-        </div>
-      </div>
-
-      <!-- Actions -->
-      <div style="text-align:center;margin-top:20px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
-        <button class="btn bp2" style="padding:8px 20px;font-size:12px" onclick="checkSubscription(window._auth ? window._auth.currentUser : null)">🔄 Check Again</button>
-        <button class="btn" style="background:rgba(255,23,68,0.12);color:var(--danger);border:1px solid rgba(255,23,68,0.3);padding:8px 20px;font-size:12px" onclick="subLogout()">🚪 Sign Out</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<style>
-.sub-plan {
-  background: var(--card);
-  border: 2px solid var(--border);
-  border-radius: 14px;
-  padding: 16px;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.2s;
-  position: relative;
-}
-.sub-plan:hover {
-  border-color: var(--primary);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 20px rgba(108,99,255,0.2);
-}
-.sub-plan.selected {
-  border-color: var(--primary);
-  background: rgba(108,99,255,0.08);
-  box-shadow: 0 0 0 3px rgba(108,99,255,0.2);
-}
-.sub-plan.recommended {
-  border-color: var(--primary);
-}
-@media(max-width: 768px) {
-  #sub-screen > div { padding: 16px 12px; }
-  #sub-screen .sub-plan { padding: 12px; }
-  #sub-screen .sub-plan [style*="font-size:20px"] { font-size: 17px !important; }
-  #sub-screen h1 { font-size: 18px; }
-}
-</style>
-
 <!-- PIN LOCK SCREEN -->
 <div id="pin-screen" style="display:none">
   <div style="font-size:36px;margin-bottom:4px">🔐</div>
@@ -2190,7 +1980,6 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
       <div class="nitem" data-page="reports"><span class="ic">📑</span><span>Reports</span></div>
       <div class="nitem" data-page="activitylog"><span class="ic">🔍</span><span>Activity Log</span></div>
       <div class="nitem" data-page="settings"><span class="ic">⚙️</span><span>Settings</span></div>
-      <div class="nitem" data-page="subscriptions"><span class="ic">💎</span><span>Subscriptions</span></div>
       <div class="nlabel">Advanced</div>
       <div class="nitem" data-page="advanced-analytics"><span class="ic">🔮</span><span>AI Forecasting</span></div>
       <div class="nitem" data-page="abc-analysis"><span class="ic">🔢</span><span>ABC Analysis</span></div>
@@ -4125,71 +3914,6 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
             <div class="kbd-row"><span>Global Search</span><span class="kbd">Ctrl+K</span></div>
             <div class="kbd-row"><span>New Repair</span><span class="kbd">F4</span></div>
             <div class="kbd-row"><span>Close Modal</span><span class="kbd">Esc</span></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- SUBSCRIPTIONS -->
-      <div id="pg-subscriptions" class="page">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-          <h3 style="font-size:16px;font-weight:800;color:var(--primary)">💎 Subscription Manager</h3>
-          <button class="btn bp2 bsm" onclick="renderSubscriptions()">🔄 Refresh</button>
-        </div>
-        <!-- Stats -->
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">
-          <div class="scard s3"><div style="font-size:24px;font-weight:800;color:var(--warning)" id="sub-pending-count">0</div><div style="font-size:11px;color:var(--muted)">Pending Requests</div></div>
-          <div class="scard s2"><div style="font-size:24px;font-weight:800;color:var(--success)" id="sub-active-count">0</div><div style="font-size:11px;color:var(--muted)">Active Subscriptions</div></div>
-          <div class="scard s1"><div style="font-size:24px;font-weight:800;color:var(--primary)" id="sub-revenue">Rs. 0</div><div style="font-size:11px;color:var(--muted)">Total Revenue</div></div>
-        </div>
-        <!-- Grant Access -->
-        <div class="ssec">
-          <h3>🔑 Grant Access by Email</h3>
-          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end">
-            <div class="fg" style="flex:1;min-width:200px;margin-bottom:0">
-              <label>User Email</label>
-              <input type="email" id="grant-email" placeholder="user@email.com">
-            </div>
-            <div class="fg" style="min-width:140px;margin-bottom:0">
-              <label>Plan</label>
-              <select id="grant-plan" style="width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);padding:9px 10px;border-radius:7px;font-size:12px">
-                <option value="1m">1 Month - Rs.350</option>
-                <option value="3m">3 Months - Rs.500</option>
-                <option value="6m">6 Months - Rs.750</option>
-                <option value="1y">1 Year - Rs.1000</option>
-              </select>
-            </div>
-            <button class="btn bs2" onclick="grantAccessByEmail()" style="height:38px">✅ Grant Access</button>
-          </div>
-          <div style="font-size:11px;color:var(--muted);margin-top:8px">Directly activate subscription for a user by their email. User must have signed up to POS first.</div>
-        </div>
-        <!-- Pending Requests -->
-        <div class="ssec">
-          <h3>⏳ Pending Activation Requests</h3>
-          <div style="overflow-x:auto">
-            <table>
-              <thead><tr><th>Date</th><th>Name</th><th>Email</th><th>Phone</th><th>Plan</th><th>Amount</th><th>Pay Ref</th><th>Action</th></tr></thead>
-              <tbody id="sub-pending-tbl"><tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">Loading...</td></tr></tbody>
-            </table>
-          </div>
-        </div>
-        <!-- Active Subscriptions -->
-        <div class="ssec">
-          <h3>✅ Active Subscriptions</h3>
-          <div style="overflow-x:auto">
-            <table>
-              <thead><tr><th>Email</th><th>Name</th><th>Plan</th><th>Activated</th><th>Expires</th><th>Days Left</th><th>Status</th><th>Action</th></tr></thead>
-              <tbody id="sub-active-tbl"><tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">Loading...</td></tr></tbody>
-            </table>
-          </div>
-        </div>
-        <!-- History -->
-        <div class="ssec">
-          <h3>📋 All Requests History</h3>
-          <div style="overflow-x:auto">
-            <table>
-              <thead><tr><th>Date</th><th>Email</th><th>Name</th><th>Plan</th><th>Amount</th><th>Status</th></tr></thead>
-              <tbody id="sub-history-tbl"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">Loading...</td></tr></tbody>
-            </table>
           </div>
         </div>
       </div>
@@ -7554,17 +7278,15 @@ var _authUserProfile = null;
 window._onAuthChanged = function(user) {
   _authUser = user;
   var authScreen = document.getElementById('auth-screen');
-  var subScreen = document.getElementById('sub-screen');
   var appEl = document.getElementById('main-app-wrap');
   if (!authScreen || !appEl) return;
   // Hide the auth-loading spinner — Firebase has resolved
   var loadingEl = document.getElementById('auth-loading');
   if (loadingEl) loadingEl.style.display = 'none';
   if (user) {
-    // User is signed in — HIDE app until subscription confirmed
+    // User is signed in
     authScreen.style.display = 'none';
-    appEl.style.display = 'none';
-    if (subScreen) subScreen.style.display = 'none';
+    appEl.style.display = '';
     // Load user profile from Firebase DB
     if (typeof window.firebaseGetUserProfile === 'function') {
       window.firebaseGetUserProfile(user.uid).then(function(snap) {
@@ -7572,8 +7294,6 @@ window._onAuthChanged = function(user) {
       }).catch(function(e){ console.warn('Profile load failed:', e); });
     }
     updateAuthUI(user);
-    // Check subscription status — this will show/hide app
-    checkSubscription(user);
     // If user changed (different UID from previous), reset flag to force reload
     if (window._firebaseUid && window._firebaseUid !== user.uid) {
       window._firebaseLoaded = false;
@@ -7591,7 +7311,6 @@ window._onAuthChanged = function(user) {
     // No user signed in — detach live listener and reset state
     if (window._liveSyncUnsub) { window._liveSyncUnsub(); window._liveSyncUnsub = null; }
     authScreen.style.display = 'flex';
-    if (subScreen) subScreen.style.display = 'none';
     appEl.style.display = 'none';
     _authUserProfile = null;
     window._firebaseLoaded = false;
@@ -8122,7 +7841,7 @@ function _initSidebarSortable() {
 }
 
 // =========== NAVIGATION ===========
-var pageTitles = { dashboard:'Dashboard', pos:'New Sale 🛍️', cart:'🛒 Cart & Checkout', inventory:'Inventory', repairs:'Repairs', orders:'Online Orders', customers:'Customers', invoices:'Invoices', analytics:'Analytics', credits:'Credit Sales', suppliers:'Suppliers', stocklog:'Stock History', settings:'Settings', 'repair-parts':'🔩 Repair Parts', 'gift-vouchers':'🎫 Gift Vouchers', notifications:'🔔 Notifications', subscriptions:'💎 Subscriptions' };
+var pageTitles = { dashboard:'Dashboard', pos:'New Sale 🛍️', cart:'🛒 Cart & Checkout', inventory:'Inventory', repairs:'Repairs', orders:'Online Orders', customers:'Customers', invoices:'Invoices', analytics:'Analytics', credits:'Credit Sales', suppliers:'Suppliers', stocklog:'Stock History', settings:'Settings', 'repair-parts':'🔩 Repair Parts', 'gift-vouchers':'🎫 Gift Vouchers', notifications:'🔔 Notifications' };
 function goPage(id) {
   closeSidebar();
   document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
@@ -8151,133 +7870,6 @@ function goPage(id) {
   if (id === 'notifications') { renderNotifPage(); }
   if (id === 'repair-parts') { renderRepairParts(); }
   if (id === 'gift-vouchers') { renderGiftVouchers(); }
-  if (id === 'subscriptions') { renderSubscriptions(); }
-}
-
-// =========== SUBSCRIPTION MANAGER ===========
-function emailToKey(email) { return (email||'').replace(/\./g,'_').replace(/@/g,'_at_'); }
-
-function renderSubscriptions() {
-  var pendingTbl = document.getElementById('sub-pending-tbl');
-  var activeTbl = document.getElementById('sub-active-tbl');
-  var historyTbl = document.getElementById('sub-history-tbl');
-  if (!pendingTbl || !activeTbl) return;
-  pendingTbl.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">Loading...</td></tr>';
-  activeTbl.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">Loading...</td></tr>';
-
-  if (!window._fbRef || !window._fbGet || !window._fbDb) {
-    pendingTbl.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--warning);padding:20px">⚠️ Firebase not connected</td></tr>';
-    activeTbl.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--warning);padding:20px">⚠️ Firebase not connected</td></tr>';
-    return;
-  }
-
-  window._fbGet(window._fbRef(window._fbDb, 'subscription-requests')).then(function(snap) {
-    var requests = snap.val() || {};
-    var pending = [], allReqs = [], revenue = 0;
-    Object.keys(requests).forEach(function(ek) {
-      var r = requests[ek]; r.emailKey = ek; allReqs.push(r);
-      if (r.status === 'pending') pending.push(r);
-      if (r.status === 'approved') revenue += (r.amount || 0);
-    });
-    var pc = document.getElementById('sub-pending-count');
-    if (pc) pc.textContent = pending.length;
-
-    if (pending.length === 0) {
-      pendingTbl.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">No pending requests</td></tr>';
-    } else {
-      pendingTbl.innerHTML = pending.sort(function(a,b){ return new Date(b.requestedAt||0)-new Date(a.requestedAt||0); }).map(function(r) {
-        var d = r.requestedAt ? new Date(r.requestedAt).toLocaleDateString() : '—';
-        return '<tr><td>'+d+'</td><td><b>'+esc(r.name||'—')+'</b></td><td>'+esc(r.email||'—')+'</td><td>'+esc(r.phone||'—')+'</td><td><span class="badge" style="background:rgba(108,99,255,0.15);color:var(--primary)">'+esc(r.planName||r.plan||'—')+'</span></td><td style="font-weight:700;color:var(--success)">Rs. '+(r.amount||0).toLocaleString()+'</td><td style="font-size:11px;font-family:monospace">'+esc(r.payRef||'—')+'</td><td><button class="btn bs2 bsm" onclick="approveSub(\''+esc(emailToKey(r.email))+'\',\''+esc(r.plan||'1m')+'\')" style="margin-right:4px">✅ Approve</button><button class="btn bd2 bsm" onclick="rejectSub(\''+esc(emailToKey(r.email))+'\')">❌ Reject</button></td></tr>';
-      }).join('');
-    }
-
-    if (historyTbl) {
-      if (allReqs.length === 0) {
-        historyTbl.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">No requests yet</td></tr>';
-      } else {
-        historyTbl.innerHTML = allReqs.sort(function(a,b){ return new Date(b.requestedAt||0)-new Date(a.requestedAt||0); }).map(function(r) {
-          var d = r.requestedAt ? new Date(r.requestedAt).toLocaleDateString() : '—';
-          var sb = r.status==='approved' ? '<span class="badge" style="background:rgba(0,230,118,0.15);color:var(--success)">✅ Approved</span>' : r.status==='rejected' ? '<span class="badge" style="background:rgba(255,23,68,0.15);color:var(--danger)">❌ Rejected</span>' : '<span class="badge" style="background:rgba(255,171,0,0.15);color:var(--warning)">⏳ Pending</span>';
-          return '<tr><td>'+d+'</td><td>'+esc(r.email||'—')+'</td><td>'+esc(r.name||'—')+'</td><td>'+esc(r.planName||'—')+'</td><td>Rs. '+(r.amount||0).toLocaleString()+'</td><td>'+sb+'</td></tr>';
-        }).join('');
-      }
-    }
-
-    return window._fbGet(window._fbRef(window._fbDb, 'subscriptions'));
-  }).then(function(subSnap) {
-    var subs = (subSnap && subSnap.val()) || {};
-    var activeList = [], now = new Date();
-    Object.keys(subs).forEach(function(ek) {
-      var s = subs[ek];
-      if (s.active && s.expiresAt && new Date(s.expiresAt) > now) { s.emailKey = ek; activeList.push(s); }
-    });
-    var ac = document.getElementById('sub-active-count');
-    if (ac) ac.textContent = activeList.length;
-
-    if (activeList.length === 0) {
-      activeTbl.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">No active subscriptions</td></tr>';
-    } else {
-      activeTbl.innerHTML = activeList.map(function(s) {
-        var exp = new Date(s.expiresAt), dl = Math.ceil((exp-now)/(1000*60*60*24));
-        var sc = dl<=7?'var(--danger)':dl<=30?'var(--warning)':'var(--success)';
-        return '<tr><td><b>'+esc(s.email||'—')+'</b></td><td>'+esc(s.userName||'—')+'</td><td><span class="badge" style="background:rgba(108,99,255,0.15);color:var(--primary)">'+esc(s.planName||'—')+'</span></td><td>'+(s.activatedAt?new Date(s.activatedAt).toLocaleDateString():'—')+'</td><td>'+exp.toLocaleDateString()+'</td><td style="color:'+sc+';font-weight:700">'+dl+' days</td><td style="color:var(--success);font-size:11px">✅ Active</td><td><button class="btn bd2 bsm" onclick="revokeSub(\''+esc(s.emailKey)+'\')">🚫 Revoke</button></td></tr>';
-      }).join('');
-    }
-    var re = document.getElementById('sub-revenue');
-    if (re) re.textContent = 'Rs. ' + revenue.toLocaleString();
-  }).catch(function(e) {
-    console.error('Sub load error:', e);
-    pendingTbl.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--danger)">Error: ' + e.message + '</td></tr>';
-  });
-}
-
-function approveSub(emailKey, plan) {
-  if (!confirm('Approve this subscription?')) return;
-  var p = SUB_PLANS[plan] || SUB_PLANS['1m'];
-  var now = new Date(), expires = new Date(now.getTime() + p.days * 86400000);
-  window._fbGet(window._fbRef(window._fbDb, 'subscription-requests/' + emailKey)).then(function(snap) {
-    var req = snap.val() || {};
-    return window._fbSet(window._fbRef(window._fbDb, 'subscriptions/' + emailKey), {
-      active:true, plan:plan, planName:p.name, email:req.email||'', userName:req.name||'',
-      activatedAt:now.toISOString(), expiresAt:expires.toISOString(), activatedBy:'admin'
-    });
-  }).then(function() {
-    return window._fbSet(window._fbRef(window._fbDb, 'subscription-requests/' + emailKey + '/status'), 'approved');
-  }).then(function() {
-    toast('✅ Approved! Expires: ' + expires.toLocaleDateString()); renderSubscriptions();
-  }).catch(function(e) { toast('❌ Error: ' + e.message, 'var(--danger)'); });
-}
-
-function rejectSub(emailKey) {
-  if (!confirm('Reject this request?')) return;
-  window._fbSet(window._fbRef(window._fbDb, 'subscription-requests/' + emailKey + '/status'), 'rejected').then(function() {
-    toast('❌ Rejected'); renderSubscriptions();
-  }).catch(function(e) { toast('❌ Error: ' + e.message, 'var(--danger)'); });
-}
-
-function revokeSub(emailKey) {
-  if (!confirm('Revoke subscription? User loses access immediately.')) return;
-  window._fbSet(window._fbRef(window._fbDb, 'subscriptions/' + emailKey + '/active'), false).then(function() {
-    toast('🚫 Revoked'); renderSubscriptions();
-  }).catch(function(e) { toast('❌ Error: ' + e.message, 'var(--danger)'); });
-}
-
-function grantAccessByEmail() {
-  var email = document.getElementById('grant-email').value.trim();
-  var plan = document.getElementById('grant-plan').value;
-  if (!email || !email.includes('@')) { toast('❌ Enter valid email', 'var(--danger)'); return; }
-  var p = SUB_PLANS[plan] || SUB_PLANS['1m'];
-  var now = new Date(), expires = new Date(now.getTime() + p.days * 86400000);
-  var ek = emailToKey(email);
-  if (!confirm('Grant ' + p.name + ' access to ' + email + '?')) return;
-  window._fbSet(window._fbRef(window._fbDb, 'subscriptions/' + ek), {
-    active:true, plan:plan, planName:p.name, email:email, userName:'',
-    activatedAt:now.toISOString(), expiresAt:expires.toISOString(), activatedBy:'admin-manual'
-  }).then(function() {
-    toast('✅ Granted! ' + email + ' → ' + p.name);
-    document.getElementById('grant-email').value = '';
-    renderSubscriptions();
-  }).catch(function(e) { toast('❌ Error: ' + e.message, 'var(--danger)'); });
 }
 
 // =========== TOAST ===========
@@ -10708,200 +10300,6 @@ function clrData(type){
   saveDB(); renderAll(); toast('🗑️ Cleared','var(--danger)');
 }
 
-
-// =========== SUBSCRIPTION SYSTEM ===========
-var SUB_PLANS = {
-  '1m':  { name:'1 Month',  price:350,   days:30 },
-  '3m':  { name:'3 Months', price:500,   days:90 },
-  '6m':  { name:'6 Months', price:750,   days:180 },
-  '1y':  { name:'1 Year',   price:1000,  days:365 }
-};
-var _selectedPlan = null;
-var _subData = null;
-
-function showPlanSelector() {
-  document.getElementById('sub-plans-section').style.display = '';
-  document.getElementById('sub-select-section').style.display = 'none';
-  document.getElementById('sub-payment-section').style.display = 'none';
-}
-
-function selectPlan(plan) {
-  _selectedPlan = plan;
-  document.querySelectorAll('.sub-plan').forEach(function(el){ el.classList.remove('selected'); });
-  var el = document.querySelector('.sub-plan[data-plan="'+plan+'"]');
-  if (el) el.classList.add('selected');
-  var p = SUB_PLANS[plan];
-  document.getElementById('sub-sel-plan').textContent = p.name;
-  document.getElementById('sub-sel-amount').textContent = 'Rs. ' + p.price.toLocaleString();
-  document.getElementById('sub-plans-section').style.display = 'none';
-  document.getElementById('sub-select-section').style.display = 'none';
-  document.getElementById('sub-payment-section').style.display = '';
-}
-
-function copyText(text) {
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(text);
-    toast('📋 Copied: ' + text);
-  } else {
-    var inp = document.createElement('input');
-    inp.value = text;
-    document.body.appendChild(inp);
-    inp.select();
-    document.execCommand('copy');
-    document.body.removeChild(inp);
-    toast('📋 Copied: ' + text);
-  }
-}
-
-function submitSubRequest() {
-  var name = document.getElementById('sub-pay-name').value.trim();
-  var phone = document.getElementById('sub-pay-phone').value.trim();
-  var ref = document.getElementById('sub-pay-ref').value.trim();
-  if (!name) { toast('❌ Enter your name', 'var(--danger)'); return; }
-  if (!phone) { toast('❌ Enter phone number', 'var(--danger)'); return; }
-  if (!ref) { toast('❌ Enter payment reference', 'var(--danger)'); return; }
-  if (!_selectedPlan) { toast('❌ Select a plan first', 'var(--danger)'); return; }
-
-  var user = window._auth ? window._auth.currentUser : null;
-  if (!user) { toast('❌ Not signed in', 'var(--danger)'); return; }
-
-  var emailKey = user.email.replace(/\./g, '_').replace(/@/g, '_at_');
-  var reqData = {
-    uid: user.uid,
-    email: user.email,
-    name: name,
-    phone: phone,
-    plan: _selectedPlan,
-    planName: SUB_PLANS[_selectedPlan].name,
-    amount: SUB_PLANS[_selectedPlan].price,
-    payRef: ref,
-    status: 'pending',
-    requestedAt: new Date().toISOString(),
-    expiresAt: null
-  };
-
-  // Save to Firebase by email key
-  window._fbSet(window._fbRef(window._fbDb, 'subscription-requests/' + emailKey), reqData).then(function() {
-    toast('✅ Request sent to admin! Wait for activation.');
-    document.getElementById('sub-status-icon').textContent = '⏳';
-    document.getElementById('sub-status-text').textContent = 'Request Sent to Admin';
-    document.getElementById('sub-status-text').style.color = 'var(--warning)';
-    document.getElementById('sub-status-detail').textContent = 'Your payment proof has been sent to admin. Admin will verify and activate your account. Click "Check Again" after some time.';
-    document.getElementById('sub-plans-section').style.display = 'none';
-    document.getElementById('sub-payment-section').style.display = 'none';
-    document.getElementById('sub-select-section').style.display = 'none';
-  }).catch(function(e) {
-    toast('❌ Error: ' + e.message, 'var(--danger)');
-  });
-}
-
-function checkSubscription(user) {
-  if (!user || !user.email) return;
-  // Show loading state
-  var subScreen = document.getElementById('sub-screen');
-  var appEl = document.getElementById('main-app-wrap');
-  if (subScreen) {
-    subScreen.style.display = '';
-    document.getElementById('sub-user-email').textContent = '📧 ' + user.email;
-    document.getElementById('sub-status-icon').textContent = '⏳';
-    document.getElementById('sub-status-text').textContent = 'Checking subscription...';
-    document.getElementById('sub-status-text').style.color = 'var(--primary)';
-    document.getElementById('sub-status-detail').textContent = 'Please wait while we verify your account.';
-    document.getElementById('sub-plans-section').style.display = 'none';
-    document.getElementById('sub-payment-section').style.display = 'none';
-    document.getElementById('sub-select-section').style.display = '';
-  }
-  if (appEl) appEl.style.display = 'none';
-
-  var emailKey = user.email.replace(/\./g, '_').replace(/@/g, '_at_');
-  var subRef = window._fbRef(window._fbDb, 'subscriptions/' + emailKey);
-  window._fbOnValue(subRef, function(snap) {
-    _subData = snap.val();
-    var subScreen = document.getElementById('sub-screen');
-    var appEl = document.getElementById('main-app-wrap');
-
-    if (_subData && _subData.active && _subData.expiresAt) {
-      var expires = new Date(_subData.expiresAt);
-      var now = new Date();
-      if (expires > now) {
-        // Active subscription
-        subScreen.style.display = 'none';
-        appEl.style.display = '';
-        var daysLeft = Math.ceil((expires - now) / (1000*60*60*24));
-        var statusEl = document.getElementById('sub-status-text');
-        // Update status card for info
-        document.getElementById('sub-status-icon').textContent = '✅';
-        document.getElementById('sub-status-text').textContent = 'Active - ' + _subData.planName;
-        document.getElementById('sub-status-text').style.color = 'var(--success)';
-        document.getElementById('sub-status-detail').textContent = 'Expires: ' + expires.toLocaleDateString() + ' (' + daysLeft + ' days left)';
-        console.log('✅ Subscription active:', _subData.planName, 'expires', expires.toLocaleDateString());
-        return;
-      } else {
-        // Expired
-        showSubScreen('expired', expires);
-        return;
-      }
-    }
-
-    // Check pending request
-    var reqRef = window._fbRef(window._fbDb, 'subscription-requests/' + emailKey);
-    window._fbOnValue(reqRef, function(reqSnap) {
-      var req = reqSnap.val();
-      if (req && req.status === 'pending') {
-        showSubScreen('pending');
-      } else if (req && req.status === 'rejected') {
-        showSubScreen('rejected');
-      } else {
-        showSubScreen('none');
-      }
-    });
-  });
-}
-
-function showSubScreen(status, expires) {
-  var subScreen = document.getElementById('sub-screen');
-  var appEl = document.getElementById('main-app-wrap');
-  subScreen.style.display = '';
-  appEl.style.display = 'none';
-
-  if (status === 'pending') {
-    document.getElementById('sub-status-icon').textContent = '⏳';
-    document.getElementById('sub-status-text').textContent = 'Request Pending Review';
-    document.getElementById('sub-status-text').style.color = 'var(--warning)';
-    document.getElementById('sub-status-detail').textContent = 'Your activation request is being reviewed by admin. Please wait.';
-    document.getElementById('sub-plans-section').style.display = 'none';
-    document.getElementById('sub-payment-section').style.display = 'none';
-  } else if (status === 'expired') {
-    document.getElementById('sub-status-icon').textContent = '⚠️';
-    document.getElementById('sub-status-text').textContent = 'Subscription Expired';
-    document.getElementById('sub-status-text').style.color = 'var(--danger)';
-    document.getElementById('sub-status-detail').textContent = 'Expired on: ' + (expires ? expires.toLocaleDateString() : '—') + '. Please renew to continue.';
-    document.getElementById('sub-plans-section').style.display = '';
-    document.getElementById('sub-payment-section').style.display = 'none';
-  } else if (status === 'rejected') {
-    document.getElementById('sub-status-icon').textContent = '❌';
-    document.getElementById('sub-status-text').textContent = 'Request Rejected';
-    document.getElementById('sub-status-text').style.color = 'var(--danger)';
-    document.getElementById('sub-status-detail').textContent = 'Your previous request was rejected. Please submit again with correct payment details.';
-    document.getElementById('sub-plans-section').style.display = '';
-    document.getElementById('sub-payment-section').style.display = 'none';
-  } else {
-    document.getElementById('sub-status-icon').textContent = '🔒';
-    document.getElementById('sub-status-text').textContent = 'No Active Subscription';
-    document.getElementById('sub-status-text').style.color = 'var(--warning)';
-    document.getElementById('sub-status-detail').textContent = 'Please select a plan and complete payment to activate.';
-    document.getElementById('sub-plans-section').style.display = '';
-    document.getElementById('sub-payment-section').style.display = 'none';
-  }
-}
-
-function subLogout() {
-  window._auth.signOut().then(function() {
-    document.getElementById('sub-screen').style.display = 'none';
-    document.getElementById('auth-screen').style.display = 'flex';
-    document.getElementById('main-app-wrap').style.display = 'none';
-  });
-}
 
 // =========== PIN LOCK ===========
 
