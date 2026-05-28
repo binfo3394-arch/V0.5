@@ -1,10 +1,19 @@
 <!DOCTYPE html>
-<html lang="si">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://www.gstatic.com https://apis.google.com https://unpkg.com https://*.firebaseio.com https://*.firebasedatabase.app; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.firebasestorage.app; connect-src 'self' blob: https://*.firebaseio.com https://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com wss://*.firebasedatabase.app; frame-src 'self' https://accounts.google.com https://apis.google.com;">
+<meta name="theme-color" content="#6c63ff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="description" content="Mobile barcode and QR code scanner for ST Mobile & Designing POS system.">
+<meta property="og:title" content="ST Mobile Scanner">
+<meta property="og:description" content="Mobile barcode and QR code scanner for POS.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="icons/icon-512.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
 <title>ST Mobile Scanner</title>
 <style>
   :root {
@@ -390,6 +399,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script>
+  function esc(str) { return String(str).replace(/[&<>"']/g,function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]; }); }
   // ══ Same Firebase config as main app ══
   const firebaseConfig = {
     apiKey:            "AIzaSyA2EprDDYqnR1KTlA3nADdcCcVpi-HaDMk",
@@ -649,7 +659,7 @@
     const list = document.getElementById('items-list');
     list.innerHTML = items.slice().reverse().map(it =>
       `<div class="item-chip">
-        <span class="item-chip-name">${it.name}</span>
+        <span class="item-chip-name">${esc(it.name)}</span>
         <span class="item-chip-qty">×${it.qty}</span>
         <span class="item-chip-price">Rs.${(it.price*it.qty).toFixed(0)}</span>
       </div>`

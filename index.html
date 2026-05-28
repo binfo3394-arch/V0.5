@@ -3,26 +3,39 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>ST Mobile & Designing — POS v26</title>
+<title>ST Mobile & Designing — POS v28</title>
+<meta name="description" content="ST Mobile & Designing POS — manage products, invoices, repairs, customers, inventory, expenses, and more. A full-featured point of sale system.">
 <meta name="theme-color" content="#6c63ff">
+<meta property="og:title" content="ST Mobile & Designing POS">
+<meta property="og:description" content="Full-featured POS system for mobile repair shops and retail businesses.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="icons/icon-512.png">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="ST Mobile & Designing POS">
+<meta name="twitter:description" content="Full-featured POS system for mobile repair shops and retail businesses.">
+<link rel="canonical" href="index.html">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="ST Mobile POS">
 <link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png">
-<link rel="icon" type="image/png" href="/V0.5/icons/icon-192.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<!-- CSP: Not added for local file:// usage. When deploying to a web server, add appropriate CSP headers. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://cdnjs.cloudflare.com https://unpkg.com https://www.gstatic.com https://apis.google.com https://*.firebaseio.com https://*.firebasedatabase.app; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://api.qrserver.com https://*.firebasestorage.app; connect-src 'self' blob: https://*.firebaseio.com https://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com wss://*.firebasedatabase.app; frame-src 'self' https://accounts.google.com https://apis.google.com; font-src 'self' data:;">
+
 <script>
 // Forward declarations for functions defined in later script blocks
 var openM, closeM, goPage, renderAll;
 (function() {
-  var base = (window.location.pathname.indexOf('/V0.5/')>=0) ? window.location.origin + '/V0.5/' : window.location.href.replace(/[^/]*$/,'');
+  var base = window.location.href.replace(/[^/]*$/,'');
   var manifest = {
     name: "ST Mobile & Designing POS",
     short_name: "ST POS",
-    start_url: base, scope: base,
+    description: "Point of Sale system for ST Mobile & Designing",
+    start_url: base + "index.html", scope: base,
+    id: base,
     display: "standalone", orientation: "portrait-primary",
     background_color: "#0a0a1a", theme_color: "#6c63ff",
+    categories: ["business", "productivity"],
     icons: [
       { src: base+"icons/icon-192.png", sizes:"192x192", type:"image/png", purpose:"any maskable" },
       { src: base+"icons/icon-512.png", sizes:"512x512", type:"image/png", purpose:"any maskable" }
@@ -35,16 +48,16 @@ var openM, closeM, goPage, renderAll;
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
       navigator.serviceWorker.register('sw.js', {scope: window.location.href.replace(/[^/]*$/,'')})
-        .then(function(r){ console.log('✅ SW registered', r.scope); })
+        .then(function(r){ /* SW registered */ })
         .catch(function(e){ console.warn('SW failed:', e); });
     });
   }
 })();
 </script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script defer src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
 <!-- ===== FIREBASE REALTIME DATABASE ===== -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -362,7 +375,7 @@ var openM, closeM, goPage, renderAll;
     remove(ref(database, 'mobile-scanner/' + sessionCode + '/ack')).catch(function(){});
   };
 
-  console.log('🔥 Firebase module loaded');
+  /* Firebase module loaded */
 </script>
 <style>
 :root{--primary:#6c63ff;--secondary:#f50057;--bg:#0a0a1a;--card:#12122a;--card2:#1a1a35;--border:#2a2a4a;--text:#e0e0ff;--muted:#7070a0;--success:#00e676;--warning:#ffab00;--danger:#ff1744;--info:#00b0ff;}
@@ -4850,7 +4863,7 @@ function renderStockAudit() {
   tbody.innerHTML = products.map(function(p) {
     var phys = auditData[p.id]!==undefined ? auditData[p.id] : p.stock;
     var variance = phys - (p.stock||0);
-    return '<tr><td><strong>'+p.name+'</strong></td><td>'+p.category+'</td>'+
+    return '<tr><td><strong>'+esc(p.name)+'</strong></td><td>'+esc(p.category)+'</td>'+
       '<td>'+p.stock+'</td>'+
       '<td><input type="number" value="'+phys+'" min="0" style="width:70px;font-size:12px" oninput="auditData['+p.id+']=parseInt(this.value)||0;updateAuditTotals()"></td>'+
       '<td style="color:'+(variance>0?'var(--success)':variance<0?'var(--danger)':'var(--muted)')+';font-weight:700">'+(variance>0?'+':'')+variance+'</td>'+
@@ -4878,7 +4891,7 @@ function finalizeAudit() {
   saveDB(); renderStockAudit(); toast('✅ Audit finalized! Stock updated.');
 }
 function printAuditSheet() {
-  var rows = (db.products||[]).map(function(p,i){ return '<tr><td>'+(i+1)+'</td><td>'+p.name+'</td><td>'+p.category+'</td><td>'+p.stock+'</td><td style="border:1px solid #333;min-width:80px;height:30px"></td><td style="border:1px solid #333;min-width:60px;height:30px"></td></tr>'; }).join('');
+  var rows = (db.products||[]).map(function(p,i){ return '<tr><td>'+(i+1)+'</td><td>'+esc(p.name)+'</td><td>'+esc(p.category)+'</td><td>'+p.stock+'</td><td style="border:1px solid #333;min-width:80px;height:30px"></td><td style="border:1px solid #333;min-width:60px;height:30px"></td></tr>'; }).join('');
   var w=window.open('','_blank');
   w.document.write('<html><head><title>Stock Audit Sheet</title><style>body{font-family:sans-serif;font-size:12px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ccc;padding:6px}th{background:#eee}</style></head><body><h2>Stock Audit Sheet — '+new Date().toLocaleDateString()+'</h2><table><thead><tr><th>#</th><th>Product</th><th>Category</th><th>System Qty</th><th>Physical Count</th><th>Variance</th></tr></thead><tbody>'+rows+'</tbody></table></body></html>');
   w.document.close(); w.print();
@@ -4896,7 +4909,7 @@ function renderKitAssembly() {
     var profit = (k.price||0) - totalCost;
     return '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px">'+
       '<div style="font-size:26px;margin-bottom:6px">'+(k.icon||'🔩')+'</div>'+
-      '<div style="font-size:13px;font-weight:700;margin-bottom:4px">'+k.name+'</div>'+
+      '<div style="font-size:13px;font-weight:700;margin-bottom:4px">'+esc(k.name)+'</div>'+
       '<div style="font-size:12px;color:var(--muted);margin-bottom:6px">Components: '+(k.components||[]).length+'</div>'+
       '<div style="font-size:12px;color:var(--primary);font-weight:700">Rs. '+(k.price||0).toLocaleString()+'</div>'+
       '<div style="font-size:11px;color:'+(profit>=0?'var(--success)':'var(--danger)')+'">Profit: Rs. '+Math.round(profit).toLocaleString()+'</div>'+
@@ -5050,7 +5063,7 @@ function renderFollowups() {
 
   // Populate customer datalist
   var dl=document.getElementById('fu-cust-list');
-  if(dl) dl.innerHTML=(db.customers||[]).map(function(c){ return '<option value="'+c.name+'">'; }).join('');
+  if(dl) dl.innerHTML=(db.customers||[]).map(function(c){ return '<option value="'+esc(c.name)+'">'; }).join('');
 }
 function setFuFilter(f,btn){ fuFilter=f; document.querySelectorAll('.fu-filter').forEach(function(b){ b.classList.remove('bp2'); b.classList.add('bo'); }); btn.classList.add('bp2'); btn.classList.remove('bo'); renderFollowups(); }
 function saveFollowup(){
@@ -5082,7 +5095,7 @@ function renderReferrals() {
   document.getElementById('ref-revenue').textContent='Rs. '+totalRev.toLocaleString();
   document.getElementById('ref-bonus').textContent='Rs. '+Math.round(totalBonus).toLocaleString();
   var tbody=document.getElementById('ref-tbl');
-  tbody.innerHTML=refs.length?refs.map(function(r){ return '<tr><td>'+r.referrer+'</td><td>'+r.referredCustomer+'</td><td>'+(r.date||'—')+'</td><td>Rs. '+(r.saleAmount||0).toLocaleString()+'</td><td style="color:var(--success)">Rs. '+(r.bonus||0)+'</td><td><span class="badge bs">✅ Active</span></td></tr>'; }).join(''):'<tr><td colspan="6" class="empty" style="text-align:center;padding:20px;color:var(--muted)">No referrals yet</td></tr>';
+  tbody.innerHTML=refs.length?refs.map(function(r){ return '<tr><td>'+esc(r.referrer)+'</td><td>'+esc(r.referredCustomer)+'</td><td>'+(r.date||'—')+'</td><td>Rs. '+(r.saleAmount||0).toLocaleString()+'</td><td style="color:var(--success)">Rs. '+(r.bonus||0)+'</td><td><span class="badge bs">✅ Active</span></td></tr>'; }).join(''):'<tr><td colspan="6" class="empty" style="text-align:center;padding:20px;color:var(--muted)">No referrals yet</td></tr>';
   var ba=document.getElementById('ref-bonus-amt'); var dp=document.getElementById('ref-discount-pct');
   if(ba) ba.value=db.settings.refBonusAmt||200;
   if(dp) dp.value=db.settings.refDiscountPct||5;
@@ -5426,7 +5439,7 @@ function renderTasks(){
       '<button class="btn bd2 bsm" onclick="deleteTask('+t.id+')">🗑️</button></div>';
   }).join(''):'<div class="empty"><div class="ei">✅</div>No tasks found</div>';
   // Staff datalist
-  var dl=document.getElementById('task-staff-list'); if(dl) dl.innerHTML=(db.staff||[]).map(function(s){ return '<option value="'+s.name+'">'; }).join('');
+  var dl=document.getElementById('task-staff-list'); if(dl) dl.innerHTML=(db.staff||[]).map(function(s){ return '<option value="'+esc(s.name)+'">'; }).join('');
 }
 function setTaskFilter(f,btn){ taskFilter=f; document.querySelectorAll('.task-filter').forEach(function(b){ b.classList.remove('bp2'); b.classList.add('bo'); }); btn.classList.add('bp2'); btn.classList.remove('bo'); renderTasks(); }
 function saveTask(){
@@ -6508,7 +6521,7 @@ function renderPartsUsed(repId) {
   if (!repId) { div.innerHTML = '<div class="empty"><div class="ei">🔩</div>Select a repair</div>'; return; }
   div.innerHTML = (parts.length ? parts.map(function(p, i) {
     return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">'+
-      '<span style="flex:1;font-size:12px">'+p.name+'</span>'+
+      '<span style="flex:1;font-size:12px">'+esc(p.name)+'</span>'+
       '<span style="font-size:11px;color:var(--muted)">x'+p.qty+'</span>'+
       '<span style="font-size:12px;color:var(--primary);font-weight:600">Rs. '+(p.cost||0)+'</span>'+
       '<button class="btn bd2 bsm" onclick="removePartUsed('+repId+','+i+')">✕</button></div>';
@@ -6610,8 +6623,8 @@ function renderDeadStock() {
   tbody.innerHTML = filtered.map(function(p) {
     var s = statusStyles[p.status];
     return '<tr>'+
-      '<td><strong>'+p.name+'</strong></td>'+
-      '<td>'+p.category+'</td>'+
+      '<td><strong>'+esc(p.name)+'</strong></td>'+
+      '<td>'+esc(p.category)+'</td>'+
       '<td>'+p.stock+'</td>'+
       '<td>Rs. '+Math.round(p.costVal).toLocaleString()+'</td>'+
       '<td>'+(p.lastSold ? p.lastSold.toLocaleDateString() : 'Never')+'</td>'+
@@ -6678,8 +6691,8 @@ function renderCustSegments() {
   var tbody = document.getElementById('seg-tbl');
   tbody.innerHTML = filtered.map(function(c) {
     return '<tr>'+
-      '<td><strong>'+c.name+'</strong></td>'+
-      '<td>'+c.phone+'</td>'+
+      '<td><strong>'+esc(c.name)+'</strong></td>'+
+      '<td>'+esc(c.phone)+'</td>'+
       '<td>Rs. '+Math.round(c.totalSpent).toLocaleString()+'</td>'+
       '<td>'+c.visits+'</td>'+
       '<td>'+(c.lastDate?c.lastDate.toLocaleDateString():'Never')+'</td>'+
@@ -6752,7 +6765,7 @@ function renderShift() {
   
   // Staff datalist
   var dl = document.getElementById('shift-staff-list');
-  if (dl) dl.innerHTML = (db.staff||[]).map(function(s){ return '<option value="'+s.name+'">'; }).join('');
+  if (dl) dl.innerHTML = (db.staff||[]).map(function(s){ return '<option value="'+esc(s.name)+'">'; }).join('');
   
   // History
   var histEl = document.getElementById('shift-history');
@@ -6918,7 +6931,7 @@ setTimeout(function() {
   updateStaffSelector();
   // Update staff selector datalist for shift
   var dl = document.getElementById('shift-staff-list');
-  if (dl) dl.innerHTML = (db.staff||[]).map(function(s){ return '<option value="'+s.name+'">'; }).join('');
+  if (dl) dl.innerHTML = (db.staff||[]).map(function(s){ return '<option value="'+esc(s.name)+'">'; }).join('');
 }, 1200);
 
 </script>
@@ -7032,7 +7045,7 @@ if(!db.invDesign) db.invDesign = { template:'classic', color:'#6c63ff', footer:'
 // Firebase is primary storage - localStorage not used for data
 try {
   var _idbReq = indexedDB.deleteDatabase('STPOSDB');
-  _idbReq.onsuccess = function(){ console.log('✅ Old IndexedDB cleared — Firebase is now primary.'); };
+  _idbReq.onsuccess = function(){ /* Old IndexedDB cleared */ };
 } catch(e) {}
 var cart = [];
 var selPayment = 'Cash';
@@ -7618,7 +7631,7 @@ function init() {
     var uid = window._auth ? window._auth.currentUser : null;
     if (!uid) {
       // Auth not ready yet — _onAuthChanged will retrigger this when user signs in
-      console.log('Firebase load deferred — waiting for auth');
+      /* Firebase load deferred — waiting for auth */
       return;
     }
     var fbLoadEl = document.getElementById('fb-sync-indicator');
@@ -7700,7 +7713,7 @@ function init() {
       renderAll();
       applyTheme(db.settings.theme || '#6c63ff');
       toast('🔥 Firebase data loaded! Products: ' + db.products.length + ' | Invoices: ' + db.invoices.length);
-      console.log('✅ Firebase cloud data fully loaded. Products:', db.products.length);
+      /* Firebase cloud data fully loaded */
       // Start real-time live sync listener
       if (typeof window.firebaseStartLiveSync === 'function') window.firebaseStartLiveSync();
     });
@@ -7917,7 +7930,7 @@ function openM(id) {
     if (dl && typeof db !== 'undefined' && db.staff) {
       var techs = (db.staff||[]).filter(function(s){ return s.status !== 'Inactive'; });
       techs.sort(function(a,b){ return (a.role==='Technician'?0:1)-(b.role==='Technician'?0:1); });
-      dl.innerHTML = techs.map(function(s){ return '<option value="'+s.name+'" data-id="'+s.id+'">'+(s.role ? s.name+' ('+s.role+')' : s.name)+'</option>'; }).join('');
+      dl.innerHTML = techs.map(function(s){ return '<option value="'+esc(s.name)+'" data-id="'+s.id+'">'+(s.role ? esc(s.name)+' ('+esc(s.role)+')' : esc(s.name))+'</option>'; }).join('');
     }
     // Reset repair parts for new repairs
     var rId = document.getElementById('r-id');
@@ -8567,7 +8580,7 @@ function showEndOfDay(){
       '<div style="background:var(--card2);border-radius:10px;padding:12px;margin-bottom:12px">'+
       '<div style="font-size:12px;font-weight:700;color:var(--primary);margin-bottom:8px">📦 Items Sold Today</div>'+
       '<table style="width:100%;font-size:12px"><thead><tr><th style="text-align:left">Item</th><th>Qty</th><th style="text-align:right">Revenue</th></tr></thead><tbody>'+
-      topItems.slice(0,10).map(function(it){ return '<tr><td>'+it.name+'</td><td style="text-align:center">'+it.qty+'</td><td style="text-align:right">Rs.'+it.rev.toFixed(2)+'</td></tr>'; }).join('')+
+      topItems.slice(0,10).map(function(it){ return '<tr><td>'+esc(it.name)+'</td><td style="text-align:center">'+it.qty+'</td><td style="text-align:right">Rs.'+it.rev.toFixed(2)+'</td></tr>'; }).join('')+
       '</tbody></table></div>' : '')+
 
     '<div style="text-align:center;font-size:11px;color:var(--muted);margin-top:8px">Generated: '+new Date().toLocaleString('en-GB')+'</div>'+
@@ -9062,7 +9075,7 @@ function filterRepCustDrop(){
   drop.innerHTML=_repCustList.map(function(c,i){
     var pts=getLoyaltyPoints(c.id);
     var ptsHtml=pts>0?' <small style="color:var(--warning)">⭐'+pts+'pts</small>':'';
-    return '<div data-ri="'+i+'" style="padding:9px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border)" onmouseover="this.style.background=\'rgba(108,99,255,0.12)\'" onmouseout="this.style.background=\'\'">👤 <b>'+c.name+'</b> <span style="color:var(--muted);font-size:11px">'+c.phone+'</span>'+ptsHtml+'</div>';
+    return '<div data-ri="'+i+'" style="padding:9px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border)" onmouseover="this.style.background=\'rgba(108,99,255,0.12)\'" onmouseout="this.style.background=\'\'">👤 <b>'+esc(c.name)+'</b> <span style="color:var(--muted);font-size:11px">'+esc(c.phone)+'</span>'+ptsHtml+'</div>';
   }).join('');
   // Attach events programmatically — safe for any name/phone content
   drop.querySelectorAll('[data-ri]').forEach(function(el){
@@ -10679,7 +10692,7 @@ function msgRenderContacts(){
       '<div style="display:flex;align-items:center;gap:10px">'+
         '<div style="width:36px;height:36px;border-radius:50%;background:rgba(37,211,102,0.15);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">'+c.icon+'</div>'+
         '<div style="flex:1;min-width:0">'+
-          '<div style="font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+c.name+'</div>'+
+          '<div style="font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(c.name)+'</div>'+
           '<div style="font-size:11px;color:var(--muted);margin-top:2px">'+c.phone+'</div>'+
           '<div style="font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+c.sub+'</div>'+
         '</div>'+
@@ -11378,7 +11391,7 @@ function logStock(prodId, prodName, type, change, stockAfter, ref, noSave){
 }
 function refreshStockLogFilter(){
   var sel=document.getElementById('sl-prod-filter'); if(!sel) return;
-  sel.innerHTML='<option value="">All Products</option>'+db.products.map(function(p){ return '<option value="'+p.id+'">'+p.name+'</option>'; }).join('');
+  sel.innerHTML='<option value="">All Products</option>'+db.products.map(function(p){ return '<option value="'+p.id+'">'+esc(p.name)+'</option>'; }).join('');
 }
 function renderStockLog(){
   if(!db.stockLog) db.stockLog=[];
@@ -13592,7 +13605,7 @@ function renderLoyalty(){
 
 function openManualPoints(){
   var sel=document.getElementById('loy-cust-sel'); if(!sel) return;
-  sel.innerHTML='<option value="">Select customer...</option>'+db.customers.map(function(c){ return '<option value="'+c.id+'">'+c.name+' ('+c.phone+')</option>'; }).join('');
+  sel.innerHTML='<option value="">Select customer...</option>'+db.customers.map(function(c){ return '<option value="'+c.id+'">'+esc(c.name)+' ('+esc(c.phone)+')</option>'; }).join('');
   var pts=document.getElementById('loy-pts'); if(pts) pts.value='';
   var rs=document.getElementById('loy-reason'); if(rs) rs.value='';
   openM('m-loyalty');
@@ -13841,7 +13854,7 @@ function generateStockReport(){
   db.products.slice().sort(function(a,b){ return (a.category||'').localeCompare(b.category||''); }).forEach(function(p){
     var st=p.stock===0?'oos':p.stock<=(p.minStock||2)?'low':'ok';
     var stl=p.stock===0?'🚫 OOS':p.stock<=(p.minStock||2)?'⚠️ Low':'✅ OK';
-    html+='<tr><td><b>'+p.name+'</b></td><td>'+p.category+'</td><td class="'+st+'"><b>'+p.stock+'</b></td><td>'+p.minStock+'</td><td>Rs.'+(p.cost||0).toFixed(0)+'</td><td>Rs.'+p.price.toFixed(0)+'</td><td>Rs.'+((p.stock||0)*(p.cost||0)).toFixed(0)+'</td><td>Rs.'+((p.stock||0)*p.price).toFixed(0)+'</td><td class="'+st+'">'+stl+'</td></tr>';
+    html+='<tr><td><b>'+esc(p.name)+'</b></td><td>'+esc(p.category)+'</td><td class="'+st+'"><b>'+p.stock+'</b></td><td>'+p.minStock+'</td><td>Rs.'+(p.cost||0).toFixed(0)+'</td><td>Rs.'+p.price.toFixed(0)+'</td><td>Rs.'+((p.stock||0)*(p.cost||0)).toFixed(0)+'</td><td>Rs.'+((p.stock||0)*p.price).toFixed(0)+'</td><td class="'+st+'">'+stl+'</td></tr>';
   });
   html+='<tr class="total"><td colspan="6">TOTAL</td><td>Rs.'+totalCost.toFixed(0)+'</td><td>Rs.'+retailVal.toFixed(0)+'</td><td></td></tr></tbody></table>';
   html+='<div style="text-align:center;margin-top:20px"><button onclick="window.print()" style="padding:10px 24px;background:#6c63ff;color:#fff;border:none;border-radius:8px;cursor:pointer">🖨️ Print PDF</button></div></body></html>';
@@ -13859,7 +13872,7 @@ function generateCustomerReport(){
   var html='<!DOCTYPE html><html><head><title>Customer Report</title><style>body{font-family:Segoe UI,sans-serif;padding:30px}h1{color:#6c63ff;text-align:center}table{width:100%;border-collapse:collapse}th{background:#6c63ff;color:#fff;padding:10px}td{padding:8px 10px;border-bottom:1px solid #eee}@media print{button{display:none}}</style></head><body>';
   html+='<h1>'+(s.shopName||'ST Mobile')+'</h1><h2 style="text-align:center;color:#666">👥 Customer Report</h2>';
   html+='<table><thead><tr><th>Rank</th><th>Customer</th><th>Phone</th><th>Invoices</th><th>Repairs</th><th>Orders</th><th>Total Spent</th><th>Loyalty Pts</th><th>Tier</th></tr></thead><tbody>';
-  custData.forEach(function(d,i){ var tier=getLoyaltyTier(d.pts); html+='<tr><td style="font-weight:800;color:#6c63ff">#'+(i+1)+'</td><td><b>'+d.c.name+'</b></td><td>'+d.c.phone+'</td><td>'+d.invCount+'</td><td>'+d.reps+'</td><td>'+d.ords+'</td><td style="font-weight:700;color:#00c853">Rs.'+d.spent.toFixed(0)+'</td><td>'+d.pts+'</td><td>'+tier.label+'</td></tr>'; });
+  custData.forEach(function(d,i){ var tier=getLoyaltyTier(d.pts); html+='<tr><td style="font-weight:800;color:#6c63ff">#'+(i+1)+'</td><td><b>'+esc(d.c.name)+'</b></td><td>'+esc(d.c.phone)+'</td><td>'+d.invCount+'</td><td>'+d.reps+'</td><td>'+d.ords+'</td><td style="font-weight:700;color:#00c853">Rs.'+d.spent.toFixed(0)+'</td><td>'+d.pts+'</td><td>'+tier.label+'</td></tr>'; });
   html+='</tbody></table><div style="text-align:center;margin-top:20px"><button onclick="window.print()" style="padding:10px 24px;background:#6c63ff;color:#fff;border:none;border-radius:8px;cursor:pointer">🖨️ Print PDF</button></div></body></html>';
   var w=window.open('','_blank','width=900,height=600'); w.document.write(html); w.document.close();
 }
@@ -13920,7 +13933,7 @@ function generateSupplierReport(){
   var html='<!DOCTYPE html><html><head><title>Supplier Report</title><style>body{font-family:Segoe UI,sans-serif;padding:30px}h1{color:#6c63ff;text-align:center}table{width:100%;border-collapse:collapse}th{background:#6c63ff;color:#fff;padding:10px}td{padding:8px 10px;border-bottom:1px solid #eee}@media print{button{display:none}}</style></head><body>';
   html+='<h1>'+(s.shopName||'ST Mobile')+'</h1><h2 style="text-align:center;color:#666">🏭 Supplier Report</h2>';
   html+='<table><thead><tr><th>Supplier</th><th>Phone</th><th>Category</th><th>Orders</th><th>Total Spent</th><th>Last Order</th></tr></thead><tbody>';
-  (db.suppliers||[]).forEach(function(sup){ var pos=(db.purchases||[]).filter(function(p){ return p.supId===sup.id; }); var spent=pos.reduce(function(s,p){ return s+(p.cost||0)*(p.qty||0); },0); html+='<tr><td><b>'+sup.name+'</b></td><td>'+sup.phone+'</td><td>'+sup.category+'</td><td>'+pos.length+'</td><td style="color:#ff1744;font-weight:700">Rs.'+spent.toFixed(0)+'</td><td>'+(pos.length?pos[pos.length-1].date:'—')+'</td></tr>'; });
+  (db.suppliers||[]).forEach(function(sup){ var pos=(db.purchases||[]).filter(function(p){ return p.supId===sup.id; }); var spent=pos.reduce(function(s,p){ return s+(p.cost||0)*(p.qty||0); },0); html+='<tr><td><b>'+esc(sup.name)+'</b></td><td>'+esc(sup.phone)+'</td><td>'+esc(sup.category)+'</td><td>'+pos.length+'</td><td style="color:#ff1744;font-weight:700">Rs.'+spent.toFixed(0)+'</td><td>'+(pos.length?pos[pos.length-1].date:'—')+'</td></tr>'; });
   html+='</tbody></table><div style="text-align:center;margin-top:20px"><button onclick="window.print()" style="padding:10px 24px;background:#6c63ff;color:#fff;border:none;border-radius:8px;cursor:pointer">🖨️ Print PDF</button></div></body></html>';
   var w=window.open('','_blank','width=900,height=500'); w.document.write(html); w.document.close();
 }
@@ -14890,7 +14903,7 @@ function renderMultiBranch() {
     if(sel) sel.innerHTML = '<option value="">— Select Branch —</option>' + branches.map(function(b){ return '<option value="' + b.id + '">' + b.name + '</option>'; }).join('');
   });
   var tprod = document.getElementById('transfer-prod');
-  if(tprod) tprod.innerHTML = '<option value="">— Select Product —</option>' + (db.products||[]).map(function(p){ return '<option value="' + p.id + '">' + p.name + ' (Stock: ' + (p.stock||0) + ')</option>'; }).join('');
+  if(tprod) tprod.innerHTML = '<option value="">— Select Product —</option>' + (db.products||[]).map(function(p){ return '<option value="' + p.id + '">' + esc(p.name) + ' (Stock: ' + (p.stock||0) + ')</option>'; }).join('');
   // Performance table
   var perf = document.getElementById('branch-perf-tbl');
   if(perf) {
@@ -15091,7 +15104,7 @@ function generateAdvReport() {
     var totRev = rows.reduce(function(s,r){ return s+r.revenue; },0);
     setAdvStats(totRev, 0, rows.length, 0);
     html = '<table><thead><tr><th>#</th><th>Product</th><th>Units Sold</th><th>Revenue</th></tr></thead><tbody>' +
-      (rows.length ? rows.map(function(r,i){ return '<tr><td>'+(i+1)+'</td><td>'+r.name+'</td><td>'+r.qty+'</td><td style="color:var(--success)">Rs.'+r.revenue.toFixed(0)+'</td></tr>'; }).join('') : '<tr><td colspan="4" class="empty">No data</td></tr>') + '</tbody></table>';
+      (rows.length ? rows.map(function(r,i){ return '<tr><td>'+(i+1)+'</td><td>'+esc(r.name)+'</td><td>'+r.qty+'</td><td style="color:var(--success)">Rs.'+r.revenue.toFixed(0)+'</td></tr>'; }).join('') : '<tr><td colspan="4" class="empty">No data</td></tr>') + '</tbody></table>';
   } else if(type === 'customers') {
     if(titleEl) titleEl.textContent = '👥 Customer Report';
     var custData = {};
@@ -15105,7 +15118,7 @@ function generateAdvReport() {
     var totCust = custRows.reduce(function(s,r){ return s+r.total; },0);
     setAdvStats(totCust, 0, custRows.length, custRows.length ? totCust/custRows.length : 0);
     html = '<table><thead><tr><th>#</th><th>Customer</th><th>Transactions</th><th>Total Spent</th><th>Avg Order</th></tr></thead><tbody>' +
-      (custRows.length ? custRows.map(function(r,i){ return '<tr><td>'+(i+1)+'</td><td>'+r.name+'</td><td>'+r.txns+'</td><td style="color:var(--primary)">Rs.'+r.total.toFixed(0)+'</td><td>Rs.'+(r.total/r.txns).toFixed(0)+'</td></tr>'; }).join('') : '<tr><td colspan="5" class="empty">No data</td></tr>') + '</tbody></table>';
+      (custRows.length ? custRows.map(function(r,i){ return '<tr><td>'+(i+1)+'</td><td>'+esc(r.name)+'</td><td>'+r.txns+'</td><td style="color:var(--primary)">Rs.'+r.total.toFixed(0)+'</td><td>Rs.'+(r.total/r.txns).toFixed(0)+'</td></tr>'; }).join('') : '<tr><td colspan="5" class="empty">No data</td></tr>') + '</tbody></table>';
   } else if(type === 'repairs') {
     if(titleEl) titleEl.textContent = '🔧 Repairs Report';
     var reps = (db.repairs||[]).filter(function(r){ return inRange(r.date); });
@@ -15317,7 +15330,7 @@ goPage = function(id) {
   if(id === 'dashboard-builder') renderDashboardBuilder();
 };
 
-console.log('✅ V28 Upgrade loaded — Purchase Orders, Multi-Branch, VAT, Advanced Reports, Dashboard Builder');
+/* V28 Upgrade loaded */
 
 // ============================================================
 // INVESTOR MANAGEMENT — v30 (Share/Quota Based)

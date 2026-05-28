@@ -1,8 +1,19 @@
 <!DOCTYPE html>
-<html lang="si">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://www.gstatic.com https://apis.google.com https://*.firebaseio.com https://*.firebasedatabase.app; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.firebasestorage.app; connect-src 'self' blob: https://*.firebaseio.com https://*.firebasedatabase.app https://*.googleapis.com wss://*.firebaseio.com wss://*.firebasedatabase.app; frame-src 'self' https://accounts.google.com https://apis.google.com;">
+<meta name="theme-color" content="#6c63ff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="description" content="Admin panel for ST Mobile & Designing POS system — manage products, sales, inventory, and staff.">
+<meta property="og:title" content="ST Mobile — Admin Panel">
+<meta property="og:description" content="Admin dashboard for managing your POS system.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="icons/icon-512.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
 <title>ST Mobile — Admin Panel</title>
 <style>
 :root {
@@ -308,7 +319,7 @@ tr:hover td { background:rgba(108,99,255,0.04); }
     <button class="login-btn" onclick="doLogin()">🔐 Login</button>
     <div class="login-err" id="login-err"></div>
     <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:16px">
-      Default: admin / admin1234 &nbsp;|&nbsp; Owner: stshop@gmail.com / dtr486485
+      Contact your administrator for login credentials.
     </div>
   </div>
 </div>
@@ -950,7 +961,7 @@ window.clearCloudData = function() {
     .catch(function(e) { toast('❌ Error: ' + e.message, 'var(--danger)'); });
 };
 
-console.log('🔥 Admin Firebase loaded');
+/* Admin Firebase loaded */
 
 // Auto-load on start
 setTimeout(function() {
@@ -964,6 +975,7 @@ setTimeout(function() {
 </script>
 
 <script>
+function esc(str) { return String(str).replace(/[&<>"']/g,function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]; }); }
 // ════════════════════════════════════════
 //  AUTH
 // ════════════════════════════════════════
@@ -974,16 +986,9 @@ function getAdminUsers() {
   try {
     var u = JSON.parse(localStorage.getItem(ADMIN_USERS_KEY));
     if (!u || !u.length) {
-      // Default users
-      u = [
-        { username:'admin', password:'admin1234', displayName:'Administrator', role:'admin', created: Date.now() },
-        { username:'stshop@gmail.com', password:'dtr486485', displayName:'ST Shop Owner', role:'admin', created: Date.now() }
-      ];
-      localStorage.setItem(ADMIN_USERS_KEY, JSON.stringify(u));
-    }
-    // Ensure stshop owner account always exists
-    if (!u.find(function(x){ return x.username==='stshop@gmail.com'; })) {
-      u.push({ username:'stshop@gmail.com', password:'dtr486485', displayName:'ST Shop Owner', role:'admin', created: Date.now() });
+      // First-time setup — no default credentials shipped for security.
+      // Admin must create their account via the setup prompt.
+      u = [];
       localStorage.setItem(ADMIN_USERS_KEY, JSON.stringify(u));
     }
     return u;
@@ -1493,11 +1498,11 @@ function renderUserList() {
     var isCurrentUser = window._adminSession && window._adminSession.username === u.username;
     return '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--card2);border-radius:9px;margin-bottom:8px">' +
       '<div>' +
-        '<div style="font-size:13px;font-weight:700">' + (u.displayName||u.username) + (isCurrentUser ? ' <span style="color:var(--success);font-size:11px">(You)</span>' : '') + '</div>' +
-        '<div style="font-size:11px;color:var(--muted)">@' + u.username + ' · ' + u.role + ' · Created: ' + (u.created ? new Date(u.created).toLocaleDateString() : '—') + '</div>' +
+        '<div style="font-size:13px;font-weight:700">' + esc(u.displayName||u.username) + (isCurrentUser ? ' <span style="color:var(--success);font-size:11px">(You)</span>' : '') + '</div>' +
+        '<div style="font-size:11px;color:var(--muted)">@' + esc(u.username) + ' · ' + esc(u.role) + ' · Created: ' + (u.created ? new Date(u.created).toLocaleDateString() : '—') + '</div>' +
       '</div>' +
       '<div style="display:flex;gap:6px">' +
-        '<span class="badge ' + (u.role==='admin'?'badge-primary':'badge-info') + '">' + u.role + '</span>' +
+        '<span class="badge ' + (u.role==='admin'?'badge-primary':'badge-info') + '">' + esc(u.role) + '</span>' +
         (!isCurrentUser ? '<button class="btn btn-danger btn-sm" onclick="deleteAdminUser(' + i + ')">🗑️</button>' : '') +
       '</div></div>';
   }).join('');
@@ -1548,12 +1553,12 @@ function renderStaffAdmin() {
   if (!tbody) return;
   tbody.innerHTML = staff.length ? staff.map(function(s) {
     return '<tr>' +
-      '<td><strong>' + (s.name||'—') + '</strong></td>' +
-      '<td>' + (s.role||'—') + '</td>' +
-      '<td>' + (s.phone||'—') + '</td>' +
-      '<td><span class="badge ' + (s.status==='Active'?'badge-success':'badge-warning') + '">' + (s.status||'Active') + '</span></td>' +
+      '<td><strong>' + esc(s.name||'—') + '</strong></td>' +
+      '<td>' + esc(s.role||'—') + '</td>' +
+      '<td>' + esc(s.phone||'—') + '</td>' +
+      '<td><span class="badge ' + (s.status==='Active'?'badge-success':'badge-warning') + '">' + esc(s.status||'Active') + '</span></td>' +
       '<td>' + (s.commRate||0) + '%</td>' +
-      '<td>' + (s.joinDate||'—') + '</td>' +
+      '<td>' + esc(s.joinDate||'—') + '</td>' +
     '</tr>';
   }).join('') : '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--muted)">No staff yet</td></tr>';
 
@@ -1599,8 +1604,8 @@ function renderCommission() {
     totalPaid += paidSum;
 
     rows.push('<tr>' +
-      '<td><strong>' + (s.name||'—') + '</strong></td>' +
-      '<td>' + (s.role||'—') + '</td>' +
+      '<td><strong>' + esc(s.name||'—') + '</strong></td>' +
+      '<td>' + esc(s.role||'—') + '</td>' +
       '<td>' + (s.commRate||0) + '%</td>' +
       '<td>Rs. ' + Math.round(rev).toLocaleString() + '</td>' +
       '<td>Rs. ' + Math.round(earned).toLocaleString() + '</td>' +
@@ -1619,7 +1624,7 @@ function renderCommission() {
   // Payment history
   var history = commPayments.slice().reverse();
   document.getElementById('comm-history-tbl').innerHTML = history.length ? history.map(function(p) {
-    return '<tr><td>' + new Date(p.date).toLocaleDateString('en-GB') + '</td><td>' + (p.staffName||'—') + '</td><td style="font-weight:700;color:var(--success)">Rs. ' + (p.amount||0).toLocaleString() + '</td><td style="color:var(--muted)">' + (p.note||'') + '</td></tr>';
+    return '<tr><td>' + new Date(p.date).toLocaleDateString('en-GB') + '</td><td>' + esc(p.staffName||'—') + '</td><td style="font-weight:700;color:var(--success)">Rs. ' + (p.amount||0).toLocaleString() + '</td><td style="color:var(--muted)">' + esc(p.note||'') + '</td></tr>';
   }).join('') : '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--muted)">No payments yet</td></tr>';
 }
 
@@ -1663,8 +1668,8 @@ function renderLoyaltyAdmin() {
     if (pts > 0) withPoints++;
     var tier = pts >= 2000 ? '🥇 Gold' : pts >= 500 ? '🥈 Silver' : '⭐ Bronze';
     return '<tr>' +
-      '<td><strong>' + (c.name||'—') + '</strong></td>' +
-      '<td>' + (c.phone||'—') + '</td>' +
+      '<td><strong>' + esc(c.name||'—') + '</strong></td>' +
+      '<td>' + esc(c.phone||'—') + '</td>' +
       '<td style="font-weight:700;color:var(--warning)">' + pts + '</td>' +
       '<td>' + tier + '</td>' +
       '<td><button class="btn btn-primary btn-sm" onclick="showAddPointsModal(\'' + c.id + '\')">✏️ Edit Points</button></td>' +
@@ -1777,9 +1782,9 @@ function renderActivityAdmin() {
     return '<tr>' +
       '<td style="font-size:11px;white-space:nowrap">' + (e.time||'—') + '</td>' +
       '<td><span class="badge" style="background:transparent;border:1px solid ' + col + ';color:' + col + '">' + (e.type||'—') + '</span></td>' +
-      '<td>' + (e.action||'—') + '</td>' +
-      '<td style="color:var(--muted);font-size:12px">' + (e.details||'') + '</td>' +
-      '<td style="font-size:12px;color:var(--muted)">' + (e.user||'—') + '</td>' +
+      '<td>' + esc(e.action||'—') + '</td>' +
+      '<td style="color:var(--muted);font-size:12px">' + esc(e.details||'') + '</td>' +
+      '<td style="font-size:12px;color:var(--muted)">' + esc(e.user||'—') + '</td>' +
     '</tr>';
   }).join('') : '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--muted)">No activity log entries</td></tr>';
 }
@@ -2009,7 +2014,7 @@ document.addEventListener('keydown', function(e) {
   if (e.key === 'Enter' && document.getElementById('login-screen').style.display !== 'none') { doLogin(); }
 });
 
-console.log('✅ ST Mobile Admin Panel loaded');
+/* ST Mobile Admin Panel loaded */
 </script>
 
 </body>

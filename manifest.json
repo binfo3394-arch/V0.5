@@ -1,12 +1,15 @@
 {
   "name": "ST Mobile & Designing POS",
   "short_name": "ST POS",
-  "start_url": "/V0.5/index.html",
-  "scope": "/V0.5/",
+  "description": "Point of Sale system for ST Mobile & Designing — manage products, invoices, repairs, customers, inventory and more.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "id": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
   "background_color": "#0a0a1a",
   "theme_color": "#6c63ff",
+  "categories": ["business", "productivity"],
   "icons": [
     { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
     { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }

@@ -1,10 +1,17 @@
 // ST POS v28 — Service Worker
-const CACHE = 'st-pos-v28-v4';
+const CACHE = 'st-pos-v28-v5';
+const OFFLINE_URL = 'offline.html';
+const PRECACHE_URLS = [
+  'index.html',
+  'offline.html',
+  'icons/icon-192.png',
+  'icons/icon-512.png'
+];
 
 self.addEventListener('install', e => {
   self.skipWaiting();
   e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(['/V0.5/', '/V0.5/index.html'])).catch(() => {})
+    caches.open(CACHE).then(c => c.addAll(PRECACHE_URLS)).catch(() => {})
   );
 });
 
@@ -17,12 +24,29 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   var url = e.request.url;
-  // Skip non-http(s) requests (chrome-extension://, blob:, etc.)
+  // Skip non-http(s) requests
   if (!url.startsWith('http')) return;
-  // Skip external APIs
+  // Skip external APIs and CDN resources
   if (url.includes('firebase') || url.includes('googleapis') ||
       url.includes('cdnjs') || url.includes('unpkg') || url.includes('gstatic')) return;
 
+  // Navigation requests: network-first with offline fallback
+  if (e.request.mode === 'navigate') {
+    e.respondWith(
+      fetch(e.request)
+        .then(r => {
+          if (r && r.ok) {
+            var clone = r.clone();
+            caches.open(CACHE).then(c => c.put(e.request, clone));
+          }
+          return r;
+        })
+        .catch(() => caches.match(e.request).then(cached => cached || caches.match(OFFLINE_URL)))
+    );
+    return;
+  }
+
+  // Other requests: stale-while-revalidate
   e.respondWith(
     caches.open(CACHE).then(c =>
       c.match(e.request).then(cached => {

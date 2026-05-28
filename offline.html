@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ST POS — Offline</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: #0a0a1a;
+  color: #e0e0ff;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+}
+.offline-box {
+  max-width: 360px;
+  animation: fadeIn 0.5s ease;
+}
+@keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.icon { font-size: 64px; margin-bottom: 16px; }
+h1 { font-size: 22px; font-weight: 800; color: #6c63ff; margin-bottom: 8px; }
+p { font-size: 14px; color: #7070a0; line-height: 1.7; margin-bottom: 24px; }
+.btn {
+  display: inline-block;
+  background: linear-gradient(135deg, #6c63ff, #8b5cf6);
+  color: #fff;
+  border: none;
+  padding: 12px 28px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.btn:hover { opacity: 0.9; transform: translateY(-1px); }
+.status {
+  margin-top: 20px;
+  font-size: 12px;
+  color: #7070a0;
+}
+.status .dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+.dot.offline { background: #ff1744; }
+.dot.online { background: #00e676; }
+</style>
+</head>
+<body>
+<div class="offline-box">
+  <div class="icon">📡</div>
+  <h1>You're Offline</h1>
+  <p>ST POS requires an internet connection for full functionality. Please check your connection and try again.</p>
+  <button class="btn" onclick="location.reload()">Try Again</button>
+  <div class="status">
+    <span class="dot offline" id="status-dot"></span>
+    <span id="status-text">No connection</span>
+  </div>
+</div>
+<script>
+function updateStatus() {
+  var dot = document.getElementById('status-dot');
+  var text = document.getElementById('status-text');
+  if (navigator.onLine) {
+    dot.className = 'dot online';
+    text.textContent = 'Connected! Redirecting...';
+    setTimeout(function() { location.href = 'index.html'; }, 1500);
+  } else {
+    dot.className = 'dot offline';
+    text.textContent = 'No connection';
+  }
+}
+window.addEventListener('online', updateStatus);
+window.addEventListener('offline', updateStatus);
+updateStatus();
+</script>
+</body>
+</html>
