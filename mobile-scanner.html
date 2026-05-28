@@ -408,7 +408,7 @@
   let sessionRef  = null;
   let scannedItems = {};   // barcode → { name, price, qty }
   let isConnected = false;
-  let _bd = null, _stream = null, _raf = null, _torchOn = false, _facingMode = 'environment';
+  let _bd = null, _stream = null, _raf = null, _torchOn = false, _facingMode = 'environment', _h5Scanner = null;
   let _lastCode = '', _lastTime = 0;
 
   // ── Init BarcodeDetector ──
@@ -448,6 +448,7 @@
   }
 
   function disconnect() {
+    if (window._ackRef) { window._ackRef.off(); window._ackRef = null; }
     if (sessionRef) {
       db.ref('mobile-scanner/' + sessionCode + '/mobile-presence').set({ connected: false });
     }
@@ -479,7 +480,8 @@
   //  LISTEN for desktop ACK (product name + price)
   // ─────────────────────────────────────────
   function listenForAck() {
-    db.ref('mobile-scanner/' + sessionCode + '/ack').on('value', snap => {
+    window._ackRef = db.ref('mobile-scanner/' + sessionCode + '/ack');
+    window._ackRef.on('value', snap => {
       if (!snap.exists()) return;
       const ack = snap.val();
       if (!ack || !ack.id) return;
@@ -531,6 +533,7 @@
   }
 
   function stopCamera() {
+    if (_h5Scanner) { _h5Scanner.stop().catch(function(){}); _h5Scanner = null; }
     if (_raf) { cancelAnimationFrame(_raf); _raf = null; }
     if (_stream) { _stream.getTracks().forEach(t => t.stop()); _stream = null; }
   }
@@ -558,12 +561,11 @@
       return;
     }
     if (_stream) { _stream.getTracks().forEach(t=>t.stop()); _stream=null; }
-    const container = document.getElementById('qr-reader-fb');
-    const h5 = new Html5Qrcode('qr-reader-fb', {verbose:false});
+    _h5Scanner = new Html5Qrcode('qr-reader-fb', {verbose:false});
     const cfg = { fps:15, qrbox:{width:260,height:100},
       experimentalFeatures:{useBarCodeDetectorIfSupported:true},
       supportedScanTypes:[Html5QrcodeScanType.SCAN_TYPE_CAMERA] };
-    h5.start({facingMode:_facingMode}, cfg, code => handleCode(code), ()=>{}).catch(()=>{
+    _h5Scanner.start({facingMode:_facingMode}, cfg, code => handleCode(code), ()=>{}).catch(()=>{
       document.querySelector('.cam-wrap').style.display='none';
       document.getElementById('no-cam').classList.add('show');
     });

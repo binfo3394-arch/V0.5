@@ -572,7 +572,7 @@ function findCustomer(digits) {
   if (matchedCusts.length > 0) {
     var custIds2 = matchedCusts.map(function(c) { return c.id; });
     credits = (data.credits || []).filter(function(cr) {
-      return custIds2.indexOf(cr.customerId) !== -1 || custIds2.indexOf(cr.id) !== -1;
+      return custIds2.indexOf(cr.customerId) !== -1;
     });
   }
 
