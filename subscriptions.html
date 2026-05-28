@@ -291,6 +291,7 @@ tr:hover td { background: rgba(108,99,255,0.03); }
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getDatabase, ref, set, get, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey:            "AIzaSyA2EprDDYqnR1KTlA3nADdcCcVpi-HaDMk",
@@ -304,6 +305,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
+const auth = getAuth(app);
 
 window._fbDb = database;
 window._fbRef = ref;
@@ -311,9 +313,30 @@ window._fbSet = set;
 window._fbGet = get;
 window._fbRemove = remove;
 window._fbConfig = firebaseConfig;
+window._fbAuth = auth;
+window._fbSignIn = signInWithEmailAndPassword;
 
-// Firebase status
-setFbStatus('☁️ Connected', 'var(--success)');
+// Auto sign-in with admin account, then update status
+signInWithEmailAndPassword(auth, 'stshop@gmail.com', 'dtr486485').then(function() {
+  setFbStatus('☁️ Connected', 'var(--success)');
+  window._fbReady = true;
+  // If app is already shown, render
+  if (document.getElementById('app').style.display !== 'none') {
+    renderSubscriptions();
+  }
+}).catch(function(e) {
+  console.warn('Firebase auth failed:', e.message);
+  setFbStatus('⚠️ Auth Failed', 'var(--danger)');
+  window._fbReady = false;
+});
+
+// Listen for auth state
+onAuthStateChanged(auth, function(user) {
+  if (user) {
+    window._fbUser = user;
+    setFbStatus('☁️ Connected', 'var(--success)');
+  }
+});
 
 function setFbStatus(text, color) {
   var el = document.getElementById('fb-status');
@@ -373,7 +396,15 @@ function checkSession() {
 function showApp() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = '';
-  renderSubscriptions();
+  // Wait for Firebase auth to be ready before rendering
+  function tryRender() {
+    if (window._fbReady) {
+      renderSubscriptions();
+    } else {
+      setTimeout(tryRender, 300);
+    }
+  }
+  tryRender();
 }
 
 function showLogin() {
@@ -420,7 +451,11 @@ function renderSubscriptions() {
   var historyTbl = document.getElementById('sub-history-tbl');
   if (!pendingTbl || !activeTbl) return;
 
-  if (window._fbRef && window._fbGet) {
+  // Show loading state
+  pendingTbl.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">☁️ Connecting to Firebase...</td></tr>';
+  activeTbl.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">☁️ Connecting to Firebase...</td></tr>';
+
+  if (window._fbRef && window._fbGet && window._fbAuth && window._fbAuth.currentUser) {
     // Load all requests
     window._fbGet(window._fbRef(window._fbDb, 'subscription-requests')).then(function(snap) {
       var requests = snap.val() || {};
@@ -529,6 +564,9 @@ function renderSubscriptions() {
       console.error('Sub load error:', e);
       pendingTbl.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--danger)">Error loading: ' + e.message + '</td></tr>';
     });
+  } else {
+    pendingTbl.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--warning);padding:20px">⏳ Waiting for Firebase connection... <button class="btn btn-primary btn-sm" onclick="renderSubscriptions()" style="margin-left:8px">🔄 Retry</button></td></tr>';
+    activeTbl.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--warning);padding:20px">⏳ Waiting for Firebase connection...</td></tr>';
   }
 }
 
