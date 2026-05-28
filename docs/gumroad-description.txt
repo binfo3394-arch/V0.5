@@ -1,0 +1,174 @@
+ST Mobile & Designing POS — Complete Point of Sale System
+
+A powerful, all-in-one POS system built for mobile repair shops, retail stores, and service businesses. Manage everything from sales and repairs to inventory, customers, staff, and finances — all from one app.
+
+No backend required. No monthly fees. Just upload and start selling.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+WHAT'S INCLUDED
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+4 Complete Apps:
+• Main POS Application (index.html) — 15,000+ lines
+• Admin Panel (admin.html) — database viewer, backup, user management
+• Customer Portal (customer-portal.html) — self-service order/repair tracking
+• Mobile Scanner (mobile-scanner.html) — barcode scanner companion app
+
+Plus:
+• Service Worker for offline support
+• PWA Manifest for app installation
+• Offline fallback page
+• robots.txt & sitemap.xml
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+20+ MODULES INCLUDED
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SHOPPING & SALES
+• Point of Sale — barcode scanning, split payments, hold/resume sales, discounts, coupons
+• Cart & Checkout — customer assignment, custom items, tax, multiple payment methods
+• Invoice Designer — 3 templates, custom colors, logo, thermal receipt, WhatsApp QR
+
+INVENTORY
+• Product Management — CRUD, barcode, images, variants, tags
+• Batch/Lot Tracking — expiry dates, supplier tracking
+• Stock Audit — physical vs system count, variance tracking
+• Kit Assembly — combine components into products (BOM)
+• Barcode & Price Labels — generate and print labels
+• Dead Stock Analysis — 90-day dead stock, slow movers, capital tied up
+• Stock History — full movement log
+
+REPAIRS
+• Repair Orders — customer, device, IMEI, issue, cost, status, technician
+• Repair Timer — billable hours tracking
+• Diagnostic Checklists — per-repair checklists
+• Repair Templates — predefined presets for common repairs
+• Parts Inventory — separate parts stock with brand/model compatibility
+• Warranty Tracking — repair warranty with expiry dates
+• Device History — search by customer, phone, IMEI, or model
+
+CUSTOMERS
+• Customer Database — name, phone, email, purchase history
+• Customer Segments — VIP, Regular, At-Risk, New (automatic)
+• Customer Timeline — chronological interaction history
+• Follow-up Reminders — with priority and due dates
+• Referral System — track referrals with configurable bonuses
+• Loyalty Points — Bronze/Silver/Gold tiers, earn & redeem
+
+ORDERS
+• Online Orders — with status tracking (Received → Processing → Ready → Delivered)
+• Categories — Wedding, AI Models, Design, Custom
+• Payment status tracking
+
+FINANCE
+• Credit Sales — with payment schedules and partial payments
+• Expense Tracker — categories (Rent, Electricity, Salaries, etc.)
+• Cash Register — open/close sessions with variance
+• Profit & Loss Statement — period-based P&L reports
+• Gift Vouchers — create, sell, redeem by code
+• Coupon/Discount Vouchers — percentage or fixed, with expiry
+
+REPORTS
+• Advanced Reports — date range, sales, products, customers, repairs, expenses
+• ABC Analysis — product classification (A/B/C by revenue)
+• Sales Comparison — Week-over-Week, Month-over-Month, Year-over-Year
+• Tax Summary — VAT/tax reports
+• Export — CSV, Excel, PDF/Print for all reports
+
+STAFF
+• Staff Management — roles, commission rates, status
+• Commission Tracking — monthly earned, paid, pending
+• Shift Management — open/close shifts with cash count
+• Weekly Roster — schedule and print
+• Task Manager — with priorities and assignments
+• Open/Close Checklists — customizable daily checklists
+
+MARKETING
+• Sales Targets — daily, monthly targets with progress
+• Appointments — booking with status tracking
+• Bundles & Packages — combine products into deals
+• Upsell Engine — auto-suggest when adding to cart
+• WhatsApp Messaging — quick templates, bulk messages to segments
+
+SUPPLIERS
+• Supplier Database — name, phone, category
+• Purchase Orders — create POs with line items, track status
+
+MULTI-BRANCH
+• Branch Management — multiple branches with managers
+• Stock Transfers — inter-branch transfer with log
+• Branch Performance — comparison table
+
+TAX
+• VAT/Tax Manager — configurable tax profiles and rates
+• Tax Reports — summary and per-invoice tax data
+
+ANALYTICS
+• AI Sales Forecasting — next month prediction, growth rate, peak hours
+• Revenue Trend Charts — daily, monthly, yearly
+• Day-of-Week Heatmap — best performing days
+• Dashboard Builder — customize widgets, layout, font size
+
+ADMIN
+• Admin Panel — full management dashboard
+• Database Viewer — browse all collections, search, export
+• Backup & Restore — JSON export/import, per-collection backup
+• Firebase Sync — real-time cloud sync with auto-scheduler
+• Role-Based Access — Admin and Viewer roles
+• Activity Log — full audit trail of all actions
+
+INTEGRATIONS
+• Firebase Realtime Database — 38 synced collections
+• Firebase Authentication — email/password with password reset
+• WhatsApp — deep links for messaging
+• QR Code Generation — via API
+• Barcode Scanning — BarcodeDetector API with html5-qrcode fallback
+
+PWA & MOBILE
+• Progressive Web App — install on any device
+• Service Worker — offline support with cache
+• Mobile Scanner — companion barcode scanning app
+• Customer Portal — self-service tracking for customers
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+TECH STACK
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+• HTML5, CSS3, Vanilla JavaScript (no frameworks)
+• Firebase Authentication
+• Firebase Realtime Database
+• Chart.js (analytics charts)
+• html5-qrcode (barcode scanning)
+• html2canvas (receipt rendering)
+• Sortable.js (drag-and-drop)
+• Progressive Web App (PWA)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SETUP REQUIREMENTS
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+• Firebase account (free tier available)
+• Any static web hosting (Firebase Hosting, Netlify, Vercel, or your own server)
+• Modern web browser (Chrome, Firefox, Safari, Edge)
+• No backend, no PHP, no Node.js, no database server needed
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+WHAT YOU GET
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+• Complete source code (4 HTML files + supporting files)
+• Fully commented and organized code
+• Production-ready with CSP headers, XSS protection
+• SEO optimized with meta tags and Open Graph
+• Documentation and setup guide
+• Free updates for 6 months (Standard) or lifetime (Extended)

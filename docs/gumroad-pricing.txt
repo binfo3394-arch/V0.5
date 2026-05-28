@@ -1,0 +1,31 @@
+PRICING SETUP
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Option 1: Single Product with Variants (Recommended)
+
+Variant 1 — "Standard License"
+Price: $29
+Description: Single shop license. All 20+ modules, 4 apps, Firebase sync, PWA support. 6 months of updates.
+
+Variant 2 — "Extended License" (Default/Featured)
+Price: $49
+Description: Multi-shop license with priority support. Everything in Standard + multi-branch, AI forecasting, dashboard builder, Firebase setup assistance, lifetime updates, source code.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Option 2: Two Separate Products
+
+Product 1: "ST POS — Standard"
+Price: $29
+Content: Standard license files
+
+Product 2: "ST POS — Extended"
+Price: $49
+Content: Extended license files (includes everything)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Recommended: Option 1 (variants) — easier to manage, single listing, customers choose at checkout.
+
+Suggested price: $49 as default (Extended), $29 as variant (Standard).

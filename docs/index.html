@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ST Mobile & Designing POS — Complete Point of Sale System</title>
+<meta name="description" content="ST Mobile & Designing POS — a full-featured point of sale system for mobile repair shops and retail businesses. Manage sales, repairs, inventory, customers, staff, and more.">
+<meta property="og:title" content="ST Mobile & Designing POS">
+<meta property="og:description" content="Full-featured POS system for mobile repair shops and retail businesses.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="../icons/icon-512.png">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #0a0a1a;
+  color: #e0e0ff;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: #6c63ff; text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── Header ── */
+.nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(10,10,26,0.85);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(108,99,255,0.15);
+  padding: 0 24px;
+}
+.nav-inner {
+  max-width: 1100px; margin: 0 auto;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 60px;
+}
+.nav-logo { font-size: 18px; font-weight: 800; color: #6c63ff; }
+.nav-links { display: flex; gap: 24px; }
+.nav-links a { color: #7070a0; font-size: 14px; font-weight: 500; transition: color 0.2s; }
+.nav-links a:hover { color: #e0e0ff; text-decoration: none; }
+.nav-cta {
+  background: linear-gradient(135deg, #6c63ff, #8b5cf6);
+  color: #fff; padding: 8px 20px; border-radius: 8px;
+  font-size: 13px; font-weight: 700; transition: 0.2s;
+}
+.nav-cta:hover { opacity: 0.9; text-decoration: none; transform: translateY(-1px); }
+@media(max-width:640px) { .nav-links { display: none; } }
+
+/* ── Hero ── */
+.hero {
+  padding: 120px 24px 80px;
+  text-align: center;
+  background: radial-gradient(ellipse at 50% 0%, rgba(108,99,255,0.15) 0%, transparent 60%);
+}
+.hero-badge {
+  display: inline-block;
+  background: rgba(108,99,255,0.15);
+  border: 1px solid rgba(108,99,255,0.3);
+  color: #a5a0ff;
+  padding: 6px 16px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  letter-spacing: 0.5px;
+}
+.hero h1 {
+  font-size: clamp(32px, 5vw, 52px);
+  font-weight: 900;
+  color: #fff;
+  line-height: 1.15;
+  margin-bottom: 16px;
+  letter-spacing: -1px;
+}
+.hero h1 span { color: #6c63ff; }
+.hero p {
+  font-size: 17px;
+  color: #7070a0;
+  max-width: 560px;
+  margin: 0 auto 32px;
+  line-height: 1.7;
+}
+.hero-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.btn-primary {
+  background: linear-gradient(135deg, #6c63ff, #8b5cf6);
+  color: #fff; padding: 14px 32px; border-radius: 10px;
+  font-size: 15px; font-weight: 700; border: none; cursor: pointer;
+  transition: 0.2s; display: inline-block;
+}
+.btn-primary:hover { opacity: 0.9; text-decoration: none; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(108,99,255,0.3); }
+.btn-secondary {
+  background: rgba(108,99,255,0.1);
+  color: #a5a0ff; padding: 14px 32px; border-radius: 10px;
+  font-size: 15px; font-weight: 600; border: 1px solid rgba(108,99,255,0.3); cursor: pointer;
+  transition: 0.2s; display: inline-block;
+}
+.btn-secondary:hover { background: rgba(108,99,255,0.2); text-decoration: none; }
+
+.hero-stats {
+  display: flex; justify-content: center; gap: 40px; margin-top: 48px;
+  flex-wrap: wrap;
+}
+.hero-stat { text-align: center; }
+.hero-stat .num { font-size: 28px; font-weight: 800; color: #6c63ff; }
+.hero-stat .lbl { font-size: 12px; color: #7070a0; margin-top: 2px; }
+
+/* ── Section base ── */
+.section { padding: 80px 24px; max-width: 1100px; margin: 0 auto; }
+.section-title {
+  font-size: clamp(24px, 3vw, 34px);
+  font-weight: 800; color: #fff;
+  text-align: center; margin-bottom: 8px;
+  letter-spacing: -0.5px;
+}
+.section-sub {
+  font-size: 15px; color: #7070a0;
+  text-align: center; margin-bottom: 48px;
+  max-width: 500px; margin-left: auto; margin-right: auto;
+}
+.section-alt { background: #0e0e24; }
+
+/* ── Features grid ── */
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+.feat-card {
+  background: rgba(18,18,42,0.8);
+  border: 1px solid rgba(108,99,255,0.1);
+  border-radius: 14px;
+  padding: 24px;
+  transition: 0.25s;
+}
+.feat-card:hover {
+  border-color: rgba(108,99,255,0.3);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.3);
+}
+.feat-icon { font-size: 28px; margin-bottom: 12px; }
+.feat-title { font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+.feat-desc { font-size: 13px; color: #7070a0; line-height: 1.6; }
+.feat-list { margin-top: 10px; }
+.feat-list li {
+  font-size: 12px; color: #9090c0; padding: 2px 0;
+  list-style: none;
+}
+.feat-list li::before { content: '✓ '; color: #6c63ff; font-weight: 700; }
+
+/* ── Screenshot placeholders ── */
+.screenshots {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+  margin-top: 40px;
+}
+.screenshot {
+  background: linear-gradient(135deg, rgba(108,99,255,0.08), rgba(139,92,246,0.05));
+  border: 1px solid rgba(108,99,255,0.15);
+  border-radius: 14px;
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #5050a0;
+  font-size: 14px;
+  font-weight: 500;
+  transition: 0.25s;
+}
+.screenshot:hover { border-color: rgba(108,99,255,0.4); transform: translateY(-2px); }
+
+/* ── Install steps ── */
+.steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 24px;
+  counter-reset: step;
+}
+.step {
+  background: rgba(18,18,42,0.6);
+  border: 1px solid rgba(108,99,255,0.1);
+  border-radius: 14px;
+  padding: 28px 24px;
+  position: relative;
+  counter-increment: step;
+}
+.step::before {
+  content: counter(step);
+  position: absolute; top: -14px; left: 24px;
+  background: linear-gradient(135deg, #6c63ff, #8b5cf6);
+  color: #fff; width: 28px; height: 28px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 800;
+}
+.step h3 { font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 8px; }
+.step p { font-size: 13px; color: #7070a0; line-height: 1.6; }
+.step code {
+  background: rgba(108,99,255,0.1);
+  color: #a5a0ff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+/* ── Tech stack ── */
+.tech-grid {
+  display: flex; flex-wrap: wrap; gap: 12px; justify-content: center;
+  margin-top: 32px;
+}
+.tech-pill {
+  background: rgba(108,99,255,0.1);
+  border: 1px solid rgba(108,99,255,0.2);
+  color: #a5a0ff;
+  padding: 8px 18px;
+  border-radius: 99px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ── Pricing ── */
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  max-width: 700px;
+  margin: 0 auto;
+}
+.price-card {
+  background: rgba(18,18,42,0.8);
+  border: 1px solid rgba(108,99,255,0.15);
+  border-radius: 16px;
+  padding: 32px 28px;
+  text-align: center;
+  transition: 0.25s;
+  position: relative;
+}
+.price-card.featured {
+  border-color: #6c63ff;
+  box-shadow: 0 0 40px rgba(108,99,255,0.15);
+}
+.price-card.featured::before {
+  content: 'POPULAR';
+  position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+  background: linear-gradient(135deg, #6c63ff, #8b5cf6);
+  color: #fff; padding: 4px 14px; border-radius: 99px;
+  font-size: 10px; font-weight: 800; letter-spacing: 1px;
+}
+.price-card:hover { transform: translateY(-4px); border-color: rgba(108,99,255,0.4); }
+.price-name { font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+.price-amount { font-size: 36px; font-weight: 900; color: #6c63ff; margin: 12px 0 4px; }
+.price-amount span { font-size: 14px; font-weight: 500; color: #7070a0; }
+.price-desc { font-size: 13px; color: #7070a0; margin-bottom: 20px; }
+.price-features { text-align: left; margin-bottom: 24px; }
+.price-features li {
+  font-size: 13px; color: #9090c0; padding: 5px 0;
+  list-style: none;
+}
+.price-features li::before { content: '✓ '; color: #00e676; font-weight: 700; }
+
+/* ── FAQ ── */
+.faq-list { max-width: 700px; margin: 0 auto; }
+.faq-item {
+  border-bottom: 1px solid rgba(108,99,255,0.1);
+  padding: 20px 0;
+}
+.faq-q {
+  font-size: 15px; font-weight: 700; color: #fff;
+  cursor: pointer; display: flex; justify-content: space-between; align-items: center;
+}
+.faq-q::after { content: '+'; font-size: 20px; color: #6c63ff; transition: 0.2s; }
+.faq-item.open .faq-q::after { transform: rotate(45deg); }
+.faq-a {
+  font-size: 14px; color: #7070a0; line-height: 1.7;
+  max-height: 0; overflow: hidden; transition: max-height 0.3s ease, padding 0.3s;
+}
+.faq-item.open .faq-a { max-height: 300px; padding-top: 12px; }
+
+/* ── Footer ── */
+.footer {
+  border-top: 1px solid rgba(108,99,255,0.1);
+  padding: 40px 24px;
+  text-align: center;
+}
+.footer p { font-size: 13px; color: #5050a0; }
+.footer-links { margin-top: 12px; display: flex; gap: 20px; justify-content: center; }
+.footer-links a { font-size: 13px; color: #7070a0; }
+
+/* ── Animations ── */
+@keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.animate { animation: fadeUp 0.6s ease both; }
+
+/* ── Responsive ── */
+@media(max-width:640px) {
+  .hero { padding: 100px 16px 60px; }
+  .section { padding: 60px 16px; }
+  .hero-stats { gap: 24px; }
+  .pricing-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- Navigation -->
+<nav class="nav">
+  <div class="nav-inner">
+    <div class="nav-logo">ST POS</div>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#screenshots">Screenshots</a>
+      <a href="#install">Setup</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#faq">FAQ</a>
+    </div>
+    <a href="#pricing" class="nav-cta">Get Started</a>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="animate">
+    <div class="hero-badge">v28 — Now with Multi-Branch & AI Forecasting</div>
+    <h1>Complete <span>POS System</span><br>for Mobile & Retail</h1>
+    <p>Manage sales, repairs, inventory, customers, staff, and finances — all from one powerful app. Works offline. Installs on any device.</p>
+    <div class="hero-actions">
+      <a href="#pricing" class="btn-primary">Buy Now — $49</a>
+      <a href="#features" class="btn-secondary">See Features</a>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat"><div class="num">20+</div><div class="lbl">Modules</div></div>
+      <div class="hero-stat"><div class="num">100+</div><div class="lbl">Features</div></div>
+      <div class="hero-stat"><div class="num">4</div><div class="lbl">Apps Included</div></div>
+      <div class="hero-stat"><div class="num">PWA</div><div class="lbl">Offline Ready</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- Features -->
+<section class="section" id="features">
+  <div class="section-title">Everything You Need</div>
+  <div class="section-sub">20+ modules covering every aspect of your business — from the counter to the cloud.</div>
+
+  <div class="features-grid">
+    <div class="feat-card">
+      <div class="feat-icon">🛒</div>
+      <div class="feat-title">Point of Sale</div>
+      <div class="feat-desc">Fast checkout with barcode scanning, split payments, hold/resume sales, discounts, and coupons.</div>
+      <ul class="feat-list">
+        <li>Barcode scanner integration</li>
+        <li>Split payment (Cash + Card)</li>
+        <li>Hold & resume sales</li>
+        <li>Custom discounts & coupons</li>
+        <li>Thermal receipt printing</li>
+      </ul>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon">📦</div>
+      <div class="feat-title">Inventory Management</div>
+      <div class="feat-desc">Full stock control with batch tracking, kit assembly, barcode labels, and dead stock analysis.</div>
+      <ul class="feat-list">
+        <li>Batch/lot tracking with expiry</li>
+        <li>Stock audit with variance</li>
+        <li>Kit assembly (BOM)</li>
+        <li>Barcode & price label printing</li>
+        <li>Dead stock & slow mover alerts</li>
+      </ul>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon">🔧</div>
+      <div class="feat-title">Repair Management</div>
+      <div class="feat-desc">Track repairs from intake to delivery with diagnostics, timer, templates, and parts inventory.</div>
+      <ul class="feat-list">
+        <li>Device brand/model selector</li>
+        <li>Repair timer & billable hours</li>
+        <li>Diagnostic checklists</li>
+        <li>Repair templates (presets)</li>
+        <li>Parts inventory & warranty tracking</li>
+      </ul>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon">👥</div>
+      <div class="feat-title">Customer Management</div>
+      <div class="feat-desc">CRM with segments, timeline, follow-ups, referrals, and loyalty points program.</div>
+      <ul class="feat-list">
+        <li>Auto segments (VIP, At-Risk, New)</li>
+        <li>Customer timeline & history</li>
+        <li>Follow-up reminders</li>
+        <li>Referral system with bonuses</li>
+        <li>Loyalty points & tier system</li>
+      </ul>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon">🧾</div>
+      <div class="feat-title">Invoicing</div>
+      <div class="feat-desc">Professional invoices with designer templates, thermal receipts, and WhatsApp QR codes.</div>
+      <ul class="feat-list">
+        <li>3 invoice templates</li>
+        <li>Custom colors & logo</li>
+        <li>Thermal receipt support</li>
+        <li>WhatsApp QR on invoices</li>
+        <li>CSV export</li>
+      </ul>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon">💰</div>
+      <div class="feat-title">Finance & Accounting</div>
+      <div class="feat-desc">Credit sales, expenses, cash register, P&L statements, gift vouchers, and VAT management.</div>
+      <ul class="feat-list">
+        <li>Credit sales with payment tracking</li>
+        <li>Expense categories & reports</li>
+        <li>Cash register open/close</li>
+        <li>Profit & Loss statements</li>
+        <li>Gift vouchers & coupons</li>
+      </ul>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon">📊</div>
+      <div class="feat-title">Reports & Analytics</div>
+      <div class="feat-desc">Advanced reports, ABC analysis, sales comparison, and AI-powered forecasting.</div>
+      <ul class="feat-list">
+        <li>Advanced date-range reports</li>
+        <li>ABC product analysis</li>
+        <li>Sales comparison (WoW, MoM, YoY)</li>
+        <li>AI sales forecasting</li>
+        <li>Export CSV, Excel, PDF</li>
+      </ul>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon">👨‍💼</div>
+      <div class="feat-title">Staff & HR</div>
+      <div class="feat-desc">Staff management with commission tracking, shifts, roster, tasks, and checklists.</div>
+      <ul class="feat-list">
+        <li>Commission rates & tracking</li>
+        <li>Shift management</li>
+        <li>Weekly roster & scheduling</li>
+        <li>Task manager with priorities</li>
+        <li>Open/close checklists</li>
+      </ul>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon">📱</div>
+      <div class="feat-title">Mobile Scanner</div>
+      <div class="feat-desc">Companion mobile app for barcode scanning — pairs with desktop POS via session code.</div>
+      <ul class="feat-list">
+        <li>Real-time barcode scanning</li>
+        <li>Session-based pairing</li>
+        <li>Camera flip & torch control</li>
+        <li>Product lookup results</li>
+        <li>Cart tracking</li>
+      </ul>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon">👤</div>
+      <div class="feat-title">Customer Portal</div>
+      <div class="feat-desc">Self-service portal for customers to track repairs, orders, invoices, and credits.</div>
+      <ul class="feat-list">
+        <li>Phone number lookup</li>
+        <li>Repair status tracking</li>
+        <li>Order tracking</li>
+        <li>Invoice history</li>
+        <li>Credit balance view</li>
+      </ul>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon">🛡️</div>
+      <div class="feat-title">Admin Panel</div>
+      <div class="feat-desc">Full admin dashboard with database viewer, backup/restore, Firebase sync, and user management.</div>
+      <ul class="feat-list">
+        <li>Database browser & CSV export</li>
+        <li>JSON backup & restore</li>
+        <li>Firebase sync management</li>
+        <li>Role-based access control</li>
+        <li>Activity log & system info</li>
+      </ul>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon">☁️</div>
+      <div class="feat-title">Cloud Sync</div>
+      <div class="feat-desc">Firebase Realtime Database for live sync across devices with auto-backup scheduling.</div>
+      <ul class="feat-list">
+        <li>Real-time live sync</li>
+        <li>38 synced collections</li>
+        <li>Auto cloud backup scheduler</li>
+        <li>Offline-first with sync queue</li>
+        <li>Connection status indicator</li>
+      </ul>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon">🏪</div>
+      <div class="feat-title">Multi-Branch</div>
+      <div class="feat-desc">Manage multiple branches with inter-branch stock transfers and performance comparison.</div>
+      <ul class="feat-list">
+        <li>Branch CRUD with manager</li>
+        <li>Inter-branch stock transfers</li>
+        <li>Branch performance comparison</li>
+        <li>Per-branch Firebase config</li>
+      </ul>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon">💬</div>
+      <div class="feat-title">WhatsApp Messaging</div>
+      <div class="feat-desc">Send messages via WhatsApp with quick templates for repairs, orders, and promotions.</div>
+      <ul class="feat-list">
+        <li>Quick message templates</li>
+        <li>Bulk WhatsApp to segments</li>
+        <li>Repair done notifications</li>
+        <li>Payment reminders</li>
+        <li>Message history log</li>
+      </ul>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon">🤖</div>
+      <div class="feat-title">AI Forecasting</div>
+      <div class="feat-desc">AI-powered sales forecasting with growth rate, peak hours, and revenue trend analysis.</div>
+      <ul class="feat-list">
+        <li>Next month revenue forecast</li>
+        <li>Best selling day & peak hour</li>
+        <li>Day-of-week heatmap</li>
+        <li>Revenue trend chart</li>
+        <li>AI-generated insights</li>
+      </ul>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon">📐</div>
+      <div class="feat-title">Dashboard Builder</div>
+      <div class="feat-desc">Customize your dashboard with widget toggles, font sizes, and layout preferences.</div>
+      <ul class="feat-list">
+        <li>Widget show/hide toggles</li>
+        <li>Font size control (S/M/L)</li>
+        <li>Sidebar width options</li>
+        <li>Dashboard column layout</li>
+        <li>Custom keyboard shortcuts</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- Screenshots -->
+<section class="section section-alt" id="screenshots">
+  <div class="section-title">See It In Action</div>
+  <div class="section-sub">Replace these placeholders with actual screenshots of your app.</div>
+  <div class="screenshots">
+    <div class="screenshot">📸 Dashboard View</div>
+    <div class="screenshot">📸 Point of Sale</div>
+    <div class="screenshot">📸 Repair Tracker</div>
+    <div class="screenshot">📸 Inventory</div>
+    <div class="screenshot">📸 Reports & Charts</div>
+    <div class="screenshot">📸 Mobile Scanner</div>
+  </div>
+</section>
+
+<!-- Installation -->
+<section class="section" id="install">
+  <div class="section-title">Easy Setup</div>
+  <div class="section-sub">Get up and running in minutes — no backend required.</div>
+
+  <div class="steps">
+    <div class="step">
+      <h3>Create Firebase Project</h3>
+      <p>Go to <a href="https://console.firebase.google.com" target="_blank">Firebase Console</a>, create a project, enable Realtime Database and Authentication (Email/Password).</p>
+    </div>
+    <div class="step">
+      <h3>Add Your Config</h3>
+      <p>Copy your Firebase config (API key, project ID, etc.) into the <code>firebaseConfig</code> object in each HTML file.</p>
+    </div>
+    <div class="step">
+      <h3>Deploy to Hosting</h3>
+      <p>Upload all files to any static hosting — Firebase Hosting, Netlify, Vercel, or your own server. Works with HTTPS.</p>
+    </div>
+    <div class="step">
+      <h3>Start Using</h3>
+      <p>Open the app, create your admin account, add products, and start selling. The PWA installs on any device.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Tech Stack -->
+<section class="section section-alt" id="tech">
+  <div class="section-title">Built With</div>
+  <div class="section-sub">Modern web technologies for speed and reliability.</div>
+  <div class="tech-grid">
+    <div class="tech-pill">HTML5</div>
+    <div class="tech-pill">CSS3</div>
+    <div class="tech-pill">Vanilla JavaScript</div>
+    <div class="tech-pill">Firebase Auth</div>
+    <div class="tech-pill">Firebase Realtime DB</div>
+    <div class="tech-pill">Chart.js</div>
+    <div class="tech-pill">html5-qrcode</div>
+    <div class="tech-pill">html2canvas</div>
+    <div class="tech-pill">Sortable.js</div>
+    <div class="tech-pill">Progressive Web App</div>
+    <div class="tech-pill">Service Worker</div>
+    <div class="tech-pill">Responsive Design</div>
+  </div>
+</section>
+
+<!-- Pricing -->
+<section class="section" id="pricing">
+  <div class="section-title">Simple Pricing</div>
+  <div class="section-sub">One-time payment. No subscriptions. Lifetime updates.</div>
+
+  <div class="pricing-grid">
+    <div class="price-card">
+      <div class="price-name">Standard</div>
+      <div class="price-amount">$29 <span>one-time</span></div>
+      <div class="price-desc">Single shop license</div>
+      <ul class="price-features">
+        <li>All 20+ modules</li>
+        <li>Main POS app</li>
+        <li>Admin panel</li>
+        <li>Customer portal</li>
+        <li>Mobile scanner</li>
+        <li>Firebase cloud sync</li>
+        <li>PWA support</li>
+        <li>Free updates for 6 months</li>
+      </ul>
+      <a href="#" class="btn-primary" style="display:block;text-align:center;">Buy Standard</a>
+    </div>
+
+    <div class="price-card featured">
+      <div class="price-name">Extended</div>
+      <div class="price-amount">$49 <span>one-time</span></div>
+      <div class="price-desc">Multi-shop + priority support</div>
+      <ul class="price-features">
+        <li>Everything in Standard</li>
+        <li>Multi-branch support</li>
+        <li>AI sales forecasting</li>
+        <li>Dashboard builder</li>
+        <li>Priority email support</li>
+        <li>Firebase setup assistance</li>
+        <li>Lifetime updates</li>
+        <li>Source code included</li>
+      </ul>
+      <a href="#" class="btn-primary" style="display:block;text-align:center;">Buy Extended</a>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="section section-alt" id="faq">
+  <div class="section-title">Frequently Asked</div>
+  <div class="section-sub">Got questions? We've got answers.</div>
+
+  <div class="faq-list">
+    <div class="faq-item">
+      <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">Do I need a server or backend?</div>
+      <div class="faq-a">No. The app runs entirely in the browser using Firebase for cloud sync. You can host it on any static hosting (Firebase Hosting, Netlify, Vercel, or even a simple web server). No PHP, Node.js, or database server needed.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">Does it work offline?</div>
+      <div class="faq-a">Yes. The app is a Progressive Web App (PWA) with a service worker. It caches the app shell and works offline. Data syncs to Firebase when you reconnect. You can install it on any device like a native app.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">Is Firebase free?</div>
+      <div class="faq-a">Firebase has a generous free tier (Spark plan) that covers most small to medium shops. It includes 1GB database storage, 10GB/month transfer, and 50K reads/day. For larger operations, the Blaze plan charges per usage.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">Can I customize the design?</div>
+      <div class="faq-a">Yes. The app uses CSS variables for theming. You can change colors, fonts, and layout. The invoice designer lets you customize receipt templates with your logo, colors, and footer text.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">What devices does it support?</div>
+      <div class="faq-a">Any device with a modern browser — desktop, tablet, or phone. It's a PWA so it installs on Android and iOS. The mobile scanner companion app works on any phone with a camera.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">Do you offer setup assistance?</div>
+      <div class="faq-a">Extended license includes Firebase setup assistance. We'll help you configure your Firebase project, set security rules, and get your first shop running.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">Can I use it for multiple shops?</div>
+      <div class="faq-a">The Extended license includes multi-branch support. Each branch can have its own Firebase database or share one with branch-level filtering. Stock transfers between branches are supported.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">What about data security?</div>
+      <div class="faq-a">All data is stored in your own Firebase project — we don't have access. Firebase provides enterprise-grade security with authentication, security rules, and encrypted connections. You control who can access what with role-based permissions.</div>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer">
+  <p><strong>ST Mobile & Designing POS</strong> — Complete Point of Sale System</p>
+  <p style="margin-top:8px">Built with HTML, CSS, JavaScript & Firebase. No frameworks. No dependencies.</p>
+  <div class="footer-links">
+    <a href="#features">Features</a>
+    <a href="#pricing">Pricing</a>
+    <a href="#faq">FAQ</a>
+    <a href="mailto:stshop@gmail.com">Contact</a>
+  </div>
+  <p style="margin-top:20px;font-size:11px;color:#404070">&copy; 2026 ST Mobile & Designing. All rights reserved.</p>
+</footer>
+
+</body>
+</html>

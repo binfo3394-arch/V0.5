@@ -1,0 +1,54 @@
+COVER IMAGE GUIDE
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Gumroad Cover Image Size: 1280 x 720 pixels (16:9 ratio)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+DESIGN SUGGESTIONS:
+
+Background: Dark (#0a0a1a) matching the app theme
+Accent Color: Purple (#6c63ff)
+
+Layout:
+• Left side: Product name "ST Mobile & Designing POS" in large bold text
+• Right side: App screenshot or feature grid mockup
+• Bottom: Key selling points as small icons/badges
+• Corner: "v28" version badge
+
+Text on image:
+Title: ST Mobile & Designing POS
+Subtitle: Complete Point of Sale System
+Bullets: "20+ Modules" "100+ Features" "Works Offline" "No Backend"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SCREENSHOTS TO INCLUDE (Gumroad allows multiple images):
+
+1. Dashboard view — show the main dashboard with stats, charts
+2. Point of Sale — product grid, cart, checkout
+3. Repair Tracker — repair list with status badges
+4. Inventory — product table with stock levels
+5. Reports — charts and analytics
+6. Mobile Scanner — phone scanning interface
+7. Customer Portal — customer self-service view
+8. Admin Panel — database viewer and management
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+HOW TO TAKE SCREENSHOTS:
+
+1. Open each page in Chrome
+2. Press F12 → Toggle device toolbar (Ctrl+Shift+M)
+3. Select iPhone 14 Pro or similar (390x844)
+4. Screenshot with Ctrl+Shift+S (Firefox) or use browser DevTools screenshot
+5. Or use a tool like Screenshot.guru for full-page captures
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+TOOLS TO CREATE COVER:
+
+• Canva (free) — canva.com, use "Gumroad Product Cover" template
+• Figma (free) — figma.com
+• Adobe Express (free) — adobe.com/express

@@ -1,0 +1,26 @@
+Gumroad Categories to select:
+
+Primary Category: Software
+Subcategory: Web Applications
+
+Tags (add these):
+pos system
+point of sale
+pos software
+retail pos
+repair shop software
+inventory management
+customer management
+invoice software
+small business pos
+mobile pos
+pwa app
+firebase app
+html pos
+javascript pos
+repair tracking
+stock management
+staff management
+crm software
+business management
+offline pos

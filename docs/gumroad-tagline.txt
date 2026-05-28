@@ -1,0 +1,1 @@
+Full-featured POS system for mobile repair shops and retail businesses. 20+ modules, 100+ features. Works offline. No backend required.

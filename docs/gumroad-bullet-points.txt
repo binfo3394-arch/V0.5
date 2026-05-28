@@ -1,0 +1,20 @@
+Gumroad Bullet Points (for the "What you'll get" section):
+
+• 20+ business modules — POS, repairs, inventory, customers, staff, finance, reports, and more
+• 100+ features — barcode scanning, split payments, loyalty points, AI forecasting, multi-branch
+• 4 apps included — Main POS, Admin Panel, Customer Portal, Mobile Scanner
+• No backend required — runs on Firebase (free tier available), any static hosting
+• Works offline — Progressive Web App with service worker, installable on any device
+• Cloud sync — Firebase Realtime Database with 38 synced collections, auto-backup
+• Professional invoices — 3 templates, thermal receipt, WhatsApp QR codes
+• Repair management — diagnostics, timer, templates, parts inventory, warranty tracking
+• Staff management — commission tracking, shifts, roster, tasks, checklists
+• Advanced reports — ABC analysis, sales comparison, P&L, tax summary, CSV/Excel/PDF export
+• Customer portal — self-service repair/order tracking for your customers
+• Mobile scanner — companion app for barcode scanning via phone camera
+• WhatsApp integration — quick templates, bulk messages to customer segments
+• AI sales forecasting — revenue prediction, peak hours, best selling days
+• Role-based access — Admin and Viewer roles with PIN protection
+• Production ready — CSP headers, XSS protection, SEO optimized, fully tested
+• Clean code — no frameworks, vanilla JavaScript, easy to customize
+• Lifetime updates — get all future features and improvements
