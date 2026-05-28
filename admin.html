@@ -249,18 +249,6 @@ tr:hover td { background:rgba(108,99,255,0.04); }
 .confirm-box p { font-size:13px; color:var(--muted); margin-bottom:20px; }
 .confirm-btns { display:flex; gap:10px; justify-content:center; }
 
-/* ── Modal (for admin profile) ── */
-.moverlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(4px);z-index:9000;display:none;align-items:center;justify-content:center;padding:16px;}
-.moverlay.open{display:flex;animation:fadeIn 0.2s;}
-.modal{background:var(--card);border:1px solid var(--border);border-radius:18px;width:540px;max-width:100%;max-height:90vh;overflow-y:auto;animation:slideUp 0.25s;}
-.mhdr{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--card);z-index:10;}
-.mhdr h3{font-size:15px;font-weight:700;}
-.mbody{padding:22px;}
-.mftr{padding:14px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;}
-.xbtn{background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;line-height:1;padding:0 4px;}
-.xbtn:hover{color:var(--danger);}
-@keyframes slideUp{from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:translateY(0)}}
-@media(max-width:768px){.moverlay{padding:16px !important;}.modal{width:100% !important;}}
 /* ── Scrollbar ── */
 ::-webkit-scrollbar { width:5px; }
 ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
@@ -273,6 +261,27 @@ tr:hover td { background:rgba(108,99,255,0.04); }
   .adm-main { padding:14px; }
   .stat-grid { grid-template-columns:1fr 1fr; gap:10px; }
   .mob-nav-btn { display:flex !important; }
+  /* Login screen mobile */
+  #login-screen { padding:16px; align-items:flex-start; padding-top:10vh; }
+  .login-box { width:100%; padding:24px 20px; border-radius:16px; }
+  .login-logo .licon { font-size:40px; }
+  .login-logo h1 { font-size:18px; }
+  /* Overview panels mobile */
+  #sec-overview > div[style*="grid-template-columns:1fr 1fr"] { grid-template-columns:1fr !important; }
+  /* Backup panels mobile */
+  #sec-backup > div[style*="grid-template-columns:1fr 1fr"] { grid-template-columns:1fr !important; }
+  /* Header mobile */
+  .adm-header { padding:10px 14px; }
+  .adm-header h1 { font-size:14px; }
+  .hright { gap:6px; }
+  #fb-status { font-size:10px; padding:3px 8px; }
+  .logout-btn { padding:5px 10px; font-size:11px; }
+  /* Panels mobile */
+  .panel-body { padding:14px; }
+  .sec-title { font-size:16px; }
+  /* Tables mobile */
+  table { font-size:11px; }
+  th, td { padding:6px 8px; font-size:11px; }
 }
 .mob-nav-btn { display:none; background:none; border:none; color:var(--text); font-size:22px; cursor:pointer; padding:4px; }
 </style>
@@ -288,56 +297,19 @@ tr:hover td { background:rgba(108,99,255,0.04); }
       <p>ST Mobile & Designing — POS System</p>
     </div>
     <div class="login-field">
-      <label>Email</label>
-      <input type="email" id="login-user" placeholder="your@email.com" autocomplete="email">
+      <label>Username</label>
+      <input type="text" id="login-user" placeholder="admin" autocomplete="username">
     </div>
     <div class="login-field">
       <label>Password</label>
       <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password"
         onkeydown="if(event.key==='Enter') doLogin()">
     </div>
-    <div id="admin-auth-login-fields">
-      <button class="login-btn" onclick="doLogin()">🔐 Sign In</button>
-      <div style="text-align:center;margin-top:10px">
-        <span style="font-size:12px;color:var(--muted);cursor:pointer" onclick="adminShowSignup()">Don't have an account? <strong style="color:var(--primary)">Sign Up</strong></span>
-      </div>
-      <div style="text-align:center;margin-top:6px">
-        <span style="font-size:12px;color:var(--muted);cursor:pointer" onclick="adminShowReset()">Forgot password?</span>
-      </div>
-    </div>
-    <div id="admin-auth-signup-fields" style="display:none">
-      <div class="login-field">
-        <label>Full Name</label>
-        <input type="text" id="admin-signup-name" placeholder="Your full name">
-      </div>
-      <div class="login-field">
-        <label>Email *</label>
-        <input type="email" id="admin-signup-email" placeholder="your@email.com">
-      </div>
-      <div class="login-field">
-        <label>Password *</label>
-        <input type="password" id="admin-signup-pass" placeholder="At least 6 characters">
-      </div>
-      <div class="login-field">
-        <label>Confirm Password *</label>
-        <input type="password" id="admin-signup-pass2" placeholder="Confirm password">
-      </div>
-      <button class="login-btn" onclick="adminSignup()">📝 Create Account</button>
-      <div style="text-align:center;margin-top:10px">
-        <span style="font-size:12px;color:var(--muted);cursor:pointer" onclick="adminShowLogin()">Already have an account? <strong style="color:var(--primary)">Sign In</strong></span>
-      </div>
-    </div>
-    <div id="admin-auth-reset-fields" style="display:none">
-      <div class="login-field">
-        <label>Email</label>
-        <input type="email" id="admin-reset-email" placeholder="your@email.com" onkeydown="if(event.key==='Enter')adminResetPass()">
-      </div>
-      <button class="login-btn" onclick="adminResetPass()">📧 Send Reset Link</button>
-      <div style="text-align:center;margin-top:10px">
-        <span style="font-size:12px;color:var(--muted);cursor:pointer" onclick="adminShowLogin()"><strong style="color:var(--primary)">← Back to Sign In</strong></span>
-      </div>
-    </div>
+    <button class="login-btn" onclick="doLogin()">🔐 Login</button>
     <div class="login-err" id="login-err"></div>
+    <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:16px">
+      Default: admin / admin1234 &nbsp;|&nbsp; Owner: stshop@gmail.com / dtr486485
+    </div>
   </div>
 </div>
 
@@ -352,12 +324,10 @@ tr:hover td { background:rgba(108,99,255,0.04); }
         <h1>🛡️ Admin Panel</h1>
         <p id="adm-welcome">ST Mobile POS — Administrator</p>
       </div>
-      <div style="font-size:11px;color:var(--muted)" id="adm-header-email"></div>
     </div>
     <div class="hright">
       <span id="fb-status">☁️ Connecting...</span>
       <span id="adm-clock" style="font-size:12px;color:var(--muted)"></span>
-      <span id="admin-profile-btn" style="font-size:11px;padding:3px 10px;border-radius:20px;background:rgba(108,99,255,0.15);color:var(--primary);border:1px solid rgba(108,99,255,0.3);cursor:pointer" onclick="openAdminProfileModal()">👤 Profile</span>
       <button class="logout-btn" onclick="doLogout()">🚪 Logout</button>
     </div>
   </div>
@@ -603,7 +573,7 @@ tr:hover td { background:rgba(108,99,255,0.04); }
             <button class="btn btn-primary btn-sm" onclick="showAddUser()">➕ Add User</button>
           </div>
           <div class="panel-body">
-            <div class="info-box">✅ Accounts are managed via <strong>Firebase Authentication</strong>. Sign in with your email and password.</div>
+            <div class="warn-box">⚠️ Admin credentials browser localStorage ලෙල save වෙනවා. Production ලෙල server-side auth use කරන්න.</div>
             <div id="user-list"></div>
           </div>
         </div>
@@ -611,47 +581,23 @@ tr:hover td { background:rgba(108,99,255,0.04); }
         <div class="panel" id="add-user-panel" style="display:none">
           <div class="panel-head"><h3>➕ New Admin User</h3></div>
           <div class="panel-body">
-            <div class="info-box">
-              Accounts are managed via Firebase Authentication. Create a new user below (they'll get a signup email).
-            </div>
             <div class="fgrid2">
-              <div class="fg"><label>Email *</label><input type="email" id="new-admin-email" placeholder="user@email.com"></div>
-              <div class="fg"><label>Display Name</label><input id="new-admin-displayname" placeholder="Full name"></div>
-              <div class="fg"><label>Password *</label><input type="password" id="new-admin-password" placeholder="Min 6 chars"></div>
-              <div class="fg"><label>Confirm Password</label><input type="password" id="new-admin-password2" placeholder="Confirm password"></div>
+              <div class="fg"><label>Username *</label><input id="new-username" placeholder="username"></div>
+              <div class="fg"><label>Display Name</label><input id="new-displayname" placeholder="Full name"></div>
+              <div class="fg"><label>Password *</label><input type="password" id="new-password" placeholder="Min 8 chars"></div>
+              <div class="fg"><label>Role</label>
+                <select id="new-role">
+                  <option value="admin">👑 Admin (Full Access)</option>
+                  <option value="viewer">👁️ Viewer (Read-only)</option>
+                </select>
+              </div>
             </div>
             <div style="display:flex;gap:8px">
-              <button class="btn btn-primary" onclick="addAdminUserFB()">💾 Create Firebase User</button>
+              <button class="btn btn-primary" onclick="addAdminUser()">💾 Create User</button>
               <button class="btn btn-outline" onclick="hideAddUser()">Cancel</button>
             </div>
-            <div id="new-admin-err" style="color:var(--danger);font-size:12px;margin-top:8px"></div>
           </div>
         </div>
-      </div>
-
-      <!-- ════ ADMIN PROFILE MODAL ════ -->
-      <div class="moverlay" id="m-admin-profile" style="padding-left:220px">
-        <div class="modal" style="width:420px">
-          <div class="mhdr"><h3>👤 Admin Profile</h3><button class="xbtn" onclick="closeM('m-admin-profile')">×</button></div>
-          <div class="mbody">
-            <div style="background:var(--card2);border-radius:10px;padding:14px;margin-bottom:14px;text-align:center">
-              <div style="font-size:36px">🛡️</div>
-              <div style="font-size:14px;font-weight:700;color:var(--primary)" id="adm-prof-email">—</div>
-            </div>
-            <div class="fg"><label>Display Name</label><input id="adm-prof-name" placeholder="Your name"></div>
-            <button class="btn btn-primary" style="width:100%" onclick="adminUpdateProfile()">💾 Save Profile</button>
-            <div style="border-top:1px solid var(--border);margin:14px 0;padding-top:14px">
-              <button class="btn btn-outline" style="width:100%" onclick="adminSendResetLink()">📧 Send Password Reset Email</button>
-            </div>
-            <div id="adm-prof-err" style="color:var(--danger);font-size:12px;text-align:center;min-height:16px;margin-top:6px"></div>
-            <div id="adm-prof-suc" style="color:var(--success);font-size:12px;text-align:center;min-height:16px;margin-top:4px"></div>
-          </div>
-          <div class="mftr">
-            <button class="btn btn-danger" onclick="adminConfirmDelete()">🗑️ Delete Account</button>
-            <button class="btn btn-outline" onclick="closeM('m-admin-profile')">Close</button>
-          </div>
-        </div>
-      </div>
       </div>
 
       <!-- ════ STAFF OVERVIEW ════ -->
@@ -868,7 +814,6 @@ tr:hover td { background:rgba(108,99,255,0.04); }
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getDatabase, ref, set, get, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile, sendPasswordResetEmail, deleteUser, reauthenticateWithCredential, EmailAuthProvider, updatePassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey:            "AIzaSyA2EprDDYqnR1KTlA3nADdcCcVpi-HaDMk",
@@ -882,10 +827,8 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
-const auth = getAuth(app);
 
 // Expose to global
-window._auth = auth;
 window._fbDb = database;
 window._fbRef = ref;
 window._fbSet = set;
@@ -893,50 +836,10 @@ window._fbGet = get;
 window._fbRemove = remove;
 window._fbConfig = firebaseConfig;
 
-// ── Auth wrappers ──
-window._firebaseUpdateProfile = updateProfile;
-window._firebaseReauth = reauthenticateWithCredential;
-window._firebaseEmailAuth = EmailAuthProvider;
-window._firebaseUpdatePassword = updatePassword;
-window.firebaseAdminSignIn = function(email, password) {
-  return signInWithEmailAndPassword(auth, email, password);
-};
-window.firebaseAdminSignOut = function() {
-  return signOut(auth);
-};
-window.firebaseAdminCreateUser = function(email, password, displayName) {
-  return createUserWithEmailAndPassword(auth, email, password).then(function(cred) {
-    if (displayName) return updateProfile(cred.user, { displayName: displayName }).then(function() { return cred; });
-    return cred;
-  });
-};
-window.firebaseAdminDeleteUser = function() {
-  var user = auth.currentUser;
-  if (!user) return Promise.reject('No user');
-  return deleteUser(user);
-};
-window.firebaseAdminResetPassword = function(email) {
-  return sendPasswordResetEmail(auth, email);
-};
-// Save/load admin profile from Firebase DB
-window.firebaseAdminSaveProfile = function(uid, data) {
-  return set(ref(database, 'admin-users/' + uid), data);
-};
-window.firebaseAdminGetProfile = function(uid) {
-  return get(ref(database, 'admin-users/' + uid));
-};
-
-// ── Auth state listener ──
-window._adminAuthUnsub = onAuthStateChanged(auth, function(user) {
-  if (window._onAdminAuthChanged) window._onAdminAuthChanged(user);
-});
-
-// Load POS data from Firebase (per-user)
+// Load POS data from Firebase
 window.loadPosDataFromFB = function(callback) {
-  var uid = auth.currentUser ? auth.currentUser.uid : null;
-  if (!uid) { if (callback) callback(null); return; }
   setFbStatus('☁️ Loading...', 'var(--warning)');
-  get(ref(database, 'pos-data/' + uid)).then(function(snapshot) {
+  get(ref(database, 'pos-data')).then(function(snapshot) {
     if (snapshot.exists()) {
       var data = snapshot.val();
       // Convert Firebase objects back to arrays
@@ -946,44 +849,22 @@ window.loadPosDataFromFB = function(callback) {
         return Object.keys(val).sort(function(a,b){ return Number(a)-Number(b); }).map(function(k){ return val[k]; });
       }
       window._posDb = {
-        products:        arr(data.products),
-        invoices:        arr(data.invoices),
-        repairs:         arr(data.repairs),
-        orders:          arr(data.orders),
-        customers:       arr(data.customers),
-        expenses:        arr(data.expenses),
-        suppliers:       arr(data.suppliers),
-        purchases:       arr(data.purchases),
-        stockLog:        arr(data.stockLog),
-        activityLog:     arr(data.activityLog),
-        staff:           arr(data.staff),
-        shifts:          arr(data.shifts),
-        rosterShifts:    arr(data.rosterShifts),
-        tasks:           arr(data.tasks),
-        followups:       arr(data.followups),
-        timerLogs:       arr(data.timerLogs),
-        repTemplates:    arr(data.repTemplates),
-        purchaseOrders:  arr(data.purchaseOrders),
-        branches:        arr(data.branches),
-        taxProfiles:     arr(data.taxProfiles),
-        stockTransfers:  arr(data.stockTransfers),
-        credits:         arr(data.credits),
-        commPayments:    arr(data.commPayments),
-        loyaltyLog:      arr(data.loyaltyLog),
-        batches:         arr(data.batches),
-        kits:            arr(data.kits),
-        upsellRules:     arr(data.upsellRules),
-        referrals:       arr(data.referrals),
-        partsInventory:  arr(data.partsInventory),
-        giftVouchers:    arr(data.giftVouchers),
-        settings:        data.settings || {},
-        widgetPrefs:     data.widgetPrefs || {},
-        diagChecklists:  data.diagChecklists || {},
-        repairParts:     data.repairParts || {},
-        warrantyDays:    data.warrantyDays || {},
-        productVariants: data.productVariants || {},
-        invDesign:       data.invDesign || {},
-        _lastSync:       data._lastSync
+        products:     arr(data.products),
+        invoices:     arr(data.invoices),
+        repairs:      arr(data.repairs),
+        orders:       arr(data.orders),
+        customers:    arr(data.customers),
+        expenses:     arr(data.expenses),
+        suppliers:    arr(data.suppliers),
+        activityLog:  arr(data.activityLog),
+        staff:        arr(data.staff),
+        shifts:       arr(data.shifts),
+        tasks:        arr(data.tasks),
+        followups:    arr(data.followups),
+        credits:      arr(data.credits),
+        commPayments: arr(data.commPayments),
+        settings:     data.settings || {},
+        _lastSync:    data._lastSync
       };
       setFbStatus('✅ Synced', 'var(--success)');
       if (callback) callback(window._posDb);
@@ -1000,51 +881,8 @@ window.loadPosDataFromFB = function(callback) {
 };
 
 window.savePosDataToFB = function(dbObj, callback) {
-  var uid = auth.currentUser ? auth.currentUser.uid : null;
-  if (!uid) { if (callback) callback(false); return; }
   setFbStatus('☁️ Saving...', 'var(--warning)');
-  // Build complete payload with defaults to prevent data loss on partial objects
-  var payload = {
-    products:        dbObj.products        || [],
-    invoices:        dbObj.invoices        || [],
-    repairs:         dbObj.repairs         || [],
-    orders:          dbObj.orders          || [],
-    customers:       dbObj.customers       || [],
-    expenses:        dbObj.expenses        || [],
-    suppliers:       dbObj.suppliers       || [],
-    purchases:       dbObj.purchases       || [],
-    stockLog:        dbObj.stockLog        || [],
-    activityLog:     dbObj.activityLog     || [],
-    staff:           dbObj.staff           || [],
-    shifts:          dbObj.shifts          || [],
-    rosterShifts:    dbObj.rosterShifts    || [],
-    tasks:           dbObj.tasks           || [],
-    followups:       dbObj.followups       || [],
-    timerLogs:       dbObj.timerLogs       || [],
-    repTemplates:    dbObj.repTemplates    || [],
-    purchaseOrders:  dbObj.purchaseOrders  || [],
-    branches:        dbObj.branches        || [],
-    taxProfiles:     dbObj.taxProfiles     || [],
-    stockTransfers:  dbObj.stockTransfers  || [],
-    credits:         dbObj.credits         || [],
-    commPayments:    dbObj.commPayments    || [],
-    loyaltyLog:      dbObj.loyaltyLog      || [],
-    batches:         dbObj.batches         || [],
-    kits:            dbObj.kits            || [],
-    upsellRules:     dbObj.upsellRules     || [],
-    referrals:       dbObj.referrals       || [],
-    partsInventory:  dbObj.partsInventory  || [],
-    giftVouchers:    dbObj.giftVouchers    || [],
-    settings:        dbObj.settings        || {},
-    widgetPrefs:     dbObj.widgetPrefs     || {},
-    diagChecklists:  dbObj.diagChecklists  || {},
-    repairParts:     dbObj.repairParts     || {},
-    warrantyDays:    dbObj.warrantyDays    || {},
-    productVariants: dbObj.productVariants || {},
-    invDesign:       dbObj.invDesign       || {},
-    _lastSync:       Date.now()
-  };
-  set(ref(database, 'pos-data/' + uid), payload)
+  set(ref(database, 'pos-data'), dbObj)
     .then(function() {
       setFbStatus('✅ Saved', 'var(--success)');
       toast('✅ Firebase ලෙල saved!');
@@ -1064,15 +902,9 @@ function setFbStatus(text, color) {
 
 // Check connection
 window.checkFirebaseConn = function() {
-  var uid = auth.currentUser ? auth.currentUser.uid : null;
-  if (!uid) {
-    var el = document.getElementById('fb-conn-status');
-    if (el) el.innerHTML = '<span style="color:var(--danger)">❌ Not signed in</span>';
-    return;
-  }
   var el = document.getElementById('fb-conn-status');
   if (el) el.innerHTML = '🔄 Testing connection...';
-  get(ref(database, 'pos-data/' + uid)).then(function(snap) {
+  get(ref(database, 'pos-data')).then(function(snap) {
     if (el) el.innerHTML = '<span style="color:var(--success)">✅ Firebase Connected!</span> — Data exists: ' + snap.exists();
     updateFbInfoDisplay(snap.exists() ? snap.val() : null);
   }).catch(function(e) {
@@ -1113,193 +945,114 @@ window.updateFbInfoDisplay = function(data) {
 };
 
 window.clearCloudData = function() {
-  var uid = auth.currentUser ? auth.currentUser.uid : null;
-  if (!uid) { toast('❌ Not signed in', 'var(--danger)'); return; }
-  remove(ref(database, 'pos-data/' + uid))
+  remove(ref(database, 'pos-data'))
     .then(function() { toast('✅ Cloud data cleared!'); checkFirebaseConn(); })
     .catch(function(e) { toast('❌ Error: ' + e.message, 'var(--danger)'); });
 };
 
 console.log('🔥 Admin Firebase loaded');
 
-// Auto-load on start (also triggered by _onAdminAuthChanged on sign-in)
+// Auto-load on start
 setTimeout(function() {
+  if (typeof window._adminLoggedIn !== 'undefined' && window._adminLoggedIn) {
+    window.loadPosDataFromFB(function(data) {
+      if (data) { window.refreshOverview(); }
+    });
+  }
   checkFirebaseConn();
 }, 500);
 </script>
 
 <script>
 // ════════════════════════════════════════
-//  AUTH (Firebase)
+//  AUTH
 // ════════════════════════════════════════
-var _adminAuthUser = null;
+var ADMIN_USERS_KEY = 'st-admin-users';
+var SESSION_KEY = 'st-admin-session';
 
-window._onAdminAuthChanged = function(user) {
-  _adminAuthUser = user;
-  var loginScreen = document.getElementById('login-screen');
-  var adminApp = document.getElementById('admin-app');
-  if (!loginScreen || !adminApp) return;
-  if (user) {
-    loginScreen.style.display = 'none';
-    adminApp.style.display = 'block';
-    var displayName = user.displayName || user.email || 'Admin';
-    document.getElementById('adm-welcome').textContent = 'ST Mobile POS — ' + displayName;
-    // Set header admin email
-    var hEl = document.getElementById('adm-header-email');
-    if (hEl) hEl.textContent = user.email || '';
-    // Load data
-    setTimeout(function() {
-      if (window.loadPosDataFromFB) {
-        loadPosDataFromFB(function(data) {
-          refreshOverview();
-          renderUserList();
-          renderStaffAdmin();
-          renderCommission();
-          renderLoyaltyAdmin();
-          renderActivityAdmin();
-          loadShopSettings();
-          renderSystemInfo();
-        });
-      }
-    }, 300);
-  } else {
-    loginScreen.style.display = 'flex';
-    adminApp.style.display = 'none';
-    // Reset login fields
-    var passEl = document.getElementById('login-pass');
-    if (passEl) passEl.value = '';
-  }
-};
-
-function quickSetupAdminDefault() {
-  var err = document.getElementById('login-err');
-  err.textContent = '';
-  if (typeof window.firebaseAdminCreateUser !== 'function') { err.textContent = '❌ Firebase not ready'; return; }
-  window.firebaseAdminCreateUser('binfo3394@gmail.com', 'Tharutomy&11', 'Admin')
-    .then(function(cred) {
-      if (typeof window.firebaseAdminSaveProfile === 'function') {
-        window.firebaseAdminSaveProfile(cred.user.uid, {
-          email: 'binfo3394@gmail.com',
-          displayName: 'Admin',
-          role: 'admin',
-          createdAt: Date.now()
-        }).catch(function(){});
-      }
-      err.style.color = 'var(--success)';
-      err.textContent = '✅ Default admin created! Try signing in.';
-    })
-    .catch(function(e) {
-      if (e.code === 'auth/email-already-in-use') {
-        document.getElementById('login-user').value = 'binfo3394@gmail.com';
-        document.getElementById('login-pass').value = 'Tharutomy&11';
-        err.style.color = 'var(--success)';
-        err.textContent = '✅ Account exists! Already signed in or click Sign In.';
-      } else {
-        err.textContent = '❌ ' + e.message;
-      }
-    });
+function getAdminUsers() {
+  try {
+    var u = JSON.parse(localStorage.getItem(ADMIN_USERS_KEY));
+    if (!u || !u.length) {
+      // Default users
+      u = [
+        { username:'admin', password:'admin1234', displayName:'Administrator', role:'admin', created: Date.now() },
+        { username:'stshop@gmail.com', password:'dtr486485', displayName:'ST Shop Owner', role:'admin', created: Date.now() }
+      ];
+      localStorage.setItem(ADMIN_USERS_KEY, JSON.stringify(u));
+    }
+    // Ensure stshop owner account always exists
+    if (!u.find(function(x){ return x.username==='stshop@gmail.com'; })) {
+      u.push({ username:'stshop@gmail.com', password:'dtr486485', displayName:'ST Shop Owner', role:'admin', created: Date.now() });
+      localStorage.setItem(ADMIN_USERS_KEY, JSON.stringify(u));
+    }
+    return u;
+  } catch(e) { return []; }
 }
 
-function adminShowSignup() {
-  document.getElementById('admin-auth-login-fields').style.display = 'none';
-  document.getElementById('admin-auth-reset-fields').style.display = 'none';
-  document.getElementById('admin-auth-signup-fields').style.display = 'block';
-  document.getElementById('login-err').textContent = '';
-}
-function adminShowLogin() {
-  document.getElementById('admin-auth-login-fields').style.display = 'block';
-  document.getElementById('admin-auth-signup-fields').style.display = 'none';
-  document.getElementById('admin-auth-reset-fields').style.display = 'none';
-  document.getElementById('login-err').textContent = '';
-}
-function adminShowReset() {
-  document.getElementById('admin-auth-login-fields').style.display = 'none';
-  document.getElementById('admin-auth-signup-fields').style.display = 'none';
-  document.getElementById('admin-auth-reset-fields').style.display = 'block';
-  document.getElementById('login-err').textContent = '';
+function saveAdminUsers(users) {
+  localStorage.setItem(ADMIN_USERS_KEY, JSON.stringify(users));
 }
 
 function doLogin() {
-  var email = document.getElementById('login-user').value.trim();
+  var user = document.getElementById('login-user').value.trim();
   var pass = document.getElementById('login-pass').value;
   var err = document.getElementById('login-err');
   err.textContent = '';
-  if (!email || !pass) { err.textContent = '❌ Email and password required'; return; }
-  if (typeof window.firebaseAdminSignIn !== 'function') { err.textContent = '❌ Firebase not ready'; return; }
-  window.firebaseAdminSignIn(email, pass)
-    .then(function(cred) {
-      if (typeof window.firebaseAdminSaveProfile === 'function') {
-        window.firebaseAdminSaveProfile(cred.user.uid, {
-          email: cred.user.email,
-          displayName: cred.user.displayName || '',
-          lastLogin: Date.now()
-        }).catch(function(){});
-      }
-    })
-    .catch(function(err2) {
-      var msg = err2.code === 'auth/user-not-found' ? '❌ No account with this email' :
-                err2.code === 'auth/wrong-password' ? '❌ Wrong password' :
-                err2.code === 'auth/invalid-email' ? '❌ Invalid email' :
-                err2.code === 'auth/too-many-requests' ? '❌ Too many attempts. Try again later.' :
-                err2.code === 'auth/user-disabled' ? '❌ Account disabled' :
-                '❌ ' + err2.message;
-      err.textContent = msg;
-    });
-}
-
-function adminSignup() {
-  var name = document.getElementById('admin-signup-name').value.trim();
-  var email = document.getElementById('admin-signup-email').value.trim();
-  var pass = document.getElementById('admin-signup-pass').value;
-  var pass2 = document.getElementById('admin-signup-pass2').value;
-  var err = document.getElementById('login-err');
-  err.textContent = '';
-  if (!email || !pass) { err.textContent = '❌ Email and password required'; return; }
-  if (pass.length < 6) { err.textContent = '❌ Password must be at least 6 characters'; return; }
-  if (pass !== pass2) { err.textContent = '❌ Passwords do not match'; return; }
-  if (typeof window.firebaseAdminCreateUser !== 'function') { err.textContent = '❌ Firebase not ready'; return; }
-  window.firebaseAdminCreateUser(email, pass, name)
-    .then(function(cred) {
-      if (typeof window.firebaseAdminSaveProfile === 'function') {
-        window.firebaseAdminSaveProfile(cred.user.uid, {
-          email: email,
-          displayName: name || '',
-          role: 'admin',
-          createdAt: Date.now()
-        }).catch(function(){});
-      }
-    })
-    .catch(function(e) {
-      var msg = e.code === 'auth/email-already-in-use' ? '❌ Email already registered. Try signing in.' :
-                e.code === 'auth/weak-password' ? '❌ Password too weak (min 6 chars)' :
-                e.code === 'auth/invalid-email' ? '❌ Invalid email' :
-                '❌ ' + e.message;
-      err.textContent = msg;
-    });
-}
-
-function adminResetPass() {
-  var email = document.getElementById('admin-reset-email').value.trim();
-  var err = document.getElementById('login-err');
-  err.textContent = '';
-  if (!email) { err.textContent = '❌ Enter your email'; return; }
-  if (typeof window.firebaseAdminResetPassword !== 'function') { err.textContent = '❌ Firebase not ready'; return; }
-  window.firebaseAdminResetPassword(email)
-    .then(function() {
-      err.style.color = 'var(--success)';
-      err.textContent = '✅ Reset link sent to ' + email;
-      setTimeout(function() { err.style.color = 'var(--danger)'; adminShowLogin(); }, 3000);
-    })
-    .catch(function(e) { err.textContent = '❌ ' + e.message; });
+  if (!user || !pass) { err.textContent = '❌ Username සහ Password ඕනේ!'; return; }
+  var users = getAdminUsers();
+  var found = users.find(function(u){ return u.username === user && u.password === pass; });
+  if (!found) { err.textContent = '❌ Invalid credentials!'; return; }
+  // Save session
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify({ username: found.username, displayName: found.displayName, role: found.role, loginTime: Date.now() }));
+  window._adminLoggedIn = true;
+  window._adminSession = found;
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('admin-app').style.display = 'block';
+  document.getElementById('adm-welcome').textContent = 'ST Mobile POS — ' + found.displayName + ' (' + found.role + ')';
+  // Load data
+  setTimeout(function() {
+    if (window.loadPosDataFromFB) {
+      loadPosDataFromFB(function(data) {
+        refreshOverview();
+        renderUserList();
+        renderStaffAdmin();
+        renderCommission();
+        renderLoyaltyAdmin();
+        renderActivityAdmin();
+        loadShopSettings();
+        renderSystemInfo();
+      });
+    }
+  }, 300);
 }
 
 function doLogout() {
   if (_adminAutoSyncTimer) clearInterval(_adminAutoSyncTimer);
   _adminAutoSyncTimer = null;
-  if (typeof window.firebaseAdminSignOut === 'function') {
-    window.firebaseAdminSignOut().catch(function(e) { console.error('Logout error:', e); });
-  }
+  sessionStorage.removeItem(SESSION_KEY);
+  window._adminLoggedIn = false;
+  document.getElementById('admin-app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-pass').value = '';
 }
+
+// Check existing session
+(function() {
+  var sess = sessionStorage.getItem(SESSION_KEY);
+  if (sess) {
+    try {
+      var s = JSON.parse(sess);
+      if (s && s.username) {
+        window._adminLoggedIn = true;
+        window._adminSession = s;
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('admin-app').style.display = 'block';
+        document.getElementById('adm-welcome').textContent = 'ST Mobile POS — ' + s.displayName + ' (' + s.role + ')';
+      }
+    } catch(e) {}
+  }
+})();
 
 // ════════════════════════════════════════
 //  NAVIGATION
@@ -1734,117 +1487,50 @@ function adminFormatSyncInterval(mins) {
 //  ADMIN USERS
 // ════════════════════════════════════════
 function renderUserList() {
-  var user = _adminAuthUser;
+  var users = getAdminUsers();
   var el = document.getElementById('user-list');
-  if (!user) {
-    el.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:12px">Sign in to see user info.</div>';
-    return;
-  }
-  el.innerHTML =
-    '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--card2);border-radius:9px;margin-bottom:8px">' +
+  el.innerHTML = users.map(function(u, i) {
+    var isCurrentUser = window._adminSession && window._adminSession.username === u.username;
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--card2);border-radius:9px;margin-bottom:8px">' +
       '<div>' +
-        '<div style="font-size:13px;font-weight:700">' + (user.displayName || user.email || 'Admin') + ' <span style="color:var(--success);font-size:11px">(You)</span></div>' +
-        '<div style="font-size:11px;color:var(--muted)">' + (user.email || '—') + ' · Admin · UID: ' + user.uid.substring(0,8) + '...</div>' +
+        '<div style="font-size:13px;font-weight:700">' + (u.displayName||u.username) + (isCurrentUser ? ' <span style="color:var(--success);font-size:11px">(You)</span>' : '') + '</div>' +
+        '<div style="font-size:11px;color:var(--muted)">@' + u.username + ' · ' + u.role + ' · Created: ' + (u.created ? new Date(u.created).toLocaleDateString() : '—') + '</div>' +
       '</div>' +
-      '<div><span class="badge badge-primary">Admin</span></div>' +
-    '</div>' +
-    '<div style="font-size:11px;color:var(--muted);padding:8px;text-align:center">Admin accounts are managed via Firebase Console → Authentication → Users</div>' +
-    '<div style="display:flex;gap:8px;margin-top:8px">' +
-      '<button class="btn btn-primary btn-sm" style="flex:1" onclick="openAdminProfileModal()">👤 Edit My Profile</button>' +
-      '<button class="btn btn-outline btn-sm" onclick="window.open(\'https://console.firebase.google.com/project/' + (window._fbConfig ? window._fbConfig.projectId : '') + '/authentication/users\',\'_blank\')" style="flex:1">☁️ Firebase Console</button>' +
-    '</div>';
+      '<div style="display:flex;gap:6px">' +
+        '<span class="badge ' + (u.role==='admin'?'badge-primary':'badge-info') + '">' + u.role + '</span>' +
+        (!isCurrentUser ? '<button class="btn btn-danger btn-sm" onclick="deleteAdminUser(' + i + ')">🗑️</button>' : '') +
+      '</div></div>';
+  }).join('');
 }
 
-function showAddUser() {
-  document.getElementById('add-user-panel').style.display='block';
-  document.getElementById('new-admin-err').textContent = '';
-}
-function hideAddUser() {
-  document.getElementById('add-user-panel').style.display='none';
-  ['new-admin-email','new-admin-displayname','new-admin-password','new-admin-password2'].forEach(function(id){
-    var el = document.getElementById(id);
-    if (el) el.value = '';
-  });
+function showAddUser() { document.getElementById('add-user-panel').style.display='block'; }
+function hideAddUser() { document.getElementById('add-user-panel').style.display='none'; }
+
+function addAdminUser() {
+  var username = document.getElementById('new-username').value.trim();
+  var displayName = document.getElementById('new-displayname').value.trim();
+  var password = document.getElementById('new-password').value;
+  var role = document.getElementById('new-role').value;
+  if (!username || !password) { toast('❌ Username සහ Password ඕනේ!', 'var(--danger)'); return; }
+  if (password.length < 8) { toast('❌ Password min 8 characters!', 'var(--danger)'); return; }
+  var users = getAdminUsers();
+  if (users.find(function(u){ return u.username===username; })) { toast('❌ Username already exists!', 'var(--danger)'); return; }
+  users.push({ username, password, displayName: displayName||username, role, created: Date.now() });
+  saveAdminUsers(users);
+  renderUserList();
+  hideAddUser();
+  toast('✅ User created!');
+  ['new-username','new-displayname','new-password'].forEach(function(id){ document.getElementById(id).value=''; });
 }
 
-function addAdminUserFB() {
-  var email = document.getElementById('new-admin-email').value.trim();
-  var name = document.getElementById('new-admin-displayname').value.trim();
-  var pass = document.getElementById('new-admin-password').value;
-  var pass2 = document.getElementById('new-admin-password2').value;
-  var errEl = document.getElementById('new-admin-err');
-  errEl.textContent = '';
-  if (!email || !pass) { errEl.textContent = '❌ Email and password required'; return; }
-  if (pass.length < 6) { errEl.textContent = '❌ Password must be at least 6 characters'; return; }
-  if (pass !== pass2) { errEl.textContent = '❌ Passwords do not match'; return; }
-  if (typeof window.firebaseAdminCreateUser !== 'function') { errEl.textContent = '❌ Firebase not ready'; return; }
-  window.firebaseAdminCreateUser(email, pass, name)
-    .then(function() {
-      toast('✅ Admin user created in Firebase Auth!');
-      hideAddUser();
-    })
-    .catch(function(e) {
-      errEl.textContent = e.code === 'auth/email-already-in-use' ? '❌ Email already registered' : '❌ ' + e.message;
-    });
-}
-
-// ── Admin Profile Modal ──
-function openAdminProfileModal() {
-  var user = _adminAuthUser;
-  if (!user) return;
-  document.getElementById('adm-prof-email').textContent = user.email || '';
-  document.getElementById('adm-prof-name').value = user.displayName || '';
-  document.getElementById('adm-prof-err').textContent = '';
-  document.getElementById('adm-prof-suc').textContent = '';
-  openM('m-admin-profile');
-}
-
-function adminUpdateProfile() {
-  var name = document.getElementById('adm-prof-name').value.trim();
-  var errEl = document.getElementById('adm-prof-err');
-  var sucEl = document.getElementById('adm-prof-suc');
-  errEl.textContent = '';
-  sucEl.textContent = '';
-  var user = _adminAuthUser;
-  if (!user) { errEl.textContent = '❌ Not signed in'; return; }
-  if (typeof window._firebaseUpdateProfile === 'function') {
-    window._firebaseUpdateProfile(user, { displayName: name })
-      .then(function() {
-        sucEl.textContent = '✅ Profile updated!';
-        document.getElementById('adm-welcome').textContent = 'ST Mobile POS — ' + (name || user.email);
-      })
-      .catch(function(e) { errEl.textContent = '❌ ' + e.message; });
-  } else {
-    // Fallback: save to DB
-    if (typeof window.firebaseAdminSaveProfile === 'function') {
-      window.firebaseAdminSaveProfile(user.uid, {
-        email: user.email,
-        displayName: name,
-        lastLogin: Date.now()
-      }).then(function() {
-        sucEl.textContent = '✅ Profile saved to DB!';
-      }).catch(function(e) { errEl.textContent = '❌ ' + e.message; });
-    }
-  }
-}
-
-function adminSendResetLink() {
-  var user = _adminAuthUser;
-  if (!user || !user.email) { toast('❌ No user email', 'var(--danger)'); return; }
-  if (typeof window.firebaseAdminResetPassword === 'function') {
-    window.firebaseAdminResetPassword(user.email)
-      .then(function() { toast('✅ Reset link sent to ' + user.email); })
-      .catch(function(e) { toast('❌ ' + e.message, 'var(--danger)'); });
-  }
-}
-
-function adminConfirmDelete() {
-  showConfirm('⚠️', 'Delete Account?', 'Are you sure you want to delete your account? This cannot be undone.', function() {
-    if (typeof window.firebaseAdminDeleteUser === 'function') {
-      window.firebaseAdminDeleteUser()
-        .then(function() { toast('✅ Account deleted'); doLogout(); })
-        .catch(function(e) { toast('❌ ' + e.message, 'var(--danger)'); });
-    }
+function deleteAdminUser(idx) {
+  var users = getAdminUsers();
+  if (users.length <= 1) { toast('❌ At least one admin ඕනේ!', 'var(--danger)'); return; }
+  showConfirm('👤', 'Delete User?', '"' + users[idx].username + '" delete කරන්නද?', function() {
+    users.splice(idx, 1);
+    saveAdminUsers(users);
+    renderUserList();
+    toast('✅ User deleted!');
   });
 }
 
@@ -2157,24 +1843,17 @@ function saveShopSettings() {
 function changeAdminPass() {
   var oldPass = document.getElementById('sec-old-pass').value;
   var newPass = document.getElementById('sec-new-pass').value;
-  var user = _adminAuthUser;
-  if (!user) { toast('❌ Not signed in!', 'var(--danger)'); return; }
-  if (!oldPass || !newPass) { toast('❌ Both passwords required!', 'var(--danger)'); return; }
-  if (newPass.length < 6) { toast('❌ Min 6 characters!', 'var(--danger)'); return; }
-  if (user.email && typeof window._firebaseReauth === 'function' && typeof window._firebaseEmailAuth !== 'undefined') {
-    var cred = window._firebaseEmailAuth.credential(user.email, oldPass);
-    window._firebaseReauth(user, cred).then(function() {
-      return window._firebaseUpdatePassword(user, newPass);
-    }).then(function() {
-      toast('✅ Password changed!');
-      document.getElementById('sec-old-pass').value = '';
-      document.getElementById('sec-new-pass').value = '';
-    }).catch(function(e) {
-      toast('❌ ' + (e.code === 'auth/wrong-password' ? 'Old password incorrect!' : e.message), 'var(--danger)');
-    });
-  } else {
-    toast('❌ Firebase Auth not available', 'var(--danger)');
-  }
+  var users = getAdminUsers();
+  var session = window._adminSession;
+  var userIdx = users.findIndex(function(u){ return u.username === (session && session.username); });
+  if (userIdx < 0) { toast('❌ Session error!', 'var(--danger)'); return; }
+  if (users[userIdx].password !== oldPass) { toast('❌ Old password incorrect!', 'var(--danger)'); return; }
+  if (newPass.length < 8) { toast('❌ Min 8 characters!', 'var(--danger)'); return; }
+  users[userIdx].password = newPass;
+  saveAdminUsers(users);
+  toast('✅ Password changed!');
+  document.getElementById('sec-old-pass').value = '';
+  document.getElementById('sec-new-pass').value = '';
 }
 
 function saveCashierPin() {
@@ -2230,7 +1909,7 @@ function renderSystemInfo() {
     { label:'Firebase Project', val: window._fbConfig ? window._fbConfig.projectId : '—' },
     { label:'Admin Panel Version', val: '1.0' },
     { label:'Current Time', val: new Date().toLocaleString() },
-    { label:'Session User', val: _adminAuthUser ? (_adminAuthUser.displayName || _adminAuthUser.email || '—') : '—' },
+    { label:'Session User', val: window._adminSession ? window._adminSession.username : '—' },
   ].map(function(item) {
     return '<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px">' +
       '<span style="color:var(--muted)">' + item.label + '</span>' +
@@ -2257,13 +1936,8 @@ function dangerFullReset() {
   showConfirm('💀', 'FULL SYSTEM RESET', 'සියලු data — products, invoices, repairs, customers, orders, staff, settings — EVERYTHING permanently delete වෙනවා! Firebase cloud data ද clear වෙනවා!', function() {
     var emptyDb = {
       products:[], invoices:[], repairs:[], orders:[], customers:[], expenses:[], suppliers:[],
-      purchases:[], stockLog:[], staff:[], shifts:[], rosterShifts:[], tasks:[], followups:[],
-      timerLogs:[], repTemplates:[], purchaseOrders:[], branches:[], taxProfiles:[],
-      stockTransfers:[], credits:[], commPayments:[], loyaltyLog:[], batches:[], kits:[],
-      upsellRules:[], referrals:[], partsInventory:[], giftVouchers:[],
-      settings:{ shopName:'ST Mobile & Designing' },
-      widgetPrefs:{}, diagChecklists:{}, repairParts:{}, warrantyDays:{},
-      productVariants:{}, invDesign:{}
+      staff:[], shifts:[], tasks:[], followups:[], credits:[], activityLog:[], loyaltyLog:[], commPayments:[],
+      settings:{ shopName:'ST Mobile & Designing' }
     };
     window._posDb = emptyDb;
     localStorage.setItem('stpos-db', JSON.stringify(emptyDb));
@@ -2279,10 +1953,6 @@ function dangerFullReset() {
 function el(id, val) { var e = document.getElementById(id); if (e) e.textContent = val; }
 function setVal(id, val) { var e = document.getElementById(id); if (e) e.value = val || ''; }
 function getVal(id) { var e = document.getElementById(id); return e ? e.value.trim() : ''; }
-
-// Modal helpers
-function openM(id) { var el = document.getElementById(id); if (el) el.classList.add('open'); }
-function closeM(id) { var el = document.getElementById(id); if (el) el.classList.remove('open'); }
 
 function downloadFile(content, filename, type) {
   var blob = new Blob([content], { type });
