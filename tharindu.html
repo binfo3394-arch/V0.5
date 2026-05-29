@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tharindu Rajapaksha - Software Engineer / Designer</title>
+    <meta name="description" content="Tharindu Rajapaksha - Software Engineer & Designer. Building reliable digital products, clean interfaces, and systems that work.">
+    <meta name="author" content="Tharindu Rajapaksha">
+    <meta name="keywords" content="Tharindu Rajapaksha, Software Engineer, Web Developer, Designer, IoT, Laravel, Vue.js, Python, Portfolio, DTR.lk">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Tharindu Rajapaksha - Software Engineer / Designer">
+    <meta property="og:description" content="Building reliable digital products, clean interfaces, and systems that work.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://dtr.lk">
+    <meta property="og:image" content="icon/cover.jpeg">
+    <meta property="og:site_name" content="DTR.lk">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Tharindu Rajapaksha - Software Engineer / Designer">
+    <meta name="twitter:description" content="Building reliable digital products, clean interfaces, and systems that work.">
+    <meta name="twitter:image" content="icon/cover.jpeg">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/jpeg" href="icon/tharu.jpeg">
+    <link rel="apple-touch-icon" href="icon/tharu.jpeg">
+
+    <!-- Preload Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- 8D Depth Layers -->
+    <div class="depth-layer depth-layer-1" id="depthLayer1"></div>
+    <div class="depth-layer depth-layer-2" id="depthLayer2"></div>
+    <div class="depth-layer depth-layer-3" id="depthLayer3"></div>
+
+    <!-- Preloader -->
+    <div class="preloader" id="preloader">
+        <div class="preloader-inner">
+            <div class="cube-loader">
+                <div class="cube-face front"></div>
+                <div class="cube-face back"></div>
+                <div class="cube-face left"></div>
+                <div class="cube-face right"></div>
+                <div class="cube-face top"></div>
+                <div class="cube-face bottom"></div>
+            </div>
+            <div class="preloader-text">DTR.lk</div>
+            <div class="preloader-bar">
+                <div class="preloader-bar-fill" id="preloaderBar"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scroll Progress Bar -->
+    <div class="scroll-progress" id="scrollProgress"></div>
+
+    <!-- Particle Canvas Background -->
+    <canvas id="particles-canvas"></canvas>
+
+    <!-- Floating Tech Icons -->
+    <div class="floating-tech-icons" id="floatingTechIcons">
+        <div class="fti-item" data-speed="0.8" data-delay="0"><div class="fti-glow" style="--brand:#3776AB;"></div><i class="fab fa-python" style="color:#3776AB;"></i></div>
+        <div class="fti-item" data-speed="1.2" data-delay="1"><div class="fti-glow" style="--brand:#f89820;"></div><i class="fab fa-java" style="color:#f89820;"></i></div>
+        <div class="fti-item" data-speed="0.6" data-delay="2"><div class="fti-glow" style="--brand:#239120;"></div><i class="fab fa-js" style="color:#239120;"></i></div>
+        <div class="fti-item" data-speed="1.0" data-delay="3"><div class="fti-glow" style="--brand:#F05032;"></div><i class="fab fa-git-alt" style="color:#F05032;"></i></div>
+        <div class="fti-item" data-speed="0.9" data-delay="4"><div class="fti-glow" style="--brand:#68A063;"></div><i class="fab fa-node-js" style="color:#68A063;"></i></div>
+        <div class="fti-item" data-speed="1.1" data-delay="5"><div class="fti-glow" style="--brand:#4FC08D;"></div><i class="fab fa-vuejs" style="color:#4FC08D;"></i></div>
+        <div class="fti-item" data-speed="0.7" data-delay="6"><div class="fti-glow" style="--brand:#FF2D20;"></div><i class="fab fa-laravel" style="color:#FF2D20;"></i></div>
+        <div class="fti-item" data-speed="1.3" data-delay="7"><div class="fti-glow" style="--brand:#777BB4;"></div><i class="fab fa-php" style="color:#777BB4;"></i></div>
+        <div class="fti-item" data-speed="0.5" data-delay="8"><div class="fti-glow" style="--brand:#CC6699;"></div><i class="fab fa-sass" style="color:#CC6699;"></i></div>
+        <div class="fti-item" data-speed="1.4" data-delay="9"><div class="fti-glow" style="--brand:#264DE4;"></div><i class="fab fa-css3-alt" style="color:#264DE4;"></i></div>
+        <div class="fti-item" data-speed="0.8" data-delay="10"><div class="fti-glow" style="--brand:#E34F26;"></div><i class="fab fa-html5" style="color:#E34F26;"></i></div>
+        <div class="fti-item" data-speed="1.0" data-delay="11"><div class="fti-glow" style="--brand:#563D7C;"></div><i class="fab fa-bootstrap" style="color:#563D7C;"></i></div>
+        <div class="fti-item" data-speed="0.9" data-delay="12"><div class="fti-glow" style="--brand:#5C2D91;"></div><i class="fab fa-microsoft" style="color:#5C2D91;"></i></div>
+        <div class="fti-item" data-speed="1.1" data-delay="13"><div class="fti-glow" style="--brand:#18AFFF;"></div><i class="fab fa-wordpress" style="color:#18AFFF;"></i></div>
+        <div class="fti-item" data-speed="0.7" data-delay="14"><div class="fti-glow" style="--brand:#31A8FF;"></div><i class="fab fa-figma" style="color:#31A8FF;"></i></div>
+        <div class="fti-item" data-speed="1.2" data-delay="15"><div class="fti-glow" style="--brand:#007396;"></div><i class="fab fa-cuttlefish" style="color:#007396;"></i></div>
+    </div>
+
+    <!-- Custom Cursor -->
+    <div class="cursor-dot" id="cursorDot"></div>
+    <div class="cursor-ring" id="cursorRing"></div>
+    <div class="cursor-glow" id="cursorGlow"></div>
+
+    <!-- Image Lightbox -->
+    <div class="lightbox" id="lightbox">
+        <button class="lightbox-close" id="lightboxClose"><i class="fas fa-times"></i></button>
+        <button class="lightbox-prev" id="lightboxPrev"><i class="fas fa-chevron-left"></i></button>
+        <button class="lightbox-next" id="lightboxNext"><i class="fas fa-chevron-right"></i></button>
+        <div class="lightbox-content">
+            <img src="" alt="" id="lightboxImg" class="lightbox-img">
+        </div>
+    </div>
+
+    <!-- Project Modal -->
+    <div class="project-modal" id="projectModal">
+        <div class="project-modal-overlay" id="projectModalOverlay"></div>
+        <div class="project-modal-content">
+            <button class="project-modal-close" id="projectModalClose"><i class="fas fa-times"></i></button>
+            <div class="project-modal-icon" id="projectModalIcon"></div>
+            <h2 class="project-modal-title" id="projectModalTitle"></h2>
+            <p class="project-modal-desc" id="projectModalDesc"></p>
+            <div class="project-modal-tech" id="projectModalTech"></div>
+            <div class="project-modal-features" id="projectModalFeatures"></div>
+        </div>
+    </div>
+
+    <!-- Back to Top -->
+    <button class="back-to-top" id="backToTop">
+        <i class="fas fa-arrow-up"></i>
+        <svg class="btt-ring" viewBox="0 0 36 36">
+            <circle cx="18" cy="18" r="16" fill="none" stroke-width="2" stroke-dasharray="100" stroke-dashoffset="100" id="bttCircle"/>
+        </svg>
+    </button>
+
+    <!-- Navigation -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <a href="#home" class="nav-logo anim-fade-down" data-delay="0">
+                <span class="logo-3d">DTR.lk</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="#home" class="anim-fade-down" data-delay="100">Home</a></li>
+                <li><a href="#about" class="anim-fade-down" data-delay="150">About</a></li>
+                <li><a href="#services" class="anim-fade-down" data-delay="200">Services</a></li>
+                <li><a href="#work" class="anim-fade-down" data-delay="250">Projects</a></li>
+                <li><a href="#contactus" class="anim-fade-down" data-delay="300">Contact</a></li>
+            </ul>
+            <div class="nav-actions">
+                <button class="theme-toggle" id="themeToggle" title="Toggle theme">
+                    <i class="fas fa-moon" id="themeIcon"></i>
+                </button>
+                <div class="nav-social">
+                    <a href="https://github.com/binfo3394-arch" target="_blank" class="social-3d anim-scale" data-delay="350"><i class="fab fa-github"></i></a>
+                    <a href="https://web.facebook.com/lakshan.cool.37" target="_blank" class="social-3d anim-scale" data-delay="400"><i class="fab fa-facebook"></i></a>
+                    <a href="mailto:tharinduruwala@gmail.com" class="social-3d anim-scale" data-delay="450"><i class="fas fa-envelope"></i></a>
+                    <a href="https://api.whatsapp.com/send?phone=94781530627&text=Hello!" target="_blank" class="social-3d anim-scale" data-delay="500"><i class="fab fa-whatsapp"></i></a>
+                </div>
+            </div>
+            <button class="nav-toggle" id="navToggle">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero" id="home">
+        <div class="hero-bg-image" style="background-image: url('icon/cover.jpeg');"></div>
+        <div class="hero-bg-shapes">
+            <div class="shape shape-1"></div>
+            <div class="shape shape-2"></div>
+            <div class="shape shape-3"></div>
+            <div class="shape shape-4"></div>
+        </div>
+        <div class="hero-8d-particles">
+            <div class="d8-particle d8p-1"></div>
+            <div class="d8-particle d8p-2"></div>
+            <div class="d8-particle d8p-3"></div>
+            <div class="d8-particle d8p-4"></div>
+            <div class="d8-particle d8p-5"></div>
+            <div class="d8-particle d8p-6"></div>
+        </div>
+        <div class="hero-container">
+            <div class="hero-content">
+                <div class="hero-badge anim-fade-up" data-delay="200">
+                    <span class="badge-dot"></span>
+                    Available for projects
+                </div>
+                <h1 class="hero-title-3d">
+                    <span class="title-line"><span class="title-word" data-depth="1">Tharindu</span></span>
+                    <span class="title-line"><span class="title-word" data-depth="2">Rajapaksha</span></span>
+                </h1>
+                <h2 class="hero-subtitle anim-fade-up" data-delay="800">
+                    <span class="typewriter" id="typewriter"></span>
+                    <span class="cursor-blink">|</span>
+                </h2>
+                <p class="hero-desc anim-fade-up" data-delay="1000">I design and build reliable digital products for businesses that need practical software, clean interfaces, and systems that keep working after launch. I also offer professional photo editing services including face swap, wedding editing, and creative manipulations.</p>
+                <div class="hero-buttons anim-fade-up" data-delay="1200">
+                    <a href="#work" class="btn btn-primary btn-3d magnetic">
+                        <span>View Projects</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
+                    <a href="https://api.whatsapp.com/send?phone=94781530627&text=Hello!" class="btn btn-outline btn-3d magnetic">
+                        <span>Say Hello</span>
+                        <i class="fab fa-whatsapp"></i>
+                    </a>
+                </div>
+                <div class="hero-stats">
+                    <div class="stat-card glass-card tilt-card anim-fade-up" data-delay="1400">
+                        <span class="stat-number" data-count="6">0</span><span class="stat-plus">+</span>
+                        <span class="stat-label">solution areas</span>
+                        <div class="card-shine"></div>
+                    </div>
+                    <div class="stat-card glass-card tilt-card anim-fade-up" data-delay="1500">
+                        <span class="stat-number" data-count="20">0</span><span class="stat-plus">+</span>
+                        <span class="stat-label">technologies</span>
+                        <div class="card-shine"></div>
+                    </div>
+                    <div class="stat-card glass-card tilt-card anim-fade-up" data-delay="1600">
+                        <span class="stat-number" data-count="5">0</span><span class="stat-plus">+</span>
+                        <span class="stat-label">client brands</span>
+                        <div class="card-shine"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-image">
+                <div class="image-3d-wrapper anim-scale-rotate" id="heroImageWrapper" data-delay="400">
+                    <div class="image-glow"></div>
+                    <div class="image-depth-layer image-depth-1"></div>
+                    <div class="image-depth-layer image-depth-2"></div>
+                    <img src="icon/tharu.jpeg" alt="Tharindu Rajapaksha" class="hero-profile-img lightbox-trigger" width="350" height="420" loading="eager">
+                    <div class="image-ring"></div>
+                    <div class="image-ring image-ring-2"></div>
+                    <div class="floating-badge badge-1 anim-pop" data-delay="1200"><i class="fab fa-laravel"></i></div>
+                    <div class="floating-badge badge-2 anim-pop" data-delay="1400"><i class="fab fa-vuejs"></i></div>
+                    <div class="floating-badge badge-3 anim-pop" data-delay="1600"><i class="fab fa-python"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="scroll-indicator anim-fade-up" data-delay="2000">
+            <div class="mouse"><div class="wheel"></div></div>
+            <span>Scroll Down</span>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section class="about" id="about">
+        <div class="section-container">
+            <div class="section-header">
+                <span class="section-label anim-fade-up"><i class="fas fa-user"></i> About</span>
+                <h2 class="section-title" data-text="Engineering with clarity">Engineering with clarity</h2>
+                <p class="section-desc anim-fade-up">I am a software engineer and photo editor with a strong work ethic and a collaborative mindset. I enjoy turning business requirements into dependable applications, from first interface to backend workflow. I also specialize in professional photo editing — including face swap, wedding photo retouching, background removal, color grading, and creative manipulations.</p>
+            </div>
+            <div class="process-grid">
+                <div class="process-card card-3d tilt-card anim-card" data-delay="0">
+                    <div class="card-shine"></div><div class="card-depth-bg"></div>
+                    <div class="process-number anim-count">01</div>
+                    <h3 class="anim-text-reveal">Discovery</h3>
+                    <p class="anim-fade-up">Understand the workflow, constraints, and success metrics before writing code.</p>
+                    <div class="card-glow"></div>
+                </div>
+                <div class="process-card card-3d tilt-card anim-card" data-delay="150">
+                    <div class="card-shine"></div><div class="card-depth-bg"></div>
+                    <div class="process-number anim-count">02</div>
+                    <h3 class="anim-text-reveal">Design</h3>
+                    <p class="anim-fade-up">Shape interfaces that feel simple, direct, and easy to use every day.</p>
+                    <div class="card-glow"></div>
+                </div>
+                <div class="process-card card-3d tilt-card anim-card" data-delay="300">
+                    <div class="card-shine"></div><div class="card-depth-bg"></div>
+                    <div class="process-number anim-count">03</div>
+                    <h3 class="anim-text-reveal">Build</h3>
+                    <p class="anim-fade-up">Develop maintainable systems with practical architecture and clean delivery.</p>
+                    <div class="card-glow"></div>
+                </div>
+            </div>
+            <div class="tech-stack">
+                <span class="tech-tag-icon magnetic anim-tag" data-delay="0" style="--brand: #FF2D20;"><i class="fab fa-laravel"></i><span>Laravel</span></span>
+                <span class="tech-tag-icon magnetic anim-tag" data-delay="50" style="--brand: #777BB4;"><i class="fab fa-php"></i><span>PHP</span></span>
+                <span class="tech-tag-icon magnetic anim-tag" data-delay="100" style="--brand: #4FC08D;"><i class="fab fa-vuejs"></i><span>Vue.js</span></span>
+                <span class="tech-tag-icon magnetic anim-tag" data-delay="150" style="--brand: #F7DF1E;"><i class="fab fa-js"></i><span>JavaScript</span></span>
+                <span class="tech-tag-icon magnetic anim-tag" data-delay="200" style="--brand: #7952B3;"><i class="fab fa-bootstrap"></i><span>Bootstrap</span></span>
+                <span class="tech-tag-icon magnetic anim-tag" data-delay="250" style="--brand: #3776AB;"><i class="fab fa-python"></i><span>Python</span></span>
+                <span class="tech-tag-icon magnetic anim-tag" data-delay="300" style="--brand: #5C2D91;"><i class="fab fa-microsoft"></i><span>C#</span></span>
+                <span class="tech-tag-icon magnetic anim-tag" data-delay="350" style="--brand: #f89820;"><i class="fab fa-java"></i><span>Java</span></span>
+                <span class="tech-tag-icon magnetic anim-tag" data-delay="400" style="--brand: #4f7cff;"><i class="fas fa-plug"></i><span>REST APIs</span></span>
+                <span class="tech-tag-icon magnetic anim-tag" data-delay="450" style="--brand: #00d2ff;"><i class="fas fa-microchip"></i><span>IoT</span></span>
+                <span class="tech-tag-icon magnetic anim-tag" data-delay="500" style="--brand: #21759B;"><i class="fab fa-wordpress"></i><span>WordPress</span></span>
+                <span class="tech-tag-icon magnetic anim-tag" data-delay="550" style="--brand: #31A8FF;"><i class="fas fa-image"></i><span>Photoshop</span></span>
+                <span class="tech-tag-icon magnetic anim-tag" data-delay="600" style="--brand: #9999FF;"><i class="fas fa-video"></i><span>Premiere Pro</span></span>
+                <span class="tech-tag-icon magnetic anim-tag" data-delay="650" style="--brand: #FF6B9D;"><i class="fas fa-exchange-alt"></i><span>Face Swap</span></span>
+                <span class="tech-tag-icon magnetic anim-tag" data-delay="700" style="--brand: #FFB6C1;"><i class="fas fa-heart"></i><span>Wedding Editing</span></span>
+                <span class="tech-tag-icon magnetic anim-tag" data-delay="750" style="--brand: #FFA500;"><i class="fas fa-magic"></i><span>Photo Retouching</span></span>
+                <span class="tech-tag-icon magnetic anim-tag" data-delay="800" style="--brand: #20B2AA;"><i class="fas fa-cut"></i><span>Background Removal</span></span>
+                <span class="tech-tag-icon magnetic anim-tag" data-delay="850" style="--brand: #DA70D6;"><i class="fas fa-palette"></i><span>Color Grading</span></span>
+                <span class="tech-tag-icon magnetic anim-tag" data-delay="900" style="--brand: #6A5ACD;"><i class="fas fa-layer-group"></i><span>Photo Manipulation</span></span>
+                <span class="tech-tag-icon magnetic anim-tag" data-delay="950" style="--brand: #32CD32;"><i class="fas fa-object-group"></i><span>Compositing</span></span>
+                <span class="tech-tag-icon magnetic anim-tag" data-delay="1000" style="--brand: #FF6347;"><i class="fas fa-wand-magic-sparkles"></i><span>AI Photo Editing</span></span>
+            </div>
+            <div class="about-images-grid">
+                <div class="about-img-wrapper tilt-card anim-img lightbox-trigger" data-delay="0">
+                    <img src="icon/tharu.jpeg" alt="Tharindu Rajapaksha" class="about-profile-img" width="300" height="450" loading="lazy">
+                    <div class="about-img-overlay"></div><div class="card-shine"></div>
+                </div>
+                <div class="about-img-wrapper tilt-card anim-img lightbox-trigger" data-delay="150">
+                    <img src="icon/tharu2.jpeg" alt="Tharindu Rajapaksha" class="about-profile-img" width="300" height="450" loading="lazy">
+                    <div class="about-img-overlay"></div><div class="card-shine"></div>
+                </div>
+                <div class="about-img-wrapper tilt-card anim-img lightbox-trigger" data-delay="300">
+                    <img src="icon/tharu3.jpeg" alt="Tharindu Rajapaksha" class="about-profile-img" width="300" height="450" loading="lazy">
+                    <div class="about-img-overlay"></div><div class="card-shine"></div>
+                </div>
+                <div class="about-img-wrapper tilt-card anim-img lightbox-trigger" data-delay="450">
+                    <img src="icon/tharu4.jpeg" alt="Tharindu Rajapaksha" class="about-profile-img" width="300" height="450" loading="lazy">
+                    <div class="about-img-overlay"></div><div class="card-shine"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Focus Section -->
+    <section class="focus">
+        <div class="section-container">
+            <div class="section-header">
+                <span class="section-label anim-fade-up"><i class="fas fa-crosshairs"></i> Focus</span>
+                <h2 class="section-title" data-text="What I enjoy building">What I enjoy building</h2>
+                <p class="section-desc anim-fade-up">A mix of creative engineering, useful automation, simple systems, and professional photo editing that solve real problems.</p>
+            </div>
+            <div class="focus-grid">
+                <div class="focus-card card-3d tilt-card anim-card" data-delay="0">
+                    <div class="card-shine"></div><div class="card-depth-bg"></div>
+                    <div class="focus-icon-wrapper"><div class="focus-icon anim-icon-spin"><i class="fas fa-palette"></i></div><div class="icon-ring"></div></div>
+                    <h3 class="anim-text-reveal">Creative Coding</h3>
+                    <p class="anim-fade-up">Building interfaces where design and engineering support each other.</p>
+                    <div class="card-glow"></div>
+                </div>
+                <div class="focus-card card-3d tilt-card anim-card" data-delay="150">
+                    <div class="card-shine"></div><div class="card-depth-bg"></div>
+                    <div class="focus-icon-wrapper"><div class="focus-icon anim-icon-spin"><i class="fas fa-microchip"></i></div><div class="icon-ring"></div></div>
+                    <h3 class="anim-text-reveal">IoT Projects</h3>
+                    <p class="anim-fade-up">Connecting devices, data, and automation into useful everyday workflows.</p>
+                    <div class="card-glow"></div>
+                </div>
+                <div class="focus-card card-3d tilt-card anim-card" data-delay="300">
+                    <div class="card-shine"></div><div class="card-depth-bg"></div>
+                    <div class="focus-icon-wrapper"><div class="focus-icon anim-icon-spin"><i class="fas fa-cube"></i></div><div class="icon-ring"></div></div>
+                    <h3 class="anim-text-reveal">Simple Products</h3>
+                    <p class="anim-fade-up">Turning complicated business needs into focused, maintainable software.</p>
+                    <div class="card-glow"></div>
+                </div>
+                <div class="focus-card card-3d tilt-card anim-card" data-delay="450">
+                    <div class="card-shine"></div><div class="card-depth-bg"></div>
+                    <div class="focus-icon-wrapper"><div class="focus-icon anim-icon-spin"><i class="fas fa-camera"></i></div><div class="icon-ring"></div></div>
+                    <h3 class="anim-text-reveal">Photo Editing</h3>
+                    <p class="anim-fade-up">Face swap, wedding retouching, color grading, and creative photo manipulations.</p>
+                    <div class="card-glow"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Timeline Section -->
+    <section class="timeline" id="timeline">
+        <div class="section-container">
+            <div class="section-header">
+                <span class="section-label anim-fade-up"><i class="fas fa-road"></i> Journey</span>
+                <h2 class="section-title" data-text="My journey">My journey</h2>
+            </div>
+            <div class="timeline-container">
+                <div class="timeline-line"></div>
+                <div class="timeline-item anim-card" data-delay="0">
+                    <div class="timeline-dot"><i class="fas fa-graduation-cap"></i></div>
+                    <div class="timeline-content glass-card tilt-card">
+                        <div class="card-shine"></div>
+                        <h3>Started Learning Code</h3>
+                        <p class="timeline-date">2019</p>
+                        <p>Began my journey into software development with passion for building useful things.</p>
+                    </div>
+                </div>
+                <div class="timeline-item anim-card" data-delay="150">
+                    <div class="timeline-dot"><i class="fas fa-code"></i></div>
+                    <div class="timeline-content glass-card tilt-card">
+                        <div class="card-shine"></div>
+                        <h3>First Web Application</h3>
+                        <p class="timeline-date">2020</p>
+                        <p>Built my first full-stack web application, marking the start of real-world project experience.</p>
+                    </div>
+                </div>
+                <div class="timeline-item anim-card" data-delay="300">
+                    <div class="timeline-dot"><i class="fas fa-building"></i></div>
+                    <div class="timeline-content glass-card tilt-card">
+                        <div class="card-shine"></div>
+                        <h3>Business Solutions</h3>
+                        <p class="timeline-date">2021</p>
+                        <p>Started delivering software solutions for businesses - billing systems, management platforms.</p>
+                    </div>
+                </div>
+                <div class="timeline-item anim-card" data-delay="450">
+                    <div class="timeline-dot"><i class="fas fa-microchip"></i></div>
+                    <div class="timeline-content glass-card tilt-card">
+                        <div class="card-shine"></div>
+                        <h3>IoT & Advanced Systems</h3>
+                        <p class="timeline-date">2022</p>
+                        <p>Expanded into IoT, attendance systems, and complex integrations for enterprise clients.</p>
+                    </div>
+                </div>
+                <div class="timeline-item anim-card" data-delay="600">
+                    <div class="timeline-dot"><i class="fas fa-rocket"></i></div>
+                    <div class="timeline-content glass-card tilt-card">
+                        <div class="card-shine"></div>
+                        <h3>Growing & Innovating</h3>
+                        <p class="timeline-date">2023 - Present</p>
+                        <p>Continuing to build reliable digital products with modern technologies and clean design.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Services Section -->
+    <section class="services" id="services">
+        <div class="section-container">
+            <div class="section-header">
+                <span class="section-label anim-fade-up"><i class="fas fa-cogs"></i> Services</span>
+                <h2 class="section-title" data-text="How I can help">How I can help</h2>
+                <p class="section-desc anim-fade-up">Web development, software solutions, and professional photo editing services.</p>
+            </div>
+            <div class="services-grid">
+                <div class="service-card card-3d tilt-card anim-card" data-delay="0">
+                    <div class="card-shine"></div><div class="card-depth-bg"></div>
+                    <div class="service-icon anim-icon-bounce"><i class="fas fa-code"></i></div>
+                    <h3 class="anim-text-reveal">Web Development</h3>
+                    <p class="anim-fade-up">Custom websites and web applications tailored to your workflow, users, and growth plans.</p>
+                    <div class="card-arrow"><i class="fas fa-arrow-right"></i></div><div class="card-glow"></div>
+                </div>
+                <div class="service-card card-3d tilt-card anim-card" data-delay="80">
+                    <div class="card-shine"></div><div class="card-depth-bg"></div>
+                    <div class="service-icon anim-icon-bounce"><i class="fas fa-paint-brush"></i></div>
+                    <h3 class="anim-text-reveal">Web Design</h3>
+                    <p class="anim-fade-up">Modern, responsive interfaces with clean layouts and thoughtful user experience.</p>
+                    <div class="card-arrow"><i class="fas fa-arrow-right"></i></div><div class="card-glow"></div>
+                </div>
+                <div class="service-card card-3d tilt-card anim-card" data-delay="160">
+                    <div class="card-shine"></div><div class="card-depth-bg"></div>
+                    <div class="service-icon anim-icon-bounce"><i class="fas fa-mobile-alt"></i></div>
+                    <h3 class="anim-text-reveal">Mobile App Development</h3>
+                    <p class="anim-fade-up">Android-focused applications for business tools and data-driven workflows.</p>
+                    <div class="card-arrow"><i class="fas fa-arrow-right"></i></div><div class="card-glow"></div>
+                </div>
+                <div class="service-card card-3d tilt-card anim-card" data-delay="240">
+                    <div class="card-shine"></div><div class="card-depth-bg"></div>
+                    <div class="service-icon anim-icon-bounce"><i class="fas fa-desktop"></i></div>
+                    <h3 class="anim-text-reveal">Windows App Development</h3>
+                    <p class="anim-fade-up">Desktop applications for internal operations and reliable offline workflows.</p>
+                    <div class="card-arrow"><i class="fas fa-arrow-right"></i></div><div class="card-glow"></div>
+                </div>
+                <div class="service-card card-3d tilt-card anim-card" data-delay="320">
+                    <div class="card-shine"></div><div class="card-depth-bg"></div>
+                    <div class="service-icon anim-icon-bounce"><i class="fas fa-microchip"></i></div>
+                    <h3 class="anim-text-reveal">IoT Projects</h3>
+                    <p class="anim-fade-up">Device integrations, sensors, and connected solutions with practical data flows.</p>
+                    <div class="card-arrow"><i class="fas fa-arrow-right"></i></div><div class="card-glow"></div>
+                </div>
+                <div class="service-card card-3d tilt-card anim-card" data-delay="400">
+                    <div class="card-shine"></div><div class="card-depth-bg"></div>
+                    <div class="service-icon anim-icon-bounce"><i class="fas fa-plug"></i></div>
+                    <h3 class="anim-text-reveal">API Development</h3>
+                    <p class="anim-fade-up">Secure, maintainable APIs that connect systems and make data easier to use.</p>
+                    <div class="card-arrow"><i class="fas fa-arrow-right"></i></div><div class="card-glow"></div>
+                </div>
+                <div class="service-card card-3d tilt-card anim-card" data-delay="480">
+                    <div class="card-shine"></div><div class="card-depth-bg"></div>
+                    <div class="service-icon anim-icon-bounce"><i class="fas fa-exchange-alt"></i></div>
+                    <h3 class="anim-text-reveal">Face Swap & Face Editing</h3>
+                    <p class="anim-fade-up">Professional face swap, face morphing, and facial feature editing for photos with natural-looking results.</p>
+                    <div class="card-arrow"><i class="fas fa-arrow-right"></i></div><div class="card-glow"></div>
+                </div>
+                <div class="service-card card-3d tilt-card anim-card" data-delay="560">
+                    <div class="card-shine"></div><div class="card-depth-bg"></div>
+                    <div class="service-icon anim-icon-bounce"><i class="fas fa-heart"></i></div>
+                    <h3 class="anim-text-reveal">Wedding Photo Editing</h3>
+                    <p class="anim-fade-up">Manual wedding photo retouching, skin smoothing, color correction, and romantic effects for your special moments.</p>
+                    <div class="card-arrow"><i class="fas fa-arrow-right"></i></div><div class="card-glow"></div>
+                </div>
+                <div class="service-card card-3d tilt-card anim-card" data-delay="640">
+                    <div class="card-shine"></div><div class="card-depth-bg"></div>
+                    <div class="service-icon anim-icon-bounce"><i class="fas fa-magic"></i></div>
+                    <h3 class="anim-text-reveal">Photo Retouching & Enhancement</h3>
+                    <p class="anim-fade-up">Professional photo retouching, skin smoothing, blemish removal, teeth whitening, and beauty enhancement.</p>
+                    <div class="card-arrow"><i class="fas fa-arrow-right"></i></div><div class="card-glow"></div>
+                </div>
+                <div class="service-card card-3d tilt-card anim-card" data-delay="720">
+                    <div class="card-shine"></div><div class="card-depth-bg"></div>
+                    <div class="service-icon anim-icon-bounce"><i class="fas fa-cut"></i></div>
+                    <h3 class="anim-text-reveal">Background Removal & Change</h3>
+                    <p class="anim-fade-up">Precise background removal, replacement, and scene compositing for product photos and portraits.</p>
+                    <div class="card-arrow"><i class="fas fa-arrow-right"></i></div><div class="card-glow"></div>
+                </div>
+                <div class="service-card card-3d tilt-card anim-card" data-delay="800">
+                    <div class="card-shine"></div><div class="card-depth-bg"></div>
+                    <div class="service-icon anim-icon-bounce"><i class="fas fa-palette"></i></div>
+                    <h3 class="anim-text-reveal">Color Grading & Correction</h3>
+                    <p class="anim-fade-up">Professional color grading, exposure correction, white balance adjustment, and cinematic color effects.</p>
+                    <div class="card-arrow"><i class="fas fa-arrow-right"></i></div><div class="card-glow"></div>
+                </div>
+                <div class="service-card card-3d tilt-card anim-card" data-delay="880">
+                    <div class="card-shine"></div><div class="card-depth-bg"></div>
+                    <div class="service-icon anim-icon-bounce"><i class="fas fa-layer-group"></i></div>
+                    <h3 class="anim-text-reveal">Photo Manipulation & Compositing</h3>
+                    <p class="anim-fade-up">Creative photo manipulation, double exposure, surreal edits, and advanced compositing for stunning visuals.</p>
+                    <div class="card-arrow"><i class="fas fa-arrow-right"></i></div><div class="card-glow"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section class="testimonials" id="testimonials">
+        <div class="section-container">
+            <div class="section-header">
+                <span class="section-label anim-fade-up"><i class="fas fa-quote-left"></i> Testimonials</span>
+                <h2 class="section-title" data-text="What clients say">What clients say</h2>
+            </div>
+            <div class="testimonials-carousel">
+                <div class="testimonial-track" id="testimonialTrack">
+                    <div class="testimonial-card glass-card tilt-card">
+                        <div class="card-shine"></div>
+                        <div class="testimonial-quote"><i class="fas fa-quote-left"></i></div>
+                        <p class="testimonial-text">"Tharindu delivered our billing system on time with excellent quality. Very professional and responsive throughout the project."</p>
+                        <div class="testimonial-author">
+                            <div class="testimonial-avatar"><i class="fas fa-user"></i></div>
+                            <div>
+                                <h4>Client 1</h4>
+                                <span>Business Owner</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="testimonial-card glass-card tilt-card">
+                        <div class="card-shine"></div>
+                        <div class="testimonial-quote"><i class="fas fa-quote-left"></i></div>
+                        <p class="testimonial-text">"Great work on our management system. The interface is clean and our team adapted to it quickly. Highly recommended."</p>
+                        <div class="testimonial-author">
+                            <div class="testimonial-avatar"><i class="fas fa-user"></i></div>
+                            <div>
+                                <h4>Client 2</h4>
+                                <span>Operations Manager</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="testimonial-card glass-card tilt-card">
+                        <div class="card-shine"></div>
+                        <div class="testimonial-quote"><i class="fas fa-quote-left"></i></div>
+                        <p class="testimonial-text">"The IoT attendance system works flawlessly. Tharindu understood our requirements perfectly and delivered beyond expectations."</p>
+                        <div class="testimonial-author">
+                            <div class="testimonial-avatar"><i class="fas fa-user"></i></div>
+                            <div>
+                                <h4>Client 3</h4>
+                                <span>HR Director</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial-nav">
+                    <button class="testimonial-btn" id="testimonialPrev"><i class="fas fa-chevron-left"></i></button>
+                    <div class="testimonial-dots" id="testimonialDots"></div>
+                    <button class="testimonial-btn" id="testimonialNext"><i class="fas fa-chevron-right"></i></button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Projects Section -->
+    <section class="projects" id="work">
+        <div class="section-container">
+            <div class="section-header">
+                <span class="section-label anim-fade-up"><i class="fas fa-briefcase"></i> Projects</span>
+                <h2 class="section-title" data-text="Selected work">Selected work</h2>
+                <p class="section-desc anim-fade-up">Business software, operational systems, photo editing, and custom platforms built for real-world use.</p>
+            </div>
+            <div class="projects-grid">
+                <div class="project-card card-3d tilt-card anim-card" data-delay="0" data-project="0">
+                    <div class="card-shine"></div><div class="card-depth-bg"></div>
+                    <div class="project-image">
+                        <div class="project-placeholder"><i class="fas fa-shopping-cart"></i></div>
+                        <div class="project-overlay"><span class="view-project">View Details <i class="fas fa-arrow-right"></i></span></div>
+                    </div>
+                    <div class="project-info">
+                        <h3 class="anim-text-reveal">Shop Management & Billing</h3>
+                        <p class="anim-fade-up">Inventory, sales tracking, invoicing, and CRM tools for businesses.</p>
+                    </div>
+                    <div class="card-glow"></div>
+                </div>
+                <div class="project-card card-3d tilt-card anim-card" data-delay="100" data-project="1">
+                    <div class="card-shine"></div><div class="card-depth-bg"></div>
+                    <div class="project-image">
+                        <div class="project-placeholder"><i class="fas fa-couch"></i></div>
+                        <div class="project-overlay"><span class="view-project">View Details <i class="fas fa-arrow-right"></i></span></div>
+                    </div>
+                    <div class="project-info">
+                        <h3 class="anim-text-reveal">Furniture Manufacturing System</h3>
+                        <p class="anim-fade-up">Production-management platform for furniture business operations.</p>
+                    </div>
+                    <div class="card-glow"></div>
+                </div>
+                <div class="project-card card-3d tilt-card anim-card" data-delay="200" data-project="2">
+                    <div class="card-shine"></div><div class="card-depth-bg"></div>
+                    <div class="project-image">
+                        <div class="project-placeholder"><i class="fas fa-hotel"></i></div>
+                        <div class="project-overlay"><span class="view-project">View Details <i class="fas fa-arrow-right"></i></span></div>
+                    </div>
+                    <div class="project-info">
+                        <h3 class="anim-text-reveal">Hotel Reservation System</h3>
+                        <p class="anim-fade-up">Reservation, booking, and guest-management software.</p>
+                    </div>
+                    <div class="card-glow"></div>
+                </div>
+                <div class="project-card card-3d tilt-card anim-card" data-delay="300" data-project="3">
+                    <div class="card-shine"></div><div class="card-depth-bg"></div>
+                    <div class="project-image">
+                        <div class="project-placeholder"><i class="fas fa-cash-register"></i></div>
+                        <div class="project-overlay"><span class="view-project">View Details <i class="fas fa-arrow-right"></i></span></div>
+                    </div>
+                    <div class="project-info">
+                        <h3 class="anim-text-reveal">Billing System</h3>
+                        <p class="anim-fade-up">Point-of-sale and billing workflows for daily sales.</p>
+                    </div>
+                    <div class="card-glow"></div>
+                </div>
+                <div class="project-card card-3d tilt-card anim-card" data-delay="400" data-project="4">
+                    <div class="card-shine"></div><div class="card-depth-bg"></div>
+                    <div class="project-image">
+                        <div class="project-placeholder"><i class="fas fa-qrcode"></i></div>
+                        <div class="project-overlay"><span class="view-project">View Details <i class="fas fa-arrow-right"></i></span></div>
+                    </div>
+                    <div class="project-info">
+                        <h3 class="anim-text-reveal">QR Attendance System</h3>
+                        <p class="anim-fade-up">QR scanning and temperature capture for workplace safety.</p>
+                    </div>
+                    <div class="card-glow"></div>
+                </div>
+                <div class="project-card card-3d tilt-card anim-card" data-delay="500" data-project="5">
+                    <div class="card-shine"></div><div class="card-depth-bg"></div>
+                    <div class="project-image">
+                        <div class="project-placeholder"><i class="fas fa-file-signature"></i></div>
+                        <div class="project-overlay"><span class="view-project">View Details <i class="fas fa-arrow-right"></i></span></div>
+                    </div>
+                    <div class="project-info">
+                        <h3 class="anim-text-reveal">Document Signing System</h3>
+                        <p class="anim-fade-up">Digital approval workflow with role-based signing.</p>
+                    </div>
+                    <div class="card-glow"></div>
+                </div>
+                <div class="project-card card-3d tilt-card anim-card" data-delay="600" data-project="6">
+                    <div class="card-shine"></div><div class="card-depth-bg"></div>
+                    <div class="project-image">
+                        <div class="project-placeholder"><i class="fas fa-exchange-alt"></i></div>
+                        <div class="project-overlay"><span class="view-project">View Details <i class="fas fa-arrow-right"></i></span></div>
+                    </div>
+                    <div class="project-info">
+                        <h3 class="anim-text-reveal">Face Swap & Face Editing</h3>
+                        <p class="anim-fade-up">Professional face swap with natural-looking results and seamless blending.</p>
+                    </div>
+                    <div class="card-glow"></div>
+                </div>
+                <div class="project-card card-3d tilt-card anim-card" data-delay="700" data-project="7">
+                    <div class="card-shine"></div><div class="card-depth-bg"></div>
+                    <div class="project-image">
+                        <div class="project-placeholder"><i class="fas fa-heart"></i></div>
+                        <div class="project-overlay"><span class="view-project">View Details <i class="fas fa-arrow-right"></i></span></div>
+                    </div>
+                    <div class="project-info">
+                        <h3 class="anim-text-reveal">Wedding Photo Editing</h3>
+                        <p class="anim-fade-up">Manual wedding photo retouching with romantic effects and color grading.</p>
+                    </div>
+                    <div class="card-glow"></div>
+                </div>
+                <div class="project-card card-3d tilt-card anim-card" data-delay="800" data-project="8">
+                    <div class="card-shine"></div><div class="card-depth-bg"></div>
+                    <div class="project-image">
+                        <div class="project-placeholder"><i class="fas fa-magic"></i></div>
+                        <div class="project-overlay"><span class="view-project">View Details <i class="fas fa-arrow-right"></i></span></div>
+                    </div>
+                    <div class="project-info">
+                        <h3 class="anim-text-reveal">Photo Retouching</h3>
+                        <p class="anim-fade-up">Professional photo enhancement, skin smoothing, and beauty retouching.</p>
+                    </div>
+                    <div class="card-glow"></div>
+                </div>
+                <div class="project-card card-3d tilt-card anim-card" data-delay="900" data-project="9">
+                    <div class="card-shine"></div><div class="card-depth-bg"></div>
+                    <div class="project-image">
+                        <div class="project-placeholder"><i class="fas fa-cut"></i></div>
+                        <div class="project-overlay"><span class="view-project">View Details <i class="fas fa-arrow-right"></i></span></div>
+                    </div>
+                    <div class="project-info">
+                        <h3 class="anim-text-reveal">Background Removal</h3>
+                        <p class="anim-fade-up">Precise background removal, replacement, and scene compositing.</p>
+                    </div>
+                    <div class="card-glow"></div>
+                </div>
+                <div class="project-card card-3d tilt-card anim-card" data-delay="1000" data-project="10">
+                    <div class="card-shine"></div><div class="card-depth-bg"></div>
+                    <div class="project-image">
+                        <div class="project-placeholder"><i class="fas fa-palette"></i></div>
+                        <div class="project-overlay"><span class="view-project">View Details <i class="fas fa-arrow-right"></i></span></div>
+                    </div>
+                    <div class="project-info">
+                        <h3 class="anim-text-reveal">Color Grading</h3>
+                        <p class="anim-fade-up">Cinematic color grading, correction, and creative color effects.</p>
+                    </div>
+                    <div class="card-glow"></div>
+                </div>
+                <div class="project-card card-3d tilt-card anim-card" data-delay="1100" data-project="11">
+                    <div class="card-shine"></div><div class="card-depth-bg"></div>
+                    <div class="project-image">
+                        <div class="project-placeholder"><i class="fas fa-layer-group"></i></div>
+                        <div class="project-overlay"><span class="view-project">View Details <i class="fas fa-arrow-right"></i></span></div>
+                    </div>
+                    <div class="project-info">
+                        <h3 class="anim-text-reveal">Photo Manipulation</h3>
+                        <p class="anim-fade-up">Creative photo manipulation, surreal edits, and digital art compositing.</p>
+                    </div>
+                    <div class="card-glow"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section class="contact" id="contactus">
+        <div class="section-container">
+            <div class="section-header">
+                <span class="section-label anim-fade-up"><i class="fas fa-envelope"></i> Contact</span>
+                <h2 class="section-title" data-text="Let's build something useful">Let's build something useful</h2>
+            </div>
+            <div class="contact-grid">
+                <div class="contact-info">
+                    <a href="mailto:tharinduruwala@gmail.com" class="contact-item glass-card tilt-card anim-card" data-delay="0">
+                        <div class="contact-icon anim-icon-pulse"><i class="fas fa-envelope"></i></div>
+                        <div><h4>Email</h4><p>tharinduruwala@gmail.com</p></div>
+                        <div class="card-shine"></div>
+                    </a>
+                    <a href="tel:+94781530627" class="contact-item glass-card tilt-card anim-card" data-delay="100">
+                        <div class="contact-icon anim-icon-pulse"><i class="fas fa-phone"></i></div>
+                        <div><h4>Phone</h4><p>078 153 0627</p></div>
+                        <div class="card-shine"></div>
+                    </a>
+                    <a href="https://api.whatsapp.com/send?phone=94781530627&text=Hello!" target="_blank" class="contact-item glass-card tilt-card anim-card" data-delay="200">
+                        <div class="contact-icon anim-icon-pulse"><i class="fab fa-whatsapp"></i></div>
+                        <div><h4>WhatsApp</h4><p>078 153 0627</p></div>
+                        <div class="card-shine"></div>
+                    </a>
+                    <div class="contact-social">
+                        <a href="https://github.com/binfo3394-arch" target="_blank" class="social-3d magnetic anim-scale" data-delay="300"><i class="fab fa-github"></i></a>
+                        <a href="https://web.facebook.com/lakshan.cool.37" target="_blank" class="social-3d magnetic anim-scale" data-delay="400"><i class="fab fa-facebook"></i></a>
+                    </div>
+                </div>
+                <div class="contact-form">
+                    <div class="form-wrapper glass-card anim-card" data-delay="200">
+                        <h3 class="anim-text-reveal">Get in touch</h3>
+                        <form id="contactForm" action="https://formspree.io/f/your-form-id" method="POST">
+                            <div class="input-group anim-fade-up" data-delay="300">
+                                <input type="text" name="name" placeholder="Your Name" required>
+                                <div class="input-line"></div>
+                            </div>
+                            <div class="input-group anim-fade-up" data-delay="400">
+                                <input type="email" name="email" placeholder="Your Email" required>
+                                <div class="input-line"></div>
+                            </div>
+                            <div class="input-group anim-fade-up" data-delay="500">
+                                <textarea name="message" placeholder="Your Message" rows="5" required></textarea>
+                                <div class="input-line"></div>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-3d magnetic anim-fade-up" data-delay="600">
+                                <span>Send Message</span>
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </form>
+                        <div class="form-status" id="formStatus"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section Divider -->
+    <div class="section-divider">
+        <svg viewBox="0 0 1440 120" preserveAspectRatio="none">
+            <path d="M0,60 C360,120 720,0 1080,60 C1260,90 1380,40 1440,60 L1440,120 L0,120 Z" class="wave-1"/>
+            <path d="M0,80 C360,20 720,100 1080,40 C1260,10 1380,80 1440,50 L1440,120 L0,120 Z" class="wave-2"/>
+        </svg>
+    </div>
+
+    <!-- Floating WhatsApp -->
+    <a href="https://api.whatsapp.com/send?phone=94781530627&text=Hello!" class="whatsapp-float" target="_blank">
+        <div class="whatsapp-pulse"></div>
+        <i class="fab fa-whatsapp"></i>
+    </a>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-social">
+                <a href="https://github.com/binfo3394-arch" target="_blank" class="social-3d"><i class="fab fa-github"></i></a>
+                <a href="https://web.facebook.com/lakshan.cool.37" target="_blank" class="social-3d"><i class="fab fa-facebook"></i></a>
+                <a href="mailto:tharinduruwala@gmail.com" class="social-3d"><i class="fas fa-envelope"></i></a>
+                <a href="https://api.whatsapp.com/send?phone=94781530627&text=Hello!" target="_blank" class="social-3d"><i class="fab fa-whatsapp"></i></a>
+            </div>
+            <p>&copy; 2026 Tharindu Rajapaksha. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
