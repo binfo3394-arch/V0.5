@@ -3096,7 +3096,8 @@ tr:hover td { background: rgba(108,99,255,0.07) !important; }
       <div id="pg-staff" class="page">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
           <div class="estitle">👷 Staff & Commission Tracking</div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <input type="month" id="staff-month-filter" onchange="renderStaff()" style="padding:7px 10px;font-size:12px;border-radius:7px;border:1px solid var(--border);background:var(--card2);color:var(--text)">
             <button class="btn bs2" onclick="openManualPayModal()">💵 Manual Pay</button>
             <button class="btn bp2" onclick="openStaffModal()">➕ Add Staff</button>
           </div>
@@ -6016,11 +6017,26 @@ function renderStaff() {
   var orders = db.orders || [];
   var commPayments = db.commPayments || [];
   var now = new Date();
-  var monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  var monthEnd   = new Date(now.getFullYear(), now.getMonth()+1, 1);
+  var mf = document.getElementById('staff-month-filter');
+  var selYear, selMonth;
+  if (mf && mf.value) {
+    var parts = mf.value.split('-');
+    selYear = parseInt(parts[0], 10);
+    selMonth = parseInt(parts[1], 10) - 1;
+  } else {
+    selYear = now.getFullYear();
+    selMonth = now.getMonth();
+    if (mf) mf.value = selYear + '-' + String(selMonth+1).padStart(2,'0');
+  }
+  var monthStart = new Date(selYear, selMonth, 1);
+  var monthEnd   = new Date(selYear, selMonth+1, 1);
+  var monthLabel = monthStart.toLocaleString('en',{month:'long',year:'numeric'});
 
   var totalComm = 0, topName = '—', topComm = 0;
-  var repairsDone = repairs.filter(function(r){ return r.status==='Delivered'||r.status==='Done'; }).length;
+  var repairsDone = repairs.filter(function(r){
+    if (r.status!=='Delivered'&&r.status!=='Done') return false;
+    var d=parseDate(r.date); return d && d>=monthStart && d<monthEnd;
+  }).length;
   
   tbody.innerHTML = staff.length ? staff.map(function(s) {
     // Sales: match by staffId (POS invoices)
@@ -6107,13 +6123,26 @@ function renderStaff() {
   document.getElementById('staff-top').textContent = topName;
   document.getElementById('staff-repairs-done').textContent = repairsDone;
 
-  // Commission history
+  // Update labels with selected month name
+  var commLabel = document.querySelector('#staff-total-comm');
+  if (commLabel && commLabel.parentElement) commLabel.parentElement.querySelector('.slabel').textContent = 'Total Commission (' + monthLabel + ')';
+  var repLabel = document.querySelector('#staff-repairs-done');
+  if (repLabel && repLabel.parentElement) repLabel.parentElement.querySelector('.slabel').textContent = 'Repairs Done (' + monthLabel + ')';
+  var ths = document.querySelectorAll('#pg-staff .tcard table thead th');
+  if (ths.length >= 5) {
+    ths[2].textContent = 'Sales (' + monthLabel + ')';
+    ths[3].textContent = 'Repairs Done (' + monthLabel + ')';
+    ths[4].textContent = 'Online Orders (' + monthLabel + ')';
+  }
+
+  // Commission history (filtered by selected month)
   var histWrap = document.getElementById('comm-history-wrap');
   var histTbl = document.getElementById('comm-hist-tbl');
+  var monthPayments = commPayments.filter(function(p){ return p.date>=monthStart.getTime() && p.date<monthEnd.getTime(); });
   if (histWrap && histTbl) {
-    if (commPayments.length) {
+    if (monthPayments.length) {
       histWrap.style.display = 'block';
-      histTbl.innerHTML = commPayments.slice().reverse().map(function(p){
+      histTbl.innerHTML = monthPayments.slice().reverse().map(function(p){
         return '<tr><td>'+new Date(p.date).toLocaleDateString('en-GB')+'</td><td>'+esc(p.staffName||'—')+'</td>'+
           '<td><span class="badge bp">'+esc(p.payType||'Commission')+'</span>'+(p.manual?'<br><span style="font-size:10px;color:var(--muted)">Manual</span>':'')+'</td>'+
           '<td style="font-weight:700;color:var(--success)">Rs. '+(p.amount||0).toLocaleString()+'</td>'+
