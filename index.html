@@ -6075,10 +6075,29 @@ function renderStaff() {
     var orderComm = orderRevenue * (s.orderCommRate||0) / 100;
     var commEarned = salesComm + repairComm + orderComm;
 
-    // Commission payment tracking
-    var paidThisMonth = commPayments.filter(function(p){ return String(p.staffId)===String(s.id) && p.date>=monthStart.getTime() && p.date<monthEnd.getTime(); });
-    var paidSum = paidThisMonth.reduce(function(a,p){ return a+(p.amount||0); },0);
-    var pending = Math.max(0, Math.round(commEarned - paidSum));
+    // Commission payment tracking (pending is rolling balance = earned up to monthEnd - paid up to monthEnd)
+    // Compute cumulative earned up to monthEnd (invoices, repairs, orders)
+    var invsUpTo = invoices.filter(function(inv){ var d=parseDate(inv.date); return String(inv.staffId)===String(s.id) && d && d<monthEnd; });
+    var revUpTo = invsUpTo.reduce(function(a,inv){ return a+(inv.total||0); },0);
+    var profitUpTo = invsUpTo.reduce(function(a,inv){
+      var p=0; (inv.items||[]).forEach(function(it){ var prod=(db.products||[]).find(function(pr){ return pr.id===it.id; }); p+=(it.price-(prod?prod.cost:0))*(it.qty||1); }); return a+p;
+    },0);
+    var earnedInvsUpTo = Math.max(0, (s.commBase||'revenue')==='profit' ? profitUpTo * (s.commRate||0)/100 : revUpTo * (s.commRate||0)/100);
+    var repsUpTo = repairs.filter(function(r){
+      var d=parseDate(r.date);
+      var matchStaff = r.techId ? String(r.techId)===String(s.id) : (r.tech&&r.tech.trim().toLowerCase()===s.name.trim().toLowerCase());
+      return matchStaff && (r.status==='Delivered'||r.status==='Done') && d && d<monthEnd;
+    });
+    var repairRevUpTo = repsUpTo.reduce(function(a,r){ return a+(r.cost||0); },0);
+    var earnedRepUpTo = repairRevUpTo * (s.repairCommRate||0)/100;
+    var ordsUpTo = orders.filter(function(o){ var d=parseDate(o.date); return String(o.staffId)===String(s.id) && d && d<monthEnd; });
+    var ordRevUpTo = ordsUpTo.reduce(function(a,o){ return a+(o.amount||0); },0);
+    var earnedOrdUpTo = ordRevUpTo * (s.orderCommRate||0)/100;
+    var earnedUpTo = earnedInvsUpTo + earnedRepUpTo + earnedOrdUpTo;
+
+    // Paid up to monthEnd (all payments before monthEnd)
+    var paidUpTo = commPayments.filter(function(p){ return String(p.staffId)===String(s.id) && p.date < monthEnd.getTime(); }).reduce(function(a,p){ return a+(p.amount||0); },0);
+    var pending = Math.max(0, Math.round(earnedUpTo - paidUpTo));
 
     if (s.status !== 'Inactive') totalComm += commEarned;
     if (s.status !== 'Inactive' && commEarned > topComm) { topComm = commEarned; topName = s.name; }
@@ -6110,7 +6129,7 @@ function renderStaff() {
         '<br><span style="font-size:10px;color:var(--muted)">POS:'+Math.round(salesComm).toLocaleString()+' Rep:'+Math.round(repairComm).toLocaleString()+' Ord:'+Math.round(orderComm).toLocaleString()+'</span>'+
         (commEarned===0 && (staffRepsAll.length>0||staffInvs.length>0||staffOrdsMonth.length>0)?
           '<br><span style="font-size:10px;color:var(--danger)">⚠️ Rate 0%!</span>':'')+'</td>'+
-      '<td style="font-weight:700;color:'+(paidSum>0?'var(--success)':'var(--muted)')+'">Rs. '+Math.round(paidSum).toLocaleString()+'</td>'+
+      '<td style="font-weight:700;color:'+(paidUpTo>0?'var(--success)':'var(--muted)')+'">Rs. '+Math.round(paidUpTo).toLocaleString()+'</td>'+
       '<td style="font-weight:800;color:'+(pending>0?'var(--warning)':'var(--muted)')+'">Rs. '+pending.toLocaleString()+'</td>'+
       '<td>'+
         (pending>0?'<button class="btn bs bsm" onclick="payCommission('+s.id+','+pending+')">💵 Pay Rs.'+pending.toLocaleString()+'</button>':'<span style="color:var(--muted);font-size:11px">✅ Cleared</span>')+
