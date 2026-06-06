@@ -407,12 +407,13 @@ img {
 }
 
 /* Hero Background Image */
-.hero-bg-image {
+.hero-bg-video {
     position: absolute;
     inset: 0;
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
     z-index: 0;
     opacity: 0.12;
     filter: blur(2px);
@@ -3045,4 +3046,280 @@ img {
     .project-modal-title { font-size: 1.2rem; }
 
     .testimonial-text { font-size: 0.95rem; }
+
+    /* ===== MOBILE LAYOUT FIXES ===== */
+
+    /* Hero */
+    .hero-container {
+        grid-template-columns: 1fr;
+        gap: 30px;
+        text-align: center;
+    }
+
+    .hero-content p {
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .hero-buttons {
+        justify-content: center;
+    }
+
+    .hero-stats {
+        justify-content: center;
+    }
+
+    .hero-image {
+        order: -1;
+    }
+
+    .image-3d-wrapper {
+        width: 220px;
+        height: 280px;
+        max-width: 100%;
+    }
+
+    .hero-title-3d .title-word {
+        font-size: 2.2rem;
+    }
+
+    .hero-subtitle {
+        font-size: 1rem;
+    }
+
+    .hero-desc {
+        font-size: 0.9rem;
+        padding: 0 10px;
+    }
+
+    /* Sections */
+    .about, .focus, .services, .projects, .testimonials, .timeline, .contact {
+        padding: 80px 16px;
+    }
+
+    .section-title {
+        font-size: 1.6rem;
+    }
+
+    .section-desc {
+        font-size: 0.95rem;
+    }
+
+    /* Process Grid */
+    .process-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .process-card {
+        padding: 24px;
+    }
+
+    /* Tech Stack */
+    .tech-stack {
+        gap: 10px;
+        justify-content: center;
+    }
+
+    .tech-tag-icon {
+        padding: 8px 14px;
+        font-size: 0.75rem;
+        gap: 6px;
+    }
+
+    .tech-tag-icon i {
+        font-size: 0.95rem;
+    }
+
+    /* About Images */
+    .about-images-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+
+    .about-img-wrapper {
+        max-height: 200px;
+        aspect-ratio: auto;
+    }
+
+    /* Focus Grid */
+    .focus-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .focus-card {
+        padding: 28px 20px;
+    }
+
+    /* Services Grid */
+    .services-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .service-card {
+        padding: 24px;
+    }
+
+    /* Projects Grid */
+    .projects-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .project-image {
+        height: 180px;
+    }
+
+    .project-info {
+        padding: 16px;
+    }
+
+    .project-info h3 {
+        font-size: 1rem;
+    }
+
+    .project-info p {
+        font-size: 0.85rem;
+    }
+
+    /* Timeline */
+    .timeline-container {
+        padding-left: 0;
+    }
+
+    .timeline-line {
+        left: 14px;
+    }
+
+    .timeline-item {
+        padding-left: 50px;
+        margin-bottom: 24px;
+    }
+
+    .timeline-dot {
+        left: 0;
+        width: 28px;
+        height: 28px;
+        font-size: 0.6rem;
+    }
+
+    .timeline-content {
+        padding: 16px;
+    }
+
+    .timeline-content h3 {
+        font-size: 1rem;
+    }
+
+    /* Testimonials */
+    .testimonial-card {
+        padding: 20px;
+    }
+
+    .testimonial-text {
+        font-size: 0.9rem;
+    }
+
+    .testimonial-nav {
+        gap: 10px;
+    }
+
+    .testimonial-btn {
+        width: 34px;
+        height: 34px;
+        font-size: 0.8rem;
+    }
+
+    /* Contact */
+    .contact-grid {
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+
+    .contact-item {
+        padding: 14px;
+    }
+
+    .contact-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 0.9rem;
+    }
+
+    .contact-item h4 {
+        font-size: 0.75rem;
+    }
+
+    .contact-item p {
+        font-size: 0.85rem;
+    }
+
+    .contact-social {
+        gap: 10px;
+        justify-content: center;
+    }
+
+    .form-wrapper {
+        padding: 20px;
+    }
+
+    .form-wrapper h3 {
+        font-size: 1.2rem;
+    }
+
+    .input-group input,
+    .input-group textarea {
+        padding: 12px 14px;
+        font-size: 0.9rem;
+    }
+
+    /* Buttons */
+    .btn {
+        padding: 12px 24px;
+        font-size: 0.9rem;
+    }
+
+    /* Footer */
+    .footer-social {
+        gap: 12px;
+    }
+
+    .footer p {
+        font-size: 0.8rem;
+    }
+
+    /* Clients */
+    .clients-grid {
+        gap: 10px;
+    }
+
+    .client-logo {
+        padding: 12px 16px;
+    }
+
+    .client-placeholder {
+        width: 90px;
+        height: 36px;
+        font-size: 0.75rem;
+    }
+
+    /* Stats */
+    .hero-stats {
+        gap: 10px;
+    }
+
+    .stat-card {
+        min-width: 80px;
+        padding: 12px 14px;
+    }
+
+    .stat-number {
+        font-size: 1.3rem;
+    }
+
+    .stat-label {
+        font-size: 0.65rem;
+    }
 }
