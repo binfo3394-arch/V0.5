@@ -2,672 +2,613 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FaceAttend — School Attendance System</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>FaceAttend Pro — School Attendance System</title>
 <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script type="module">
-// ══════════════════════════════════════════
-//  FIREBASE SETUP
-// ══════════════════════════════════════════
-import { initializeApp }        from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAnalytics }         from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
-import {
-  getDatabase, ref, set, get, remove, push, onValue, child
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
+import { getDatabase, ref, set, get, remove, push, onValue, child, update }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const firebaseConfig = {
-  apiKey:            "AIzaSyDRJHhPwI8v8wHLmvaOjQfk4Qj9lQ6kgZQ",
-  authDomain:        "meetclone-d099a.firebaseapp.com",
-  databaseURL:       "https://meetclone-d099a-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId:         "meetclone-d099a",
-  storageBucket:     "meetclone-d099a.firebasestorage.app",
+  apiKey: "AIzaSyDRJHhPwI8v8wHLmvaOjQfk4Qj9lQ6kgZQ",
+  authDomain: "meetclone-d099a.firebaseapp.com",
+  databaseURL: "https://meetclone-d099a-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "meetclone-d099a",
+  storageBucket: "meetclone-d099a.firebasestorage.app",
   messagingSenderId: "817456317630",
-  appId:             "1:817456317630:web:f1c12bb430dce65cbc4aef",
-  measurementId:     "G-K1FV8B482D"
+  appId: "1:817456317630:web:f1c12bb430dce65cbc4aef",
+  measurementId: "G-K1FV8B482D"
 };
 
-const app       = initializeApp(firebaseConfig);
+const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
-const db        = getDatabase(app);
+const db = getDatabase(app);
 
-// Expose DB helpers globally so non-module script can use them
-window._fb = { db, ref, set, get, remove, push, onValue, child };
+window._fb = { db, ref, set, get, remove, push, onValue, child, update };
 window._fbReady = true;
 window.dispatchEvent(new Event('fbReady'));
 </script>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@300;400;500;600;700&display=swap');
-
-  :root {
-    --bg: #080c14;
-    --surface: #0d1422;
-    --card: #111827;
-    --border: #1e2d45;
-    --blue: #3b82f6;
-    --blue-dim: #1d4ed8;
-    --cyan: #06b6d4;
-    --green: #10b981;
-    --red: #ef4444;
-    --yellow: #f59e0b;
-    --text: #e2e8f0;
-    --muted: #64748b;
-    --mono: 'JetBrains Mono', monospace;
-    --sans: 'Inter', sans-serif;
-  }
-
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--sans);
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-
-  /* ── HEADER ── */
-  header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 18px 32px;
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    position: sticky;
-    top: 0;
-    z-index: 100;
-  }
-
-  .logo {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .logo-icon {
-    width: 38px; height: 38px;
-    background: linear-gradient(135deg, var(--blue), var(--cyan));
-    border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 18px;
-  }
-
-  .logo-text { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }
-  .logo-sub  { font-family: var(--mono); font-size: 11px; color: var(--cyan); }
-
-  .header-right { display: flex; align-items: center; gap: 16px; }
-
-  .status-dot {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    background: var(--muted);
-    display: inline-block;
-    transition: background 0.3s;
-  }
-  .status-dot.ready { background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse-dot 2s infinite; }
-
-  @keyframes pulse-dot {
-    0%,100% { opacity:1; } 50% { opacity:.5; }
-  }
-
-  .status-text { font-size: 13px; color: var(--muted); font-family: var(--mono); }
-
-  /* ── NAV TABS ── */
-  .nav-tabs {
-    display: flex;
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    padding: 0 32px;
-    gap: 4px;
-  }
-
-  .tab-btn {
-    padding: 12px 22px;
-    background: none;
-    border: none;
-    color: var(--muted);
-    font-family: var(--sans);
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
-    transition: all 0.2s;
-    display: flex; align-items: center; gap: 8px;
-  }
-
-  .tab-btn:hover  { color: var(--text); }
-  .tab-btn.active { color: var(--blue); border-bottom-color: var(--blue); }
-
-  /* ── MAIN LAYOUT ── */
-  main { padding: 28px 32px; max-width: 1200px; margin: 0 auto; }
-
-  .page { display: none; }
-  .page.active { display: block; }
-
-  /* ── CAMERA SECTION ── */
-  .camera-wrap {
-    position: relative;
-    width: 100%;
-    max-width: 560px;
-    border-radius: 16px;
-    overflow: hidden;
-    background: #000;
-    border: 1px solid var(--border);
-  }
-
-  #videoEl, #videoReg {
-    width: 100%;
-    display: block;
-    border-radius: 16px;
-  }
-
-  .canvas-overlay {
-    position: absolute;
-    top: 0; left: 0;
-    border-radius: 16px;
-    pointer-events: none;
-  }
-
-  .scan-overlay {
-    position: absolute;
-    inset: 0;
-    border-radius: 16px;
-    pointer-events: none;
-    overflow: hidden;
-  }
-
-  .scan-line {
-    position: absolute;
-    left: 0; right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, var(--cyan), transparent);
-    opacity: 0;
-    animation: scan 3s ease-in-out infinite;
-  }
-
-  @keyframes scan {
-    0%   { top: 0%; opacity: 0; }
-    5%   { opacity: 1; }
-    95%  { opacity: 1; }
-    100% { top: 100%; opacity: 0; }
-  }
-
-  .corner-tl, .corner-tr, .corner-bl, .corner-br {
-    position: absolute;
-    width: 24px; height: 24px;
-    border-color: var(--cyan);
-    border-style: solid;
-    opacity: 0.6;
-  }
-  .corner-tl { top: 12px; left: 12px; border-width: 2px 0 0 2px; }
-  .corner-tr { top: 12px; right: 12px; border-width: 2px 2px 0 0; }
-  .corner-bl { bottom: 12px; left: 12px; border-width: 0 0 2px 2px; }
-  .corner-br { bottom: 12px; right: 12px; border-width: 0 2px 2px 0; }
-
-  .cam-label {
-    position: absolute;
-    top: 14px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0,0,0,0.6);
-    border: 1px solid var(--border);
-    padding: 4px 14px;
-    border-radius: 20px;
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--cyan);
-    letter-spacing: 2px;
-    text-transform: uppercase;
-  }
-
-  /* ── GRID LAYOUTS ── */
-  .two-col {
-    display: grid;
-    grid-template-columns: 560px 1fr;
-    gap: 24px;
-    align-items: start;
-  }
-
-  /* ── CARDS ── */
-  .card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 22px;
-  }
-
-  .card h3 {
-    font-size: 15px;
-    font-weight: 600;
-    margin-bottom: 16px;
-    color: var(--text);
-    display: flex; align-items: center; gap: 8px;
-  }
-
-  /* ── RESULT DISPLAY ── */
-  .result-box {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 20px;
-    min-height: 120px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    transition: all 0.3s;
-    margin-top: 0;
-  }
-
-  .result-box.match {
-    border-color: var(--green);
-    background: rgba(16,185,129,0.08);
-  }
-
-  .result-box.no-match {
-    border-color: var(--red);
-    background: rgba(239,68,68,0.08);
-  }
-
-  .result-name {
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--green);
-    margin-bottom: 4px;
-  }
-
-  .result-id {
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--muted);
-  }
-
-  .result-time {
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--cyan);
-    margin-top: 8px;
-  }
-
-  .result-icon { font-size: 36px; margin-bottom: 8px; }
-
-  /* ── FORM ── */
-  .form-group { margin-bottom: 16px; }
-
-  .form-group label {
-    display: block;
-    font-size: 13px;
-    color: var(--muted);
-    margin-bottom: 6px;
-    font-weight: 500;
-  }
-
-  .form-group input, .form-group select {
-    width: 100%;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 10px 14px;
-    color: var(--text);
-    font-family: var(--sans);
-    font-size: 14px;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-
-  .form-group input:focus, .form-group select:focus {
-    border-color: var(--blue);
-  }
-
-  .form-group select option { background: var(--surface); }
-
-  /* ── BUTTONS ── */
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 10px 20px;
-    border-radius: 8px;
-    border: none;
-    font-family: var(--sans);
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-    width: 100%;
-  }
-
-  .btn-primary {
-    background: var(--blue);
-    color: #fff;
-  }
-  .btn-primary:hover:not(:disabled) { background: var(--blue-dim); transform: translateY(-1px); }
-
-  .btn-success {
-    background: var(--green);
-    color: #fff;
-  }
-  .btn-success:hover:not(:disabled) { filter: brightness(1.1); }
-
-  .btn-danger {
-    background: var(--red);
-    color: #fff;
-  }
-  .btn-danger:hover:not(:disabled) { filter: brightness(1.1); }
-
-  .btn-ghost {
-    background: var(--surface);
-    color: var(--text);
-    border: 1px solid var(--border);
-  }
-  .btn-ghost:hover:not(:disabled) { border-color: var(--blue); color: var(--blue); }
-
-  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
-
-  .btn-row { display: flex; gap: 10px; margin-top: 16px; }
-  .btn-row .btn { flex: 1; }
-
-  /* ── STUDENT LIST ── */
-  .student-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 12px;
-    margin-top: 12px;
-  }
-
-  .student-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 14px;
-    text-align: center;
-    transition: border-color 0.2s;
-    cursor: default;
-  }
-
-  .student-card:hover { border-color: var(--blue); }
-
-  .student-card .s-avatar {
-    width: 52px; height: 52px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--blue), var(--cyan));
-    display: flex; align-items: center; justify-content: center;
-    font-size: 20px;
-    margin: 0 auto 10px;
-  }
-
-  .student-card .s-name {
-    font-size: 13px;
-    font-weight: 600;
-    margin-bottom: 4px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .student-card .s-id {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--muted);
-  }
-
-  .student-card .s-grade {
-    font-size: 11px;
-    color: var(--cyan);
-    margin-top: 4px;
-  }
-
-  .delete-btn {
-    background: none;
-    border: none;
-    color: var(--muted);
-    cursor: pointer;
-    font-size: 13px;
-    margin-top: 6px;
-    padding: 2px 8px;
-    border-radius: 4px;
-    transition: all 0.15s;
-  }
-  .delete-btn:hover { color: var(--red); background: rgba(239,68,68,0.1); }
-
-  /* ── ATTENDANCE TABLE ── */
-  .att-table-wrap { overflow-x: auto; margin-top: 12px; }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 14px;
-  }
-
-  th {
-    background: var(--surface);
-    color: var(--muted);
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    padding: 10px 16px;
-    text-align: left;
-    border-bottom: 1px solid var(--border);
-  }
-
-  td {
-    padding: 12px 16px;
-    border-bottom: 1px solid rgba(30,45,69,0.5);
-    vertical-align: middle;
-  }
-
-  tr:hover td { background: rgba(59,130,246,0.04); }
-
-  .badge {
-    display: inline-block;
-    padding: 3px 10px;
-    border-radius: 20px;
-    font-size: 11px;
-    font-weight: 600;
-    font-family: var(--mono);
-  }
-
-  .badge-present { background: rgba(16,185,129,0.15); color: var(--green); }
-  .badge-absent  { background: rgba(239,68,68,0.15);  color: var(--red); }
-
-  /* ── STATS CARDS ── */
-  .stats-row {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
-    margin-bottom: 24px;
-  }
-
-  .stat-card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 18px 20px;
-  }
-
-  .stat-label {
-    font-size: 11px;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 8px;
-  }
-
-  .stat-val {
-    font-size: 28px;
-    font-weight: 700;
-    font-family: var(--mono);
-  }
-
-  .stat-card.blue  .stat-val { color: var(--blue); }
-  .stat-card.green .stat-val { color: var(--green); }
-  .stat-card.cyan  .stat-val { color: var(--cyan); }
-  .stat-card.yellow .stat-val { color: var(--yellow); }
-
-  /* ── TOAST ── */
-  #toast {
-    position: fixed;
-    bottom: 28px;
-    left: 50%;
-    transform: translateX(-50%) translateY(80px);
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 12px 22px;
-    font-size: 14px;
-    font-weight: 500;
-    z-index: 9999;
-    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
-    white-space: nowrap;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-  }
-  #toast.show { transform: translateX(-50%) translateY(0); }
-  #toast.success { border-color: var(--green); color: var(--green); }
-  #toast.error   { border-color: var(--red);   color: var(--red);   }
-  #toast.info    { border-color: var(--blue);  color: var(--blue);  }
-
-  /* ── LOADING ── */
-  .loading-screen {
-    position: fixed;
-    inset: 0;
-    background: var(--bg);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
-    gap: 18px;
-  }
-
-  .loading-screen h2 { font-size: 22px; font-weight: 600; }
-  .loading-screen p  { color: var(--muted); font-size: 14px; font-family: var(--mono); }
-
-  .progress-bar-wrap {
-    width: 300px;
-    background: var(--border);
-    border-radius: 20px;
-    height: 4px;
-    overflow: hidden;
-  }
-
-  .progress-bar {
-    height: 100%;
-    background: linear-gradient(90deg, var(--blue), var(--cyan));
-    border-radius: 20px;
-    transition: width 0.4s ease;
-    width: 0%;
-  }
-
-  .spinner {
-    width: 40px; height: 40px;
-    border: 3px solid var(--border);
-    border-top-color: var(--blue);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  /* ── DATE FILTER ── */
-  .filter-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 16px;
-    flex-wrap: wrap;
-  }
-
-  .filter-row input[type="date"],
-  .filter-row select {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 8px 14px;
-    color: var(--text);
-    font-family: var(--sans);
-    font-size: 13px;
-    outline: none;
-  }
-
-  .filter-row label { font-size: 13px; color: var(--muted); }
-
-  .section-title {
-    font-size: 22px;
-    font-weight: 700;
-    margin-bottom: 6px;
-    letter-spacing: -0.4px;
-  }
-
-  .section-sub {
-    font-size: 13px;
-    color: var(--muted);
-    margin-bottom: 24px;
-  }
-
-  /* ── NO DATA ── */
-  .empty-state {
-    text-align: center;
-    padding: 48px 20px;
-    color: var(--muted);
-  }
-  .empty-state .e-icon { font-size: 40px; margin-bottom: 12px; }
-  .empty-state p { font-size: 14px; }
-
-  /* ── CAPTURE FLASH ── */
-  @keyframes flash {
-    0%   { opacity: 0; }
-    50%  { opacity: 0.4; }
-    100% { opacity: 0; }
-  }
-  .flash {
-    position: absolute;
-    inset: 0;
-    background: white;
-    border-radius: 16px;
-    pointer-events: none;
-    animation: flash 0.3s ease;
-  }
-
-  .confidence-bar {
-    width: 100%;
-    height: 4px;
-    background: var(--border);
-    border-radius: 4px;
-    overflow: hidden;
-    margin-top: 10px;
-  }
-  .confidence-fill {
-    height: 100%;
-    border-radius: 4px;
-    transition: width 0.4s ease;
-  }
-
-  @media (max-width: 900px) {
-    main { padding: 16px; }
-    .two-col { grid-template-columns: 1fr; }
-    .stats-row { grid-template-columns: repeat(2,1fr); }
-    header { padding: 14px 16px; }
-    .nav-tabs { padding: 0 16px; }
-  }
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --bg: #080c14;
+  --surface: #0d1422;
+  --card: #111827;
+  --border: #1e2d45;
+  --blue: #3b82f6;
+  --blue-dim: #1d4ed8;
+  --cyan: #06b6d4;
+  --green: #10b981;
+  --red: #ef4444;
+  --yellow: #f59e0b;
+  --orange: #f97316;
+  --text: #e2e8f0;
+  --muted: #64748b;
+  --mono: 'JetBrains Mono', monospace;
+  --sans: 'Inter', sans-serif;
+  --card-shadow: none;
+  --overlay: rgba(0,0,0,0.7);
+}
+[data-theme="light"] {
+  --bg: #f1f5f9;
+  --surface: #ffffff;
+  --card: #ffffff;
+  --border: #cbd5e1;
+  --text: #0f172a;
+  --muted: #64748b;
+  --card-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  --overlay: rgba(0,0,0,0.4);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  min-height: 100vh;
+  overflow-x: hidden;
+  transition: background 0.3s, color 0.3s;
+  padding-bottom: 80px;
+}
+@media (min-width:769px) { body { padding-bottom:0; } }
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+@media (min-width:768px) { header { padding: 18px 32px; } }
+
+.logo { display: flex; align-items: center; gap: 10px; }
+.logo-icon {
+  width: 34px; height: 34px;
+  background: linear-gradient(135deg, var(--blue), var(--cyan));
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+}
+.logo-text { font-size: 17px; font-weight: 700; letter-spacing: -0.5px; }
+.logo-sub { font-family: var(--mono); font-size: 10px; color: var(--cyan); display:none; }
+@media (min-width:768px) { .logo-sub { display:block; } }
+
+.header-right { display: flex; align-items: center; gap: 10px; }
+.status-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--muted); display: inline-block;
+  transition: background 0.3s;
+}
+.status-dot.ready { background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse-dot 2s infinite; }
+@keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:.5} }
+.status-text { font-size: 12px; color: var(--muted); font-family: var(--mono); display:none; }
+@media (min-width:768px) { .status-text { display:inline; } }
+
+.icon-btn {
+  background: none; border: none; color: var(--muted); cursor: pointer;
+  font-size: 20px; padding: 6px; border-radius: 8px; transition: all 0.2s;
+  line-height: 1;
+}
+.icon-btn:hover { background: var(--border); color: var(--text); }
+.icon-btn.active { color: var(--cyan); }
+
+#fbStatus { font-size: 10px; font-family: var(--mono); color: var(--muted); }
+@media (min-width:768px) { #fbStatus { font-size:11px; } }
+
+.nav-tabs {
+  display: flex;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 12px;
+  gap: 2px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.nav-tabs::-webkit-scrollbar { display:none; }
+@media (min-width:768px) { .nav-tabs { padding:0 32px; gap:4px; } }
+
+.tab-btn {
+  padding: 10px 14px;
+  background: none; border: none;
+  color: var(--muted);
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  display: flex; align-items: center; gap: 4px;
+  white-space: nowrap;
+}
+@media (min-width:768px) { .tab-btn { padding:12px 20px; font-size:14px; gap:8px; } }
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--blue); border-bottom-color: var(--blue); }
+.tab-btn.admin-only { display: none; }
+.logged-in .tab-btn.admin-only { display: flex; }
+
+main { padding: 16px; max-width: 1200px; margin: 0 auto; }
+@media (min-width:768px) { main { padding:28px 32px; } }
+
+.page { display: none; }
+.page.active { display: block; }
+
+.camera-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 560px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #000;
+  border: 1px solid var(--border);
+}
+#videoEl, #videoReg {
+  width: 100%; display: block;
+  border-radius: 14px;
+}
+.canvas-overlay {
+  position: absolute; top: 0; left: 0;
+  border-radius: 14px; pointer-events: none;
+}
+.scan-overlay {
+  position: absolute; inset: 0;
+  border-radius: 14px; pointer-events: none; overflow: hidden;
+}
+.scan-line {
+  position: absolute; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+  opacity: 0; animation: scan 3s ease-in-out infinite;
+}
+@keyframes scan {
+  0%{top:0%;opacity:0} 5%{opacity:1} 95%{opacity:1} 100%{top:100%;opacity:0}
+}
+.corner-tl,.corner-tr,.corner-bl,.corner-br {
+  position: absolute; width:20px; height:20px;
+  border-color: var(--cyan); border-style: solid; opacity:0.5;
+}
+.corner-tl{top:10px;left:10px;border-width:2px 0 0 2px}
+.corner-tr{top:10px;right:10px;border-width:2px 2px 0 0}
+.corner-bl{bottom:10px;left:10px;border-width:0 0 2px 2px}
+.corner-br{bottom:10px;right:10px;border-width:0 2px 2px 0}
+.cam-label {
+  position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+  background: rgba(0,0,0,0.6); border: 1px solid var(--border);
+  padding: 3px 12px; border-radius: 20px;
+  font-family: var(--mono); font-size: 10px; color: var(--cyan);
+  letter-spacing: 2px; text-transform: uppercase;
+}
+
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  align-items: start;
+}
+@media (min-width:900px) { .two-col { grid-template-columns: 560px 1fr; } }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px;
+  box-shadow: var(--card-shadow);
+}
+.card h3 {
+  font-size: 14px; font-weight: 600; margin-bottom: 14px;
+  color: var(--text); display: flex; align-items: center; gap: 6px;
+}
+
+.result-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  min-height: 100px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  text-align: center;
+  transition: all 0.3s;
+}
+.result-box.match { border-color: var(--green); background: rgba(16,185,129,0.08); }
+.result-box.no-match { border-color: var(--red); background: rgba(239,68,68,0.08); }
+.result-name { font-size: 18px; font-weight: 700; color: var(--green); margin-bottom: 2px; }
+.result-id { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.result-time { font-family: var(--mono); font-size: 11px; color: var(--cyan); margin-top: 6px; }
+.result-icon { font-size: 30px; margin-bottom: 6px; }
+
+.form-group { margin-bottom: 14px; }
+.form-group label {
+  display: block; font-size: 12px; color: var(--muted);
+  margin-bottom: 5px; font-weight: 500;
+}
+.form-group input, .form-group select {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 9px 12px;
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.form-group input:focus, .form-group select:focus { border-color: var(--blue); }
+.form-group select option { background: var(--surface); }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 6px; padding: 9px 16px; border-radius: 8px; border: none;
+  font-family: var(--sans); font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s; width: 100%;
+}
+.btn-primary { background: var(--blue); color: #fff; }
+.btn-primary:hover:not(:disabled) { background: var(--blue-dim); transform: translateY(-1px); }
+.btn-success { background: var(--green); color: #fff; }
+.btn-success:hover:not(:disabled) { filter: brightness(1.1); }
+.btn-danger { background: var(--red); color: #fff; }
+.btn-danger:hover:not(:disabled) { filter: brightness(1.1); }
+.btn-ghost { background: var(--surface); color: var(--text); border:1px solid var(--border); }
+.btn-ghost:hover:not(:disabled) { border-color: var(--blue); color: var(--blue); }
+.btn-warning { background: var(--orange); color: #fff; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.btn-row .btn { flex: 1; min-width: 0; }
+@media (max-width:480px) { .btn-row { flex-direction:column; } }
+
+.student-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+.student-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  text-align: center;
+  transition: border-color 0.2s;
+  cursor: default;
+}
+.student-card:hover { border-color: var(--blue); }
+.student-card .s-avatar {
+  width: 48px; height: 48px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--blue), var(--cyan));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; margin: 0 auto 8px;
+  overflow: hidden;
+}
+.student-card .s-avatar img { width:100%; height:100%; object-fit:cover; }
+.student-card .s-name { font-size: 12px; font-weight: 600; margin-bottom: 2px; white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.student-card .s-id { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+.student-card .s-grade { font-size: 10px; color: var(--cyan); margin-top: 2px; }
+.student-card .s-samples { font-size: 10px; color: var(--muted); margin-top: 2px; }
+.delete-btn {
+  background: none; border: none; color: var(--muted); cursor: pointer;
+  font-size: 12px; margin-top: 4px; padding: 2px 8px; border-radius: 4px;
+  transition: all 0.15s;
+}
+.delete-btn:hover { color: var(--red); background: rgba(239,68,68,0.1); }
+
+.att-table-wrap { overflow-x: auto; margin-top: 10px; -webkit-overflow-scrolling:touch; }
+table { width:100%; border-collapse: collapse; font-size: 13px; min-width:500px; }
+th {
+  background: var(--surface); color: var(--muted);
+  font-size: 10px; font-weight: 600; letter-spacing: 1px;
+  text-transform: uppercase; padding: 8px 12px;
+  text-align: left; border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+td { padding: 10px 12px; border-bottom:1px solid rgba(30,45,69,0.3); vertical-align:middle; }
+tr:hover td { background: rgba(59,130,246,0.04); }
+
+.badge {
+  display: inline-block; padding: 2px 8px; border-radius: 20px;
+  font-size: 10px; font-weight: 600; font-family: var(--mono);
+}
+.badge-present { background: rgba(16,185,129,0.15); color: var(--green); }
+.badge-absent  { background: rgba(239,68,68,0.15); color: var(--red); }
+.badge-late    { background: rgba(245,158,11,0.15); color: var(--yellow); }
+
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+@media (min-width:600px) { .stats-row { grid-template-columns: repeat(4,1fr); } }
+.stat-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.stat-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing:1px; margin-bottom:6px; }
+.stat-val { font-size: 22px; font-weight: 700; font-family: var(--mono); }
+.stat-card.blue .stat-val { color: var(--blue); }
+.stat-card.green .stat-val { color: var(--green); }
+.stat-card.cyan .stat-val { color: var(--cyan); }
+.stat-card.yellow .stat-val { color: var(--yellow); }
+.stat-card.orange .stat-val { color: var(--orange); }
+
+#toast {
+  position: fixed; bottom: 20px; left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 10px 18px;
+  font-size: 13px; font-weight: 500; z-index: 99999;
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  white-space: nowrap; box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  max-width: 90vw;
+}
+#toast.show { transform: translateX(-50%) translateY(0); }
+#toast.success { border-color: var(--green); color: var(--green); }
+#toast.error { border-color: var(--red); color: var(--red); }
+#toast.info { border-color: var(--blue); color: var(--blue); }
+
+.loading-screen {
+  position: fixed; inset: 0; background: var(--bg);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; z-index: 99999;
+  gap: 16px;
+}
+.loading-screen h2 { font-size: 20px; font-weight: 600; }
+.loading-screen p { color: var(--muted); font-size: 13px; font-family: var(--mono); }
+.progress-bar-wrap {
+  width: 260px; background: var(--border);
+  border-radius: 20px; height: 4px; overflow: hidden;
+}
+.progress-bar {
+  height: 100%; background: linear-gradient(90deg, var(--blue), var(--cyan));
+  border-radius: 20px; transition: width 0.4s ease; width: 0%;
+}
+.spinner { width: 36px; height: 36px; border:3px solid var(--border); border-top-color:var(--blue); border-radius:50%; animation:spin .8s linear infinite; }
+@keyframes spin { to{transform:rotate(360deg)} }
+
+.filter-row {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 14px; flex-wrap: wrap;
+}
+.filter-row input[type="date"],
+.filter-row input[type="month"],
+.filter-row select {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 7px 10px;
+  color: var(--text); font-family: var(--sans); font-size: 12px;
+  outline: none;
+}
+.filter-row label { font-size: 12px; color: var(--muted); white-space:nowrap; }
+
+.section-title { font-size: 18px; font-weight: 700; margin-bottom: 4px; letter-spacing: -0.3px; }
+.section-sub { font-size: 12px; color: var(--muted); margin-bottom: 20px; }
+
+.empty-state { text-align: center; padding: 36px 16px; color: var(--muted); }
+.empty-state .e-icon { font-size: 32px; margin-bottom: 10px; }
+.empty-state p { font-size: 13px; }
+
+@keyframes flash { 0%{opacity:0} 50%{opacity:0.4} 100%{opacity:0} }
+.flash { position:absolute;inset:0;background:white;border-radius:14px;pointer-events:none;animation:flash .3s ease; }
+
+.confidence-bar { width:100%;height:4px;background:var(--border);border-radius:4px;overflow:hidden;margin-top:8px; }
+.confidence-fill { height:100%;border-radius:4px;transition:width .4s ease; }
+
+/* Login overlay */
+.login-overlay {
+  position: fixed; inset: 0; background: var(--overlay);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 99998; backdrop-filter: blur(4px);
+}
+.login-overlay.hidden { display: none; }
+.login-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 16px; padding: 32px; width: 340px;
+  max-width: 90vw; box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+  text-align: center;
+}
+.login-icon { font-size: 40px; margin-bottom: 12px; }
+.login-card h2 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+
+/* Modal overlay */
+.modal-overlay {
+  position: fixed; inset: 0; background: var(--overlay);
+  display: none; align-items: center; justify-content: center;
+  z-index: 99990; backdrop-filter: blur(3px);
+}
+.modal-overlay.show { display: flex; }
+.modal-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 14px; padding: 24px; width: 380px;
+  max-width: 92vw; max-height: 90vh; overflow-y: auto;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+}
+.modal-card h3 { font-size: 16px; margin-bottom: 12px; }
+
+/* Liveness badge */
+.liveness-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 10px; border-radius: 20px;
+  font-size: 10px; font-family: var(--mono);
+}
+.liveness-pass { background: rgba(16,185,129,0.15); color: var(--green); }
+.liveness-fail { background: rgba(239,68,68,0.15); color: var(--red); }
+.liveness-wait { background: rgba(245,158,11,0.15); color: var(--yellow); }
+
+/* QR scanner area */
+#qrScanner { width: 100%; max-width: 400px; margin: 0 auto; }
+#qrScanner video { border-radius: 10px; }
+
+/* Chart containers */
+.chart-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+@media (min-width:768px) { .chart-grid { grid-template-columns: 1fr 1fr; } }
+.chart-grid .card:last-child:nth-child(odd) { grid-column: 1/-1; }
+.chart-grid canvas { max-height: 260px; width: 100% !important; }
+
+/* Profile photo in list */
+.profile-photo {
+  width: 48px; height: 48px; border-radius: 50%;
+  object-fit: cover; border: 2px solid var(--border);
+}
+
+/* QR code in student card */
+.student-qr-wrap { margin-top: 6px; display: flex; justify-content: center; }
+.student-qr-wrap canvas { width: 50px !important; height: 50px !important; }
+
+/* Highlight absence highlight */
+.absence-highlight td { background: rgba(239,68,68,0.04); }
+
+/* Attendance mode selector */
+.mode-select { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.mode-btn {
+  padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--muted); cursor: pointer;
+  font-family: var(--sans); font-size: 12px; font-weight: 500;
+  transition: all 0.2s; display: flex; align-items: center; gap: 4px;
+}
+.mode-btn.active { border-color: var(--blue); color: var(--blue); background: rgba(59,130,246,0.1); }
+.mode-btn:hover { border-color: var(--blue); }
+
+/* Settings section */
+.settings-group { margin-bottom: 20px; }
+.settings-group h3 { font-size: 14px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+
+/* Bottom nav for mobile */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--surface); border-top: 1px solid var(--border);
+  display: flex; justify-content: space-around; padding: 6px 0;
+  z-index: 99;
+}
+@media (min-width:769px) { .bottom-nav { display:none; } }
+.bottom-nav .bn-item {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 2px; background: none; border: none; color: var(--muted);
+  font-size: 9px; font-family: var(--sans); cursor: pointer;
+  padding: 4px 8px; transition: color 0.2s;
+}
+.bottom-nav .bn-item .bn-icon { font-size: 18px; }
+.bottom-nav .bn-item.active { color: var(--blue); }
+
+@media print {
+  header,.nav-tabs,.bottom-nav,.login-overlay,.modal-overlay,#toast,.loading-screen,.btn,.filter-row,.mode-select { display:none !important; }
+  body { padding:0; background:white; }
+  .card { box-shadow:none; border:1px solid #ddd; break-inside:avoid; }
+}
 </style>
 </head>
 <body>
 
-<!-- LOADING SCREEN -->
 <div class="loading-screen" id="loadingScreen">
   <div class="spinner"></div>
-  <h2>🎓 FaceAttend</h2>
+  <h2>🎓 FaceAttend Pro</h2>
   <p id="loadMsg">Loading AI models...</p>
-  <div class="progress-bar-wrap">
-    <div class="progress-bar" id="progressBar"></div>
+  <div class="progress-bar-wrap"><div class="progress-bar" id="progressBar"></div></div>
+</div>
+
+<div id="toast"></div>
+
+<!-- LOGIN OVERLAY -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-card">
+    <div class="login-icon">🔐</div>
+    <h2>Admin Login</h2>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:20px;">Sign in to manage students &amp; records</p>
+    <div class="form-group">
+      <label>Username</label>
+      <input type="text" id="loginUser" placeholder="admin" onkeydown="if(event.key==='Enter')adminLogin()">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="loginPass" placeholder="••••••" onkeydown="if(event.key==='Enter')adminLogin()">
+    </div>
+    <button class="btn btn-primary" onclick="adminLogin()">Sign In</button>
+    <p style="margin-top:10px;font-size:11px;color:var(--muted);">
+      Default: admin / admin123
+    </p>
+    <p style="margin-top:6px;font-size:11px;color:var(--muted);">
+      <a href="#" onclick="skipLogin()" style="color:var(--blue);">Skip &rarr; Take Attendance Only</a>
+    </p>
   </div>
 </div>
 
-<!-- TOAST -->
-<div id="toast"></div>
+<!-- LIVENESS MODAL -->
+<div class="modal-overlay" id="livenessModal">
+  <div class="modal-card" style="text-align:center;">
+    <h3>👁 Liveness Check</h3>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:12px;">Blink to prove you're a real person</p>
+    <div style="font-size:48px;margin:12px 0;" id="livenessEmoji">👀</div>
+    <div id="livenessStatus" style="font-family:var(--mono);font-size:14px;color:var(--yellow);">Waiting...</div>
+    <div class="progress-bar-wrap" style="margin:16px auto;width:80%;">
+      <div class="progress-bar" id="livenessProgress" style="width:0%"></div>
+    </div>
+    <p id="livenessHint" style="font-size:12px;color:var(--muted);">Blink 3 times to pass</p>
+    <div class="btn-row" style="margin-top:16px;">
+      <button class="btn btn-ghost" onclick="closeLiveness()" id="livenessCloseBtn">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- QR SCANNER MODAL -->
+<div class="modal-overlay" id="qrModal">
+  <div class="modal-card" style="text-align:center;">
+    <h3>📷 Scan QR Code</h3>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:12px;">Hold student's QR code in front of camera</p>
+    <div id="qrScanner"></div>
+    <div id="qrResult" style="margin-top:12px;font-size:14px;font-weight:600;"></div>
+    <div class="btn-row" style="margin-top:12px;">
+      <button class="btn btn-ghost" onclick="closeQRScanner()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- QR CODE DISPLAY MODAL -->
+<div class="modal-overlay" id="qrDisplayModal">
+  <div class="modal-card" style="text-align:center;">
+    <h3>📱 Student QR Code</h3>
+    <div id="qrDisplayCode" style="margin:16px auto;display:flex;justify-content:center;"></div>
+    <p id="qrDisplayName" style="font-size:14px;font-weight:600;"></p>
+    <p id="qrDisplayId" style="font-size:12px;color:var(--muted);font-family:var(--mono);"></p>
+    <div class="btn-row" style="margin-top:12px;">
+      <button class="btn btn-ghost" onclick="closeQRDisplay()">Close</button>
+    </div>
+  </div>
+</div>
 
 <!-- HEADER -->
 <header>
@@ -675,254 +616,311 @@ window.dispatchEvent(new Event('fbReady'));
     <div class="logo-icon">🎓</div>
     <div>
       <div class="logo-text">FaceAttend</div>
-      <div class="logo-sub">School Attendance System</div>
+      <div class="logo-sub">School Attendance Pro</div>
     </div>
   </div>
   <div class="header-right">
+    <button class="icon-btn" onclick="toggleTheme()" id="themeBtn" title="Toggle theme">🌙</button>
+    <button class="icon-btn" onclick="toggleLogin()" id="loginBtn" title="Admin login">🔐</button>
     <span class="status-dot" id="statusDot"></span>
     <span class="status-text" id="statusText">Loading...</span>
-    <span style="font-size:11px;font-family:var(--mono);color:var(--muted);margin-left:4px;" id="fbStatus">⬤ Firebase</span>
+    <span id="fbStatus">⬤ DB</span>
   </div>
 </header>
 
 <!-- NAV TABS -->
-<div class="nav-tabs">
-  <button class="tab-btn active" onclick="showTab('attendance')" id="tab-attendance">
-    📸 Take Attendance
+<div class="nav-tabs" id="navTabs">
+  <button class="tab-btn active" onclick="showTab('attendance')" id="tab-attendance">📸 Attendance</button>
+  <button class="tab-btn admin-only" onclick="showTab('register')" id="tab-register">➕ Register</button>
+  <button class="tab-btn admin-only" onclick="showTab('records')" id="tab-records">📋 Records</button>
+  <button class="tab-btn" onclick="showTab('students')" id="tab-students">👥 Students</button>
+  <button class="tab-btn admin-only" onclick="showTab('analytics')" id="tab-analytics">📊 Analytics</button>
+  <button class="tab-btn admin-only" onclick="showTab('settings')" id="tab-settings">⚙️ Settings</button>
+</div>
+
+<!-- BOTTOM NAV (mobile) -->
+<div class="bottom-nav" id="bottomNav">
+  <button class="bn-item active" onclick="showTab('attendance')" data-tab="attendance">
+    <span class="bn-icon">📸</span><span>Attend</span>
   </button>
-  <button class="tab-btn" onclick="showTab('register')" id="tab-register">
-    ➕ Register Student
+  <button class="bn-item bn-admin" onclick="showTab('register')" data-tab="register" style="display:none;">
+    <span class="bn-icon">➕</span><span>Register</span>
   </button>
-  <button class="tab-btn" onclick="showTab('records')" id="tab-records">
-    📋 Records
+  <button class="bn-item bn-admin" onclick="showTab('records')" data-tab="records" style="display:none;">
+    <span class="bn-icon">📋</span><span>Records</span>
   </button>
-  <button class="tab-btn" onclick="showTab('students')" id="tab-students">
-    👥 Students
+  <button class="bn-item" onclick="showTab('students')" data-tab="students">
+    <span class="bn-icon">👥</span><span>Students</span>
+  </button>
+  <button class="bn-item bn-admin" onclick="showTab('analytics')" data-tab="analytics" style="display:none;">
+    <span class="bn-icon">📊</span><span>Analytics</span>
+  </button>
+  <button class="bn-item bn-admin" onclick="showTab('settings')" data-tab="settings" style="display:none;">
+    <span class="bn-icon">⚙️</span><span>Settings</span>
   </button>
 </div>
 
 <!-- MAIN -->
 <main>
 
-  <!-- ── PAGE: ATTENDANCE ── -->
-  <div class="page active" id="page-attendance">
-    <div class="section-title">📸 Take Attendance</div>
-    <div class="section-sub">Stand in front of the camera — the system will recognize you automatically.</div>
+<!-- PAGE: ATTENDANCE -->
+<div class="page active" id="page-attendance">
+  <div class="section-title">📸 Take Attendance</div>
+  <div class="section-sub">Face recognition, QR backup, or manual entry</div>
 
-    <div class="stats-row">
-      <div class="stat-card blue">
-        <div class="stat-label">Total Students</div>
-        <div class="stat-val" id="statTotal">0</div>
+  <div class="stats-row">
+    <div class="stat-card blue"><div class="stat-label">Total Students</div><div class="stat-val" id="statTotal">0</div></div>
+    <div class="stat-card green"><div class="stat-label">Present Today</div><div class="stat-val" id="statPresent">0</div></div>
+    <div class="stat-card yellow"><div class="stat-label">Absent Today</div><div class="stat-val" id="statAbsent">0</div></div>
+    <div class="stat-card cyan"><div class="stat-label">Rate</div><div class="stat-val" id="statRate">0%</div></div>
+  </div>
+
+  <div class="mode-select">
+    <button class="mode-btn active" onclick="setAttMode('face')" id="modeFace">😀 Face Recognition</button>
+    <button class="mode-btn" onclick="setAttMode('qr')" id="modeQr">📱 QR Scan</button>
+    <button class="mode-btn" onclick="setAttMode('manual')" id="modeManual">✏️ Manual</button>
+  </div>
+
+  <!-- FACE MODE -->
+  <div id="attModeFace" class="two-col">
+    <div>
+      <div class="camera-wrap">
+        <video id="videoEl" autoplay muted playsinline></video>
+        <canvas class="canvas-overlay" id="canvasAtt"></canvas>
+        <div class="scan-overlay">
+          <div class="scan-line"></div>
+          <div class="corner-tl"></div><div class="corner-tr"></div>
+          <div class="corner-bl"></div><div class="corner-br"></div>
+        </div>
+        <div class="cam-label">LIVE SCAN</div>
       </div>
-      <div class="stat-card green">
-        <div class="stat-label">Present Today</div>
-        <div class="stat-val" id="statPresent">0</div>
+      <div class="btn-row" style="margin-top:12px;">
+        <button class="btn btn-primary" id="btnMarkAtt" onclick="markAttendance()" disabled>✅ Mark Attendance</button>
+        <button class="btn btn-ghost" onclick="toggleAutoMode()" id="btnAuto">🔄 Auto</button>
+        <button class="btn btn-ghost" onclick="toggleBatchMode()" id="btnBatch">🧑‍🏫 Classroom</button>
+        <button class="btn btn-ghost" onclick="toggleGateMode()" id="btnGate">🚪 Gate</button>
       </div>
-      <div class="stat-card yellow">
-        <div class="stat-label">Absent Today</div>
-        <div class="stat-val" id="statAbsent">0</div>
-      </div>
-      <div class="stat-card cyan">
-        <div class="stat-label">Rate</div>
-        <div class="stat-val" id="statRate">0%</div>
+      <div id="gatePanel" style="display:none;margin-top:12px;">
+        <div class="card">
+          <h3>🚪 Gate Log <span style="font-weight:400;font-size:11px;color:var(--muted);">— auto-scanning at entrance</span></h3>
+          <div id="gateLogList"><div style="color:var(--muted);font-size:12px;padding:8px;">Waiting for students...</div></div>
+        </div>
       </div>
     </div>
-
-    <div class="two-col">
-      <div>
-        <div class="camera-wrap">
-          <video id="videoEl" autoplay muted playsinline></video>
-          <canvas class="canvas-overlay" id="canvasAtt"></canvas>
-          <div class="scan-overlay">
-            <div class="scan-line"></div>
-            <div class="corner-tl"></div>
-            <div class="corner-tr"></div>
-            <div class="corner-bl"></div>
-            <div class="corner-br"></div>
-          </div>
-          <div class="cam-label">LIVE SCAN</div>
-        </div>
-        <div class="btn-row" style="margin-top:14px;">
-          <button class="btn btn-primary" id="btnMarkAtt" onclick="markAttendance()" disabled>
-            ✅ Mark Attendance
-          </button>
-          <button class="btn btn-ghost" onclick="toggleAutoMode()" id="btnAuto">
-            🔄 Auto Mode: OFF
-          </button>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div class="card">
+        <h3>🔍 Recognition Result</h3>
+        <div class="result-box" id="resultBox">
+          <div class="result-icon">👤</div>
+          <div style="color:var(--muted);font-size:13px;">Point camera at a face...</div>
         </div>
       </div>
-
-      <div style="display:flex;flex-direction:column;gap:14px;">
-        <div class="card">
-          <h3>🔍 Recognition Result</h3>
-          <div class="result-box" id="resultBox">
-            <div class="result-icon">👤</div>
-            <div style="color:var(--muted);font-size:14px;">Point camera at a face...</div>
-          </div>
-        </div>
-
-        <div class="card">
-          <h3>📅 Today's Attendance</h3>
-          <div id="todayList" style="max-height:260px;overflow-y:auto;">
-            <div class="empty-state">
-              <div class="e-icon">📋</div>
-              <p>No attendance marked yet</p>
-            </div>
-          </div>
+      <div class="card">
+        <h3>📅 Today's Attendance</h3>
+        <div id="todayList" style="max-height:240px;overflow-y:auto;">
+          <div class="empty-state"><div class="e-icon">📋</div><p>No attendance marked yet</p></div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ── PAGE: REGISTER ── -->
-  <div class="page" id="page-register">
-    <div class="section-title">➕ Register Student</div>
-    <div class="section-sub">Capture multiple face samples for better recognition accuracy.</div>
-
-    <div class="two-col">
-      <div>
-        <div class="camera-wrap">
-          <video id="videoReg" autoplay muted playsinline></video>
-          <canvas class="canvas-overlay" id="canvasReg"></canvas>
-          <div class="scan-overlay">
-            <div class="scan-line"></div>
-            <div class="corner-tl"></div>
-            <div class="corner-tr"></div>
-            <div class="corner-bl"></div>
-            <div class="corner-br"></div>
-          </div>
-          <div class="cam-label">FACE CAPTURE</div>
-        </div>
-
-        <div class="btn-row" style="margin-top:14px;">
-          <button class="btn btn-primary" id="btnCapture" onclick="captureFace()" disabled>
-            📷 Capture Sample
-          </button>
-          <button class="btn btn-ghost" onclick="clearCaptures()">
-            🗑 Clear
-          </button>
-        </div>
-
-        <div id="captureStatus" style="margin-top:12px;"></div>
-        <div id="capturePreview" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;"></div>
-      </div>
-
-      <div>
-        <div class="card">
-          <h3>👤 Student Details</h3>
-          <div class="form-group">
-            <label>Full Name *</label>
-            <input type="text" id="regName" placeholder="e.g. Kasun Perera">
-          </div>
-          <div class="form-group">
-            <label>Student ID *</label>
-            <input type="text" id="regId" placeholder="e.g. STU-2024-001">
-          </div>
-          <div class="form-group">
-            <label>Grade / Class</label>
-            <select id="regGrade">
-              <option value="">Select Grade</option>
-              <option>Grade 6</option>
-              <option>Grade 7</option>
-              <option>Grade 8</option>
-              <option>Grade 9</option>
-              <option>Grade 10</option>
-              <option>Grade 11</option>
-              <option>Grade 12</option>
-              <option>Grade 13</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Gender</label>
-            <select id="regGender">
-              <option value="">Select</option>
-              <option>Male</option>
-              <option>Female</option>
-            </select>
-          </div>
-          <button class="btn btn-success" id="btnRegister" onclick="registerStudent()" disabled>
-            ✅ Register Student
-          </button>
-        </div>
-
-        <div class="card" style="margin-top:14px;">
-          <h3>💡 Tips for Best Results</h3>
-          <ul style="color:var(--muted);font-size:13px;line-height:1.8;padding-left:16px;">
-            <li>Capture <strong style="color:var(--text)">3–5 samples</strong> from different angles</li>
-            <li>Ensure <strong style="color:var(--text)">good lighting</strong> on the face</li>
-            <li>Try <strong style="color:var(--text)">slight head tilts</strong> left and right</li>
-            <li>Keep the <strong style="color:var(--text)">face centered</strong> in the frame</li>
-          </ul>
-        </div>
-      </div>
+  <!-- QR MODE -->
+  <div id="attModeQr" style="display:none;">
+    <div class="card" style="text-align:center;">
+      <h3>📱 QR Code Attendance</h3>
+      <p style="color:var(--muted);font-size:13px;margin-bottom:16px;">Scan a student's QR code to mark attendance</p>
+      <button class="btn btn-primary" onclick="openQRScanner()" style="max-width:280px;margin:0 auto;">📷 Start QR Scanner</button>
+      <div id="qrAttResult" style="margin-top:12px;"></div>
     </div>
   </div>
 
-  <!-- ── PAGE: RECORDS ── -->
-  <div class="page" id="page-records">
-    <div class="section-title">📋 Attendance Records</div>
-    <div class="section-sub">View and filter all attendance history.</div>
-
-    <div class="filter-row">
-      <label>Date:</label>
-      <input type="date" id="filterDate">
-      <label>Class:</label>
-      <select id="filterGrade">
-        <option value="">All Grades</option>
-        <option>Grade 6</option><option>Grade 7</option><option>Grade 8</option>
-        <option>Grade 9</option><option>Grade 10</option><option>Grade 11</option>
-        <option>Grade 12</option><option>Grade 13</option>
-      </select>
-      <button class="btn btn-primary" style="width:auto;padding:8px 18px;" onclick="loadRecords()">🔍 Filter</button>
-      <button class="btn btn-ghost" style="width:auto;padding:8px 18px;" onclick="exportCSV()">⬇ Export CSV</button>
-    </div>
-
+  <!-- MANUAL MODE -->
+  <div id="attModeManual" style="display:none;">
     <div class="card">
-      <div class="att-table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Student</th>
-              <th>ID</th>
-              <th>Grade</th>
-              <th>Date</th>
-              <th>Time</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody id="recordsTbody">
-            <tr>
-              <td colspan="6">
-                <div class="empty-state">
-                  <div class="e-icon">📋</div>
-                  <p>No records yet. Mark some attendance first!</p>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <h3>✏️ Manual Attendance</h3>
+      <div class="form-group">
+        <label>Select Student</label>
+        <select id="manualStudent"></select>
+      </div>
+      <div class="form-group">
+        <label>Status</label>
+        <select id="manualStatus">
+          <option value="present">Present</option>
+          <option value="late">Late</option>
+          <option value="absent">Absent</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" onclick="markManualAttendance()">✅ Mark Attendance</button>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE: REGISTER -->
+<div class="page" id="page-register">
+  <div class="section-title">➕ Register Student</div>
+  <div class="section-sub">Capture face samples and profile details</div>
+  <div class="two-col">
+    <div>
+      <div class="camera-wrap">
+        <video id="videoReg" autoplay muted playsinline></video>
+        <canvas class="canvas-overlay" id="canvasReg"></canvas>
+        <div class="scan-overlay">
+          <div class="scan-line"></div>
+          <div class="corner-tl"></div><div class="corner-tr"></div>
+          <div class="corner-bl"></div><div class="corner-br"></div>
+        </div>
+        <div class="cam-label">FACE CAPTURE</div>
+      </div>
+      <div class="btn-row" style="margin-top:12px;">
+        <button class="btn btn-primary" id="btnCapture" onclick="captureFace()" disabled>📷 Capture Sample</button>
+        <button class="btn btn-ghost" onclick="clearCaptures()">🗑 Clear</button>
+      </div>
+      <div id="captureStatus" style="margin-top:10px;"></div>
+      <div id="capturePreview" style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;"></div>
+    </div>
+    <div>
+      <div class="card">
+        <h3>👤 Student Details</h3>
+        <div class="form-group"><label>Full Name *</label><input type="text" id="regName" placeholder="e.g. Kasun Perera"></div>
+        <div class="form-group"><label>Student ID *</label><input type="text" id="regId" placeholder="e.g. STU-2024-001"></div>
+        <div class="form-group">
+          <label>Grade / Class</label>
+          <select id="regGrade">
+            <option value="">Select Grade</option>
+            <option>Grade 6A</option><option>Grade 6B</option>
+            <option>Grade 7A</option><option>Grade 7B</option>
+            <option>Grade 8A</option><option>Grade 8B</option>
+            <option>Grade 9A</option><option>Grade 9B</option>
+            <option>Grade 10A</option><option>Grade 10B</option>
+            <option>Grade 11A</option><option>Grade 11B</option>
+            <option>Grade 12</option><option>Grade 13</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Gender</label>
+          <select id="regGender"><option value="">Select</option><option>Male</option><option>Female</option></select>
+        </div>
+        <div class="form-group"><label>Parent Email (for notifications)</label>
+          <input type="email" id="regEmail" placeholder="parent@example.com">
+        </div>
+        <button class="btn btn-success" id="btnRegister" onclick="registerStudent()" disabled>✅ Register Student</button>
+      </div>
+      <div class="card" style="margin-top:12px;">
+        <h3>💡 Tips</h3>
+        <ul style="color:var(--muted);font-size:12px;line-height:1.8;padding-left:14px;">
+          <li>Capture <strong style="color:var(--text)">3–5 samples</strong> from different angles</li>
+          <li>Ensure <strong style="color:var(--text)">good lighting</strong> on the face</li>
+          <li>Try <strong style="color:var(--text)">slight head tilts</strong></li>
+          <li>Parent email enables <strong style="color:var(--text)">absence notifications</strong></li>
+        </ul>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- ── PAGE: STUDENTS ── -->
-  <div class="page" id="page-students">
-    <div class="section-title">👥 Registered Students</div>
-    <div class="section-sub">All students with face data stored in this browser.</div>
-
-    <div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;">
-      <input type="text" id="searchStudents" placeholder="🔍 Search by name or ID..."
-        oninput="renderStudentsList()"
-        style="background:var(--surface);border:1px solid var(--border);border-radius:8px;
-               padding:9px 14px;color:var(--text);font-family:var(--sans);font-size:14px;
-               outline:none;flex:1;min-width:200px;">
-      <button class="btn btn-danger" style="width:auto;padding:9px 18px;" onclick="clearAllData()">
-        🗑 Clear All Data
-      </button>
-    </div>
-
-    <div id="studentsList"></div>
+<!-- PAGE: RECORDS -->
+<div class="page" id="page-records">
+  <div class="section-title">📋 Attendance Records</div>
+  <div class="section-sub">Filter history, export CSV, or generate PDF reports</div>
+  <div class="filter-row">
+    <label>Date:</label><input type="date" id="filterDate">
+    <label>Class:</label>
+    <select id="filterGrade">
+      <option value="">All Classes</option>
+      <option>Grade 6A</option><option>Grade 6B</option><option>Grade 7A</option><option>Grade 7B</option>
+      <option>Grade 8A</option><option>Grade 8B</option><option>Grade 9A</option><option>Grade 9B</option>
+      <option>Grade 10A</option><option>Grade 10B</option><option>Grade 11A</option><option>Grade 11B</option>
+      <option>Grade 12</option><option>Grade 13</option>
+    </select>
+    <label>Status:</label>
+    <select id="filterStatus">
+      <option value="">All</option>
+      <option value="present">Present</option>
+      <option value="late">Late</option>
+      <option value="absent">Absent</option>
+    </select>
+    <button class="btn btn-primary" style="width:auto;padding:7px 14px;font-size:12px;" onclick="loadRecords()">🔍 Filter</button>
+    <button class="btn btn-ghost" style="width:auto;padding:7px 14px;font-size:12px;" onclick="exportCSV()">⬇ CSV</button>
+    <button class="btn btn-ghost" style="width:auto;padding:7px 14px;font-size:12px;" onclick="showPDFDialog()">📄 PDF</button>
   </div>
+  <div class="card">
+    <div class="att-table-wrap">
+      <table>
+        <thead><tr><th>Student</th><th>ID</th><th>Class</th><th>Date</th><th>Time</th><th>Status</th></tr></thead>
+        <tbody id="recordsTbody">
+          <tr><td colspan="6"><div class="empty-state"><div class="e-icon">📋</div><p>No records yet</p></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE: STUDENTS -->
+<div class="page" id="page-students">
+  <div class="section-title">👥 Registered Students</div>
+  <div class="section-sub">All students with face data</div>
+  <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+    <input type="text" id="searchStudents" placeholder="🔍 Search by name or ID..."
+      oninput="renderStudentsList()"
+      style="background:var(--surface);border:1px solid var(--border);border-radius:8px;
+             padding:8px 12px;color:var(--text);font-family:var(--sans);font-size:13px;
+             outline:none;flex:1;min-width:160px;">
+    <button class="btn btn-danger" style="width:auto;padding:8px 14px;font-size:12px;" onclick="clearAllData()">🗑 Clear All</button>
+  </div>
+  <div id="studentsList"></div>
+</div>
+
+<!-- PAGE: ANALYTICS -->
+<div class="page" id="page-analytics">
+  <div class="section-title">📊 Analytics Dashboard</div>
+  <div class="section-sub">Weekly trends, top absent students, and class-wise rates</div>
+  <div class="filter-row">
+    <label>Class:</label>
+    <select id="analyticsGrade">
+      <option value="">All Classes</option>
+      <option>Grade 6A</option><option>Grade 6B</option><option>Grade 7A</option><option>Grade 7B</option>
+      <option>Grade 8A</option><option>Grade 8B</option><option>Grade 9A</option><option>Grade 9B</option>
+      <option>Grade 10A</option><option>Grade 10B</option><option>Grade 11A</option><option>Grade 11B</option>
+      <option>Grade 12</option><option>Grade 13</option>
+    </select>
+    <button class="btn btn-primary" style="width:auto;padding:7px 14px;font-size:12px;" onclick="loadCharts()">🔄 Refresh</button>
+  </div>
+  <div class="chart-grid">
+    <div class="card"><h3>📈 Weekly Attendance Trend</h3><canvas id="weeklyChart"></canvas></div>
+    <div class="card"><h3>🔝 Top Absent Students</h3><canvas id="absentChart"></canvas></div>
+    <div class="card"><h3>📊 Class-wise Attendance Rate</h3><canvas id="classChart"></canvas></div>
+  </div>
+</div>
+
+<!-- PAGE: SETTINGS -->
+<div class="page" id="page-settings">
+  <div class="section-title">⚙️ Settings</div>
+  <div class="section-sub">Configure system preferences</div>
+  <div class="card">
+    <div class="settings-group">
+      <h3>🕐 Late Arrival Cutoff</h3>
+      <div class="form-group">
+        <label>Mark as late if arrival time is after:</label>
+        <input type="time" id="lateCutoff" value="08:00">
+      </div>
+    </div>
+    <div class="settings-group">
+      <h3>📧 EmailJS (Parent Notifications)</h3>
+      <p style="color:var(--muted);font-size:12px;margin-bottom:12px;">Configure to auto-send absence alerts to parents.</p>
+      <div class="form-group"><label>Service ID</label><input type="text" id="emailjsServiceId" placeholder="service_xxx"></div>
+      <div class="form-group"><label>Template ID</label><input type="text" id="emailjsTemplateId" placeholder="template_xxx"></div>
+      <div class="form-group"><label>Public Key</label><input type="text" id="emailjsPublicKey" placeholder="xxxxxxxxxxxx"></div>
+      <button class="btn btn-primary" onclick="saveSettings()">💾 Save Settings</button>
+      <button class="btn btn-ghost" onclick="testEmailJS()" style="margin-top:8px;">📧 Test EmailJS</button>
+    </div>
+    <div class="settings-group">
+      <h3>⚡ Quick Actions</h3>
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="exportFullCSV()">📥 Export All Records</button>
+        <button class="btn btn-ghost" onclick="showQRDisplay(null)">📱 Generate Student QR</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 </main>
 
@@ -931,35 +929,59 @@ window.dispatchEvent(new Event('fbReady'));
 //  GLOBALS
 // ═══════════════════════════════════════════
 const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model';
-let modelsLoaded = false;
-let attStream = null, regStream = null;
-let capturedDescriptors = [];
-let students = [];
-let attendanceLog = [];
-let labeledDescriptors = null;
-let autoMode = false;
-let isDetecting = false;
-let fbReady = false;
-
-// Firebase shortcuts (set after fbReady event)
-let _db, _ref, _set, _get, _remove, _push, _onValue, _child;
-
+let modelsLoaded = false, attStream = null, regStream = null;
+let capturedDescriptors = [], students = [], attendanceLog = [];
+let labeledDescriptors = null, autoMode = false, isDetecting = false;
+let fbReady = false, isAdmin = false;
+let attDetectionRunning = false, regDetectionRunning = false;
+let _db, _ref, _set, _get, _remove, _push, _onValue, _child, _update;
+let charts = {}, qrScannerInstance = null, qrCodeInstance = null;
+let livenessActive = false, livenessBlinks = 0, livenessTarget = 3;
+let livenessEyeHistory = [], livenessResolve = null;
+let attMode = 'face', batchMode = false, gateMode = false;
+let cachedMatcher = null, lastMatcherBuild = 0;
+let recentlyMarked = new Map();
+let gatePending = new Map();
+let gateLog = [];
+let gateFlushTimer = null;
+const COOLDOWN_MS = 4000;
 const $ = id => document.getElementById(id);
 
+function ensureMatcher() {
+  if (!cachedMatcher || Date.now() - lastMatcherBuild > 3000) {
+    buildLabeledDescriptors();
+    if (labeledDescriptors && labeledDescriptors.length > 0) {
+      cachedMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.45);
+      lastMatcherBuild = Date.now();
+    } else {
+      cachedMatcher = null;
+    }
+  }
+  return cachedMatcher;
+}
+
+function isRecentlyMarked(id) {
+  if (recentlyMarked.has(id) && Date.now() - recentlyMarked.get(id) < COOLDOWN_MS) return true;
+  if (recentlyMarked.has(id)) recentlyMarked.delete(id);
+  return false;
+}
+
+function markRecent(id) {
+  recentlyMarked.set(id, Date.now());
+}
+
 // ═══════════════════════════════════════════
-//  FIREBASE INIT
+//  FIREBASE
 // ═══════════════════════════════════════════
 function setupFirebase() {
-  const { db, ref, set, get, remove, push, onValue, child } = window._fb;
-  _db = db; _ref = ref; _set = set; _get = get;
-  _remove = remove; _push = push; _onValue = onValue; _child = child;
+  const fb = window._fb;
+  _db = fb.db; _ref = fb.ref; _set = fb.set; _get = fb.get;
+  _remove = fb.remove; _push = fb.push; _onValue = fb.onValue; _child = fb.child; _update = fb.update;
   fbReady = true;
 
-  // Show connected
   const fbEl = $('fbStatus');
-  if (fbEl) { fbEl.style.color = 'var(--green)'; fbEl.textContent = '⬤ Firebase'; }
+  if (fbEl) { fbEl.style.color = 'var(--green)'; fbEl.textContent = '⬤ DB'; }
 
-  // Listen realtime for students
   _onValue(_ref(_db, 'students'), snap => {
     students = [];
     if (snap.exists()) {
@@ -967,16 +989,16 @@ function setupFirebase() {
         const s = child.val();
         students.push({
           ...s,
-          descriptors: s.descriptors.map(d => new Float32Array(Object.values(d)))
+          descriptors: s.descriptors ? s.descriptors.map(d => new Float32Array(Object.values(d))) : []
         });
       });
     }
-    buildLabeledDescriptors();
+    cachedMatcher = null; // invalidate cache
     updateStats();
     renderStudentsList();
+    populateManualSelect();
   });
 
-  // Listen realtime for attendance
   _onValue(_ref(_db, 'attendance'), snap => {
     attendanceLog = [];
     if (snap.exists()) {
@@ -984,6 +1006,8 @@ function setupFirebase() {
     }
     updateStats();
     renderTodayList();
+    loadRecords();
+    if (charts.weeklyChart) loadCharts();
   });
 }
 
@@ -991,40 +1015,43 @@ function setupFirebase() {
 //  INIT
 // ═══════════════════════════════════════════
 async function init() {
-  setProgress(5, 'Connecting to Firebase...');
+  setProgress(5, 'Connecting...');
+  if (window._fbReady) { setupFirebase(); }
+  else { window.addEventListener('fbReady', setupFirebase, { once: true }); }
 
-  // Wait for Firebase module to load
-  if (window._fbReady) {
-    setupFirebase();
-  } else {
-    window.addEventListener('fbReady', setupFirebase, { once: true });
-  }
-
-  setProgress(15, 'Loading face detection model...');
-
+  setProgress(15, 'Face detection model...');
   try {
     await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
-    setProgress(45, 'Loading landmark model...');
+    setProgress(45, 'Landmark model...');
     await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
-    setProgress(75, 'Loading recognition model...');
+    setProgress(75, 'Recognition model...');
     await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
     setProgress(100, 'Ready!');
     modelsLoaded = true;
 
+    // Init EmailJS
+    if (window.emailjs) { emailjs.init(''); }
+
+    // Load settings
+    loadSettings();
+
+    // Check auth
+    checkAuth();
+
     setTimeout(() => {
       $('loadingScreen').style.display = 'none';
       $('statusDot').classList.add('ready');
-      $('statusText').textContent = 'Firebase · AI Ready';
+      $('statusText').textContent = 'AI Ready';
       startCamera('att');
       updateStats();
-    }, 500);
-
+      applyTheme();
+    }, 400);
   } catch(e) {
-    setProgress(0, 'Model load failed. Check internet connection.');
+    setProgress(0, 'Model load failed');
     console.error(e);
     setTimeout(() => {
       $('loadingScreen').style.display = 'none';
-      showToast('⚠️ Models failed to load. Check connection.', 'error');
+      showToast('Models failed to load. Check internet.', 'error');
     }, 2000);
   }
 }
@@ -1032,6 +1059,104 @@ async function init() {
 function setProgress(pct, msg) {
   $('progressBar').style.width = pct + '%';
   $('loadMsg').textContent = msg;
+}
+
+// ═══════════════════════════════════════════
+//  AUTH
+// ═══════════════════════════════════════════
+function checkAuth() {
+  isAdmin = sessionStorage.getItem('faceattend_admin') === 'true';
+  if (isAdmin) {
+    document.body.classList.add('logged-in');
+    document.querySelectorAll('.bn-admin').forEach(e => e.style.display = 'flex');
+  }
+}
+
+function adminLogin() {
+  const user = $('loginUser').value.trim();
+  const pass = $('loginPass').value.trim();
+  if (user === 'admin' && pass === 'admin123') {
+    isAdmin = true;
+    sessionStorage.setItem('faceattend_admin', 'true');
+    document.body.classList.add('logged-in');
+    document.querySelectorAll('.bn-admin').forEach(e => e.style.display = 'flex');
+    $('loginOverlay').classList.add('hidden');
+    showToast('Welcome, Admin!', 'success');
+  } else {
+    showToast('Invalid credentials', 'error');
+  }
+}
+
+function skipLogin() {
+  $('loginOverlay').classList.add('hidden');
+  showToast('Attendance mode — admin features hidden', 'info');
+}
+
+function toggleLogin() {
+  if (isAdmin) {
+    isAdmin = false;
+    sessionStorage.removeItem('faceattend_admin');
+    document.body.classList.remove('logged-in');
+    document.querySelectorAll('.bn-admin').forEach(e => e.style.display = 'none');
+    showToast('Logged out', 'info');
+  } else {
+    $('loginOverlay').classList.remove('hidden');
+  }
+}
+
+// ═══════════════════════════════════════════
+//  THEME
+// ═══════════════════════════════════════════
+function toggleTheme() {
+  const current = localStorage.getItem('faceattend_theme') || 'dark';
+  const next = current === 'dark' ? 'light' : 'dark';
+  localStorage.setItem('faceattend_theme', next);
+  applyTheme();
+}
+
+function applyTheme() {
+  const t = localStorage.getItem('faceattend_theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', t === 'light' ? 'light' : 'dark');
+  $('themeBtn').textContent = t === 'light' ? '☀️' : '🌙';
+}
+
+// ═══════════════════════════════════════════
+//  SETTINGS
+// ═══════════════════════════════════════════
+function loadSettings() {
+  const s = JSON.parse(localStorage.getItem('faceattend_settings') || '{}');
+  if (s.lateCutoff) $('lateCutoff').value = s.lateCutoff;
+  if (s.emailjsServiceId) $('emailjsServiceId').value = s.emailjsServiceId;
+  if (s.emailjsTemplateId) $('emailjsTemplateId').value = s.emailjsTemplateId;
+  if (s.emailjsPublicKey) $('emailjsPublicKey').value = s.emailjsPublicKey;
+}
+
+function saveSettings() {
+  const s = {
+    lateCutoff: $('lateCutoff').value,
+    emailjsServiceId: $('emailjsServiceId').value,
+    emailjsTemplateId: $('emailjsTemplateId').value,
+    emailjsPublicKey: $('emailjsPublicKey').value,
+  };
+  localStorage.setItem('faceattend_settings', JSON.stringify(s));
+  if (s.emailjsPublicKey && window.emailjs) {
+    emailjs.init(s.emailjsPublicKey);
+  }
+  showToast('Settings saved!', 'success');
+}
+
+function getLateCutoff() {
+  const s = JSON.parse(localStorage.getItem('faceattend_settings') || '{}');
+  return s.lateCutoff || '08:00';
+}
+
+function isLateTime() {
+  const cutoff = getLateCutoff();
+  const [ch, cm] = cutoff.split(':').map(Number);
+  const now = new Date();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const cutoffMinutes = ch * 60 + cm;
+  return currentMinutes > cutoffMinutes;
 }
 
 // ═══════════════════════════════════════════
@@ -1049,16 +1174,11 @@ async function saveStudentToFirebase(student) {
 async function deleteStudentFromFirebase(id) {
   if (!fbReady) return;
   await _remove(_ref(_db, `students/${id}`));
-  // Also remove their attendance records
   const snap = await _get(_ref(_db, 'attendance'));
   if (snap.exists()) {
-    const updates = [];
     snap.forEach(child => {
-      if (child.val().studentId === id) {
-        updates.push(_remove(_ref(_db, `attendance/${child.key}`)));
-      }
+      if (child.val().studentId === id) _remove(_ref(_db, `attendance/${child.key}`));
     });
-    await Promise.all(updates);
   }
 }
 
@@ -1085,15 +1205,11 @@ function buildLabeledDescriptors() {
 //  CAMERA
 // ═══════════════════════════════════════════
 async function startCamera(mode) {
-  if (!navigator.mediaDevices) {
-    showToast('Camera not supported in this browser', 'error');
-    return;
-  }
+  if (!navigator.mediaDevices) return;
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
       video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' }
     });
-
     if (mode === 'att') {
       if (attStream) attStream.getTracks().forEach(t => t.stop());
       attStream = stream;
@@ -1116,86 +1232,321 @@ async function startCamera(mode) {
       $('btnCapture').disabled = false;
     }
   } catch(e) {
-    showToast('Could not access camera: ' + e.message, 'error');
+    showToast('Camera access denied: ' + e.message, 'error');
   }
 }
 
 function sizeCanvas(canvasId, video) {
   const c = $(canvasId);
-  c.width  = video.videoWidth  || video.offsetWidth;
+  c.width = video.videoWidth || video.offsetWidth;
   c.height = video.videoHeight || video.offsetHeight;
-  c.style.width  = video.offsetWidth  + 'px';
+  c.style.width = video.offsetWidth + 'px';
   c.style.height = video.offsetHeight + 'px';
+}
+
+// ═══════════════════════════════════════════
+//  ATTENDANCE MODE SWITCHING
+// ═══════════════════════════════════════════
+function setAttMode(mode) {
+  attMode = mode;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  $('mode' + mode.charAt(0).toUpperCase() + mode.slice(1)).classList.add('active');
+  $('attModeFace').style.display = mode === 'face' ? 'grid' : 'none';
+  $('attModeQr').style.display = mode === 'qr' ? 'block' : 'none';
+  $('attModeManual').style.display = mode === 'manual' ? 'block' : 'none';
+  if (mode === 'face' && modelsLoaded) startCamera('att');
+  if (mode === 'manual') populateManualSelect();
+}
+
+function populateManualSelect() {
+  const sel = $('manualStudent');
+  sel.innerHTML = '<option value="">Select student...</option>' +
+    students.map(s => `<option value="${s.id}">${s.name} (${s.id})</option>`).join('');
 }
 
 // ═══════════════════════════════════════════
 //  DETECTION LOOPS
 // ═══════════════════════════════════════════
-let attDetectionRunning = false;
 async function startAttDetection() {
   if (!modelsLoaded) return;
   attDetectionRunning = true;
-  const vid = $('videoEl');
-  const canvas = $('canvasAtt');
-  const ctx = canvas.getContext('2d');
+  const vid = $('videoEl'), canvas = $('canvasAtt'), ctx = canvas.getContext('2d');
+  let lastDraw = 0, detCount = 0;
 
   async function loop() {
     if (!attDetectionRunning) return;
+    try {
     if (vid.readyState === 4) {
+      const scoreThreshold = gateMode || batchMode ? 0.4 : 0.5;
+      const size = gateMode || batchMode ? 224 : 320;
       const det = await faceapi
-        .detectAllFaces(vid, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 }))
-        .withFaceLandmarks()
+        .detectAllFaces(vid, new faceapi.TinyFaceDetectorOptions({ inputSize: size, scoreThreshold }))
         .withFaceDescriptors();
 
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      detCount = det.length;
 
-      if (det.length > 0) {
-        const resized = faceapi.resizeResults(det, { width: canvas.width, height: canvas.height });
-        resized.forEach(d => {
-          const box = d.detection.box;
-          // Draw glowing box
+      // Throttle canvas drawing to every 80ms
+      const now = Date.now();
+      if (now - lastDraw > 80) {
+        lastDraw = now;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (det.length > 0) {
+          const resized = faceapi.resizeResults(det, { width: canvas.width, height: canvas.height });
           ctx.strokeStyle = '#06b6d4';
-          ctx.lineWidth = 2;
+          ctx.lineWidth = batchMode ? 1.5 : 2;
           ctx.shadowColor = '#06b6d4';
-          ctx.shadowBlur = 12;
-          ctx.strokeRect(box.x, box.y, box.width, box.height);
+          ctx.shadowBlur = batchMode ? 6 : 10;
+          resized.forEach(d => {
+            const box = d.detection.box;
+            ctx.strokeRect(box.x, box.y, box.width, box.height);
+          });
           ctx.shadowBlur = 0;
 
-          // Corner marks
-          const cs = 16, lw = 3;
-          ctx.strokeStyle = '#3b82f6';
-          ctx.lineWidth = lw;
-          [[box.x,box.y],[box.x+box.width,box.y],[box.x,box.y+box.height],[box.x+box.width,box.y+box.height]].forEach(([cx,cy],i)=>{
-            ctx.beginPath();
-            ctx.moveTo(cx + (i%2===0?0:-cs), cy);
-            ctx.lineTo(cx + (i%2===0?cs:0), cy);
-            ctx.moveTo(cx, cy + (i<2?0:-cs));
-            ctx.lineTo(cx, cy + (i<2?cs:0));
-            ctx.stroke();
-          });
-        });
-
-        if (autoMode && !isDetecting) {
-          isDetecting = true;
-          await runRecognition(det[0].descriptor, canvas);
-          isDetecting = false;
+          // Show face count
+          ctx.fillStyle = '#06b6d4';
+          ctx.font = '12px JetBrains Mono, monospace';
+          ctx.fillText(`Faces: ${det.length}`, 10, 20);
+        } else if (!autoMode) {
+          updateResultBox(null);
         }
-      } else {
-        updateResultBox(null);
       }
+
+      // AUTO MODE — process all faces with batch recognition
+      if (autoMode && det.length > 0 && !isDetecting) {
+        isDetecting = true;
+        ensureMatcher();
+
+        if (cachedMatcher && students.length > 0) {
+          const today = getTodayStr();
+          const batchEntries = [];
+
+          for (const d of det) {
+            const match = cachedMatcher.findBestMatch(d.descriptor);
+            if (match.label === 'unknown') continue;
+
+            const student = students.find(s => s.id === match.label);
+            if (!student || isRecentlyMarked(student.id)) continue;
+
+            const alreadyMarked = attendanceLog.find(a => a.studentId === student.id && a.date === today);
+            if (alreadyMarked) {
+              markRecent(student.id);
+              continue;
+            }
+
+            const attStatus = isLateTime() ? 'late' : 'present';
+            batchEntries.push({
+              studentId: student.id,
+              name: student.name,
+              grade: student.grade,
+              date: today,
+              time: new Date().toLocaleTimeString(),
+              timestamp: Date.now(),
+              status: attStatus
+            });
+            markRecent(student.id);
+          }
+
+          if (batchEntries.length > 0) {
+            await Promise.all(batchEntries.map(e => saveAttendanceToFirebase(e)));
+            const counts = {};
+            batchEntries.forEach(e => { counts[e.status] = (counts[e.status] || 0) + 1; });
+            const parts = [];
+            if (counts.present) parts.push(`${counts.present} present`);
+            if (counts.late) parts.push(`${counts.late} late`);
+            showToast(`✅ ${batchEntries.length} student(s) marked: ${parts.join(', ')}`, 'success');
+          }
+        }
+
+        isDetecting = false;
+      }
+
+      // GATE MODE — continuous scanning, no lock, collects into pending buffer
+      if (gateMode && det.length > 0) {
+        ensureMatcher();
+        if (cachedMatcher && students.length > 0) {
+          const today = getTodayStr();
+          for (const d of det) {
+            const match = cachedMatcher.findBestMatch(d.descriptor);
+            if (match.label === 'unknown') continue;
+            const student = students.find(s => s.id === match.label);
+            if (!student) continue;
+            if (attendanceLog.find(a => a.studentId === student.id && a.date === today)) continue;
+            if (gatePending.has(student.id)) continue;
+            const attStatus = isLateTime() ? 'late' : 'present';
+            gatePending.set(student.id, {
+              studentId: student.id,
+              name: student.name,
+              grade: student.grade,
+              date: today,
+              time: new Date().toLocaleTimeString(),
+              timestamp: Date.now(),
+              status: attStatus
+            });
+          }
+        }
+
+        // Update live gate count display
+        if (det.length > 0) {
+          updateGateLive(det.length, gatePending.size);
+        }
+      }
+
+      // BATCH MODE indicator
+      if (batchMode && det.length > 0 && !autoMode) {
+        updateBatchPreview(det);
+      }
+    } catch(e) {
+      console.error('Detection error:', e);
+      // Don't kill the loop on transient errors
     }
-    setTimeout(loop, 120);
+    setTimeout(loop, gateMode ? 15 : (batchMode ? 20 : 40));
   }
   loop();
 }
 
-let regDetectionRunning = false;
+function updateGateLive(facesInFrame, pendingCount) {
+  const el = $('gateLiveCount');
+  if (el) {
+    el.innerHTML = `<span style="font-size:24px;font-weight:700;color:var(--cyan);">${facesInFrame}</span>
+      <span style="font-size:12px;color:var(--muted);">in frame</span>
+      <span style="font-size:18px;font-weight:600;color:var(--yellow);margin-left:12px;">${pendingCount}</span>
+      <span style="font-size:12px;color:var(--muted);">pending</span>`;
+  }
+}
+
+function toggleGateMode() {
+  gateMode = !gateMode;
+  if (gateMode) { autoMode = false; batchMode = false; }
+  $('btnGate').textContent = gateMode ? '🚪 Gate: ON' : '🚪 Gate';
+  $('btnGate').className = `btn ${gateMode ? 'btn-success' : 'btn-ghost'}`;
+  $('btnAuto').className = 'btn btn-ghost'; $('btnAuto').textContent = '🔄 Auto: OFF';
+  $('btnBatch').className = 'btn btn-ghost'; $('btnBatch').textContent = '🧑‍🏫 Classroom';
+  $('gatePanel').style.display = gateMode ? 'block' : 'none';
+
+  if (gateMode) {
+    startGateFlush();
+    showToast('🚪 Gate mode ON — auto-scanning all faces continuously!', 'info');
+    $('resultBox').innerHTML = `<div style="color:var(--green);font-size:16px;font-weight:600;">🚪 Gate Mode Active</div>
+      <div style="color:var(--muted);font-size:12px;margin-top:4px;">Continuously scanning for students</div>
+      <div id="gateLiveCount" style="margin-top:8px;"></div>`;
+    localStorage.setItem('faceattend_gate', 'true');
+  } else {
+    stopGateFlush();
+    gatePending.clear();
+    localStorage.removeItem('faceattend_gate');
+    showToast('Gate mode OFF', 'info');
+  }
+}
+
+function startGateFlush() {
+  stopGateFlush();
+  gateFlushTimer = setInterval(flushGatePending, 2000);
+}
+
+function stopGateFlush() {
+  if (gateFlushTimer) { clearInterval(gateFlushTimer); gateFlushTimer = null; }
+}
+
+async function flushGatePending() {
+  if (gatePending.size === 0) return;
+  const entries = Array.from(gatePending.values());
+  gatePending.clear();
+
+  // Double-check against latest attendance log (realtime may have updated)
+  const today = getTodayStr();
+  const toSave = entries.filter(e =>
+    !attendanceLog.find(a => a.studentId === e.studentId && a.date === today)
+  );
+
+  if (toSave.length === 0) return;
+
+  await Promise.all(toSave.map(e => saveAttendanceToFirebase(e)));
+
+  // Add to gate log
+  toSave.forEach(e => {
+    gateLog.unshift({ ...e, savedAt: Date.now() });
+    if (gateLog.length > 15) gateLog.pop();
+  });
+
+  renderGateLog();
+
+  // Brief toast
+  const names = toSave.slice(0, 3).map(e => e.name).join(', ');
+  const extra = toSave.length > 3 ? ` +${toSave.length - 3} more` : '';
+  showToast(`🚪 ${toSave.length} entered: ${names}${extra}`, 'success');
+}
+
+function renderGateLog() {
+  const el = $('gateLogList');
+  if (!el) return;
+  if (gateLog.length === 0) {
+    el.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:8px;">Waiting for students...</div>`;
+    return;
+  }
+  el.innerHTML = gateLog.map(e => {
+    const badgeClass = e.status === 'late' ? 'badge-late' : 'badge-present';
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 8px;border-bottom:1px solid var(--border);font-size:12px;">
+      <div><strong>${e.name}</strong> <span style="color:var(--muted);font-size:10px;">${e.studentId}</span></div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span class="badge ${badgeClass}">${(e.status||'present').toUpperCase()}</span>
+        <span style="color:var(--muted);font-size:10px;font-family:var(--mono)">${e.time}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function updateBatchPreview(detections) {
+  const box = $('resultBox');
+  box.className = 'result-box';
+  ensureMatcher();
+  const today = getTodayStr();
+  let matched = 0, unknown = 0, already = 0;
+
+  if (cachedMatcher) {
+    detections.forEach(d => {
+      const match = cachedMatcher.findBestMatch(d.descriptor);
+      if (match && match.label !== 'unknown') {
+        const student = students.find(s => s.id === match.label);
+        if (student) {
+          const marked = attendanceLog.find(a => a.studentId === student.id && a.date === today);
+          if (marked) already++;
+          else matched++;
+        }
+      } else {
+        unknown++;
+      }
+    });
+  }
+
+  box.innerHTML = `
+    <div style="display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;">
+      <div style="text-align:center;">
+        <div style="font-size:28px;font-weight:700;color:var(--cyan);">${detections.length}</div>
+        <div style="font-size:10px;color:var(--muted);">Faces</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:28px;font-weight:700;color:var(--green);">${matched}</div>
+        <div style="font-size:10px;color:var(--muted);">New</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:28px;font-weight:700;color:var(--yellow);">${already}</div>
+        <div style="font-size:10px;color:var(--muted);">Already</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:28px;font-weight:700;color:var(--red);">${unknown}</div>
+        <div style="font-size:10px;color:var(--muted);">Unknown</div>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-top:8px;">
+      ${detections.length > 0 ? 'Press <strong>Mark Attendance</strong> to batch save new faces' : ''}
+    </div>
+  `;
+}
+
 async function startRegDetection() {
   if (!modelsLoaded) return;
   regDetectionRunning = true;
-  const vid = $('videoReg');
-  const canvas = $('canvasReg');
-  const ctx = canvas.getContext('2d');
+  const vid = $('videoReg'), canvas = $('canvasReg'), ctx = canvas.getContext('2d');
 
   async function loop() {
     if (!regDetectionRunning) return;
@@ -1205,19 +1556,12 @@ async function startRegDetection() {
         .withFaceLandmarks();
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-
       if (det) {
         const r = faceapi.resizeResults(det, { width: canvas.width, height: canvas.height });
         const box = r.detection.box;
-        ctx.strokeStyle = '#10b981';
-        ctx.lineWidth = 2;
-        ctx.shadowColor = '#10b981';
-        ctx.shadowBlur = 10;
-        ctx.strokeRect(box.x, box.y, box.width, box.height);
-        ctx.shadowBlur = 0;
-        $('btnCapture').style.background = 'var(--green)';
-      } else {
-        $('btnCapture').style.background = '';
+        ctx.strokeStyle = '#10b981'; ctx.lineWidth=2;
+        ctx.shadowColor='#10b981';ctx.shadowBlur=10;
+        ctx.strokeRect(box.x,box.y,box.width,box.height);ctx.shadowBlur=0;
       }
     }
     setTimeout(loop, 150);
@@ -1226,11 +1570,140 @@ async function startRegDetection() {
 }
 
 // ═══════════════════════════════════════════
+//  LIVENESS DETECTION
+// ═══════════════════════════════════════════
+function calculateEAR(landmarks) {
+  const leftEye = landmarks.positions.slice(36, 42);
+  const rightEye = landmarks.positions.slice(42, 48);
+  if (leftEye.length < 6 || rightEye.length < 6) return 1;
+
+  const ear = (pts) => {
+    const a = Math.hypot(pts[1].x - pts[5].x, pts[1].y - pts[5].y);
+    const b = Math.hypot(pts[2].x - pts[4].x, pts[2].y - pts[4].y);
+    const c = Math.hypot(pts[0].x - pts[3].x, pts[0].y - pts[3].y);
+    return (a + b) / (2 * c);
+  };
+  return (ear(leftEye) + ear(rightEye)) / 2;
+}
+
+function detectBlink(ear) {
+  livenessEyeHistory.push(ear);
+  if (livenessEyeHistory.length > 10) livenessEyeHistory.shift();
+
+  const avg = livenessEyeHistory.reduce((a,b)=>a+b,0) / livenessEyeHistory.length;
+  // Blink detected: EAR drops below 0.22 then recovers
+  if (ear < 0.22 && avg > 0.25) {
+    return true; // potential blink start
+  }
+  return false;
+}
+
+async function runLivenessCheck(videoEl) {
+  if (livenessActive) return false;
+  livenessActive = true;
+  livenessBlinks = 0;
+
+  $('livenessModal').classList.add('show');
+  updateLivenessUI();
+
+  return new Promise((resolve) => {
+    let blinkCooldown = false;
+    let lastEar = 1;
+
+    const interval = setInterval(async () => {
+      if (!livenessActive) {
+        clearInterval(interval);
+        $('livenessModal').classList.remove('show');
+        resolve(false);
+        return;
+      }
+
+      try {
+        const det = await faceapi
+          .detectSingleFace(videoEl, new faceapi.TinyFaceDetectorOptions({ inputSize: 320 }))
+          .withFaceLandmarks();
+
+        if (det) {
+          const ear = calculateEAR(det.landmarks);
+          const dropped = ear < 0.22 && lastEar > 0.25;
+
+          if (dropped && !blinkCooldown) {
+            blinkCooldown = true;
+            livenessBlinks++;
+            updateLivenessUI();
+            setTimeout(() => { blinkCooldown = false; }, 500);
+          }
+          lastEar = ear;
+        }
+      } catch(e) {}
+
+      if (livenessBlinks >= livenessTarget) {
+        clearInterval(interval);
+        livenessActive = false;
+        $('livenessStatus').textContent = '✅ Passed!';
+        $('livenessStatus').style.color = 'var(--green)';
+        $('livenessEmoji').textContent = '✅';
+        $('livenessProgress').style.width = '100%';
+        setTimeout(() => {
+          $('livenessModal').classList.remove('show');
+          resolve(true);
+        }, 600);
+      }
+
+      // Timeout after 15s
+      if (livenessBlinks === 0 && Date.now() > livenessStartTime + 15000) {
+        clearInterval(interval);
+        livenessActive = false;
+        $('livenessModal').classList.remove('show');
+        showToast('Liveness timeout — try again', 'error');
+        resolve(false);
+      }
+    }, 150);
+
+    livenessStartTime = Date.now();
+    livenessResolve = { resolve, interval };
+  });
+}
+
+let livenessStartTime = 0;
+function updateLivenessUI() {
+  $('livenessStatus').textContent = `Blinks: ${livenessBlinks}/${livenessTarget}`;
+  $('livenessStatus').style.color = livenessBlinks >= livenessTarget ? 'var(--green)' : 'var(--yellow)';
+  $('livenessEmoji').textContent = livenessBlinks >= livenessTarget ? '✅' : livenessBlinks > 0 ? '😉' : '👀';
+  $('livenessProgress').style.width = (livenessBlinks / livenessTarget * 100) + '%';
+  $('livenessHint').textContent = livenessBlinks >= livenessTarget
+    ? '✅ Verified!'
+    : `Blink ${livenessTarget - livenessBlinks} more time(s)`;
+}
+
+function closeLiveness() {
+  if (livenessActive && livenessResolve) {
+    livenessActive = false;
+    clearInterval(livenessResolve.interval);
+    $('livenessModal').classList.remove('show');
+    livenessResolve.resolve(false);
+  }
+}
+
+// ═══════════════════════════════════════════
 //  ATTENDANCE MARKING
 // ═══════════════════════════════════════════
 async function markAttendance() {
-  if (!modelsLoaded) { showToast('Models not loaded yet', 'error'); return; }
+  if (!modelsLoaded) { showToast('Models not loaded', 'error'); return; }
+
+  if (batchMode) {
+    await batchMarkAttendance();
+    return;
+  }
+
   const vid = $('videoEl');
+
+  // Liveness check first
+  const livenessPass = await runLivenessCheck(vid);
+  if (!livenessPass) {
+    updateResultBox(null, 'liveness-fail');
+    return;
+  }
 
   const det = await faceapi
     .detectSingleFace(vid, new faceapi.TinyFaceDetectorOptions({ inputSize: 320 }))
@@ -1238,7 +1711,7 @@ async function markAttendance() {
     .withFaceDescriptor();
 
   if (!det) {
-    showToast('❌ No face detected. Try again.', 'error');
+    showToast('❌ No face detected', 'error');
     updateResultBox(null, 'no-face');
     return;
   }
@@ -1246,15 +1719,76 @@ async function markAttendance() {
   await runRecognition(det.descriptor, $('canvasAtt'));
 }
 
-async function runRecognition(descriptor, canvas) {
-  buildLabeledDescriptors();
-  if (!labeledDescriptors || labeledDescriptors.length === 0) {
-    showToast('No students registered yet!', 'error');
+async function batchMarkAttendance() {
+  if (!modelsLoaded) return;
+  const vid = $('videoEl');
+
+  const det = await faceapi
+    .detectAllFaces(vid, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.35 }))
+    .withFaceDescriptors();
+
+  if (det.length === 0) {
+    showToast('❌ No faces detected', 'error');
     return;
   }
 
-  const matcher = new faceapi.FaceMatcher(labeledDescriptors, 0.5);
-  const match   = matcher.findBestMatch(descriptor);
+  ensureMatcher();
+  if (!cachedMatcher) {
+    showToast('No students registered', 'error');
+    return;
+  }
+
+  const today = getTodayStr();
+  const entries = [];
+  const markedNames = [];
+
+  for (const d of det) {
+    const match = cachedMatcher.findBestMatch(d.descriptor);
+    if (match.label === 'unknown') continue;
+
+    const student = students.find(s => s.id === match.label);
+    if (!student || isRecentlyMarked(student.id)) continue;
+
+    const alreadyMarked = attendanceLog.find(a => a.studentId === student.id && a.date === today);
+    if (alreadyMarked) {
+      markRecent(student.id);
+      continue;
+    }
+
+    const attStatus = isLateTime() ? 'late' : 'present';
+    entries.push({
+      studentId: student.id,
+      name: student.name,
+      grade: student.grade,
+      date: today,
+      time: new Date().toLocaleTimeString(),
+      timestamp: Date.now(),
+      status: attStatus
+    });
+    markedNames.push(student.name);
+    markRecent(student.id);
+  }
+
+  if (entries.length === 0) {
+    showToast('ℹ️ All detected students already marked', 'info');
+    return;
+  }
+
+  await Promise.all(entries.map(e => saveAttendanceToFirebase(e)));
+  const summary = markedNames.length > 3
+    ? `${markedNames.slice(0, 3).join(', ')} + ${markedNames.length - 3} more`
+    : markedNames.join(', ');
+  showToast(`✅ ${entries.length} student(s) marked: ${summary}`, 'success');
+}
+
+async function runRecognition(descriptor, canvas) {
+  ensureMatcher();
+  if (!cachedMatcher) {
+    showToast('No students registered', 'error');
+    return;
+  }
+
+  const match = cachedMatcher.findBestMatch(descriptor);
 
   if (match.label === 'unknown') {
     updateResultBox(null, 'unknown');
@@ -1270,55 +1804,58 @@ async function runRecognition(descriptor, canvas) {
   const alreadyMarked = attendanceLog.find(a => a.studentId === student.id && a.date === today);
 
   if (alreadyMarked) {
-    showToast(`ℹ️ ${student.name} already marked for today`, 'info');
+    showToast(`ℹ️ ${student.name} already marked today`, 'info');
     updateResultBox(student, 'already', confidence);
     return;
   }
 
   const now = new Date();
+  const status = isLateTime() ? 'late' : 'present';
+
   const entry = {
     studentId: student.id,
-    name:      student.name,
-    grade:     student.grade,
-    date:      today,
-    time:      now.toLocaleTimeString(),
-    timestamp: now.getTime()
+    name: student.name,
+    grade: student.grade,
+    date: today,
+    time: now.toLocaleTimeString(),
+    timestamp: now.getTime(),
+    status: status
   };
 
   await saveAttendanceToFirebase(entry);
-  // realtime listener updates attendanceLog automatically
-  updateResultBox(student, 'match', confidence);
-  showToast(`✅ ${student.name} marked Present!`, 'success');
+  updateResultBox(student, 'match', confidence, status);
+  showToast(`✅ ${student.name} marked ${status.toUpperCase()}!`, status === 'late' ? 'info' : 'success');
 }
 
-function updateResultBox(student, status, confidence) {
+function updateResultBox(student, status, confidence, attStatus) {
   const box = $('resultBox');
   box.className = 'result-box';
 
-  if (!student || status === 'no-face') {
-    box.innerHTML = `<div class="result-icon">👤</div><div style="color:var(--muted);font-size:14px;">${status==='no-face'?'No face detected. Move closer.':'Point camera at a face...'}</div>`;
+  if (!student || status === 'no-face' || status === 'liveness-fail') {
+    const msg = status === 'liveness-fail' ? 'Liveness check failed' : (status === 'no-face' ? 'No face detected' : 'Point camera at a face...');
+    box.innerHTML = `<div class="result-icon">👤</div><div style="color:var(--muted);font-size:13px;">${msg}</div>`;
     return;
   }
 
   if (status === 'unknown') {
     box.classList.add('no-match');
-    box.innerHTML = `<div class="result-icon">❓</div><div style="color:var(--red);font-size:16px;font-weight:600;">Unknown Face</div><div style="color:var(--muted);font-size:13px;margin-top:4px;">Not in the system</div>`;
+    box.innerHTML = `<div class="result-icon">❓</div><div style="color:var(--red);font-size:15px;font-weight:600;">Unknown Face</div><div style="color:var(--muted);font-size:12px;margin-top:4px;">Not in the system</div>`;
     return;
   }
 
   box.classList.add('match');
-  const alreadyBadge = status === 'already' ? `<div style="color:var(--yellow);font-size:12px;margin-top:4px;">⚠️ Already marked today</div>` : '';
-  const confidenceColor = confidence >= 80 ? 'var(--green)' : confidence >= 60 ? 'var(--yellow)' : 'var(--red)';
+  const alreadyBadge = status === 'already' ? `<div style="color:var(--yellow);font-size:11px;margin-top:4px;">⚠️ Already marked today</div>` : '';
+  const lateBadge = attStatus === 'late' ? `<div style="color:var(--yellow);font-size:11px;margin-top:4px;">⏰ Late arrival</div>` : '';
+  const cc = confidence >= 80 ? 'var(--green)' : confidence >= 60 ? 'var(--yellow)' : 'var(--red)';
+
   box.innerHTML = `
-    <div class="result-icon">✅</div>
+    <div class="result-icon">${attStatus === 'late' ? '⏰' : '✅'}</div>
     <div class="result-name">${student.name}</div>
     <div class="result-id">${student.id} · ${student.grade || 'N/A'}</div>
-    <div class="result-time">${new Date().toLocaleTimeString()}</div>
+    <div class="result-time">${new Date().toLocaleTimeString()}${lateBadge}</div>
     ${alreadyBadge}
-    <div style="font-size:12px;margin-top:8px;color:${confidenceColor}">Confidence: ${confidence}%</div>
-    <div class="confidence-bar">
-      <div class="confidence-fill" style="width:${confidence}%;background:${confidenceColor}"></div>
-    </div>
+    <div style="font-size:11px;margin-top:6px;color:${cc}">${confidence}% match</div>
+    <div class="confidence-bar"><div class="confidence-fill" style="width:${confidence}%;background:${cc}"></div></div>
   `;
 }
 
@@ -1327,39 +1864,221 @@ function updateResultBox(student, status, confidence) {
 // ═══════════════════════════════════════════
 function toggleAutoMode() {
   autoMode = !autoMode;
-  $('btnAuto').textContent = `🔄 Auto Mode: ${autoMode ? 'ON' : 'OFF'}`;
-  $('btnAuto').style.color = autoMode ? 'var(--green)' : '';
-  $('btnAuto').style.borderColor = autoMode ? 'var(--green)' : '';
-  showToast(`Auto mode ${autoMode ? 'ON — faces recognized automatically' : 'OFF'}`, 'info');
+  if (autoMode) batchMode = false;
+  $('btnAuto').textContent = `🔄 Auto: ${autoMode ? 'ON' : 'OFF'}`;
+  $('btnAuto').className = `btn ${autoMode ? 'btn-success' : 'btn-ghost'}`;
+  $('btnBatch').className = 'btn btn-ghost';
+  $('btnBatch').textContent = '🧑‍🏫 Classroom';
+  showToast(`Auto mode ${autoMode ? 'ON — single face auto-mark' : 'OFF'}`, 'info');
+}
+
+function toggleBatchMode() {
+  batchMode = !batchMode;
+  if (batchMode) autoMode = false;
+  $('btnBatch').textContent = batchMode ? '🧑‍🏫 Classroom: ON' : '🧑‍🏫 Classroom';
+  $('btnBatch').className = `btn ${batchMode ? 'btn-primary' : 'btn-ghost'}`;
+  $('btnAuto').className = 'btn btn-ghost';
+  $('btnAuto').textContent = '🔄 Auto: OFF';
+  if (batchMode) {
+    showToast('🧑‍🏫 Classroom mode ON — scan 15-20 students at once! Press Mark to batch save.', 'info');
+    $('resultBox').innerHTML = `<div style="color:var(--cyan);font-size:14px;font-weight:600;">🧑‍🏫 Classroom Mode Active</div>
+      <div style="color:var(--muted);font-size:12px;margin-top:4px;">Point camera at the class and press Mark</div>`;
+  } else {
+    showToast('Classroom mode OFF', 'info');
+  }
+}
+
+// ═══════════════════════════════════════════
+//  MANUAL ATTENDANCE
+// ═══════════════════════════════════════════
+async function markManualAttendance() {
+  const sid = $('manualStudent').value;
+  const status = $('manualStatus').value;
+  if (!sid) { showToast('Select a student', 'error'); return; }
+
+  const student = students.find(s => s.id === sid);
+  if (!student) return;
+
+  const today = getTodayStr();
+  const alreadyMarked = attendanceLog.find(a => a.studentId === sid && a.date === today);
+  if (alreadyMarked) { showToast(`${student.name} already marked today`, 'info'); return; }
+
+  const now = new Date();
+  const entry = {
+    studentId: student.id,
+    name: student.name,
+    grade: student.grade,
+    date: today,
+    time: now.toLocaleTimeString(),
+    timestamp: now.getTime(),
+    status: status
+  };
+
+  await saveAttendanceToFirebase(entry);
+  showToast(`✅ ${student.name} marked ${status.toUpperCase()}`, 'success');
+}
+
+// ═══════════════════════════════════════════
+//  QR CODE
+// ═══════════════════════════════════════════
+function showQRDisplay(studentId) {
+  if (studentId) {
+    const s = students.find(st => st.id === studentId);
+    if (!s) return;
+    $('qrDisplayName').textContent = s.name;
+    $('qrDisplayId').textContent = s.id;
+    $('qrDisplayCode').innerHTML = '';
+    new QRCode($('qrDisplayCode'), {
+      text: JSON.stringify({ id: s.id, name: s.name }),
+      width: 150, height: 150
+    });
+    $('qrDisplayModal').classList.add('show');
+  } else {
+    // Show picker
+    const picker = document.createElement('div');
+    picker.innerHTML = `
+      <div style="margin:12px 0;">
+        <select id="qrStudentPicker" style="width:100%;padding:8px;border-radius:8px;background:var(--surface);border:1px solid var(--border);color:var(--text);">
+          <option value="">Select student...</option>
+          ${students.map(s => `<option value="${s.id}">${s.name} - ${s.id}</option>`).join('')}
+        </select>
+        <button class="btn btn-primary" style="margin-top:10px;" onclick="generateSelectedQR()">Generate QR</button>
+      </div>`;
+    const existing = $('qrDisplayCode').querySelector('select');
+    if (existing) return;
+    $('qrDisplayName').textContent = 'Generate QR Code';
+    $('qrDisplayId').textContent = '';
+    $('qrDisplayCode').innerHTML = '';
+    $('qrDisplayCode').appendChild(picker);
+    $('qrDisplayModal').classList.add('show');
+  }
+}
+
+function generateSelectedQR() {
+  const sel = $('qrStudentPicker');
+  if (sel && sel.value) {
+    showQRDisplay(sel.value);
+  }
+}
+
+function closeQRDisplay() {
+  $('qrDisplayModal').classList.remove('show');
+}
+
+async function openQRScanner() {
+  $('qrModal').classList.add('show');
+  $('qrResult').textContent = '';
+
+  try {
+    if (qrScannerInstance) { await qrScannerInstance.stop(); qrScannerInstance = null; }
+
+    qrScannerInstance = new Html5Qrcode("qrScanner");
+    await qrScannerInstance.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: { width: 250, height: 250 } },
+      onQRCodeScanned,
+      () => {}
+    );
+  } catch(e) {
+    showToast('QR scanner error: ' + e.message, 'error');
+  }
+}
+
+async function onQRCodeScanned(decodedText) {
+  try {
+    let data;
+    try { data = JSON.parse(decodedText); } catch(e) { data = { id: decodedText }; }
+
+    const student = students.find(s => s.id === data.id);
+    if (!student) {
+      $('qrResult').innerHTML = `<span style="color:var(--red);">❌ Unknown student: ${data.id}</span>`;
+      return;
+    }
+
+    const today = getTodayStr();
+    const alreadyMarked = attendanceLog.find(a => a.studentId === student.id && a.date === today);
+    if (alreadyMarked) {
+      $('qrResult').innerHTML = `<span style="color:var(--yellow);">⚠️ ${student.name} already marked today</span>`;
+      return;
+    }
+
+    const now = new Date();
+    const status = isLateTime() ? 'late' : 'present';
+    const entry = {
+      studentId: student.id,
+      name: student.name,
+      grade: student.grade,
+      date: today,
+      time: now.toLocaleTimeString(),
+      timestamp: now.getTime(),
+      status: status
+    };
+
+    await saveAttendanceToFirebase(entry);
+    $('qrResult').innerHTML = `<span style="color:var(--green);font-size:16px;">✅ ${student.name} marked ${status.toUpperCase()}!</span>`;
+    showToast(`✅ ${student.name} via QR`, 'success');
+
+    // Stop scanner for 2 seconds so user can see result
+    if (qrScannerInstance) {
+      await qrScannerInstance.stop();
+      setTimeout(() => {
+        if ($('qrModal').classList.contains('show')) {
+          qrScannerInstance.start(
+            { facingMode: "environment" },
+            { fps: 10, qrbox: { width: 250, height: 250 } },
+            onQRCodeScanned,
+            () => {}
+          );
+        }
+      }, 2000);
+    }
+  } catch(e) {
+    $('qrResult').textContent = 'Error: ' + e.message;
+  }
+}
+
+async function closeQRScanner() {
+  $('qrModal').classList.remove('show');
+  $('qrAttResult').innerHTML = '';
+  if (qrScannerInstance) {
+    try { await qrScannerInstance.stop(); } catch(e) {}
+    qrScannerInstance = null;
+  }
 }
 
 // ═══════════════════════════════════════════
 //  REGISTER STUDENT
 // ═══════════════════════════════════════════
+let regProfilePhoto = null;
+
 async function captureFace() {
   if (!modelsLoaded) return;
   const vid = $('videoReg');
-
   const det = await faceapi
     .detectSingleFace(vid, new faceapi.TinyFaceDetectorOptions({ inputSize: 320 }))
     .withFaceLandmarks()
     .withFaceDescriptor();
 
-  if (!det) {
-    showToast('No face detected. Move closer.', 'error');
-    return;
-  }
+  if (!det) { showToast('No face detected', 'error'); return; }
 
   capturedDescriptors.push(det.descriptor);
 
-  // Flash effect
+  // Save profile photo on first capture
+  if (!regProfilePhoto) {
+    const tmpCanvas = document.createElement('canvas');
+    const b = det.detection.box;
+    tmpCanvas.width = 120; tmpCanvas.height = 120;
+    const tctx = tmpCanvas.getContext('2d');
+    tctx.drawImage(vid, b.x, b.y, b.width, b.height, 0, 0, 120, 120);
+    regProfilePhoto = tmpCanvas.toDataURL('image/jpeg', 0.7);
+  }
+
   const wrap = $('videoReg').parentElement;
   const flash = document.createElement('div');
   flash.className = 'flash';
   wrap.appendChild(flash);
   setTimeout(() => flash.remove(), 350);
 
-  // Mini preview
   const mini = document.createElement('canvas');
   mini.width = 60; mini.height = 60;
   const ctx = mini.getContext('2d');
@@ -1368,88 +2087,300 @@ async function captureFace() {
   mini.style.cssText = 'border-radius:8px;border:2px solid var(--green);';
   $('capturePreview').appendChild(mini);
 
-  $('captureStatus').innerHTML = `<span style="color:var(--green);font-size:13px;font-family:var(--mono)">✅ ${capturedDescriptors.length} sample(s) captured</span>`;
+  $('captureStatus').innerHTML = `<span style="color:var(--green);font-size:12px;font-family:var(--mono)">✅ ${capturedDescriptors.length} sample(s)</span>`;
 
-  if (capturedDescriptors.length >= 3) {
-    $('btnRegister').disabled = false;
-  }
+  if (capturedDescriptors.length >= 3) $('btnRegister').disabled = false;
 }
 
 function clearCaptures() {
   capturedDescriptors = [];
+  regProfilePhoto = null;
   $('capturePreview').innerHTML = '';
   $('captureStatus').innerHTML = '';
   $('btnRegister').disabled = true;
 }
 
-function registerStudent() {
-  const name   = $('regName').value.trim();
-  const id     = $('regId').value.trim();
-  const grade  = $('regGrade').value;
+async function registerStudent() {
+  const name = $('regName').value.trim();
+  const id = $('regId').value.trim();
+  const grade = $('regGrade').value;
   const gender = $('regGender').value;
+  const email = $('regEmail').value.trim();
 
-  if (!name || !id) { showToast('Name and ID are required!', 'error'); return; }
-  if (capturedDescriptors.length < 1) { showToast('Capture at least 1 face sample!', 'error'); return; }
+  if (!name || !id) { showToast('Name and ID required!', 'error'); return; }
+  if (capturedDescriptors.length < 1) { showToast('Capture at least 1 sample!', 'error'); return; }
   if (students.find(s => s.id === id)) { showToast('Student ID already exists!', 'error'); return; }
 
-  const student = { id, name, grade, gender, descriptors: capturedDescriptors.slice() };
+  const student = {
+    id, name, grade, gender, email,
+    descriptors: capturedDescriptors.slice(),
+    photo: regProfilePhoto || '',
+    createdAt: Date.now()
+  };
 
-  // Save to Firebase (realtime listener updates local array)
-  saveStudentToFirebase(student).then(() => {
-    showToast(`🎉 ${name} registered successfully!`, 'success');
-  }).catch(e => {
-    showToast('Firebase save failed: ' + e.message, 'error');
-  });
+  await saveStudentToFirebase(student);
+  showToast(`🎉 ${name} registered!`, 'success');
 
-  // Reset form immediately
   $('regName').value = '';
   $('regId').value = '';
   $('regGrade').value = '';
   $('regGender').value = '';
+  $('regEmail').value = '';
   clearCaptures();
+}
+
+// ═══════════════════════════════════════════
+//  PARENT NOTIFICATIONS
+// ═══════════════════════════════════════════
+async function sendAbsenceNotification(student) {
+  if (!student.email) return;
+  const settings = JSON.parse(localStorage.getItem('faceattend_settings') || '{}');
+  if (!settings.emailjsServiceId || !settings.emailjsTemplateId || !settings.emailjsPublicKey) return;
+
+  try {
+    if (window.emailjs) {
+      emailjs.init(settings.emailjsPublicKey);
+      await emailjs.send(settings.emailjsServiceId, settings.emailjsTemplateId, {
+        to_email: student.email,
+        student_name: student.name,
+        student_id: student.id,
+        date: getTodayStr(),
+        school_name: 'FaceAttend School',
+        message: `Your child ${student.name} was marked absent on ${getTodayStr()}.`
+      });
+      console.log('Notification sent to', student.email);
+    }
+  } catch(e) {
+    console.error('EmailJS error:', e);
+  }
+}
+
+function testEmailJS() {
+  const settings = JSON.parse(localStorage.getItem('faceattend_settings') || '{}');
+  if (!settings.emailjsServiceId || !settings.emailjsTemplateId || !settings.emailjsPublicKey) {
+    showToast('Configure EmailJS settings first', 'error');
+    return;
+  }
+  if (!window.emailjs) { showToast('EmailJS not loaded', 'error'); return; }
+
+  emailjs.init(settings.emailjsPublicKey);
+  emailjs.send(settings.emailjsServiceId, settings.emailjsTemplateId, {
+    to_email: 'test@example.com',
+    student_name: 'Test Student',
+    student_id: 'TEST-001',
+    date: getTodayStr(),
+    school_name: 'FaceAttend School',
+    message: 'This is a test notification from FaceAttend.'
+  }).then(() => {
+    showToast('✅ Test email sent!', 'success');
+  }).catch(e => {
+    showToast('❌ EmailJS error: ' + e.text, 'error');
+  });
 }
 
 // ═══════════════════════════════════════════
 //  RECORDS
 // ═══════════════════════════════════════════
 function loadRecords() {
-  const date  = $('filterDate').value;
+  const date = $('filterDate').value;
   const grade = $('filterGrade').value;
+  const status = $('filterStatus').value;
+
   let filtered = [...attendanceLog];
-  if (date)  filtered = filtered.filter(r => r.date === date);
+  if (date) filtered = filtered.filter(r => r.date === date);
   if (grade) filtered = filtered.filter(r => r.grade === grade);
+  if (status) filtered = filtered.filter(r => r.status === status);
 
   filtered.sort((a,b) => b.timestamp - a.timestamp);
-
   const tbody = $('recordsTbody');
+
   if (filtered.length === 0) {
     tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="e-icon">📋</div><p>No records found</p></div></td></tr>`;
     return;
   }
 
-  tbody.innerHTML = filtered.map(r => `
-    <tr>
+  tbody.innerHTML = filtered.map(r => {
+    const badgeClass = r.status === 'late' ? 'badge-late' : (r.status === 'absent' ? 'badge-absent' : 'badge-present');
+    const badgeText = (r.status || 'present').toUpperCase();
+    return `<tr>
       <td><strong>${r.name}</strong></td>
-      <td><span style="font-family:var(--mono);font-size:12px;color:var(--muted)">${r.studentId}</span></td>
+      <td><span style="font-family:var(--mono);font-size:11px;color:var(--muted)">${r.studentId}</span></td>
       <td>${r.grade || '—'}</td>
-      <td style="font-family:var(--mono);font-size:13px">${r.date}</td>
-      <td style="font-family:var(--mono);font-size:13px">${r.time}</td>
-      <td><span class="badge badge-present">PRESENT</span></td>
-    </tr>
-  `).join('');
+      <td style="font-family:var(--mono);font-size:12px">${r.date}</td>
+      <td style="font-family:var(--mono);font-size:12px">${r.time}</td>
+      <td><span class="badge ${badgeClass}">${badgeText}</span></td>
+    </tr>`;
+  }).join('');
 }
 
 function exportCSV() {
   if (attendanceLog.length === 0) { showToast('No records to export', 'error'); return; }
-  const header = 'Name,Student ID,Grade,Date,Time,Status';
-  const rows = attendanceLog.map(r => `${r.name},${r.studentId},${r.grade || ''},${r.date},${r.time},Present`);
-  const csv = [header, ...rows].join('\n');
+  const date = $('filterDate').value;
+  const grade = $('filterGrade').value;
+  let filtered = [...attendanceLog];
+  if (date) filtered = filtered.filter(r => r.date === date);
+  if (grade) filtered = filtered.filter(r => r.grade === grade);
+
+  const header = 'Name,Student ID,Class,Date,Time,Status';
+  const rows = filtered.map(r => `${r.name},${r.studentId},${r.grade||''},${r.date},${r.time},${(r.status||'present').toUpperCase()}`);
+  downloadCSV([header, ...rows].join('\n'), 'attendance.csv');
+}
+
+function exportFullCSV() {
+  if (attendanceLog.length === 0) { showToast('No records', 'error'); return; }
+  const header = 'Name,Student ID,Class,Date,Time,Status';
+  const rows = attendanceLog.map(r => `${r.name},${r.studentId},${r.grade||''},${r.date},${r.time},${(r.status||'present').toUpperCase()}`);
+  downloadCSV([header, ...rows].join('\n'), 'attendance_full.csv');
+}
+
+function downloadCSV(csv, filename) {
   const blob = new Blob([csv], { type: 'text/csv' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `attendance_${getTodayStr()}.csv`;
+  a.download = filename;
   a.click();
   showToast('📥 CSV exported!', 'success');
+}
+
+// ═══════════════════════════════════════════
+//  PDF REPORT
+// ═══════════════════════════════════════════
+function showPDFDialog() {
+  const month = new Date().toISOString().slice(0, 7);
+  const html = `
+    <div style="margin:12px 0;">
+      <div class="form-group">
+        <label>Select Month</label>
+        <input type="month" id="pdfMonth" value="${month}" style="width:100%;padding:8px;border-radius:8px;background:var(--surface);border:1px solid var(--border);color:var(--text);">
+      </div>
+      <div class="form-group">
+        <label>Class (optional)</label>
+        <select id="pdfGrade" style="width:100%;padding:8px;border-radius:8px;background:var(--surface);border:1px solid var(--border);color:var(--text);">
+          <option value="">All Classes</option>
+          ${['Grade 6A','Grade 6B','Grade 7A','Grade 7B','Grade 8A','Grade 8B','Grade 9A','Grade 9B','Grade 10A','Grade 10B','Grade 11A','Grade 11B','Grade 12','Grade 13'].map(g => `<option>${g}</option>`).join('')}
+        </select>
+      </div>
+      <button class="btn btn-primary" onclick="generatePDF()">📄 Generate PDF Report</button>
+    </div>`;
+
+  const existing = document.querySelector('#pdfMonth');
+  if (existing) return;
+
+  // Use the records card to show dialog
+  const recordsCard = document.querySelector('#page-records .card');
+  let pdfDiv = document.getElementById('pdfDialog');
+  if (!pdfDiv) {
+    pdfDiv = document.createElement('div');
+    pdfDiv.id = 'pdfDialog';
+    pdfDiv.style.cssText = 'margin-bottom:16px;';
+    recordsCard.parentNode.insertBefore(pdfDiv, recordsCard);
+  }
+  pdfDiv.innerHTML = `<div class="card"><h3>📄 Monthly Report</h3>${html}</div>`;
+}
+
+async function generatePDF() {
+  const month = $('pdfMonth').value;
+  const grade = $('pdfGrade').value;
+  if (!month) { showToast('Select a month', 'error'); return; }
+
+  const [year, mon] = month.split('-').map(Number);
+  const daysInMonth = new Date(year, mon, 0).getDate();
+  const monthName = new Date(year, mon-1).toLocaleString('default', { month: 'long', year: 'numeric' });
+
+  // Filter students
+  let filteredStudents = students;
+  if (grade) filteredStudents = students.filter(s => s.grade === grade);
+
+  if (filteredStudents.length === 0) {
+    showToast('No students found', 'error');
+    return;
+  }
+
+  // Compute attendance for each student
+  const reportData = filteredStudents.map(s => {
+    const monthRecords = attendanceLog.filter(a =>
+      a.studentId === s.id &&
+      a.date.startsWith(month) &&
+      a.status === 'present'
+    );
+    const lateRecords = attendanceLog.filter(a =>
+      a.studentId === s.id &&
+      a.date.startsWith(month) &&
+      a.status === 'late'
+    );
+    // Count unique days present or late
+    const uniqueDays = new Set([
+      ...monthRecords.map(a => a.date),
+      ...lateRecords.map(a => a.date)
+    ]);
+    const attended = uniqueDays.size;
+    // Count school days (weekdays only)
+    let schoolDays = 0;
+    for (let d = 1; d <= daysInMonth; d++) {
+      const date = new Date(year, mon - 1, d);
+      if (date.getDay() !== 0 && date.getDay() !== 6) schoolDays++;
+    }
+    const rate = schoolDays > 0 ? Math.round((attended / schoolDays) * 100) : 0;
+    return { name: s.name, id: s.id, grade: s.grade, attended, total: schoolDays, rate, late: lateRecords.length };
+  });
+
+  // Generate PDF
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.getWidth();
+
+  // Title
+  doc.setFontSize(18);
+  doc.text('FaceAttend - Monthly Report', pageWidth / 2, 20, { align: 'center' });
+  doc.setFontSize(12);
+  doc.text(monthName, pageWidth / 2, 28, { align: 'center' });
+  if (grade) doc.text(`Class: ${grade}`, pageWidth / 2, 35, { align: 'center' });
+
+  // Table header
+  const startY = grade ? 42 : 35;
+  const colX = [14, 60, 100, 130, 155, 180];
+  const colW = [46, 40, 30, 25, 25, 25];
+  const headers = ['Name', 'ID', 'Attended', 'Total', 'Late', 'Rate'];
+
+  doc.setFontSize(9);
+  doc.setFillColor(59, 130, 246);
+  doc.setTextColor(255);
+  headers.forEach((h, i) => {
+    doc.rect(colX[i], startY, colW[i], 8, 'F');
+    doc.text(h, colX[i] + 2, startY + 5.5);
+  });
+  doc.setTextColor(0);
+
+  let y = startY + 10;
+  reportData.forEach((r, idx) => {
+    if (y > 275) {
+      doc.addPage();
+      y = 20;
+    }
+    if (idx % 2 === 0) {
+      doc.setFillColor(240, 244, 250);
+      doc.rect(14, y - 2, pageWidth - 28, 8, 'F');
+    }
+    doc.setFontSize(8);
+    const row = [r.name, r.id, String(r.attended), String(r.total), String(r.late), r.rate + '%'];
+    row.forEach((v, i) => doc.text(v, colX[i] + 2, y + 3));
+    y += 8;
+  });
+
+  // Summary
+  y += 6;
+  const avgRate = reportData.length > 0
+    ? Math.round(reportData.reduce((s, r) => s + r.rate, 0) / reportData.length)
+    : 0;
+  doc.setFontSize(10);
+  doc.text(`Total Students: ${reportData.length}  |  Average Attendance: ${avgRate}%`, 14, y);
+
+  doc.save(`attendance_report_${month}.pdf`);
+  showToast('📄 PDF generated!', 'success');
+
+  // Remove dialog
+  const d = document.getElementById('pdfDialog');
+  if (d) d.innerHTML = '';
 }
 
 // ═══════════════════════════════════════════
@@ -1460,41 +2391,44 @@ function renderStudentsList() {
   let filtered = students.filter(s =>
     s.name.toLowerCase().includes(query) || s.id.toLowerCase().includes(query)
   );
-
   const container = $('studentsList');
+
   if (filtered.length === 0) {
-    container.innerHTML = `<div class="empty-state"><div class="e-icon">👥</div><p>No students registered yet</p></div>`;
+    container.innerHTML = `<div class="empty-state"><div class="e-icon">👥</div><p>No students registered</p></div>`;
     return;
   }
 
   container.innerHTML = `
     <div class="student-grid">
-      ${filtered.map(s => `
-        <div class="student-card">
-          <div class="s-avatar">${s.gender === 'Female' ? '👩' : '👦'}</div>
+      ${filtered.map(s => {
+        const avatarHtml = s.photo
+          ? `<img src="${s.photo}" alt="${s.name}">`
+          : (s.gender === 'Female' ? '👩' : '👦');
+        return `<div class="student-card">
+          <div class="s-avatar">${avatarHtml}</div>
           <div class="s-name">${s.name}</div>
           <div class="s-id">${s.id}</div>
           <div class="s-grade">${s.grade || 'N/A'}</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:3px;">${s.descriptors.length} face samples</div>
+          <div class="s-samples">${s.descriptors ? s.descriptors.length : 0} samples</div>
+          <button class="delete-btn" onclick="showStudentQR('${s.id}')">📱 QR</button>
           <button class="delete-btn" onclick="deleteStudent('${s.id}')">🗑 Remove</button>
-        </div>
-      `).join('')}
-    </div>
-  `;
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function showStudentQR(id) {
+  showQRDisplay(id);
 }
 
 function deleteStudent(id) {
-  if (!confirm('Remove this student and all their data?')) return;
-  deleteStudentFromFirebase(id).then(() => {
-    showToast('Student removed', 'info');
-  }).catch(e => showToast('Error: ' + e.message, 'error'));
+  if (!confirm('Remove this student and all data?')) return;
+  deleteStudentFromFirebase(id).then(() => showToast('Student removed', 'info'));
 }
 
 function clearAllData() {
-  if (!confirm('Clear ALL students and attendance records? This cannot be undone!')) return;
-  clearAllFromFirebase().then(() => {
-    showToast('All data cleared', 'info');
-  }).catch(e => showToast('Error: ' + e.message, 'error'));
+  if (!confirm('Clear ALL data? Cannot be undone!')) return;
+  clearAllFromFirebase().then(() => showToast('All data cleared', 'info'));
 }
 
 // ═══════════════════════════════════════════
@@ -1510,18 +2444,20 @@ function renderTodayList() {
     return;
   }
 
-  container.innerHTML = todayRecs.map(r => `
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 4px;border-bottom:1px solid var(--border)">
+  container.innerHTML = todayRecs.map(r => {
+    const badgeClass = r.status === 'late' ? 'badge-late' : 'badge-present';
+    const badgeText = (r.status || 'present').toUpperCase();
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 4px;border-bottom:1px solid var(--border)">
       <div>
-        <div style="font-size:14px;font-weight:500">${r.name}</div>
-        <div style="font-size:11px;color:var(--muted);font-family:var(--mono)">${r.studentId}</div>
+        <div style="font-size:13px;font-weight:500">${r.name}</div>
+        <div style="font-size:10px;color:var(--muted);font-family:var(--mono)">${r.studentId}</div>
       </div>
       <div style="text-align:right">
-        <span class="badge badge-present">PRESENT</span>
-        <div style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:4px">${r.time}</div>
+        <span class="badge ${badgeClass}">${badgeText}</span>
+        <div style="font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:2px">${r.time}</div>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 }
 
 // ═══════════════════════════════════════════
@@ -1529,15 +2465,15 @@ function renderTodayList() {
 // ═══════════════════════════════════════════
 function updateStats() {
   const today = getTodayStr();
-  const present = new Set(attendanceLog.filter(a => a.date === today).map(a => a.studentId)).size;
+  const presentSet = new Set(attendanceLog.filter(a => a.date === today && (a.status === 'present' || a.status === 'late')).map(a => a.studentId));
   const total = students.length;
+  const present = presentSet.size;
   const absent = Math.max(0, total - present);
   const rate = total > 0 ? Math.round((present / total) * 100) : 0;
-
-  $('statTotal').textContent   = total;
+  $('statTotal').textContent = total;
   $('statPresent').textContent = present;
-  $('statAbsent').textContent  = absent;
-  $('statRate').textContent    = rate + '%';
+  $('statAbsent').textContent = absent;
+  $('statRate').textContent = rate + '%';
 }
 
 // ═══════════════════════════════════════════
@@ -1546,12 +2482,21 @@ function updateStats() {
 function showTab(tab) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  $('page-' + tab).classList.add('active');
-  $('tab-' + tab).classList.add('active');
+  document.querySelectorAll('.bn-item').forEach(b => b.classList.remove('active'));
+  if ($('page-' + tab)) $('page-' + tab).classList.add('active');
+  if ($('tab-' + tab)) $('tab-' + tab).classList.add('active');
+  const bn = document.querySelector(`.bn-item[data-tab="${tab}"]`);
+  if (bn) bn.classList.add('active');
 
   if (tab === 'attendance' && modelsLoaded) {
     attDetectionRunning = false;
     setTimeout(() => { attDetectionRunning = true; startCamera('att'); }, 100);
+    // Auto-start gate mode on next tick if it was enabled
+    setTimeout(() => {
+      if (localStorage.getItem('faceattend_gate') === 'true' && !gateMode) {
+        toggleGateMode();
+      }
+    }, 500);
   }
   if (tab === 'register' && modelsLoaded) {
     regDetectionRunning = false;
@@ -1559,6 +2504,153 @@ function showTab(tab) {
   }
   if (tab === 'records') loadRecords();
   if (tab === 'students') renderStudentsList();
+  if (tab === 'analytics') setTimeout(loadCharts, 200);
+}
+
+// ═══════════════════════════════════════════
+//  ANALYTICS / CHARTS
+// ═══════════════════════════════════════════
+function loadCharts() {
+  if (typeof Chart === 'undefined') return;
+  const grade = $('analyticsGrade').value;
+
+  // 1. Weekly trend (last 7 days)
+  const days = [];
+  const counts = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const ds = d.toISOString().split('T')[0];
+    days.push(d.toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric' }));
+    let dayRecords = attendanceLog.filter(a => a.date === ds);
+    if (grade) dayRecords = dayRecords.filter(a => a.grade === grade);
+    const present = new Set(dayRecords.filter(a => a.status === 'present' || a.status === 'late').map(a => a.studentId)).size;
+    counts.push(present);
+  }
+
+  if (charts.weeklyChart) charts.weeklyChart.destroy();
+  charts.weeklyChart = new Chart($('weeklyChart'), {
+    type: 'line',
+    data: {
+      labels: days,
+      datasets: [{
+        label: 'Present Students',
+        data: counts,
+        borderColor: '#3b82f6',
+        backgroundColor: 'rgba(59,130,246,0.1)',
+        fill: true,
+        tension: 0.3,
+        pointBackgroundColor: '#3b82f6'
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, ticks: { stepSize: 1, color: '#64748b' } },
+        x: { ticks: { color: '#64748b', font: { size: 9 } } }
+      }
+    }
+  });
+
+  // 2. Top absent students
+  const absentMap = {};
+  attendanceLog.forEach(a => {
+    if (grade && a.grade !== grade) return;
+    if (a.status !== 'absent') return;
+    absentMap[a.studentId] = (absentMap[a.studentId] || 0) + 1;
+  });
+
+  const absentSorted = Object.entries(absentMap)
+    .sort((a,b) => b[1] - a[1])
+    .slice(0, 5);
+
+  const absentLabels = absentSorted.map(([id]) => {
+    const s = students.find(st => st.id === id);
+    return s ? s.name : id;
+  });
+  const absentData = absentSorted.map(([,c]) => c);
+
+  if (charts.absentChart) charts.absentChart.destroy();
+  charts.absentChart = new Chart($('absentChart'), {
+    type: 'bar',
+    data: {
+      labels: absentLabels.length > 0 ? absentLabels : ['No data'],
+      datasets: [{
+        label: 'Absences',
+        data: absentData.length > 0 ? absentData : [0],
+        backgroundColor: '#ef4444',
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, ticks: { stepSize: 1, color: '#64748b' } },
+        x: { ticks: { color: '#64748b', font: { size: 8 } } }
+      }
+    }
+  });
+
+  // 3. Class-wise attendance rate
+  const classMap = {};
+  const classSet = new Set();
+  students.forEach(s => {
+    if (s.grade) classSet.add(s.grade);
+  });
+  if (grade) {
+    // Only show selected class if filtering
+    const cls = grade;
+    const total = students.filter(s => s.grade === cls).length;
+    const presentSet = new Set();
+    // Last 30 days
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 30);
+    attendanceLog.forEach(a => {
+      if (a.grade !== cls) return;
+      if (a.status === 'present' || a.status === 'late') presentSet.add(a.studentId);
+    });
+    if (total > 0) classMap[cls] = Math.round((presentSet.size / total) * 100);
+  } else {
+    classSet.forEach(cls => {
+      const total = students.filter(s => s.grade === cls).length;
+      if (total === 0) return;
+      const presentSet = new Set();
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - 30);
+      attendanceLog.forEach(a => {
+        if (a.grade !== cls) return;
+        if (a.status === 'present' || a.status === 'late') presentSet.add(a.studentId);
+      });
+      classMap[cls] = Math.round((presentSet.size / total) * 100);
+    });
+  }
+
+  const classLabels = Object.keys(classMap);
+  const classData = Object.values(classMap);
+
+  if (charts.classChart) charts.classChart.destroy();
+  charts.classChart = new Chart($('classChart'), {
+    type: 'bar',
+    data: {
+      labels: classLabels.length > 0 ? classLabels : ['No data'],
+      datasets: [{
+        label: 'Attendance Rate %',
+        data: classData.length > 0 ? classData : [0],
+        backgroundColor: classData.map(v => v >= 80 ? '#10b981' : v >= 60 ? '#f59e0b' : '#ef4444'),
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, max: 100, ticks: { color: '#64748b', callback: v => v + '%' } },
+        x: { ticks: { color: '#64748b', font: { size: 9 } } }
+      }
+    }
+  });
 }
 
 // ═══════════════════════════════════════════
@@ -1580,10 +2672,11 @@ function showToast(msg, type = 'info') {
 // ═══════════════════════════════════════════
 //  START
 // ═══════════════════════════════════════════
-// Set today's date as default filter
 document.addEventListener('DOMContentLoaded', () => {
   const d = $('filterDate');
   if (d) d.value = getTodayStr();
+  applyTheme();
+  checkAuth();
 });
 
 window.addEventListener('load', init);
