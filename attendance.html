@@ -1,0 +1,1592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FaceAttend — School Attendance System</title>
+<script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+<script type="module">
+// ══════════════════════════════════════════
+//  FIREBASE SETUP
+// ══════════════════════════════════════════
+import { initializeApp }        from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAnalytics }         from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
+import {
+  getDatabase, ref, set, get, remove, push, onValue, child
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey:            "AIzaSyDRJHhPwI8v8wHLmvaOjQfk4Qj9lQ6kgZQ",
+  authDomain:        "meetclone-d099a.firebaseapp.com",
+  databaseURL:       "https://meetclone-d099a-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:         "meetclone-d099a",
+  storageBucket:     "meetclone-d099a.firebasestorage.app",
+  messagingSenderId: "817456317630",
+  appId:             "1:817456317630:web:f1c12bb430dce65cbc4aef",
+  measurementId:     "G-K1FV8B482D"
+};
+
+const app       = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+const db        = getDatabase(app);
+
+// Expose DB helpers globally so non-module script can use them
+window._fb = { db, ref, set, get, remove, push, onValue, child };
+window._fbReady = true;
+window.dispatchEvent(new Event('fbReady'));
+</script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@300;400;500;600;700&display=swap');
+
+  :root {
+    --bg: #080c14;
+    --surface: #0d1422;
+    --card: #111827;
+    --border: #1e2d45;
+    --blue: #3b82f6;
+    --blue-dim: #1d4ed8;
+    --cyan: #06b6d4;
+    --green: #10b981;
+    --red: #ef4444;
+    --yellow: #f59e0b;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Inter', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── HEADER ── */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 32px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-icon {
+    width: 38px; height: 38px;
+    background: linear-gradient(135deg, var(--blue), var(--cyan));
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+
+  .logo-text { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }
+  .logo-sub  { font-family: var(--mono); font-size: 11px; color: var(--cyan); }
+
+  .header-right { display: flex; align-items: center; gap: 16px; }
+
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--muted);
+    display: inline-block;
+    transition: background 0.3s;
+  }
+  .status-dot.ready { background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse-dot 2s infinite; }
+
+  @keyframes pulse-dot {
+    0%,100% { opacity:1; } 50% { opacity:.5; }
+  }
+
+  .status-text { font-size: 13px; color: var(--muted); font-family: var(--mono); }
+
+  /* ── NAV TABS ── */
+  .nav-tabs {
+    display: flex;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    gap: 4px;
+  }
+
+  .tab-btn {
+    padding: 12px 22px;
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .tab-btn:hover  { color: var(--text); }
+  .tab-btn.active { color: var(--blue); border-bottom-color: var(--blue); }
+
+  /* ── MAIN LAYOUT ── */
+  main { padding: 28px 32px; max-width: 1200px; margin: 0 auto; }
+
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ── CAMERA SECTION ── */
+  .camera-wrap {
+    position: relative;
+    width: 100%;
+    max-width: 560px;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #000;
+    border: 1px solid var(--border);
+  }
+
+  #videoEl, #videoReg {
+    width: 100%;
+    display: block;
+    border-radius: 16px;
+  }
+
+  .canvas-overlay {
+    position: absolute;
+    top: 0; left: 0;
+    border-radius: 16px;
+    pointer-events: none;
+  }
+
+  .scan-overlay {
+    position: absolute;
+    inset: 0;
+    border-radius: 16px;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .scan-line {
+    position: absolute;
+    left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+    opacity: 0;
+    animation: scan 3s ease-in-out infinite;
+  }
+
+  @keyframes scan {
+    0%   { top: 0%; opacity: 0; }
+    5%   { opacity: 1; }
+    95%  { opacity: 1; }
+    100% { top: 100%; opacity: 0; }
+  }
+
+  .corner-tl, .corner-tr, .corner-bl, .corner-br {
+    position: absolute;
+    width: 24px; height: 24px;
+    border-color: var(--cyan);
+    border-style: solid;
+    opacity: 0.6;
+  }
+  .corner-tl { top: 12px; left: 12px; border-width: 2px 0 0 2px; }
+  .corner-tr { top: 12px; right: 12px; border-width: 2px 2px 0 0; }
+  .corner-bl { bottom: 12px; left: 12px; border-width: 0 0 2px 2px; }
+  .corner-br { bottom: 12px; right: 12px; border-width: 0 2px 2px 0; }
+
+  .cam-label {
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.6);
+    border: 1px solid var(--border);
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--cyan);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  /* ── GRID LAYOUTS ── */
+  .two-col {
+    display: grid;
+    grid-template-columns: 560px 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px;
+  }
+
+  .card h3 {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: var(--text);
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  /* ── RESULT DISPLAY ── */
+  .result-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    transition: all 0.3s;
+    margin-top: 0;
+  }
+
+  .result-box.match {
+    border-color: var(--green);
+    background: rgba(16,185,129,0.08);
+  }
+
+  .result-box.no-match {
+    border-color: var(--red);
+    background: rgba(239,68,68,0.08);
+  }
+
+  .result-name {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--green);
+    margin-bottom: 4px;
+  }
+
+  .result-id {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .result-time {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--cyan);
+    margin-top: 8px;
+  }
+
+  .result-icon { font-size: 36px; margin-bottom: 8px; }
+
+  /* ── FORM ── */
+  .form-group { margin-bottom: 16px; }
+
+  .form-group label {
+    display: block;
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+
+  .form-group input, .form-group select {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .form-group input:focus, .form-group select:focus {
+    border-color: var(--blue);
+  }
+
+  .form-group select option { background: var(--surface); }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none;
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    width: 100%;
+  }
+
+  .btn-primary {
+    background: var(--blue);
+    color: #fff;
+  }
+  .btn-primary:hover:not(:disabled) { background: var(--blue-dim); transform: translateY(-1px); }
+
+  .btn-success {
+    background: var(--green);
+    color: #fff;
+  }
+  .btn-success:hover:not(:disabled) { filter: brightness(1.1); }
+
+  .btn-danger {
+    background: var(--red);
+    color: #fff;
+  }
+  .btn-danger:hover:not(:disabled) { filter: brightness(1.1); }
+
+  .btn-ghost {
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover:not(:disabled) { border-color: var(--blue); color: var(--blue); }
+
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  .btn-row { display: flex; gap: 10px; margin-top: 16px; }
+  .btn-row .btn { flex: 1; }
+
+  /* ── STUDENT LIST ── */
+  .student-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+  }
+
+  .student-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    text-align: center;
+    transition: border-color 0.2s;
+    cursor: default;
+  }
+
+  .student-card:hover { border-color: var(--blue); }
+
+  .student-card .s-avatar {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--blue), var(--cyan));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    margin: 0 auto 10px;
+  }
+
+  .student-card .s-name {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .student-card .s-id {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .student-card .s-grade {
+    font-size: 11px;
+    color: var(--cyan);
+    margin-top: 4px;
+  }
+
+  .delete-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 13px;
+    margin-top: 6px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    transition: all 0.15s;
+  }
+  .delete-btn:hover { color: var(--red); background: rgba(239,68,68,0.1); }
+
+  /* ── ATTENDANCE TABLE ── */
+  .att-table-wrap { overflow-x: auto; margin-top: 12px; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+
+  th {
+    background: var(--surface);
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 10px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  td {
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(30,45,69,0.5);
+    vertical-align: middle;
+  }
+
+  tr:hover td { background: rgba(59,130,246,0.04); }
+
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: var(--mono);
+  }
+
+  .badge-present { background: rgba(16,185,129,0.15); color: var(--green); }
+  .badge-absent  { background: rgba(239,68,68,0.15);  color: var(--red); }
+
+  /* ── STATS CARDS ── */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 20px;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+
+  .stat-val {
+    font-size: 28px;
+    font-weight: 700;
+    font-family: var(--mono);
+  }
+
+  .stat-card.blue  .stat-val { color: var(--blue); }
+  .stat-card.green .stat-val { color: var(--green); }
+  .stat-card.cyan  .stat-val { color: var(--cyan); }
+  .stat-card.yellow .stat-val { color: var(--yellow); }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 22px;
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 9999;
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    white-space: nowrap;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+  #toast.success { border-color: var(--green); color: var(--green); }
+  #toast.error   { border-color: var(--red);   color: var(--red);   }
+  #toast.info    { border-color: var(--blue);  color: var(--blue);  }
+
+  /* ── LOADING ── */
+  .loading-screen {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    gap: 18px;
+  }
+
+  .loading-screen h2 { font-size: 22px; font-weight: 600; }
+  .loading-screen p  { color: var(--muted); font-size: 14px; font-family: var(--mono); }
+
+  .progress-bar-wrap {
+    width: 300px;
+    background: var(--border);
+    border-radius: 20px;
+    height: 4px;
+    overflow: hidden;
+  }
+
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--blue), var(--cyan));
+    border-radius: 20px;
+    transition: width 0.4s ease;
+    width: 0%;
+  }
+
+  .spinner {
+    width: 40px; height: 40px;
+    border: 3px solid var(--border);
+    border-top-color: var(--blue);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── DATE FILTER ── */
+  .filter-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .filter-row input[type="date"],
+  .filter-row select {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 14px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 13px;
+    outline: none;
+  }
+
+  .filter-row label { font-size: 13px; color: var(--muted); }
+
+  .section-title {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    letter-spacing: -0.4px;
+  }
+
+  .section-sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 24px;
+  }
+
+  /* ── NO DATA ── */
+  .empty-state {
+    text-align: center;
+    padding: 48px 20px;
+    color: var(--muted);
+  }
+  .empty-state .e-icon { font-size: 40px; margin-bottom: 12px; }
+  .empty-state p { font-size: 14px; }
+
+  /* ── CAPTURE FLASH ── */
+  @keyframes flash {
+    0%   { opacity: 0; }
+    50%  { opacity: 0.4; }
+    100% { opacity: 0; }
+  }
+  .flash {
+    position: absolute;
+    inset: 0;
+    background: white;
+    border-radius: 16px;
+    pointer-events: none;
+    animation: flash 0.3s ease;
+  }
+
+  .confidence-bar {
+    width: 100%;
+    height: 4px;
+    background: var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 10px;
+  }
+  .confidence-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.4s ease;
+  }
+
+  @media (max-width: 900px) {
+    main { padding: 16px; }
+    .two-col { grid-template-columns: 1fr; }
+    .stats-row { grid-template-columns: repeat(2,1fr); }
+    header { padding: 14px 16px; }
+    .nav-tabs { padding: 0 16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOADING SCREEN -->
+<div class="loading-screen" id="loadingScreen">
+  <div class="spinner"></div>
+  <h2>🎓 FaceAttend</h2>
+  <p id="loadMsg">Loading AI models...</p>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar" id="progressBar"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">🎓</div>
+    <div>
+      <div class="logo-text">FaceAttend</div>
+      <div class="logo-sub">School Attendance System</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <span class="status-dot" id="statusDot"></span>
+    <span class="status-text" id="statusText">Loading...</span>
+    <span style="font-size:11px;font-family:var(--mono);color:var(--muted);margin-left:4px;" id="fbStatus">⬤ Firebase</span>
+  </div>
+</header>
+
+<!-- NAV TABS -->
+<div class="nav-tabs">
+  <button class="tab-btn active" onclick="showTab('attendance')" id="tab-attendance">
+    📸 Take Attendance
+  </button>
+  <button class="tab-btn" onclick="showTab('register')" id="tab-register">
+    ➕ Register Student
+  </button>
+  <button class="tab-btn" onclick="showTab('records')" id="tab-records">
+    📋 Records
+  </button>
+  <button class="tab-btn" onclick="showTab('students')" id="tab-students">
+    👥 Students
+  </button>
+</div>
+
+<!-- MAIN -->
+<main>
+
+  <!-- ── PAGE: ATTENDANCE ── -->
+  <div class="page active" id="page-attendance">
+    <div class="section-title">📸 Take Attendance</div>
+    <div class="section-sub">Stand in front of the camera — the system will recognize you automatically.</div>
+
+    <div class="stats-row">
+      <div class="stat-card blue">
+        <div class="stat-label">Total Students</div>
+        <div class="stat-val" id="statTotal">0</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-label">Present Today</div>
+        <div class="stat-val" id="statPresent">0</div>
+      </div>
+      <div class="stat-card yellow">
+        <div class="stat-label">Absent Today</div>
+        <div class="stat-val" id="statAbsent">0</div>
+      </div>
+      <div class="stat-card cyan">
+        <div class="stat-label">Rate</div>
+        <div class="stat-val" id="statRate">0%</div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div>
+        <div class="camera-wrap">
+          <video id="videoEl" autoplay muted playsinline></video>
+          <canvas class="canvas-overlay" id="canvasAtt"></canvas>
+          <div class="scan-overlay">
+            <div class="scan-line"></div>
+            <div class="corner-tl"></div>
+            <div class="corner-tr"></div>
+            <div class="corner-bl"></div>
+            <div class="corner-br"></div>
+          </div>
+          <div class="cam-label">LIVE SCAN</div>
+        </div>
+        <div class="btn-row" style="margin-top:14px;">
+          <button class="btn btn-primary" id="btnMarkAtt" onclick="markAttendance()" disabled>
+            ✅ Mark Attendance
+          </button>
+          <button class="btn btn-ghost" onclick="toggleAutoMode()" id="btnAuto">
+            🔄 Auto Mode: OFF
+          </button>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div class="card">
+          <h3>🔍 Recognition Result</h3>
+          <div class="result-box" id="resultBox">
+            <div class="result-icon">👤</div>
+            <div style="color:var(--muted);font-size:14px;">Point camera at a face...</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>📅 Today's Attendance</h3>
+          <div id="todayList" style="max-height:260px;overflow-y:auto;">
+            <div class="empty-state">
+              <div class="e-icon">📋</div>
+              <p>No attendance marked yet</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PAGE: REGISTER ── -->
+  <div class="page" id="page-register">
+    <div class="section-title">➕ Register Student</div>
+    <div class="section-sub">Capture multiple face samples for better recognition accuracy.</div>
+
+    <div class="two-col">
+      <div>
+        <div class="camera-wrap">
+          <video id="videoReg" autoplay muted playsinline></video>
+          <canvas class="canvas-overlay" id="canvasReg"></canvas>
+          <div class="scan-overlay">
+            <div class="scan-line"></div>
+            <div class="corner-tl"></div>
+            <div class="corner-tr"></div>
+            <div class="corner-bl"></div>
+            <div class="corner-br"></div>
+          </div>
+          <div class="cam-label">FACE CAPTURE</div>
+        </div>
+
+        <div class="btn-row" style="margin-top:14px;">
+          <button class="btn btn-primary" id="btnCapture" onclick="captureFace()" disabled>
+            📷 Capture Sample
+          </button>
+          <button class="btn btn-ghost" onclick="clearCaptures()">
+            🗑 Clear
+          </button>
+        </div>
+
+        <div id="captureStatus" style="margin-top:12px;"></div>
+        <div id="capturePreview" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;"></div>
+      </div>
+
+      <div>
+        <div class="card">
+          <h3>👤 Student Details</h3>
+          <div class="form-group">
+            <label>Full Name *</label>
+            <input type="text" id="regName" placeholder="e.g. Kasun Perera">
+          </div>
+          <div class="form-group">
+            <label>Student ID *</label>
+            <input type="text" id="regId" placeholder="e.g. STU-2024-001">
+          </div>
+          <div class="form-group">
+            <label>Grade / Class</label>
+            <select id="regGrade">
+              <option value="">Select Grade</option>
+              <option>Grade 6</option>
+              <option>Grade 7</option>
+              <option>Grade 8</option>
+              <option>Grade 9</option>
+              <option>Grade 10</option>
+              <option>Grade 11</option>
+              <option>Grade 12</option>
+              <option>Grade 13</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Gender</label>
+            <select id="regGender">
+              <option value="">Select</option>
+              <option>Male</option>
+              <option>Female</option>
+            </select>
+          </div>
+          <button class="btn btn-success" id="btnRegister" onclick="registerStudent()" disabled>
+            ✅ Register Student
+          </button>
+        </div>
+
+        <div class="card" style="margin-top:14px;">
+          <h3>💡 Tips for Best Results</h3>
+          <ul style="color:var(--muted);font-size:13px;line-height:1.8;padding-left:16px;">
+            <li>Capture <strong style="color:var(--text)">3–5 samples</strong> from different angles</li>
+            <li>Ensure <strong style="color:var(--text)">good lighting</strong> on the face</li>
+            <li>Try <strong style="color:var(--text)">slight head tilts</strong> left and right</li>
+            <li>Keep the <strong style="color:var(--text)">face centered</strong> in the frame</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PAGE: RECORDS ── -->
+  <div class="page" id="page-records">
+    <div class="section-title">📋 Attendance Records</div>
+    <div class="section-sub">View and filter all attendance history.</div>
+
+    <div class="filter-row">
+      <label>Date:</label>
+      <input type="date" id="filterDate">
+      <label>Class:</label>
+      <select id="filterGrade">
+        <option value="">All Grades</option>
+        <option>Grade 6</option><option>Grade 7</option><option>Grade 8</option>
+        <option>Grade 9</option><option>Grade 10</option><option>Grade 11</option>
+        <option>Grade 12</option><option>Grade 13</option>
+      </select>
+      <button class="btn btn-primary" style="width:auto;padding:8px 18px;" onclick="loadRecords()">🔍 Filter</button>
+      <button class="btn btn-ghost" style="width:auto;padding:8px 18px;" onclick="exportCSV()">⬇ Export CSV</button>
+    </div>
+
+    <div class="card">
+      <div class="att-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Student</th>
+              <th>ID</th>
+              <th>Grade</th>
+              <th>Date</th>
+              <th>Time</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="recordsTbody">
+            <tr>
+              <td colspan="6">
+                <div class="empty-state">
+                  <div class="e-icon">📋</div>
+                  <p>No records yet. Mark some attendance first!</p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PAGE: STUDENTS ── -->
+  <div class="page" id="page-students">
+    <div class="section-title">👥 Registered Students</div>
+    <div class="section-sub">All students with face data stored in this browser.</div>
+
+    <div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;">
+      <input type="text" id="searchStudents" placeholder="🔍 Search by name or ID..."
+        oninput="renderStudentsList()"
+        style="background:var(--surface);border:1px solid var(--border);border-radius:8px;
+               padding:9px 14px;color:var(--text);font-family:var(--sans);font-size:14px;
+               outline:none;flex:1;min-width:200px;">
+      <button class="btn btn-danger" style="width:auto;padding:9px 18px;" onclick="clearAllData()">
+        🗑 Clear All Data
+      </button>
+    </div>
+
+    <div id="studentsList"></div>
+  </div>
+
+</main>
+
+<script>
+// ═══════════════════════════════════════════
+//  GLOBALS
+// ═══════════════════════════════════════════
+const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model';
+let modelsLoaded = false;
+let attStream = null, regStream = null;
+let capturedDescriptors = [];
+let students = [];
+let attendanceLog = [];
+let labeledDescriptors = null;
+let autoMode = false;
+let isDetecting = false;
+let fbReady = false;
+
+// Firebase shortcuts (set after fbReady event)
+let _db, _ref, _set, _get, _remove, _push, _onValue, _child;
+
+const $ = id => document.getElementById(id);
+
+// ═══════════════════════════════════════════
+//  FIREBASE INIT
+// ═══════════════════════════════════════════
+function setupFirebase() {
+  const { db, ref, set, get, remove, push, onValue, child } = window._fb;
+  _db = db; _ref = ref; _set = set; _get = get;
+  _remove = remove; _push = push; _onValue = onValue; _child = child;
+  fbReady = true;
+
+  // Show connected
+  const fbEl = $('fbStatus');
+  if (fbEl) { fbEl.style.color = 'var(--green)'; fbEl.textContent = '⬤ Firebase'; }
+
+  // Listen realtime for students
+  _onValue(_ref(_db, 'students'), snap => {
+    students = [];
+    if (snap.exists()) {
+      snap.forEach(child => {
+        const s = child.val();
+        students.push({
+          ...s,
+          descriptors: s.descriptors.map(d => new Float32Array(Object.values(d)))
+        });
+      });
+    }
+    buildLabeledDescriptors();
+    updateStats();
+    renderStudentsList();
+  });
+
+  // Listen realtime for attendance
+  _onValue(_ref(_db, 'attendance'), snap => {
+    attendanceLog = [];
+    if (snap.exists()) {
+      snap.forEach(child => attendanceLog.push(child.val()));
+    }
+    updateStats();
+    renderTodayList();
+  });
+}
+
+// ═══════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════
+async function init() {
+  setProgress(5, 'Connecting to Firebase...');
+
+  // Wait for Firebase module to load
+  if (window._fbReady) {
+    setupFirebase();
+  } else {
+    window.addEventListener('fbReady', setupFirebase, { once: true });
+  }
+
+  setProgress(15, 'Loading face detection model...');
+
+  try {
+    await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+    setProgress(45, 'Loading landmark model...');
+    await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+    setProgress(75, 'Loading recognition model...');
+    await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+    setProgress(100, 'Ready!');
+    modelsLoaded = true;
+
+    setTimeout(() => {
+      $('loadingScreen').style.display = 'none';
+      $('statusDot').classList.add('ready');
+      $('statusText').textContent = 'Firebase · AI Ready';
+      startCamera('att');
+      updateStats();
+    }, 500);
+
+  } catch(e) {
+    setProgress(0, 'Model load failed. Check internet connection.');
+    console.error(e);
+    setTimeout(() => {
+      $('loadingScreen').style.display = 'none';
+      showToast('⚠️ Models failed to load. Check connection.', 'error');
+    }, 2000);
+  }
+}
+
+function setProgress(pct, msg) {
+  $('progressBar').style.width = pct + '%';
+  $('loadMsg').textContent = msg;
+}
+
+// ═══════════════════════════════════════════
+//  FIREBASE STORAGE
+// ═══════════════════════════════════════════
+async function saveStudentToFirebase(student) {
+  if (!fbReady) return;
+  const toSave = {
+    ...student,
+    descriptors: student.descriptors.map(d => Array.from(d))
+  };
+  await _set(_ref(_db, `students/${student.id}`), toSave);
+}
+
+async function deleteStudentFromFirebase(id) {
+  if (!fbReady) return;
+  await _remove(_ref(_db, `students/${id}`));
+  // Also remove their attendance records
+  const snap = await _get(_ref(_db, 'attendance'));
+  if (snap.exists()) {
+    const updates = [];
+    snap.forEach(child => {
+      if (child.val().studentId === id) {
+        updates.push(_remove(_ref(_db, `attendance/${child.key}`)));
+      }
+    });
+    await Promise.all(updates);
+  }
+}
+
+async function saveAttendanceToFirebase(entry) {
+  if (!fbReady) return;
+  const newRef = _push(_ref(_db, 'attendance'));
+  await _set(newRef, { ...entry, firebaseKey: newRef.key });
+}
+
+async function clearAllFromFirebase() {
+  if (!fbReady) return;
+  await _remove(_ref(_db, 'students'));
+  await _remove(_ref(_db, 'attendance'));
+}
+
+function buildLabeledDescriptors() {
+  if (students.length === 0) { labeledDescriptors = null; return; }
+  labeledDescriptors = students.map(s =>
+    new faceapi.LabeledFaceDescriptors(s.id, s.descriptors)
+  );
+}
+
+// ═══════════════════════════════════════════
+//  CAMERA
+// ═══════════════════════════════════════════
+async function startCamera(mode) {
+  if (!navigator.mediaDevices) {
+    showToast('Camera not supported in this browser', 'error');
+    return;
+  }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' }
+    });
+
+    if (mode === 'att') {
+      if (attStream) attStream.getTracks().forEach(t => t.stop());
+      attStream = stream;
+      const vid = $('videoEl');
+      vid.srcObject = stream;
+      await vid.play();
+      sizeCanvas('canvasAtt', vid);
+      vid.addEventListener('resize', () => sizeCanvas('canvasAtt', vid));
+      startAttDetection();
+      $('btnMarkAtt').disabled = false;
+    } else {
+      if (regStream) regStream.getTracks().forEach(t => t.stop());
+      regStream = stream;
+      const vid = $('videoReg');
+      vid.srcObject = stream;
+      await vid.play();
+      sizeCanvas('canvasReg', vid);
+      vid.addEventListener('resize', () => sizeCanvas('canvasReg', vid));
+      startRegDetection();
+      $('btnCapture').disabled = false;
+    }
+  } catch(e) {
+    showToast('Could not access camera: ' + e.message, 'error');
+  }
+}
+
+function sizeCanvas(canvasId, video) {
+  const c = $(canvasId);
+  c.width  = video.videoWidth  || video.offsetWidth;
+  c.height = video.videoHeight || video.offsetHeight;
+  c.style.width  = video.offsetWidth  + 'px';
+  c.style.height = video.offsetHeight + 'px';
+}
+
+// ═══════════════════════════════════════════
+//  DETECTION LOOPS
+// ═══════════════════════════════════════════
+let attDetectionRunning = false;
+async function startAttDetection() {
+  if (!modelsLoaded) return;
+  attDetectionRunning = true;
+  const vid = $('videoEl');
+  const canvas = $('canvasAtt');
+  const ctx = canvas.getContext('2d');
+
+  async function loop() {
+    if (!attDetectionRunning) return;
+    if (vid.readyState === 4) {
+      const det = await faceapi
+        .detectAllFaces(vid, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 }))
+        .withFaceLandmarks()
+        .withFaceDescriptors();
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (det.length > 0) {
+        const resized = faceapi.resizeResults(det, { width: canvas.width, height: canvas.height });
+        resized.forEach(d => {
+          const box = d.detection.box;
+          // Draw glowing box
+          ctx.strokeStyle = '#06b6d4';
+          ctx.lineWidth = 2;
+          ctx.shadowColor = '#06b6d4';
+          ctx.shadowBlur = 12;
+          ctx.strokeRect(box.x, box.y, box.width, box.height);
+          ctx.shadowBlur = 0;
+
+          // Corner marks
+          const cs = 16, lw = 3;
+          ctx.strokeStyle = '#3b82f6';
+          ctx.lineWidth = lw;
+          [[box.x,box.y],[box.x+box.width,box.y],[box.x,box.y+box.height],[box.x+box.width,box.y+box.height]].forEach(([cx,cy],i)=>{
+            ctx.beginPath();
+            ctx.moveTo(cx + (i%2===0?0:-cs), cy);
+            ctx.lineTo(cx + (i%2===0?cs:0), cy);
+            ctx.moveTo(cx, cy + (i<2?0:-cs));
+            ctx.lineTo(cx, cy + (i<2?cs:0));
+            ctx.stroke();
+          });
+        });
+
+        if (autoMode && !isDetecting) {
+          isDetecting = true;
+          await runRecognition(det[0].descriptor, canvas);
+          isDetecting = false;
+        }
+      } else {
+        updateResultBox(null);
+      }
+    }
+    setTimeout(loop, 120);
+  }
+  loop();
+}
+
+let regDetectionRunning = false;
+async function startRegDetection() {
+  if (!modelsLoaded) return;
+  regDetectionRunning = true;
+  const vid = $('videoReg');
+  const canvas = $('canvasReg');
+  const ctx = canvas.getContext('2d');
+
+  async function loop() {
+    if (!regDetectionRunning) return;
+    if (vid.readyState === 4) {
+      const det = await faceapi
+        .detectSingleFace(vid, new faceapi.TinyFaceDetectorOptions({ inputSize: 320 }))
+        .withFaceLandmarks();
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (det) {
+        const r = faceapi.resizeResults(det, { width: canvas.width, height: canvas.height });
+        const box = r.detection.box;
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 2;
+        ctx.shadowColor = '#10b981';
+        ctx.shadowBlur = 10;
+        ctx.strokeRect(box.x, box.y, box.width, box.height);
+        ctx.shadowBlur = 0;
+        $('btnCapture').style.background = 'var(--green)';
+      } else {
+        $('btnCapture').style.background = '';
+      }
+    }
+    setTimeout(loop, 150);
+  }
+  loop();
+}
+
+// ═══════════════════════════════════════════
+//  ATTENDANCE MARKING
+// ═══════════════════════════════════════════
+async function markAttendance() {
+  if (!modelsLoaded) { showToast('Models not loaded yet', 'error'); return; }
+  const vid = $('videoEl');
+
+  const det = await faceapi
+    .detectSingleFace(vid, new faceapi.TinyFaceDetectorOptions({ inputSize: 320 }))
+    .withFaceLandmarks()
+    .withFaceDescriptor();
+
+  if (!det) {
+    showToast('❌ No face detected. Try again.', 'error');
+    updateResultBox(null, 'no-face');
+    return;
+  }
+
+  await runRecognition(det.descriptor, $('canvasAtt'));
+}
+
+async function runRecognition(descriptor, canvas) {
+  buildLabeledDescriptors();
+  if (!labeledDescriptors || labeledDescriptors.length === 0) {
+    showToast('No students registered yet!', 'error');
+    return;
+  }
+
+  const matcher = new faceapi.FaceMatcher(labeledDescriptors, 0.5);
+  const match   = matcher.findBestMatch(descriptor);
+
+  if (match.label === 'unknown') {
+    updateResultBox(null, 'unknown');
+    showToast('🔍 Face not recognized', 'error');
+    return;
+  }
+
+  const student = students.find(s => s.id === match.label);
+  if (!student) return;
+
+  const confidence = Math.round((1 - match.distance) * 100);
+  const today = getTodayStr();
+  const alreadyMarked = attendanceLog.find(a => a.studentId === student.id && a.date === today);
+
+  if (alreadyMarked) {
+    showToast(`ℹ️ ${student.name} already marked for today`, 'info');
+    updateResultBox(student, 'already', confidence);
+    return;
+  }
+
+  const now = new Date();
+  const entry = {
+    studentId: student.id,
+    name:      student.name,
+    grade:     student.grade,
+    date:      today,
+    time:      now.toLocaleTimeString(),
+    timestamp: now.getTime()
+  };
+
+  await saveAttendanceToFirebase(entry);
+  // realtime listener updates attendanceLog automatically
+  updateResultBox(student, 'match', confidence);
+  showToast(`✅ ${student.name} marked Present!`, 'success');
+}
+
+function updateResultBox(student, status, confidence) {
+  const box = $('resultBox');
+  box.className = 'result-box';
+
+  if (!student || status === 'no-face') {
+    box.innerHTML = `<div class="result-icon">👤</div><div style="color:var(--muted);font-size:14px;">${status==='no-face'?'No face detected. Move closer.':'Point camera at a face...'}</div>`;
+    return;
+  }
+
+  if (status === 'unknown') {
+    box.classList.add('no-match');
+    box.innerHTML = `<div class="result-icon">❓</div><div style="color:var(--red);font-size:16px;font-weight:600;">Unknown Face</div><div style="color:var(--muted);font-size:13px;margin-top:4px;">Not in the system</div>`;
+    return;
+  }
+
+  box.classList.add('match');
+  const alreadyBadge = status === 'already' ? `<div style="color:var(--yellow);font-size:12px;margin-top:4px;">⚠️ Already marked today</div>` : '';
+  const confidenceColor = confidence >= 80 ? 'var(--green)' : confidence >= 60 ? 'var(--yellow)' : 'var(--red)';
+  box.innerHTML = `
+    <div class="result-icon">✅</div>
+    <div class="result-name">${student.name}</div>
+    <div class="result-id">${student.id} · ${student.grade || 'N/A'}</div>
+    <div class="result-time">${new Date().toLocaleTimeString()}</div>
+    ${alreadyBadge}
+    <div style="font-size:12px;margin-top:8px;color:${confidenceColor}">Confidence: ${confidence}%</div>
+    <div class="confidence-bar">
+      <div class="confidence-fill" style="width:${confidence}%;background:${confidenceColor}"></div>
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════
+//  AUTO MODE
+// ═══════════════════════════════════════════
+function toggleAutoMode() {
+  autoMode = !autoMode;
+  $('btnAuto').textContent = `🔄 Auto Mode: ${autoMode ? 'ON' : 'OFF'}`;
+  $('btnAuto').style.color = autoMode ? 'var(--green)' : '';
+  $('btnAuto').style.borderColor = autoMode ? 'var(--green)' : '';
+  showToast(`Auto mode ${autoMode ? 'ON — faces recognized automatically' : 'OFF'}`, 'info');
+}
+
+// ═══════════════════════════════════════════
+//  REGISTER STUDENT
+// ═══════════════════════════════════════════
+async function captureFace() {
+  if (!modelsLoaded) return;
+  const vid = $('videoReg');
+
+  const det = await faceapi
+    .detectSingleFace(vid, new faceapi.TinyFaceDetectorOptions({ inputSize: 320 }))
+    .withFaceLandmarks()
+    .withFaceDescriptor();
+
+  if (!det) {
+    showToast('No face detected. Move closer.', 'error');
+    return;
+  }
+
+  capturedDescriptors.push(det.descriptor);
+
+  // Flash effect
+  const wrap = $('videoReg').parentElement;
+  const flash = document.createElement('div');
+  flash.className = 'flash';
+  wrap.appendChild(flash);
+  setTimeout(() => flash.remove(), 350);
+
+  // Mini preview
+  const mini = document.createElement('canvas');
+  mini.width = 60; mini.height = 60;
+  const ctx = mini.getContext('2d');
+  const b = det.detection.box;
+  ctx.drawImage(vid, b.x, b.y, b.width, b.height, 0, 0, 60, 60);
+  mini.style.cssText = 'border-radius:8px;border:2px solid var(--green);';
+  $('capturePreview').appendChild(mini);
+
+  $('captureStatus').innerHTML = `<span style="color:var(--green);font-size:13px;font-family:var(--mono)">✅ ${capturedDescriptors.length} sample(s) captured</span>`;
+
+  if (capturedDescriptors.length >= 3) {
+    $('btnRegister').disabled = false;
+  }
+}
+
+function clearCaptures() {
+  capturedDescriptors = [];
+  $('capturePreview').innerHTML = '';
+  $('captureStatus').innerHTML = '';
+  $('btnRegister').disabled = true;
+}
+
+function registerStudent() {
+  const name   = $('regName').value.trim();
+  const id     = $('regId').value.trim();
+  const grade  = $('regGrade').value;
+  const gender = $('regGender').value;
+
+  if (!name || !id) { showToast('Name and ID are required!', 'error'); return; }
+  if (capturedDescriptors.length < 1) { showToast('Capture at least 1 face sample!', 'error'); return; }
+  if (students.find(s => s.id === id)) { showToast('Student ID already exists!', 'error'); return; }
+
+  const student = { id, name, grade, gender, descriptors: capturedDescriptors.slice() };
+
+  // Save to Firebase (realtime listener updates local array)
+  saveStudentToFirebase(student).then(() => {
+    showToast(`🎉 ${name} registered successfully!`, 'success');
+  }).catch(e => {
+    showToast('Firebase save failed: ' + e.message, 'error');
+  });
+
+  // Reset form immediately
+  $('regName').value = '';
+  $('regId').value = '';
+  $('regGrade').value = '';
+  $('regGender').value = '';
+  clearCaptures();
+}
+
+// ═══════════════════════════════════════════
+//  RECORDS
+// ═══════════════════════════════════════════
+function loadRecords() {
+  const date  = $('filterDate').value;
+  const grade = $('filterGrade').value;
+  let filtered = [...attendanceLog];
+  if (date)  filtered = filtered.filter(r => r.date === date);
+  if (grade) filtered = filtered.filter(r => r.grade === grade);
+
+  filtered.sort((a,b) => b.timestamp - a.timestamp);
+
+  const tbody = $('recordsTbody');
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="e-icon">📋</div><p>No records found</p></div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(r => `
+    <tr>
+      <td><strong>${r.name}</strong></td>
+      <td><span style="font-family:var(--mono);font-size:12px;color:var(--muted)">${r.studentId}</span></td>
+      <td>${r.grade || '—'}</td>
+      <td style="font-family:var(--mono);font-size:13px">${r.date}</td>
+      <td style="font-family:var(--mono);font-size:13px">${r.time}</td>
+      <td><span class="badge badge-present">PRESENT</span></td>
+    </tr>
+  `).join('');
+}
+
+function exportCSV() {
+  if (attendanceLog.length === 0) { showToast('No records to export', 'error'); return; }
+  const header = 'Name,Student ID,Grade,Date,Time,Status';
+  const rows = attendanceLog.map(r => `${r.name},${r.studentId},${r.grade || ''},${r.date},${r.time},Present`);
+  const csv = [header, ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `attendance_${getTodayStr()}.csv`;
+  a.click();
+  showToast('📥 CSV exported!', 'success');
+}
+
+// ═══════════════════════════════════════════
+//  STUDENTS LIST
+// ═══════════════════════════════════════════
+function renderStudentsList() {
+  const query = ($('searchStudents')?.value || '').toLowerCase();
+  let filtered = students.filter(s =>
+    s.name.toLowerCase().includes(query) || s.id.toLowerCase().includes(query)
+  );
+
+  const container = $('studentsList');
+  if (filtered.length === 0) {
+    container.innerHTML = `<div class="empty-state"><div class="e-icon">👥</div><p>No students registered yet</p></div>`;
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="student-grid">
+      ${filtered.map(s => `
+        <div class="student-card">
+          <div class="s-avatar">${s.gender === 'Female' ? '👩' : '👦'}</div>
+          <div class="s-name">${s.name}</div>
+          <div class="s-id">${s.id}</div>
+          <div class="s-grade">${s.grade || 'N/A'}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:3px;">${s.descriptors.length} face samples</div>
+          <button class="delete-btn" onclick="deleteStudent('${s.id}')">🗑 Remove</button>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function deleteStudent(id) {
+  if (!confirm('Remove this student and all their data?')) return;
+  deleteStudentFromFirebase(id).then(() => {
+    showToast('Student removed', 'info');
+  }).catch(e => showToast('Error: ' + e.message, 'error'));
+}
+
+function clearAllData() {
+  if (!confirm('Clear ALL students and attendance records? This cannot be undone!')) return;
+  clearAllFromFirebase().then(() => {
+    showToast('All data cleared', 'info');
+  }).catch(e => showToast('Error: ' + e.message, 'error'));
+}
+
+// ═══════════════════════════════════════════
+//  TODAY LIST
+// ═══════════════════════════════════════════
+function renderTodayList() {
+  const today = getTodayStr();
+  const todayRecs = attendanceLog.filter(a => a.date === today);
+  const container = $('todayList');
+
+  if (todayRecs.length === 0) {
+    container.innerHTML = `<div class="empty-state"><div class="e-icon">📋</div><p>No attendance marked yet</p></div>`;
+    return;
+  }
+
+  container.innerHTML = todayRecs.map(r => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 4px;border-bottom:1px solid var(--border)">
+      <div>
+        <div style="font-size:14px;font-weight:500">${r.name}</div>
+        <div style="font-size:11px;color:var(--muted);font-family:var(--mono)">${r.studentId}</div>
+      </div>
+      <div style="text-align:right">
+        <span class="badge badge-present">PRESENT</span>
+        <div style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:4px">${r.time}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════════
+//  STATS
+// ═══════════════════════════════════════════
+function updateStats() {
+  const today = getTodayStr();
+  const present = new Set(attendanceLog.filter(a => a.date === today).map(a => a.studentId)).size;
+  const total = students.length;
+  const absent = Math.max(0, total - present);
+  const rate = total > 0 ? Math.round((present / total) * 100) : 0;
+
+  $('statTotal').textContent   = total;
+  $('statPresent').textContent = present;
+  $('statAbsent').textContent  = absent;
+  $('statRate').textContent    = rate + '%';
+}
+
+// ═══════════════════════════════════════════
+//  TAB SWITCHING
+// ═══════════════════════════════════════════
+function showTab(tab) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  $('page-' + tab).classList.add('active');
+  $('tab-' + tab).classList.add('active');
+
+  if (tab === 'attendance' && modelsLoaded) {
+    attDetectionRunning = false;
+    setTimeout(() => { attDetectionRunning = true; startCamera('att'); }, 100);
+  }
+  if (tab === 'register' && modelsLoaded) {
+    regDetectionRunning = false;
+    setTimeout(() => { regDetectionRunning = true; startCamera('reg'); }, 100);
+  }
+  if (tab === 'records') loadRecords();
+  if (tab === 'students') renderStudentsList();
+}
+
+// ═══════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════
+function getTodayStr() {
+  return new Date().toISOString().split('T')[0];
+}
+
+let toastTimer = null;
+function showToast(msg, type = 'info') {
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = `show ${type}`;
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ═══════════════════════════════════════════
+//  START
+// ═══════════════════════════════════════════
+// Set today's date as default filter
+document.addEventListener('DOMContentLoaded', () => {
+  const d = $('filterDate');
+  if (d) d.value = getTodayStr();
+});
+
+window.addEventListener('load', init);
+</script>
+</body>
+</html>
