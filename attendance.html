@@ -4,12 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>FaceAttend Pro — School Attendance System</title>
+<link rel="manifest" href="data:application/json,{}" id="manifestLink">
+<meta name="theme-color" content="#080c14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
@@ -36,7 +41,7 @@ window._fbReady = true;
 window.dispatchEvent(new Event('fbReady'));
 </script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 :root {
   --bg: #080c14;
@@ -56,16 +61,20 @@ window.dispatchEvent(new Event('fbReady'));
   --sans: 'Inter', sans-serif;
   --card-shadow: none;
   --overlay: rgba(0,0,0,0.7);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-lg: 16px;
+  --transition: cubic-bezier(0.4, 0, 0.2, 1);
 }
 [data-theme="light"] {
-  --bg: #f1f5f9;
+  --bg: #f0f4f8;
   --surface: #ffffff;
   --card: #ffffff;
-  --border: #cbd5e1;
+  --border: #dce2ed;
   --text: #0f172a;
-  --muted: #64748b;
-  --card-shadow: 0 2px 12px rgba(0,0,0,0.06);
-  --overlay: rgba(0,0,0,0.4);
+  --muted: #6b7a99;
+  --card-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.04);
+  --overlay: rgba(0,0,0,0.3);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -75,61 +84,72 @@ body {
   font-family: var(--sans);
   min-height: 100vh;
   overflow-x: hidden;
-  transition: background 0.3s, color 0.3s;
+  transition: background 0.4s var(--transition), color 0.4s var(--transition);
   padding-bottom: 80px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
-@media (min-width:769px) { body { padding-bottom:0; } }
+@media (min-width:769px) { body { padding-bottom: 0; } }
 
+/* ═══ HEADER ═══ */
 header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 18px;
-  background: var(--surface);
+  padding: 12px 18px;
+  background: rgba(13,20,34,0.85);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--border);
   position: sticky;
   top: 0;
   z-index: 100;
 }
-@media (min-width:768px) { header { padding: 18px 32px; } }
+[data-theme="light"] header { background: rgba(255,255,255,0.85); }
+@media (min-width:768px) { header { padding: 16px 32px; } }
 
-.logo { display: flex; align-items: center; gap: 10px; }
+.logo { display: flex; align-items: center; gap: 12px; }
 .logo-icon {
-  width: 34px; height: 34px;
+  width: 36px; height: 36px;
   background: linear-gradient(135deg, var(--blue), var(--cyan));
-  border-radius: 8px;
+  border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 16px;
+  font-size: 18px;
+  box-shadow: 0 4px 12px rgba(6,182,212,0.3);
 }
-.logo-text { font-size: 17px; font-weight: 700; letter-spacing: -0.5px; }
-.logo-sub { font-family: var(--mono); font-size: 10px; color: var(--cyan); display:none; }
-@media (min-width:768px) { .logo-sub { display:block; } }
+.logo-text { font-size: 18px; font-weight: 800; letter-spacing: -0.5px; }
+.logo-sub { font-family: var(--mono); font-size: 10px; color: var(--cyan); display: none; }
+@media (min-width:768px) { .logo-sub { display: block; } }
 
-.header-right { display: flex; align-items: center; gap: 10px; }
+.header-right { display: flex; align-items: center; gap: 8px; }
 .status-dot {
   width: 8px; height: 8px; border-radius: 50%;
   background: var(--muted); display: inline-block;
-  transition: background 0.3s;
+  transition: background 0.3s var(--transition);
 }
-.status-dot.ready { background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse-dot 2s infinite; }
-@keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:.5} }
-.status-text { font-size: 12px; color: var(--muted); font-family: var(--mono); display:none; }
-@media (min-width:768px) { .status-text { display:inline; } }
+.status-dot.ready { background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse-dot 2s infinite; }
+@keyframes pulse-dot { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.6; transform:scale(0.85); } }
+.status-text { font-size: 11px; color: var(--muted); font-family: var(--mono); display: none; }
+@media (min-width:768px) { .status-text { display: inline; } }
 
 .icon-btn {
   background: none; border: none; color: var(--muted); cursor: pointer;
-  font-size: 20px; padding: 6px; border-radius: 8px; transition: all 0.2s;
+  font-size: 20px; padding: 7px; border-radius: 10px; transition: all 0.2s var(--transition);
   line-height: 1;
 }
-.icon-btn:hover { background: var(--border); color: var(--text); }
+.icon-btn:hover { background: rgba(255,255,255,0.06); color: var(--text); transform: scale(1.05); }
+[data-theme="light"] .icon-btn:hover { background: rgba(0,0,0,0.04); }
 .icon-btn.active { color: var(--cyan); }
 
-#fbStatus { font-size: 10px; font-family: var(--mono); color: var(--muted); }
-@media (min-width:768px) { #fbStatus { font-size:11px; } }
+#fbStatus { font-size: 10px; font-family: var(--mono); color: var(--muted); cursor: default; }
+@media (min-width:768px) { #fbStatus { font-size: 11px; } }
 
+/* ═══ NAV TABS ═══ */
 .nav-tabs {
   display: flex;
-  background: var(--surface);
+  background: rgba(13,20,34,0.6);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--border);
   padding: 0 12px;
   gap: 2px;
@@ -137,8 +157,9 @@ header {
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
 }
-.nav-tabs::-webkit-scrollbar { display:none; }
-@media (min-width:768px) { .nav-tabs { padding:0 32px; gap:4px; } }
+[data-theme="light"] .nav-tabs { background: rgba(255,255,255,0.6); }
+.nav-tabs::-webkit-scrollbar { display: none; }
+@media (min-width:768px) { .nav-tabs { padding: 0 32px; gap: 6px; } }
 
 .tab-btn {
   padding: 10px 14px;
@@ -149,42 +170,48 @@ header {
   font-weight: 500;
   cursor: pointer;
   border-bottom: 2px solid transparent;
-  transition: all 0.2s;
+  transition: all 0.2s var(--transition);
   display: flex; align-items: center; gap: 4px;
   white-space: nowrap;
+  position: relative;
 }
-@media (min-width:768px) { .tab-btn { padding:12px 20px; font-size:14px; gap:8px; } }
+@media (min-width:768px) { .tab-btn { padding: 12px 20px; font-size: 14px; gap: 8px; } }
 .tab-btn:hover { color: var(--text); }
 .tab-btn.active { color: var(--blue); border-bottom-color: var(--blue); }
+.tab-btn::after {
+  content: ''; position: absolute; bottom: -2px; left: 50%; width: 0;
+  height: 2px; background: var(--blue); transition: all 0.3s var(--transition);
+  transform: translateX(-50%); border-radius: 2px;
+}
+.tab-btn.active::after { width: 60%; }
 .tab-btn.admin-only { display: none; }
 .logged-in .tab-btn.admin-only { display: flex; }
+.bn-admin { display: none; }
+.logged-in .bn-admin { display: flex; }
 
+/* ═══ MAIN ═══ */
 main { padding: 16px; max-width: 1200px; margin: 0 auto; }
-@media (min-width:768px) { main { padding:28px 32px; } }
+@media (min-width:768px) { main { padding: 28px 32px; } }
 
-.page { display: none; }
-.page.active { display: block; }
+.page { display: none; opacity: 0; transform: translateY(8px); transition: opacity 0.35s var(--transition), transform 0.35s var(--transition); }
+.page.active { display: block; opacity: 1; transform: translateY(0); }
 
+/* ═══ CAMERA ═══ */
 .camera-wrap {
-  position: relative;
-  width: 100%;
-  max-width: 560px;
-  border-radius: 14px;
-  overflow: hidden;
-  background: #000;
+  position: relative; width: 100%; max-width: 560px;
+  border-radius: var(--radius-lg);
+  overflow: hidden; background: #000;
   border: 1px solid var(--border);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
 }
-#videoEl, #videoReg {
-  width: 100%; display: block;
-  border-radius: 14px;
-}
+#videoEl, #videoReg { width: 100%; display: block; border-radius: var(--radius-lg); }
 .canvas-overlay {
   position: absolute; top: 0; left: 0;
-  border-radius: 14px; pointer-events: none;
+  border-radius: var(--radius-lg); pointer-events: none;
 }
 .scan-overlay {
   position: absolute; inset: 0;
-  border-radius: 14px; pointer-events: none; overflow: hidden;
+  border-radius: var(--radius-lg); pointer-events: none; overflow: hidden;
 }
 .scan-line {
   position: absolute; left: 0; right: 0; height: 2px;
@@ -192,271 +219,331 @@ main { padding: 16px; max-width: 1200px; margin: 0 auto; }
   opacity: 0; animation: scan 3s ease-in-out infinite;
 }
 @keyframes scan {
-  0%{top:0%;opacity:0} 5%{opacity:1} 95%{opacity:1} 100%{top:100%;opacity:0}
+  0% { top: 0%; opacity: 0; } 5% { opacity: 0.8; } 95% { opacity: 0.8; } 100% { top: 100%; opacity: 0; }
 }
 .corner-tl,.corner-tr,.corner-bl,.corner-br {
-  position: absolute; width:20px; height:20px;
-  border-color: var(--cyan); border-style: solid; opacity:0.5;
+  position: absolute; width: 22px; height: 22px;
+  border-color: var(--cyan); border-style: solid; opacity: 0.6;
 }
-.corner-tl{top:10px;left:10px;border-width:2px 0 0 2px}
-.corner-tr{top:10px;right:10px;border-width:2px 2px 0 0}
-.corner-bl{bottom:10px;left:10px;border-width:0 0 2px 2px}
-.corner-br{bottom:10px;right:10px;border-width:0 2px 2px 0}
+.corner-tl { top: 12px; left: 12px; border-width: 3px 0 0 3px; border-radius: 4px 0 0 0; }
+.corner-tr { top: 12px; right: 12px; border-width: 3px 3px 0 0; border-radius: 0 4px 0 0; }
+.corner-bl { bottom: 12px; left: 12px; border-width: 0 0 3px 3px; border-radius: 0 0 0 4px; }
+.corner-br { bottom: 12px; right: 12px; border-width: 0 3px 3px 0; border-radius: 0 0 4px 0; }
 .cam-label {
-  position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
-  background: rgba(0,0,0,0.6); border: 1px solid var(--border);
-  padding: 3px 12px; border-radius: 20px;
+  position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+  background: rgba(0,0,0,0.7); border: 1px solid rgba(255,255,255,0.1);
+  padding: 4px 14px; border-radius: 20px;
   font-family: var(--mono); font-size: 10px; color: var(--cyan);
   letter-spacing: 2px; text-transform: uppercase;
 }
 
-.two-col {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 20px;
-  align-items: start;
-}
+/* ═══ LAYOUT ═══ */
+.two-col { display: grid; grid-template-columns: 1fr; gap: 24px; align-items: start; }
 @media (min-width:900px) { .two-col { grid-template-columns: 560px 1fr; } }
 
+/* ═══ CARD ═══ */
 .card {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 18px;
+  border-radius: var(--radius);
+  padding: 20px;
   box-shadow: var(--card-shadow);
+  transition: border-color 0.2s var(--transition), box-shadow 0.2s var(--transition), transform 0.2s var(--transition);
 }
+.card:hover { border-color: rgba(255,255,255,0.06); }
+[data-theme="light"] .card:hover { border-color: rgba(0,0,0,0.06); }
 .card h3 {
   font-size: 14px; font-weight: 600; margin-bottom: 14px;
-  color: var(--text); display: flex; align-items: center; gap: 6px;
+  color: var(--text); display: flex; align-items: center; gap: 8px;
 }
 
+/* ═══ RESULT BOX ═══ */
 .result-box {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 16px;
-  min-height: 100px;
+  border-radius: var(--radius);
+  padding: 20px; min-height: 110px;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
   text-align: center;
-  transition: all 0.3s;
+  transition: all 0.35s var(--transition);
 }
-.result-box.match { border-color: var(--green); background: rgba(16,185,129,0.08); }
-.result-box.no-match { border-color: var(--red); background: rgba(239,68,68,0.08); }
-.result-name { font-size: 18px; font-weight: 700; color: var(--green); margin-bottom: 2px; }
+.result-box.match { border-color: var(--green); background: rgba(16,185,129,0.06); box-shadow: 0 0 20px rgba(16,185,129,0.08); }
+.result-box.no-match { border-color: var(--red); background: rgba(239,68,68,0.06); }
+.result-name { font-size: 20px; font-weight: 700; color: var(--green); margin-bottom: 2px; }
 .result-id { font-family: var(--mono); font-size: 11px; color: var(--muted); }
 .result-time { font-family: var(--mono); font-size: 11px; color: var(--cyan); margin-top: 6px; }
-.result-icon { font-size: 30px; margin-bottom: 6px; }
+.result-icon { font-size: 36px; margin-bottom: 8px; }
 
-.form-group { margin-bottom: 14px; }
+/* ═══ FORMS ═══ */
+.form-group { margin-bottom: 16px; }
 .form-group label {
   display: block; font-size: 12px; color: var(--muted);
-  margin-bottom: 5px; font-weight: 500;
+  margin-bottom: 6px; font-weight: 500;
 }
 .form-group input, .form-group select {
   width: 100%;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  padding: 10px 13px;
   color: var(--text);
   font-family: var(--sans);
   font-size: 13px;
   outline: none;
-  transition: border-color 0.2s;
+  transition: all 0.2s var(--transition);
 }
-.form-group input:focus, .form-group select:focus { border-color: var(--blue); }
+.form-group input:focus, .form-group select:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+}
 .form-group select option { background: var(--surface); }
+.form-group input:hover, .form-group select:hover { border-color: rgba(255,255,255,0.15); }
+[data-theme="light"] .form-group input:hover, [data-theme="light"] .form-group select:hover { border-color: rgba(0,0,0,0.15); }
 
+/* ═══ BUTTONS ═══ */
 .btn {
   display: inline-flex; align-items: center; justify-content: center;
-  gap: 6px; padding: 9px 16px; border-radius: 8px; border: none;
+  gap: 7px; padding: 10px 18px; border-radius: var(--radius-sm); border: none;
   font-family: var(--sans); font-size: 13px; font-weight: 600;
-  cursor: pointer; transition: all 0.2s; width: 100%;
+  cursor: pointer; transition: all 0.2s var(--transition); width: 100%;
+  position: relative; overflow: hidden;
 }
-.btn-primary { background: var(--blue); color: #fff; }
-.btn-primary:hover:not(:disabled) { background: var(--blue-dim); transform: translateY(-1px); }
-.btn-success { background: var(--green); color: #fff; }
-.btn-success:hover:not(:disabled) { filter: brightness(1.1); }
-.btn-danger { background: var(--red); color: #fff; }
-.btn-danger:hover:not(:disabled) { filter: brightness(1.1); }
-.btn-ghost { background: var(--surface); color: var(--text); border:1px solid var(--border); }
-.btn-ghost:hover:not(:disabled) { border-color: var(--blue); color: var(--blue); }
-.btn-warning { background: var(--orange); color: #fff; }
-.btn:disabled { opacity: 0.45; cursor: not-allowed; }
-.btn-row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.btn::after {
+  content: ''; position: absolute; inset: 0;
+  background: rgba(255,255,255,0); transition: background 0.3s var(--transition);
+}
+.btn:hover::after { background: rgba(255,255,255,0.06); }
+.btn:active::after { background: rgba(255,255,255,0.1); }
+.btn-primary { background: linear-gradient(135deg, var(--blue), var(--blue-dim)); color: #fff; box-shadow: 0 4px 16px rgba(59,130,246,0.3); }
+.btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(59,130,246,0.4); }
+.btn-success { background: linear-gradient(135deg, var(--green), #059669); color: #fff; box-shadow: 0 4px 16px rgba(16,185,129,0.3); }
+.btn-success:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(16,185,129,0.4); }
+.btn-danger { background: linear-gradient(135deg, var(--red), #dc2626); color: #fff; box-shadow: 0 4px 16px rgba(239,68,68,0.3); }
+.btn-danger:hover:not(:disabled) { transform: translateY(-2px); }
+.btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
+.btn-ghost:hover:not(:disabled) { border-color: var(--blue); color: var(--blue); background: rgba(59,130,246,0.04); }
+.btn-warning { background: linear-gradient(135deg, var(--orange), #ea580c); color: #fff; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+.btn-row { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
 .btn-row .btn { flex: 1; min-width: 0; }
-@media (max-width:480px) { .btn-row { flex-direction:column; } }
+@media (max-width:480px) { .btn-row { flex-direction: column; } }
 
+/* ═══ STUDENT GRID ═══ */
 .student-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 10px;
-  margin-top: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px; margin-top: 12px;
 }
 .student-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 12px;
+  border-radius: var(--radius);
+  padding: 16px 12px;
   text-align: center;
-  transition: border-color 0.2s;
-  cursor: default;
+  transition: all 0.25s var(--transition);
+  cursor: default; position: relative;
 }
-.student-card:hover { border-color: var(--blue); }
+.student-card:hover {
+  border-color: var(--blue);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.2);
+}
 .student-card .s-avatar {
-  width: 48px; height: 48px; border-radius: 50%;
-  background: linear-gradient(135deg, var(--blue), var(--cyan));
+  width: 52px; height: 52px; border-radius: 50%;
+  background: linear-gradient(135deg, rgba(59,130,246,0.2), rgba(6,182,212,0.2));
   display: flex; align-items: center; justify-content: center;
-  font-size: 18px; margin: 0 auto 8px;
-  overflow: hidden;
+  font-size: 22px; margin: 0 auto 10px;
+  overflow: hidden; border: 2px solid var(--border);
+  transition: border-color 0.2s var(--transition), transform 0.2s var(--transition);
 }
-.student-card .s-avatar img { width:100%; height:100%; object-fit:cover; }
-.student-card .s-name { font-size: 12px; font-weight: 600; margin-bottom: 2px; white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.student-card:hover .s-avatar { border-color: var(--blue); transform: scale(1.05); }
+.student-card .s-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.student-card .s-name { font-size: 13px; font-weight: 600; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .student-card .s-id { font-family: var(--mono); font-size: 10px; color: var(--muted); }
-.student-card .s-grade { font-size: 10px; color: var(--cyan); margin-top: 2px; }
+.student-card .s-grade { font-size: 10px; color: var(--cyan); margin-top: 3px; }
 .student-card .s-samples { font-size: 10px; color: var(--muted); margin-top: 2px; }
-.delete-btn {
+.action-btn {
   background: none; border: none; color: var(--muted); cursor: pointer;
-  font-size: 12px; margin-top: 4px; padding: 2px 8px; border-radius: 4px;
-  transition: all 0.15s;
+  font-size: 13px; padding: 4px 10px; border-radius: 6px;
+  transition: all 0.15s var(--transition);
 }
-.delete-btn:hover { color: var(--red); background: rgba(239,68,68,0.1); }
+.action-btn:hover { transform: scale(1.1); }
+.action-btn.qr:hover { color: var(--cyan); background: rgba(6,182,212,0.1); }
+.action-btn.edit:hover { color: var(--blue); background: rgba(59,130,246,0.1); }
+.action-btn.del:hover { color: var(--red); background: rgba(239,68,68,0.1); }
 
-.att-table-wrap { overflow-x: auto; margin-top: 10px; -webkit-overflow-scrolling:touch; }
-table { width:100%; border-collapse: collapse; font-size: 13px; min-width:500px; }
+/* ═══ TABLE ═══ */
+.att-table-wrap { overflow-x: auto; margin-top: 12px; -webkit-overflow-scrolling: touch; border-radius: var(--radius-sm); border: 1px solid var(--border); }
+table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 520px; }
 th {
   background: var(--surface); color: var(--muted);
   font-size: 10px; font-weight: 600; letter-spacing: 1px;
-  text-transform: uppercase; padding: 8px 12px;
+  text-transform: uppercase; padding: 10px 14px;
   text-align: left; border-bottom: 1px solid var(--border);
   white-space: nowrap;
 }
-td { padding: 10px 12px; border-bottom:1px solid rgba(30,45,69,0.3); vertical-align:middle; }
-tr:hover td { background: rgba(59,130,246,0.04); }
+td { padding: 11px 14px; border-bottom: 1px solid rgba(30,45,69,0.2); vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(59,130,246,0.03); }
 
+/* ═══ BADGES ═══ */
 .badge {
-  display: inline-block; padding: 2px 8px; border-radius: 20px;
+  display: inline-block; padding: 3px 10px; border-radius: 20px;
   font-size: 10px; font-weight: 600; font-family: var(--mono);
+  letter-spacing: 0.3px;
 }
-.badge-present { background: rgba(16,185,129,0.15); color: var(--green); }
-.badge-absent  { background: rgba(239,68,68,0.15); color: var(--red); }
-.badge-late    { background: rgba(245,158,11,0.15); color: var(--yellow); }
+.badge-present { background: rgba(16,185,129,0.12); color: var(--green); box-shadow: inset 0 0 0 1px rgba(16,185,129,0.15); }
+.badge-absent  { background: rgba(239,68,68,0.12); color: var(--red); box-shadow: inset 0 0 0 1px rgba(239,68,68,0.15); }
+.badge-late    { background: rgba(245,158,11,0.12); color: var(--yellow); box-shadow: inset 0 0 0 1px rgba(245,158,11,0.15); }
 
+/* ═══ STATS ═══ */
 .stats-row {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  margin-bottom: 20px;
+  gap: 14px; margin-bottom: 24px;
 }
-@media (min-width:600px) { .stats-row { grid-template-columns: repeat(4,1fr); } }
+@media (min-width:600px) { .stats-row { grid-template-columns: repeat(4, 1fr); } }
 .stat-card {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 14px 16px;
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  transition: border-color 0.2s var(--transition), transform 0.2s var(--transition);
 }
-.stat-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing:1px; margin-bottom:6px; }
-.stat-val { font-size: 22px; font-weight: 700; font-family: var(--mono); }
+.stat-card:hover { transform: translateY(-2px); }
+.stat-card.blue:hover { border-color: var(--blue); }
+.stat-card.green:hover { border-color: var(--green); }
+.stat-card.cyan:hover { border-color: var(--cyan); }
+.stat-card.yellow:hover { border-color: var(--yellow); }
+.stat-card.orange:hover { border-color: var(--orange); }
+.stat-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+.stat-val { font-size: 24px; font-weight: 800; font-family: var(--mono); }
 .stat-card.blue .stat-val { color: var(--blue); }
 .stat-card.green .stat-val { color: var(--green); }
 .stat-card.cyan .stat-val { color: var(--cyan); }
 .stat-card.yellow .stat-val { color: var(--yellow); }
 .stat-card.orange .stat-val { color: var(--orange); }
 
+/* ═══ TOAST ═══ */
 #toast {
-  position: fixed; bottom: 20px; left: 50%;
-  transform: translateX(-50%) translateY(80px);
+  position: fixed; bottom: 24px; left: 50%;
+  transform: translateX(-50%) translateY(100px);
   background: var(--card); border: 1px solid var(--border);
-  border-radius: 10px; padding: 10px 18px;
+  border-radius: var(--radius); padding: 12px 22px;
   font-size: 13px; font-weight: 500; z-index: 99999;
-  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
-  white-space: nowrap; box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-  max-width: 90vw;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s var(--transition);
+  white-space: nowrap; box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+  max-width: 90vw; opacity: 0;
 }
-#toast.show { transform: translateX(-50%) translateY(0); }
+#toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
 #toast.success { border-color: var(--green); color: var(--green); }
 #toast.error { border-color: var(--red); color: var(--red); }
 #toast.info { border-color: var(--blue); color: var(--blue); }
 
+/* ═══ LOADING ═══ */
 .loading-screen {
   position: fixed; inset: 0; background: var(--bg);
   display: flex; flex-direction: column;
   align-items: center; justify-content: center; z-index: 99999;
-  gap: 16px;
+  gap: 18px;
 }
-.loading-screen h2 { font-size: 20px; font-weight: 600; }
+.loading-screen h2 { font-size: 22px; font-weight: 700; background: linear-gradient(135deg, var(--blue), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
 .loading-screen p { color: var(--muted); font-size: 13px; font-family: var(--mono); }
 .progress-bar-wrap {
-  width: 260px; background: var(--border);
+  width: 280px; background: var(--border);
   border-radius: 20px; height: 4px; overflow: hidden;
 }
 .progress-bar {
   height: 100%; background: linear-gradient(90deg, var(--blue), var(--cyan));
   border-radius: 20px; transition: width 0.4s ease; width: 0%;
+  position: relative;
 }
-.spinner { width: 36px; height: 36px; border:3px solid var(--border); border-top-color:var(--blue); border-radius:50%; animation:spin .8s linear infinite; }
-@keyframes spin { to{transform:rotate(360deg)} }
+.progress-bar::after {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  animation: shimmer 1.5s infinite;
+}
+@keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+.spinner { width: 38px; height: 38px; border: 3px solid var(--border); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
+/* ═══ FILTERS ═══ */
 .filter-row {
-  display: flex; align-items: center; gap: 8px;
-  margin-bottom: 14px; flex-wrap: wrap;
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 16px; flex-wrap: wrap;
 }
 .filter-row input[type="date"],
 .filter-row input[type="month"],
 .filter-row select {
   background: var(--surface); border: 1px solid var(--border);
-  border-radius: 8px; padding: 7px 10px;
+  border-radius: var(--radius-sm); padding: 8px 12px;
   color: var(--text); font-family: var(--sans); font-size: 12px;
-  outline: none;
+  outline: none; transition: border-color 0.2s var(--transition);
 }
-.filter-row label { font-size: 12px; color: var(--muted); white-space:nowrap; }
+.filter-row input:focus, .filter-row select:focus { border-color: var(--blue); }
+.filter-row label { font-size: 12px; color: var(--muted); white-space: nowrap; }
 
-.section-title { font-size: 18px; font-weight: 700; margin-bottom: 4px; letter-spacing: -0.3px; }
-.section-sub { font-size: 12px; color: var(--muted); margin-bottom: 20px; }
+/* ═══ SECTION TITLES ═══ */
+.section-title { font-size: 20px; font-weight: 700; margin-bottom: 4px; letter-spacing: -0.5px; }
+.section-sub { font-size: 12px; color: var(--muted); margin-bottom: 24px; }
 
-.empty-state { text-align: center; padding: 36px 16px; color: var(--muted); }
-.empty-state .e-icon { font-size: 32px; margin-bottom: 10px; }
-.empty-state p { font-size: 13px; }
+/* ═══ EMPTY STATE ═══ */
+.empty-state { text-align: center; padding: 48px 20px; color: var(--muted); }
+.empty-state .e-icon { font-size: 40px; margin-bottom: 12px; }
+.empty-state p { font-size: 14px; }
 
-@keyframes flash { 0%{opacity:0} 50%{opacity:0.4} 100%{opacity:0} }
-.flash { position:absolute;inset:0;background:white;border-radius:14px;pointer-events:none;animation:flash .3s ease; }
+/* ═══ ANIMATIONS ═══ */
+@keyframes flash { 0% { opacity: 0; } 50% { opacity: 0.5; } 100% { opacity: 0; } }
+.flash { position: absolute; inset: 0; background: white; border-radius: var(--radius-lg); pointer-events: none; animation: flash 0.3s ease; }
+.confidence-bar { width: 100%; height: 4px; background: var(--border); border-radius: 4px; overflow: hidden; margin-top: 8px; }
+.confidence-fill { height: 100%; border-radius: 4px; transition: width 0.5s var(--transition); }
 
-.confidence-bar { width:100%;height:4px;background:var(--border);border-radius:4px;overflow:hidden;margin-top:8px; }
-.confidence-fill { height:100%;border-radius:4px;transition:width .4s ease; }
-
-/* Login overlay */
+/* ═══ LOGIN OVERLAY ═══ */
 .login-overlay {
-  position: fixed; inset: 0; background: var(--overlay);
+  position: fixed; inset: 0; background: rgba(0,0,0,0.8);
   display: flex; align-items: center; justify-content: center;
-  z-index: 99998; backdrop-filter: blur(4px);
+  z-index: 99998;
+  animation: fadeIn 0.2s ease;
 }
 .login-overlay.hidden { display: none; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 .login-card {
   background: var(--card); border: 1px solid var(--border);
-  border-radius: 16px; padding: 32px; width: 340px;
-  max-width: 90vw; box-shadow: 0 16px 48px rgba(0,0,0,0.5);
-  text-align: center;
+  border-radius: var(--radius-lg); padding: 36px; width: 360px;
+  max-width: 90vw; box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+  text-align: center; animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-.login-icon { font-size: 40px; margin-bottom: 12px; }
-.login-card h2 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.login-icon { font-size: 48px; margin-bottom: 14px; }
+.login-card h2 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
 
-/* Modal overlay */
+/* ═══ MODAL ═══ */
 .modal-overlay {
   position: fixed; inset: 0; background: var(--overlay);
   display: none; align-items: center; justify-content: center;
-  z-index: 99990; backdrop-filter: blur(3px);
+  z-index: 99990; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  animation: fadeIn 0.25s var(--transition);
 }
 .modal-overlay.show { display: flex; }
-.modal-card {
+.modal-content {
   background: var(--card); border: 1px solid var(--border);
-  border-radius: 14px; padding: 24px; width: 380px;
+  border-radius: var(--radius-lg); padding: 28px; width: 400px;
   max-width: 92vw; max-height: 90vh; overflow-y: auto;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+  box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+  animation: slideUp 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-.modal-card h3 { font-size: 16px; margin-bottom: 12px; }
+.modal-header {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 16px; font-weight: 700; margin-bottom: 16px;
+}
+.modal-close {
+  font-size: 24px; cursor: pointer; color: var(--muted);
+  transition: color 0.2s; line-height: 1;
+}
+.modal-close:hover { color: var(--text); }
 
-/* Liveness badge */
+/* ═══ LIVENESS ═══ */
 .liveness-badge {
   display: inline-flex; align-items: center; gap: 4px;
   padding: 4px 10px; border-radius: 20px;
@@ -466,69 +553,106 @@ tr:hover td { background: rgba(59,130,246,0.04); }
 .liveness-fail { background: rgba(239,68,68,0.15); color: var(--red); }
 .liveness-wait { background: rgba(245,158,11,0.15); color: var(--yellow); }
 
-/* QR scanner area */
+/* ═══ QR ═══ */
 #qrScanner { width: 100%; max-width: 400px; margin: 0 auto; }
-#qrScanner video { border-radius: 10px; }
+#qrScanner video { border-radius: var(--radius); }
 
-/* Chart containers */
+/* ═══ CHARTS ═══ */
 .chart-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 16px;
+  display: grid; grid-template-columns: 1fr; gap: 20px;
 }
 @media (min-width:768px) { .chart-grid { grid-template-columns: 1fr 1fr; } }
-.chart-grid .card:last-child:nth-child(odd) { grid-column: 1/-1; }
-.chart-grid canvas { max-height: 260px; width: 100% !important; }
+.chart-grid .card:last-child:nth-child(odd) { grid-column: 1 / -1; }
+.chart-grid canvas { max-height: 280px; width: 100% !important; }
 
-/* Profile photo in list */
-.profile-photo {
-  width: 48px; height: 48px; border-radius: 50%;
-  object-fit: cover; border: 2px solid var(--border);
-}
-
-/* QR code in student card */
+/* ═══ MISC ═══ */
+.profile-photo { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border); }
 .student-qr-wrap { margin-top: 6px; display: flex; justify-content: center; }
 .student-qr-wrap canvas { width: 50px !important; height: 50px !important; }
-
-/* Highlight absence highlight */
 .absence-highlight td { background: rgba(239,68,68,0.04); }
 
-/* Attendance mode selector */
-.mode-select { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+/* ═══ MODE SELECTOR ═══ */
+.mode-select { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
 .mode-btn {
-  padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border);
+  padding: 9px 18px; border-radius: var(--radius-sm); border: 1px solid var(--border);
   background: var(--surface); color: var(--muted); cursor: pointer;
   font-family: var(--sans); font-size: 12px; font-weight: 500;
-  transition: all 0.2s; display: flex; align-items: center; gap: 4px;
+  transition: all 0.2s var(--transition); display: flex; align-items: center; gap: 5px;
 }
-.mode-btn.active { border-color: var(--blue); color: var(--blue); background: rgba(59,130,246,0.1); }
-.mode-btn:hover { border-color: var(--blue); }
+.mode-btn.active { border-color: var(--blue); color: var(--blue); background: rgba(59,130,246,0.08); box-shadow: 0 0 12px rgba(59,130,246,0.1); }
+.mode-btn:hover { border-color: var(--blue); color: var(--text); }
 
-/* Settings section */
-.settings-group { margin-bottom: 20px; }
-.settings-group h3 { font-size: 14px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+/* ═══ SETTINGS ═══ */
+.settings-group { margin-bottom: 24px; }
+.settings-group h3 {
+  font-size: 14px; margin-bottom: 14px; padding-bottom: 10px;
+  border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px;
+}
 
-/* Bottom nav for mobile */
+/* ═══ BOTTOM NAV ═══ */
 .bottom-nav {
   position: fixed; bottom: 0; left: 0; right: 0;
-  background: var(--surface); border-top: 1px solid var(--border);
+  background: rgba(13,20,34,0.9);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  border-top: 1px solid var(--border);
   display: flex; justify-content: space-around; padding: 6px 0;
   z-index: 99;
 }
-@media (min-width:769px) { .bottom-nav { display:none; } }
+[data-theme="light"] .bottom-nav { background: rgba(255,255,255,0.9); }
+@media (min-width:769px) { .bottom-nav { display: none; } }
 .bottom-nav .bn-item {
   display: flex; flex-direction: column; align-items: center;
   gap: 2px; background: none; border: none; color: var(--muted);
   font-size: 9px; font-family: var(--sans); cursor: pointer;
-  padding: 4px 8px; transition: color 0.2s;
+  padding: 4px 10px; transition: all 0.2s var(--transition);
+  border-radius: 8px;
 }
-.bottom-nav .bn-item .bn-icon { font-size: 18px; }
+.bottom-nav .bn-item:hover { background: rgba(255,255,255,0.04); }
+[data-theme="light"] .bottom-nav .bn-item:hover { background: rgba(0,0,0,0.03); }
+.bottom-nav .bn-item .bn-icon { font-size: 20px; }
 .bottom-nav .bn-item.active { color: var(--blue); }
+.bottom-nav .bn-item.active .bn-icon { transform: scale(1.1); }
 
+/* ═══ SCROLLBAR ═══ */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+/* ═══ CAMERAS DASHBOARD ═══ */
+.cameras-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+@media (min-width:640px) { .cameras-grid { grid-template-columns: 1fr 1fr; } }
+@media (min-width:1024px) { .cameras-grid { grid-template-columns: 1fr 1fr 1fr; } }
+.cam-location-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  position: relative; overflow: hidden;
+}
+.cam-location-card.active { border-color: var(--green); box-shadow: 0 0 20px rgba(16,185,129,0.1); }
+.cam-location-card .cam-status {
+  width: 8px; height: 8px; border-radius: 50%; display: inline-block;
+  margin-right: 6px; animation: pulse-dot 2s infinite;
+}
+.cam-location-card .cam-status.online { background: var(--green); box-shadow: 0 0 6px var(--green); }
+.cam-location-card .cam-status.offline { background: var(--muted); animation: none; }
+.cam-location-card .cam-recent {
+  display: flex; flex-direction: column; gap: 3px; margin-top: 8px;
+}
+.cam-location-card .cam-recent-item {
+  font-size: 11px; display: flex; justify-content: space-between;
+  padding: 2px 6px; border-radius: 4px; background: var(--surface);
+}
+
+/* ═══ GATE PANEL ═══ */
+#gatePanel { animation: slideUp 0.3s var(--transition); }
+
+/* ═══ PRINT ═══ */
 @media print {
-  header,.nav-tabs,.bottom-nav,.login-overlay,.modal-overlay,#toast,.loading-screen,.btn,.filter-row,.mode-select { display:none !important; }
-  body { padding:0; background:white; }
-  .card { box-shadow:none; border:1px solid #ddd; break-inside:avoid; }
+  header, .nav-tabs, .bottom-nav, .login-overlay, .modal-overlay, #toast, .loading-screen, .btn, .filter-row, .mode-select { display: none !important; }
+  body { padding: 0; background: white; color: black; }
+  .card { box-shadow: none; border: 1px solid #ddd; break-inside: avoid; }
 }
 </style>
 </head>
@@ -569,8 +693,8 @@ tr:hover td { background: rgba(59,130,246,0.04); }
 
 <!-- LIVENESS MODAL -->
 <div class="modal-overlay" id="livenessModal">
-  <div class="modal-card" style="text-align:center;">
-    <h3>👁 Liveness Check</h3>
+  <div class="modal-content" style="text-align:center;">
+    <div class="modal-header"><span>👁 Liveness Check</span></div>
     <p style="color:var(--muted);font-size:13px;margin-bottom:12px;">Blink to prove you're a real person</p>
     <div style="font-size:48px;margin:12px 0;" id="livenessEmoji">👀</div>
     <div id="livenessStatus" style="font-family:var(--mono);font-size:14px;color:var(--yellow);">Waiting...</div>
@@ -586,8 +710,8 @@ tr:hover td { background: rgba(59,130,246,0.04); }
 
 <!-- QR SCANNER MODAL -->
 <div class="modal-overlay" id="qrModal">
-  <div class="modal-card" style="text-align:center;">
-    <h3>📷 Scan QR Code</h3>
+  <div class="modal-content" style="text-align:center;">
+    <div class="modal-header"><span>📷 Scan QR Code</span><span class="modal-close" onclick="closeQRScanner()">&times;</span></div>
     <p style="color:var(--muted);font-size:13px;margin-bottom:12px;">Hold student's QR code in front of camera</p>
     <div id="qrScanner"></div>
     <div id="qrResult" style="margin-top:12px;font-size:14px;font-weight:600;"></div>
@@ -599,21 +723,18 @@ tr:hover td { background: rgba(59,130,246,0.04); }
 
 <!-- QR CODE DISPLAY MODAL -->
 <div class="modal-overlay" id="qrDisplayModal">
-  <div class="modal-card" style="text-align:center;">
-    <h3>📱 Student QR Code</h3>
+  <div class="modal-content" style="text-align:center;">
+    <div class="modal-header"><span>📱 Student QR Code</span><span class="modal-close" onclick="closeQRDisplay()">&times;</span></div>
     <div id="qrDisplayCode" style="margin:16px auto;display:flex;justify-content:center;"></div>
     <p id="qrDisplayName" style="font-size:14px;font-weight:600;"></p>
     <p id="qrDisplayId" style="font-size:12px;color:var(--muted);font-family:var(--mono);"></p>
-    <div class="btn-row" style="margin-top:12px;">
-      <button class="btn btn-ghost" onclick="closeQRDisplay()">Close</button>
-    </div>
   </div>
 </div>
 
 <!-- EDIT ATTENDANCE MODAL -->
 <div class="modal-overlay" id="editAttModal">
-  <div class="modal-card">
-    <h3>✏️ Edit Attendance</h3>
+  <div class="modal-content">
+    <div class="modal-header"><span>✏️ Edit Attendance</span><span class="modal-close" onclick="closeEditModal()">&times;</span></div>
     <div id="editAttBody">
       <div class="form-group">
         <label>Student Name</label>
@@ -670,9 +791,11 @@ tr:hover td { background: rgba(59,130,246,0.04); }
   <button class="tab-btn active" onclick="showTab('attendance')" id="tab-attendance">📸 Attendance</button>
   <button class="tab-btn admin-only" onclick="showTab('register')" id="tab-register">➕ Register</button>
   <button class="tab-btn admin-only" onclick="showTab('records')" id="tab-records">📋 Records</button>
+  <button class="tab-btn admin-only" onclick="showTab('calendar')" id="tab-calendar">🗓️ Calendar</button>
   <button class="tab-btn" onclick="showTab('students')" id="tab-students">👥 Students</button>
   <button class="tab-btn admin-only" onclick="showTab('analytics')" id="tab-analytics">📊 Analytics</button>
   <button class="tab-btn admin-only" onclick="showTab('settings')" id="tab-settings">⚙️ Settings</button>
+  <button class="tab-btn admin-only" onclick="showTab('cameras')" id="tab-cameras">🌐 All Cameras</button>
 </div>
 
 <!-- BOTTOM NAV (mobile) -->
@@ -680,20 +803,26 @@ tr:hover td { background: rgba(59,130,246,0.04); }
   <button class="bn-item active" onclick="showTab('attendance')" data-tab="attendance">
     <span class="bn-icon">📸</span><span>Attend</span>
   </button>
-  <button class="bn-item bn-admin" onclick="showTab('register')" data-tab="register" style="display:none;">
+  <button class="bn-item bn-admin" onclick="showTab('register')" data-tab="register">
     <span class="bn-icon">➕</span><span>Register</span>
   </button>
-  <button class="bn-item bn-admin" onclick="showTab('records')" data-tab="records" style="display:none;">
+  <button class="bn-item bn-admin" onclick="showTab('records')" data-tab="records">
     <span class="bn-icon">📋</span><span>Records</span>
+  </button>
+  <button class="bn-item bn-admin" onclick="showTab('calendar')" data-tab="calendar">
+    <span class="bn-icon">🗓️</span><span>Calendar</span>
   </button>
   <button class="bn-item" onclick="showTab('students')" data-tab="students">
     <span class="bn-icon">👥</span><span>Students</span>
   </button>
-  <button class="bn-item bn-admin" onclick="showTab('analytics')" data-tab="analytics" style="display:none;">
+  <button class="bn-item bn-admin" onclick="showTab('analytics')" data-tab="analytics">
     <span class="bn-icon">📊</span><span>Analytics</span>
   </button>
-  <button class="bn-item bn-admin" onclick="showTab('settings')" data-tab="settings" style="display:none;">
+  <button class="bn-item bn-admin" onclick="showTab('settings')" data-tab="settings">
     <span class="bn-icon">⚙️</span><span>Settings</span>
+  </button>
+  <button class="bn-item bn-admin" onclick="showTab('cameras')" data-tab="cameras">
+    <span class="bn-icon">🌐</span><span>Cameras</span>
   </button>
 </div>
 
@@ -730,6 +859,13 @@ tr:hover td { background: rgba(59,130,246,0.04); }
           <div class="corner-bl"></div><div class="corner-br"></div>
         </div>
         <div class="cam-label">LIVE SCAN</div>
+        <div class="location-select" style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%);z-index:10;">
+          <select id="locationSelect" onchange="changeLocation(this.value)"
+            style="background:rgba(0,0,0,0.75);border:1px solid rgba(255,255,255,0.15);border-radius:8px;
+                   padding:4px 10px;color:#fff;font-size:11px;font-family:inherit;cursor:pointer;max-width:160px;">
+            <option value="">📍 Select location</option>
+          </select>
+        </div>
       </div>
       <div class="btn-row" style="margin-top:12px;">
         <button class="btn btn-primary" id="btnMarkAtt" onclick="markAttendance()" disabled>✅ Mark Attendance</button>
@@ -750,6 +886,7 @@ tr:hover td { background: rgba(59,130,246,0.04); }
         <div class="result-box" id="resultBox">
           <div class="result-icon">👤</div>
           <div style="color:var(--muted);font-size:13px;">Point camera at a face...</div>
+          <div id="resultLocation" style="color:var(--muted);font-size:10px;margin-top:4px;"></div>
         </div>
       </div>
       <div class="card">
@@ -839,7 +976,21 @@ tr:hover td { background: rgba(59,130,246,0.04); }
         <div class="form-group"><label>Parent Email (for notifications)</label>
           <input type="email" id="regEmail" placeholder="parent@example.com">
         </div>
+        <div class="form-group"><label>Profile Photo (optional — upload instead of webcam)</label>
+          <input type="file" id="regPhotoUpload" accept="image/*" onchange="handlePhotoUpload(event)" style="font-size:12px;">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;">
         <button class="btn btn-success" id="btnRegister" onclick="registerStudent()" disabled>✅ Register Student</button>
+        <span style="font-size:11px;color:var(--muted);text-align:center;" id="regHint">Capture at least 1 face sample above first</span>
+        </div>
+      </div>
+      <div class="card" style="margin-top:12px;">
+        <h3>📥 Bulk Import Students</h3>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">
+          Upload a CSV file with columns: <code style="color:var(--cyan);">Name,ID,Grade,Gender,Email</code>
+        </div>
+        <input type="file" id="csvImport" accept=".csv" onchange="handleCSVImport(event)" style="font-size:12px;">
+        <div id="csvPreview" style="margin-top:8px;font-size:12px;"></div>
       </div>
       <div class="card" style="margin-top:12px;">
         <h3>💡 Tips</h3>
@@ -875,6 +1026,10 @@ tr:hover td { background: rgba(59,130,246,0.04); }
       <option value="late">Late</option>
       <option value="absent">Absent</option>
     </select>
+    <label>Location:</label>
+    <select id="filterLocation">
+      <option value="">All Locations</option>
+    </select>
     <button class="btn btn-primary" style="width:auto;padding:7px 14px;font-size:12px;" onclick="loadRecords()">🔍 Filter</button>
     <button class="btn btn-ghost" style="width:auto;padding:7px 14px;font-size:12px;" onclick="exportCSV()">⬇ CSV</button>
     <button class="btn btn-ghost" style="width:auto;padding:7px 14px;font-size:12px;" onclick="showPDFDialog()">📄 PDF</button>
@@ -882,20 +1037,36 @@ tr:hover td { background: rgba(59,130,246,0.04); }
   <div class="card">
     <div class="att-table-wrap">
       <table>
-        <thead><tr><th>Student</th><th>ID</th><th>Class</th><th>Date</th><th>Time</th><th>Status</th><th style="text-align:center;">Actions</th></tr></thead>
+        <thead><tr><th>Student</th><th>ID</th><th>Class</th><th>Date</th><th>Time</th><th>Status</th><th>Location</th><th style="text-align:center;">Actions</th></tr></thead>
         <tbody id="recordsTbody">
-          <tr><td colspan="7"><div class="empty-state"><div class="e-icon">📋</div><p>No records yet</p></div></td></tr>
+          <tr><td colspan="8"><div class="empty-state"><div class="e-icon">📋</div><p>No records yet</p></div></td></tr>
         </tbody>
       </table>
     </div>
   </div>
 </div>
 
+<!-- PAGE: CALENDAR -->
+<div class="page" id="page-calendar">
+  <div class="section-title">🗓️ Attendance Calendar</div>
+  <div class="section-sub">View attendance by student and month</div>
+  <div class="filter-row">
+    <label>Student:</label>
+    <select id="calStudent" onchange="renderCalendar()" style="min-width:160px;">
+      <option value="">All Students</option>
+    </select>
+    <label>Month:</label>
+    <input type="month" id="calMonth" onchange="renderCalendar()">
+    <button class="btn btn-primary" style="width:auto;padding:7px 14px;font-size:12px;" onclick="renderCalendar()">🔄 Refresh</button>
+  </div>
+  <div id="calendarView" style="overflow-x:auto;margin-top:12px;"></div>
+</div>
+
 <!-- PAGE: STUDENTS -->
 <div class="page" id="page-students">
   <div class="section-title">👥 Registered Students</div>
   <div class="section-sub">All students with face data</div>
-  <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+  <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
     <input type="text" id="searchStudents" placeholder="🔍 Search by name or ID..."
       oninput="renderStudentsList()"
       style="background:var(--surface);border:1px solid var(--border);border-radius:8px;
@@ -928,6 +1099,46 @@ tr:hover td { background: rgba(59,130,246,0.04); }
   </div>
 </div>
 
+<!-- PAGE: ALL CAMERAS -->
+<div class="page" id="page-cameras">
+  <div class="section-title">🌐 All Cameras — Live View</div>
+  <div class="section-sub">Monitor all locations, find any student across the school</div>
+
+  <!-- Student Location Finder -->
+  <div class="card" style="margin-bottom:16px;">
+    <h3>🔍 Find Any Student</h3>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+      <input type="text" id="camSearchInput" placeholder="Type student name or ID..." onkeydown="if(event.key==='Enter')findStudentAcrossCameras()"
+        style="flex:1;min-width:160px;padding:8px 12px;border-radius:8px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:13px;outline:none;">
+      <button class="btn btn-primary" onclick="findStudentAcrossCameras()" style="width:auto;padding:8px 16px;">🔍 Search All Cameras</button>
+      <button class="btn btn-ghost" onclick="resetCameraDashboard()" style="width:auto;padding:8px 16px;">🔄 Reset</button>
+    </div>
+    <div id="camSearchResult" style="margin-top:10px;"></div>
+  </div>
+
+  <!-- Location Grid -->
+  <div style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;">
+    <h3 style="margin:0;">📍 Location Activity</h3>
+    <span id="camerasTimestamp" style="font-size:11px;color:var(--muted);font-family:var(--mono);">updating...</span>
+  </div>
+  <div id="camerasGrid" class="cameras-grid">
+    <div class="empty-state"><div class="e-icon">📡</div><p>No cameras active — add locations in Settings</p></div>
+  </div>
+
+  <!-- Live Detection Feed -->
+  <div class="card" style="margin-top:16px;">
+    <h3>📡 Live Detection Feed</h3>
+    <div style="max-height:320px;overflow-y:auto;">
+      <table style="width:100%;font-size:12px;">
+        <thead><tr><th>Time</th><th>Student</th><th>ID</th><th>Location</th><th>Status</th></tr></thead>
+        <tbody id="camLiveFeed">
+          <tr><td colspan="5"><div class="empty-state"><div class="e-icon">📡</div><p>Waiting for detections...</p></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 <!-- PAGE: SETTINGS -->
 <div class="page" id="page-settings">
   <div class="section-title">⚙️ Settings</div>
@@ -950,14 +1161,64 @@ tr:hover td { background: rgba(59,130,246,0.04); }
       <button class="btn btn-ghost" onclick="testEmailJS()" style="margin-top:8px;">📧 Test EmailJS</button>
     </div>
     <div class="settings-group">
+      <h3>🎚️ Recognition Threshold</h3>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <input type="range" id="recThreshold" min="0.3" max="0.7" step="0.01" value="0.45" oninput="$('thresholdVal').textContent=this.value" style="flex:1;">
+        <span id="thresholdVal" style="font-family:var(--mono);font-size:13px;min-width:40px;">0.45</span>
+      </div>
+      <div style="color:var(--muted);font-size:11px;margin-top:4px;">Lower = more matches allowed, Higher = stricter matching</div>
+    </div>
+    <div class="settings-group">
+      <h3>👥 Admin Accounts</h3>
+      <p style="color:var(--muted);font-size:12px;margin-bottom:8px;">Create additional admin accounts (password is hashed before storing).</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <input type="text" id="newAdminUser" placeholder="Username" style="flex:1;min-width:100px;padding:7px 10px;border-radius:8px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:12px;">
+        <input type="password" id="newAdminPass" placeholder="Password" style="flex:1;min-width:100px;padding:7px 10px;border-radius:8px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:12px;">
+        <button class="btn btn-primary" onclick="createAdminAccount($('newAdminUser').value, $('newAdminPass').value)" style="width:auto;padding:7px 14px;font-size:12px;">➕ Add</button>
+      </div>
+    </div>
+    <div class="settings-group">
+      <h3>🔊 Sound</h3>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;">
+        <input type="checkbox" id="soundToggle" onchange="toggleSound()" checked> Enable sound feedback
+      </label>
+    </div>
+    <div class="settings-group">
+      <h3>🌐 Language</h3>
+      <select id="langSelect" onchange="setLanguage(this.value)" style="width:100%;padding:8px;border-radius:8px;background:var(--surface);border:1px solid var(--border);color:var(--text);">
+        <option value="en">English</option>
+        <option value="si">සිංහල</option>
+      </select>
+    </div>
+    <div class="settings-group">
+      <h3>📍 Locations</h3>
+      <p style="color:var(--muted);font-size:12px;margin-bottom:8px;">Add camera locations (e.g. Main Gate, Library, Classroom). When a face is detected, the location is saved with the attendance record.</p>
+      <div style="display:flex;gap:8px;">
+        <input type="text" id="newLocationInput" placeholder="e.g. Main Gate" style="flex:1;padding:7px 10px;border-radius:8px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:12px;" onkeydown="if(event.key==='Enter')addLocation()">
+        <button class="btn btn-primary" onclick="addLocation()" style="width:auto;padding:7px 14px;font-size:12px;">➕ Add</button>
+      </div>
+      <div id="locationsList" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;"></div>
+    </div>
+    <div class="settings-group">
+      <h3>🔍 Find Student by Face</h3>
+      <p style="color:var(--muted);font-size:12px;margin-bottom:8px;">Type a student name to see which location they were last detected at via face recognition.</p>
+      <div style="display:flex;gap:8px;">
+        <input type="text" id="findStudentInput" placeholder="Type student name..." style="flex:1;padding:7px 10px;border-radius:8px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:12px;" onkeydown="if(event.key==='Enter')findStudent()">
+        <button class="btn btn-primary" onclick="findStudent()" style="width:auto;padding:7px 14px;font-size:12px;">🔍 Find</button>
+      </div>
+      <div id="findStudentResult" style="margin-top:8px;"></div>
+    </div>
+    <div class="settings-group">
       <h3>⚡ Quick Actions</h3>
       <div class="btn-row">
-        <button class="btn btn-ghost" onclick="exportFullCSV()">📥 Export All Records</button>
+        <button class="btn btn-ghost" onclick="exportFullCSV()">📥 Export All Records CSV</button>
         <button class="btn btn-ghost" onclick="showQRDisplay(null)">📱 Generate Student QR</button>
       </div>
     </div>
   </div>
 </div>
+
+
 
 </main>
 
@@ -979,16 +1240,227 @@ let attMode = 'face', batchMode = false, gateMode = false;
 let cachedMatcher = null, lastMatcherBuild = 0;
 let recentlyMarked = new Map();
 let gatePending = new Map();
+let gateTracked = new Set();
 let gateLog = [];
 let gateFlushTimer = null;
 const COOLDOWN_MS = 4000;
 const $ = id => document.getElementById(id);
+let sessionTimer = null;
+let soundEnabled = true;
+let recognitionThreshold = 0.45;
+let currentLanguage = 'en';
+
+let adminAccounts = {};
+let locations = [];
+let currentLocation = '';
+let presenceMap = {};        // { studentId: { location, name, timestamp } }
+let presenceLastWrite = {};  // throttle: { studentId: timestamp }
+const PRESENCE_TTL = 30000;  // 30 seconds
+const PRESENCE_THROTTLE = 5000; // 5 seconds between writes per student
+
+function initPresenceListener() {
+  if (!fbReady) return;
+  _onValue(_ref(_db, 'presence'), snap => {
+    presenceMap = {};
+    if (snap.exists()) {
+      snap.forEach(child => {
+        const data = child.val();
+        // Only keep entries newer than TTL
+        if (Date.now() - data.timestamp < PRESENCE_TTL) {
+          presenceMap[child.key] = data;
+        }
+      });
+    }
+    // Re-render dashboard if visible
+    if ($('page-cameras')?.classList.contains('active')) renderCameraDashboard();
+  });
+}
+
+async function writePresence(studentId, name, grade) {
+  if (!fbReady || !currentLocation) return;
+  const now = Date.now();
+  // Throttle: skip if written less than PRESENCE_THROTTLE ago
+  if (presenceLastWrite[studentId] && now - presenceLastWrite[studentId] < PRESENCE_THROTTLE) return;
+  presenceLastWrite[studentId] = now;
+  try {
+    await _set(_ref(_db, `presence/${studentId}`), {
+      location: currentLocation,
+      name: name,
+      grade: grade || '',
+      timestamp: now
+    });
+  } catch(e) { /* silent */ }
+}
+
+// Clean stale presence entries from Firebase every 30s
+function startPresenceCleanup() {
+  setInterval(async () => {
+    if (!fbReady) return;
+    const now = Date.now();
+    Object.entries(presenceMap).forEach(([id, data]) => {
+      if (now - data.timestamp > PRESENCE_TTL) {
+        _remove(_ref(_db, `presence/${id}`)).catch(() => {});
+        delete presenceMap[id];
+      }
+    });
+  }, 30000);
+}
+
+// ═══════════════════════════════════════════
+//  LOCATIONS
+// ═══════════════════════════════════════════
+function renderLocations() {
+  const list = $('locationsList');
+  if (!list) return;
+  if (locations.length === 0) {
+    list.innerHTML = '<span style="color:var(--muted);font-size:12px;">No locations added yet.</span>';
+    return;
+  }
+  list.innerHTML = locations.map((loc, i) =>
+    `<span style="display:inline-flex;align-items:center;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:12px;">
+      📍 ${loc}
+      <span onclick="removeLocation(${i})" style="cursor:pointer;color:var(--muted);font-size:14px;line-height:1;">&times;</span>
+    </span>`
+  ).join('');
+}
+
+function renderLocationSelect() {
+  const sel = $('locationSelect');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">📍 Select location</option>' +
+    locations.map(l => `<option value="${l}"${l === currentLocation ? ' selected' : ''}>📍 ${l}</option>`).join('');
+}
+
+function renderRecordLocationFilter() {
+  const sel = $('filterLocation');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">All Locations</option>' +
+    locations.map(l => `<option value="${l}">📍 ${l}</option>`).join('');
+}
+
+function addLocation() {
+  const inp = $('newLocationInput');
+  const name = inp.value.trim();
+  if (!name) { showToast('Enter a location name', 'error'); return; }
+  if (locations.includes(name)) { showToast('Location already exists', 'error'); return; }
+  locations.push(name);
+  localStorage.setItem('faceattend_locations', JSON.stringify(locations));
+  inp.value = '';
+  renderLocations();
+  renderLocationSelect();
+  renderRecordLocationFilter();
+  if (!currentLocation) { currentLocation = name; localStorage.setItem('faceattend_current_location', name); }
+  showToast(`📍 "${name}" added!`, 'success');
+}
+
+function removeLocation(index) {
+  const removed = locations[index];
+  locations.splice(index, 1);
+  localStorage.setItem('faceattend_locations', JSON.stringify(locations));
+  if (currentLocation === removed) {
+    currentLocation = locations.length > 0 ? locations[0] : '';
+    localStorage.setItem('faceattend_current_location', currentLocation);
+  }
+  renderLocations();
+  renderLocationSelect();
+  renderRecordLocationFilter();
+  showToast(`📍 "${removed}" removed`, 'info');
+}
+
+function changeLocation(loc) {
+  currentLocation = loc;
+  localStorage.setItem('faceattend_current_location', loc);
+  const rl = $('resultLocation');
+  if (rl) rl.textContent = currentLocation ? '📍 ' + currentLocation : '';
+}
+
+function loadLocations() {
+  locations = JSON.parse(localStorage.getItem('faceattend_locations') || '[]');
+  currentLocation = localStorage.getItem('faceattend_current_location') || (locations[0] || '');
+  renderLocations();
+  renderLocationSelect();
+  renderRecordLocationFilter();
+}
+
+function findStudent() {
+  const query = ($('findStudentInput')?.value || '').toLowerCase().trim();
+  const resultDiv = $('findStudentResult');
+  if (!query) { resultDiv.innerHTML = '<span style="color:var(--muted);font-size:12px;">Enter a student name</span>'; return; }
+
+  const student = students.find(s => s.name.toLowerCase().includes(query));
+  if (!student) {
+    resultDiv.innerHTML = '<span style="color:var(--yellow);font-size:13px;">❌ Student not found</span>';
+    return;
+  }
+
+  // Find last attendance record with face recognition for this student
+  const records = attendanceLog
+    .filter(a => a.studentId === student.id && a.location)
+    .sort((a, b) => b.timestamp - a.timestamp);
+
+  if (records.length === 0) {
+    resultDiv.innerHTML = `
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;">
+        <div style="font-weight:600;font-size:14px;">${student.name}</div>
+        <div style="font-size:12px;color:var(--muted);">${student.id} · ${student.grade || 'N/A'}</div>
+        <div style="font-size:12px;color:var(--yellow);margin-top:6px;">⚠️ No face-detected location records yet</div>
+      </div>`;
+    return;
+  }
+
+  const last = records[0];
+  resultDiv.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="font-size:32px;">👤</div>
+        <div>
+          <div style="font-weight:600;font-size:15px;">${student.name}</div>
+          <div style="font-size:12px;color:var(--muted);">${student.id} · ${student.grade || 'N/A'}</div>
+        </div>
+      </div>
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
+        <div style="display:flex;align-items:center;gap:8px;font-size:13px;">
+          <span>📍 Last detected at:</span>
+          <span style="background:var(--blue);color:#fff;padding:2px 10px;border-radius:12px;font-weight:600;font-size:13px;">${last.location}</span>
+          <span style="color:var(--muted);font-size:11px;">${last.date} ${last.time}</span>
+        </div>
+        <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;">
+          ${records.slice(0, 5).map(r =>
+            `<span style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:2px 8px;font-size:11px;">📍 ${r.location} <span style="color:var(--muted);">${r.date}</span></span>`
+          ).join('')}
+        </div>
+      </div>
+    </div>`;
+}
+
+// Load admin accounts from Firebase
+async function loadAdminAccounts() {
+  if (!fbReady) return;
+  try {
+    const snap = await _get(_ref(_db, 'admins'));
+    if (snap.exists()) {
+      const data = snap.val();
+      Object.keys(data).forEach(key => { adminAccounts[key] = data[key].passwordHash; });
+    }
+  } catch(e) { console.error('Error loading admins:', e); }
+}
+
+// Create a new admin account (from Settings)
+async function createAdminAccount(user, pass) {
+  if (!fbReady || !isAdmin) return;
+  const hash = btoa(pass);
+  try {
+    await _set(_ref(_db, `admins/${user}`), { passwordHash: hash, createdAt: Date.now() });
+    adminAccounts[user] = hash;
+    showToast(`✅ Admin "${user}" created!`, 'success');
+  } catch(e) { showToast('Error creating admin', 'error'); }
+}
 
 function ensureMatcher() {
   if (!cachedMatcher || Date.now() - lastMatcherBuild > 3000) {
     buildLabeledDescriptors();
     if (labeledDescriptors && labeledDescriptors.length > 0) {
-      cachedMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.45);
+      cachedMatcher = new faceapi.FaceMatcher(labeledDescriptors, recognitionThreshold);
       lastMatcherBuild = Date.now();
     } else {
       cachedMatcher = null;
@@ -1041,11 +1513,18 @@ function setupFirebase() {
     if (snap.exists()) {
       snap.forEach(child => attendanceLog.push(child.val()));
     }
+    // Rebuild gate tracking from today's records
+    const today = getTodayStr();
+    gateTracked = new Set(attendanceLog.filter(a => a.date === today).map(a => a.studentId));
     updateStats();
     renderTodayList();
     loadRecords();
     if (charts.weeklyChart) loadCharts();
   });
+
+  // Live presence tracking
+  initPresenceListener();
+  startPresenceCleanup();
 }
 
 // ═══════════════════════════════════════════
@@ -1066,11 +1545,29 @@ async function init() {
     setProgress(100, 'Ready!');
     modelsLoaded = true;
 
-    // Init EmailJS
-    if (window.emailjs) { emailjs.init(''); }
+      // Generate PWA manifest dynamically
+    const manifest = JSON.stringify({
+      name: 'FaceAttend Pro',
+      short_name: 'FaceAttend',
+      description: 'School Attendance with Face Recognition',
+      start_url: '.',
+      display: 'standalone',
+      background_color: '#080c14',
+      theme_color: '#080c14',
+      icons: [{ src: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="80" fill="#06b6d4"/><text x="256" y="340" text-anchor="middle" font-size="320" font-family="sans-serif" fill="white">F</text></svg>'), sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' }]
+    });
+    document.getElementById('manifestLink').href = 'data:application/json,' + encodeURIComponent(manifest);
+
+    // Register service worker for offline support
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
 
     // Load settings
     loadSettings();
+
+    // Load admin accounts
+    loadAdminAccounts();
 
     // Check auth
     checkAuth();
@@ -1105,23 +1602,31 @@ function checkAuth() {
   isAdmin = sessionStorage.getItem('faceattend_admin') === 'true';
   if (isAdmin) {
     document.body.classList.add('logged-in');
-    document.querySelectorAll('.bn-admin').forEach(e => e.style.display = 'flex');
   }
 }
 
 function adminLogin() {
+  const btn = document.querySelector('.login-card .btn-primary');
+  btn.disabled = true; btn.textContent = '⏳ Signing in...';
   const user = $('loginUser').value.trim();
   const pass = $('loginPass').value.trim();
-  if (user === 'admin' && pass === 'admin123') {
-    isAdmin = true;
-    sessionStorage.setItem('faceattend_admin', 'true');
-    document.body.classList.add('logged-in');
-    document.querySelectorAll('.bn-admin').forEach(e => e.style.display = 'flex');
-    $('loginOverlay').classList.add('hidden');
-    showToast('Welcome, Admin!', 'success');
-  } else {
+  setTimeout(() => {
+    if (user === 'admin' && btoa(pass) === 'YWRtaW4xMjM=') {
+      doLogin(); return;
+    }
+    const adminPass = adminAccounts[user];
+    if (adminPass && adminPass === btoa(pass)) { doLogin(); return; }
+    btn.disabled = false; btn.textContent = 'Sign In';
     showToast('Invalid credentials', 'error');
-  }
+  }, 50);
+}
+function doLogin() {
+  isAdmin = true;
+  sessionStorage.setItem('faceattend_admin', 'true');
+  document.body.classList.add('logged-in');
+  $('loginOverlay').classList.add('hidden');
+  resetSessionTimer();
+  showToast('Welcome, Admin!', 'success');
 }
 
 function skipLogin() {
@@ -1134,7 +1639,6 @@ function toggleLogin() {
     isAdmin = false;
     sessionStorage.removeItem('faceattend_admin');
     document.body.classList.remove('logged-in');
-    document.querySelectorAll('.bn-admin').forEach(e => e.style.display = 'none');
     showToast('Logged out', 'info');
   } else {
     $('loginOverlay').classList.remove('hidden');
@@ -1166,6 +1670,11 @@ function loadSettings() {
   if (s.emailjsServiceId) $('emailjsServiceId').value = s.emailjsServiceId;
   if (s.emailjsTemplateId) $('emailjsTemplateId').value = s.emailjsTemplateId;
   if (s.emailjsPublicKey) $('emailjsPublicKey').value = s.emailjsPublicKey;
+  if ($('recThreshold')) $('recThreshold').value = recognitionThreshold;
+  if ($('thresholdVal')) $('thresholdVal').textContent = recognitionThreshold.toFixed(2);
+  if ($('soundToggle')) $('soundToggle').checked = soundEnabled;
+  if ($('langSelect')) $('langSelect').value = currentLanguage;
+  loadLocations();
 }
 
 function saveSettings() {
@@ -1179,7 +1688,17 @@ function saveSettings() {
   if (s.emailjsPublicKey && window.emailjs) {
     emailjs.init(s.emailjsPublicKey);
   }
+  recognitionThreshold = parseFloat($('recThreshold').value) || 0.45;
+  localStorage.setItem('faceattend_threshold', String(recognitionThreshold));
+  // Invalidate matcher so it rebuilds with new threshold
+  cachedMatcher = null;
   showToast('Settings saved!', 'success');
+}
+
+function toggleSound() {
+  soundEnabled = $('soundToggle').checked;
+  localStorage.setItem('faceattend_sound', soundEnabled ? 'true' : 'false');
+  playSuccess();
 }
 
 function getLateCutoff() {
@@ -1216,9 +1735,11 @@ async function deleteStudentFromFirebase(id) {
   await _remove(_ref(_db, `students/${id}`));
   const snap = await _get(_ref(_db, 'attendance'));
   if (snap.exists()) {
+    const removes = [];
     snap.forEach(child => {
-      if (child.val().studentId === id) _remove(_ref(_db, `attendance/${child.key}`));
+      if (child.val().studentId === id) removes.push(_remove(_ref(_db, `attendance/${child.key}`)));
     });
+    await Promise.all(removes);
   }
   } catch(e) { console.error('Firebase delete error:', e); }
 }
@@ -1281,6 +1802,8 @@ async function startCamera(mode) {
       vid.addEventListener('resize', () => sizeCanvas('canvasAtt', vid));
       startAttDetection();
       $('btnMarkAtt').disabled = false;
+      const rl = $('resultLocation');
+      if (rl) rl.textContent = currentLocation ? '📍 ' + currentLocation : '';
     } else {
       if (regStream) regStream.getTracks().forEach(t => t.stop());
       regStream = stream;
@@ -1321,6 +1844,7 @@ function setAttMode(mode) {
 
 function populateManualSelect() {
   const sel = $('manualStudent');
+  if (!sel) return;
   sel.innerHTML = '<option value="">Select student...</option>' +
     students.map(s => `<option value="${s.id}">${s.name} (${s.id})</option>`).join('');
 }
@@ -1331,15 +1855,17 @@ function populateManualSelect() {
 async function startAttDetection() {
   if (!modelsLoaded) return;
   attDetectionRunning = true;
-  const vid = $('videoEl'), canvas = $('canvasAtt'), ctx = canvas.getContext('2d');
+  const vid = $('videoEl'), canvas = $('canvasAtt');
+  if (!canvas || !vid) return;
+  const ctx = canvas.getContext('2d');
   let lastDraw = 0, detCount = 0;
 
   async function loop() {
     if (!attDetectionRunning) return;
     try {
     if (vid.readyState === 4) {
-      const scoreThreshold = gateMode || batchMode ? 0.4 : 0.5;
-      const size = gateMode || batchMode ? 224 : 320;
+      const scoreThreshold = (gateMode || batchMode) ? 0.4 : 0.5;
+      const size = (gateMode || batchMode) ? 224 : 320;
       const det = await faceapi
         .detectAllFaces(vid, new faceapi.TinyFaceDetectorOptions({ inputSize: size, scoreThreshold }))
         .withFaceLandmarks()
@@ -1368,7 +1894,7 @@ async function startAttDetection() {
           ctx.fillStyle = '#06b6d4';
           ctx.font = '12px JetBrains Mono, monospace';
           ctx.fillText(`Faces: ${det.length}`, 10, 20);
-        } else if (!autoMode && !gateMode && !batchMode) {
+        } else if (!autoMode && !gateMode && !batchMode && !livenessActive) {
           updateResultBox(null);
         }
       }
@@ -1376,6 +1902,7 @@ async function startAttDetection() {
       // AUTO MODE — process all faces with batch recognition
       if (autoMode && det.length > 0 && !isDetecting) {
         isDetecting = true;
+        try {
         ensureMatcher();
 
         if (cachedMatcher && students.length > 0) {
@@ -1403,13 +1930,16 @@ async function startAttDetection() {
               date: today,
               time: new Date().toLocaleTimeString(),
               timestamp: Date.now(),
-              status: attStatus
+              status: attStatus,
+              location: currentLocation || ''
             });
             markRecent(student.id);
           }
 
           if (batchEntries.length > 0) {
             await Promise.all(batchEntries.map(e => saveAttendanceToFirebase(e)));
+            batchEntries.forEach(e => writePresence(e.studentId, e.name, e.grade));
+            playSuccess();
             const counts = {};
             batchEntries.forEach(e => { counts[e.status] = (counts[e.status] || 0) + 1; });
             const parts = [];
@@ -1418,8 +1948,9 @@ async function startAttDetection() {
             showToast(`✅ ${batchEntries.length} student(s) marked: ${parts.join(', ')}`, 'success');
           }
         }
-
+        } finally {
         isDetecting = false;
+        }
       }
 
       // GATE MODE — continuous scanning, no lock, collects into pending buffer
@@ -1432,7 +1963,11 @@ async function startAttDetection() {
             if (match.label === 'unknown') continue;
             const student = students.find(s => s.id === match.label);
             if (!student) continue;
-            if (attendanceLog.find(a => a.studentId === student.id && a.date === today)) continue;
+            if (gateTracked.has(student.id)) continue;
+            if (attendanceLog.find(a => a.studentId === student.id && a.date === today)) {
+              gateTracked.add(student.id);
+              continue;
+            }
             if (gatePending.has(student.id)) continue;
             const attStatus = isLateTime() ? 'late' : 'present';
             gatePending.set(student.id, {
@@ -1442,7 +1977,8 @@ async function startAttDetection() {
               date: today,
               time: new Date().toLocaleTimeString(),
               timestamp: Date.now(),
-              status: attStatus
+              status: attStatus,
+              location: currentLocation || ''
             });
           }
         }
@@ -1489,15 +2025,18 @@ function toggleGateMode() {
   if (gateMode) {
     startGateFlush();
     showToast('🚪 Gate mode ON — auto-scanning all faces continuously!', 'info');
-    $('resultBox').innerHTML = `<div style="color:var(--green);font-size:16px;font-weight:600;">🚪 Gate Mode Active</div>
+    $('resultBox').innerHTML = `<div style="color:var(--green);font-size:16px;font-weight:600;">🚪 Gate Mode Active ${currentLocation ? `<span style="font-size:11px;color:var(--blue);">📍 ${currentLocation}</span>` : ''}</div>
       <div style="color:var(--muted);font-size:12px;margin-top:4px;">Continuously scanning for students</div>
       <div id="gateLiveCount" style="margin-top:8px;"></div>`;
     localStorage.setItem('faceattend_gate', 'true');
   } else {
     stopGateFlush();
-    gatePending.clear();
+    flushGatePending().then(() => {
+      gatePending.clear();
+    });
     localStorage.removeItem('faceattend_gate');
     showToast('Gate mode OFF', 'info');
+    $('resultBox').innerHTML = `<div style="color:var(--muted);font-size:13px;">Point camera at a face...</div>`;
   }
 }
 
@@ -1524,6 +2063,10 @@ async function flushGatePending() {
   if (toSave.length === 0) return;
 
   await Promise.all(toSave.map(e => saveAttendanceToFirebase(e)));
+  toSave.forEach(e => writePresence(e.studentId, e.name, e.grade));
+
+  // Track saved IDs to prevent duplicates even before Firebase listener fires
+  toSave.forEach(e => gateTracked.add(e.studentId));
 
   // Add to gate log
   toSave.forEach(e => {
@@ -1533,6 +2076,7 @@ async function flushGatePending() {
 
   renderGateLog();
 
+  playSuccess();
   // Brief toast
   const names = toSave.slice(0, 3).map(e => e.name).join(', ');
   const extra = toSave.length > 3 ? ` +${toSave.length - 3} more` : '';
@@ -1609,7 +2153,9 @@ function updateBatchPreview(detections) {
 async function startRegDetection() {
   if (!modelsLoaded) return;
   regDetectionRunning = true;
-  const vid = $('videoReg'), canvas = $('canvasReg'), ctx = canvas.getContext('2d');
+  const vid = $('videoReg'), canvas = $('canvasReg');
+  if (!canvas || !vid) return;
+  const ctx = canvas.getContext('2d');
 
   async function loop() {
     if (!regDetectionRunning) return;
@@ -1718,7 +2264,7 @@ async function runLivenessCheck(videoEl) {
       }
 
       // Timeout after 15s
-      if (livenessBlinks === 0 && Date.now() > livenessStartTime + 15000) {
+      if (Date.now() > livenessStartTime + 15000 && livenessBlinks < livenessTarget) {
         clearInterval(interval);
         livenessActive = false;
         $('livenessModal').classList.remove('show');
@@ -1835,7 +2381,8 @@ async function batchMarkAttendance() {
       date: today,
       time: new Date().toLocaleTimeString(),
       timestamp: Date.now(),
-      status: attStatus
+      status: attStatus,
+      location: currentLocation || ''
     });
     markedNames.push(student.name);
     markRecent(student.id);
@@ -1847,6 +2394,7 @@ async function batchMarkAttendance() {
   }
 
   await Promise.all(entries.map(e => saveAttendanceToFirebase(e)));
+  entries.forEach(e => writePresence(e.studentId, e.name, e.grade));
   const summary = markedNames.length > 3
     ? `${markedNames.slice(0, 3).join(', ')} + ${markedNames.length - 3} more`
     : markedNames.join(', ');
@@ -1877,7 +2425,7 @@ async function runRecognition(descriptor, canvas) {
 
   if (alreadyMarked) {
     showToast(`ℹ️ ${student.name} already marked today`, 'info');
-    updateResultBox(student, 'already', confidence);
+    updateResultBox(student, 'already', confidence, alreadyMarked.status);
     return;
   }
 
@@ -1895,7 +2443,9 @@ async function runRecognition(descriptor, canvas) {
   };
 
   await saveAttendanceToFirebase(entry);
+  writePresence(student.id, student.name, student.grade);
   updateResultBox(student, 'match', confidence, status);
+  playSuccess();
   showToast(`✅ ${student.name} marked ${status.toUpperCase()}!`, status === 'late' ? 'info' : 'success');
 }
 
@@ -1905,7 +2455,8 @@ function updateResultBox(student, status, confidence, attStatus) {
 
   if (!student || status === 'no-face' || status === 'liveness-fail') {
     const msg = status === 'liveness-fail' ? 'Liveness check failed' : (status === 'no-face' ? 'No face detected' : 'Point camera at a face...');
-    box.innerHTML = `<div class="result-icon">👤</div><div style="color:var(--muted);font-size:13px;">${msg}</div>`;
+    const locLine = currentLocation ? `<div style="color:var(--muted);font-size:10px;margin-top:4px;">📍 ${currentLocation}</div>` : '';
+    box.innerHTML = `<div class="result-icon">👤</div><div style="color:var(--muted);font-size:13px;">${msg}</div>${locLine}`;
     return;
   }
 
@@ -1920,9 +2471,10 @@ function updateResultBox(student, status, confidence, attStatus) {
   const lateBadge = attStatus === 'late' ? `<div style="color:var(--yellow);font-size:11px;margin-top:4px;">⏰ Late arrival</div>` : '';
   const cc = confidence >= 80 ? 'var(--green)' : confidence >= 60 ? 'var(--yellow)' : 'var(--red)';
 
+  const locBadge = currentLocation ? `<span style="background:var(--blue);color:#fff;padding:1px 8px;border-radius:10px;font-size:10px;font-weight:600;margin-left:6px;">📍 ${currentLocation}</span>` : '';
   box.innerHTML = `
     <div class="result-icon">${attStatus === 'late' ? '⏰' : '✅'}</div>
-    <div class="result-name">${student.name}</div>
+    <div class="result-name">${student.name}${locBadge}</div>
     <div class="result-id">${student.id} · ${student.grade || 'N/A'}</div>
     <div class="result-time">${new Date().toLocaleTimeString()}${lateBadge}</div>
     ${alreadyBadge}
@@ -1957,6 +2509,7 @@ function toggleBatchMode() {
       <div style="color:var(--muted);font-size:12px;margin-top:4px;">Point camera at the class and press Mark</div>`;
   } else {
     showToast('Classroom mode OFF', 'info');
+    $('resultBox').innerHTML = `<div style="color:var(--muted);font-size:13px;">Point camera at a face...</div>`;
   }
 }
 
@@ -1987,6 +2540,7 @@ async function markManualAttendance() {
   };
 
   await saveAttendanceToFirebase(entry);
+  playSuccess();
   showToast(`✅ ${student.name} marked ${status.toUpperCase()}`, 'success');
 }
 
@@ -2000,8 +2554,9 @@ function showQRDisplay(studentId) {
     $('qrDisplayName').textContent = s.name;
     $('qrDisplayId').textContent = s.id;
     $('qrDisplayCode').innerHTML = '';
-    new QRCode($('qrDisplayCode'), {
-      text: JSON.stringify({ id: s.id, name: s.name }),
+    if (qrCodeInstance) { try { qrCodeInstance.clear(); } catch(e) {} }
+    qrCodeInstance = new QRCode($('qrDisplayCode'), {
+      text: s.id,
       width: 150, height: 150
     });
     $('qrDisplayModal').classList.add('show');
@@ -2010,6 +2565,7 @@ function showQRDisplay(studentId) {
     const picker = document.createElement('div');
     picker.innerHTML = `
       <div style="margin:12px 0;">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">Select a student to generate their QR code:</div>
         <select id="qrStudentPicker" style="width:100%;padding:8px;border-radius:8px;background:var(--surface);border:1px solid var(--border);color:var(--text);">
           <option value="">Select student...</option>
           ${students.map(s => `<option value="${s.id}">${s.name} - ${s.id}</option>`).join('')}
@@ -2035,11 +2591,13 @@ function generateSelectedQR() {
 
 function closeQRDisplay() {
   $('qrDisplayModal').classList.remove('show');
+  // Clean up old QRCode instance
+  if (qrCodeInstance) { try { qrCodeInstance.clear(); } catch(e) {} qrCodeInstance = null; }
 }
 
 async function openQRScanner() {
   $('qrModal').classList.add('show');
-  $('qrResult').textContent = '';
+  $('qrResult').innerHTML = '<span style="color:var(--muted);">Starting camera...</span>';
 
   try {
     if (qrScannerInstance) { await qrScannerInstance.stop(); qrScannerInstance = null; }
@@ -2051,7 +2609,9 @@ async function openQRScanner() {
       onQRCodeScanned,
       () => {}
     );
+    $('qrResult').textContent = '';
   } catch(e) {
+    $('qrResult').textContent = 'Camera error: ' + e.message;
     showToast('QR scanner error: ' + e.message, 'error');
   }
 }
@@ -2059,7 +2619,7 @@ async function openQRScanner() {
 async function onQRCodeScanned(decodedText) {
   try {
     let data;
-    try { data = JSON.parse(decodedText); } catch(e) { data = { id: decodedText }; }
+    try { const p = JSON.parse(decodedText); data = { id: p.id || decodedText }; } catch(e) { data = { id: decodedText }; }
 
     const student = students.find(s => s.id === data.id);
     if (!student) {
@@ -2076,31 +2636,35 @@ async function onQRCodeScanned(decodedText) {
 
     const now = new Date();
     const status = isLateTime() ? 'late' : 'present';
-    const entry = {
-      studentId: student.id,
-      name: student.name,
-      grade: student.grade,
-      date: today,
-      time: now.toLocaleTimeString(),
-      timestamp: now.getTime(),
-      status: status
-    };
+  const entry = {
+    studentId: student.id,
+    name: student.name,
+    grade: student.grade,
+    date: today,
+    time: now.toLocaleTimeString(),
+    timestamp: now.getTime(),
+    status: status,
+    location: currentLocation || ''
+  };
 
     await saveAttendanceToFirebase(entry);
+    playSuccess();
     $('qrResult').innerHTML = `<span style="color:var(--green);font-size:16px;">✅ ${student.name} marked ${status.toUpperCase()}!</span>`;
     showToast(`✅ ${student.name} via QR`, 'success');
 
     // Stop scanner for 2 seconds so user can see result
     if (qrScannerInstance) {
       await qrScannerInstance.stop();
-      setTimeout(() => {
-        if ($('qrModal').classList.contains('show')) {
-          qrScannerInstance.start(
-            { facingMode: "environment" },
-            { fps: 10, qrbox: { width: 250, height: 250 } },
-            onQRCodeScanned,
-            () => {}
-          );
+      setTimeout(async () => {
+        if ($('qrModal').classList.contains('show') && qrScannerInstance) {
+          try {
+            await qrScannerInstance.start(
+              { facingMode: "environment" },
+              { fps: 10, qrbox: { width: 250, height: 250 } },
+              onQRCodeScanned,
+              () => {}
+            );
+          } catch(e) { console.error('QR restart error:', e); }
         }
       }, 2000);
     }
@@ -2161,7 +2725,11 @@ async function captureFace() {
 
   $('captureStatus').innerHTML = `<span style="color:var(--green);font-size:12px;font-family:var(--mono)">✅ ${capturedDescriptors.length} sample(s)</span>`;
 
-  if (capturedDescriptors.length >= 3) $('btnRegister').disabled = false;
+  if (capturedDescriptors.length >= 3) {
+    $('btnRegister').disabled = false;
+    const h = $('regHint');
+    if (h) h.textContent = '✅ Ready to register!';
+  }
 }
 
 function clearCaptures() {
@@ -2170,6 +2738,59 @@ function clearCaptures() {
   $('capturePreview').innerHTML = '';
   $('captureStatus').innerHTML = '';
   $('btnRegister').disabled = true;
+  const h = $('regHint');
+  if (h) h.textContent = 'Capture at least 1 face sample above first';
+}
+
+function handlePhotoUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    regProfilePhoto = e.target.result;
+    showToast('📷 Photo uploaded!', 'success');
+  };
+  reader.readAsDataURL(file);
+}
+
+async function handleCSVImport(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const text = await file.text();
+  const lines = text.split('\n').filter(l => l.trim());
+  if (lines.length < 2) { showToast('CSV must have a header row and at least one student', 'error'); return; }
+  const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+  const nameIdx = headers.indexOf('name');
+  const idIdx = headers.indexOf('id');
+  if (nameIdx === -1 || idIdx === -1) { showToast('CSV must have "Name" and "ID" columns', 'error'); return; }
+  const gradeIdx = headers.indexOf('grade');
+  const genderIdx = headers.indexOf('gender');
+  const emailIdx = headers.indexOf('email');
+  let imported = 0, skipped = 0;
+  const preview = [];
+  for (let i = 1; i < lines.length; i++) {
+    const cols = lines[i].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+    const name = cols[nameIdx], id = cols[idIdx];
+    if (!name || !id) { skipped++; continue; }
+    if (students.find(s => s.id === id)) { skipped++; continue; }
+    const student = {
+      id, name,
+      grade: gradeIdx >= 0 ? cols[gradeIdx] || '' : '',
+      gender: genderIdx >= 0 ? cols[genderIdx] || '' : '',
+      email: emailIdx >= 0 ? cols[emailIdx] || '' : '',
+      descriptors: [],
+      photo: '',
+      createdAt: Date.now()
+    };
+    await saveStudentToFirebase(student);
+    imported++;
+    if (preview.length < 5) preview.push(name);
+  }
+  const extra = imported > 5 ? ` and ${imported - 5} more` : '';
+  $('csvPreview').innerHTML = imported > 0
+    ? `<span style="color:var(--green);">✅ Imported ${imported} student(s)${extra}${skipped > 0 ? ` (${skipped} skipped)` : ''}</span>`
+    : `<span style="color:var(--yellow);">No new students imported${skipped > 0 ? ` (${skipped} skipped)` : ''}</span>`;
+  showToast(`📥 Imported ${imported} student(s)`, imported > 0 ? 'success' : 'info');
 }
 
 async function registerStudent() {
@@ -2180,8 +2801,10 @@ async function registerStudent() {
   const email = $('regEmail').value.trim();
 
   if (!name || !id) { showToast('Name and ID required!', 'error'); return; }
+  if (!grade) { showToast('Select a class/grade!', 'error'); return; }
   if (capturedDescriptors.length < 1) { showToast('Capture at least 1 sample!', 'error'); return; }
   if (students.find(s => s.id === id)) { showToast('Student ID already exists!', 'error'); return; }
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('Invalid email format', 'error'); return; }
 
   const student = {
     id, name, grade, gender, email,
@@ -2236,8 +2859,10 @@ function testEmailJS() {
   if (!window.emailjs) { showToast('EmailJS not loaded', 'error'); return; }
 
   emailjs.init(settings.emailjsPublicKey);
+  const testEmail = prompt('Send test email to:', 'test@example.com');
+  if (!testEmail) return;
   emailjs.send(settings.emailjsServiceId, settings.emailjsTemplateId, {
-    to_email: 'test@example.com',
+    to_email: testEmail,
     student_name: 'Test Student',
     student_id: 'TEST-001',
     date: getTodayStr(),
@@ -2257,17 +2882,19 @@ function loadRecords() {
   const date = $('filterDate').value;
   const grade = $('filterGrade').value;
   const status = $('filterStatus').value;
+  const loc = $('filterLocation')?.value || '';
 
   let filtered = [...attendanceLog];
   if (date) filtered = filtered.filter(r => r.date === date);
   if (grade) filtered = filtered.filter(r => r.grade === grade);
   if (status) filtered = filtered.filter(r => r.status === status);
+  if (loc) filtered = filtered.filter(r => r.location === loc);
 
   filtered.sort((a,b) => b.timestamp - a.timestamp);
   const tbody = $('recordsTbody');
 
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="e-icon">📋</div><p>No records found</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="e-icon">📋</div><p>No records found</p></div></td></tr>`;
     return;
   }
 
@@ -2282,6 +2909,7 @@ function loadRecords() {
       <td style="font-family:var(--mono);font-size:12px">${r.date}</td>
       <td style="font-family:var(--mono);font-size:12px">${r.time}</td>
       <td><span class="badge ${badgeClass}">${badgeText}</span></td>
+      <td><span style="font-size:11px;color:var(--muted);">${r.location || '—'}</span></td>
       <td style="text-align:center;white-space:nowrap;">
         <button class="icon-btn" onclick="editAttendance('${key}')" title="Edit" style="font-size:14px;padding:2px 6px;">✏️</button>
         <button class="icon-btn" onclick="deleteAttendance('${key}')" title="Delete" style="font-size:14px;padding:2px 6px;">🗑</button>
@@ -2301,8 +2929,13 @@ function editAttendance(key) {
   const t = record.time || '';
   let timeVal = '';
   if (t) {
-    const m = t.match(/(\d+):(\d+)/);
-    if (m) timeVal = m[1].padStart(2,'0') + ':' + m[2].padStart(2,'0');
+    const m = t.match(/(\d+):(\d+)(?::(\d+))?\s*(AM|PM)?/i);
+    if (m) {
+      let h = +m[1], min = m[2];
+      if (m[4] && m[4].toUpperCase() === 'PM' && h < 12) h += 12;
+      if (m[4] && m[4].toUpperCase() === 'AM' && h === 12) h = 0;
+      timeVal = String(h).padStart(2,'0') + ':' + min.padStart(2,'0');
+    }
   }
   $('editTime').value = timeVal;
   $('editAttModal').dataset.key = key;
@@ -2357,15 +2990,17 @@ function exportCSV() {
   if (date) filtered = filtered.filter(r => r.date === date);
   if (grade) filtered = filtered.filter(r => r.grade === grade);
 
+  const esc = v => `"${(v||'').replace(/"/g,'""')}"`;
   const header = 'Name,Student ID,Class,Date,Time,Status';
-  const rows = filtered.map(r => `${r.name},${r.studentId},${r.grade||''},${r.date},${r.time},${(r.status||'present').toUpperCase()}`);
+  const rows = filtered.map(r => [r.name, r.studentId, r.grade||'', r.date, r.time, (r.status||'present').toUpperCase()].map(esc).join(','));
   downloadCSV([header, ...rows].join('\n'), 'attendance.csv');
 }
 
 function exportFullCSV() {
   if (attendanceLog.length === 0) { showToast('No records', 'error'); return; }
+  const esc = v => `"${(v||'').replace(/"/g,'""')}"`;
   const header = 'Name,Student ID,Class,Date,Time,Status';
-  const rows = attendanceLog.map(r => `${r.name},${r.studentId},${r.grade||''},${r.date},${r.time},${(r.status||'present').toUpperCase()}`);
+  const rows = attendanceLog.map(r => [r.name, r.studentId, r.grade||'', r.date, r.time, (r.status||'present').toUpperCase()].map(esc).join(','));
   downloadCSV([header, ...rows].join('\n'), 'attendance_full.csv');
 }
 
@@ -2404,6 +3039,7 @@ function showPDFDialog() {
 
   // Use the records card to show dialog
   const recordsCard = document.querySelector('#page-records .card');
+  if (!recordsCard) return;
   let pdfDiv = document.getElementById('pdfDialog');
   if (!pdfDiv) {
     pdfDiv = document.createElement('div');
@@ -2546,8 +3182,10 @@ function renderStudentsList() {
           <div class="s-id">${s.id}</div>
           <div class="s-grade">${s.grade || 'N/A'}</div>
           <div class="s-samples">${s.descriptors ? s.descriptors.length : 0} samples</div>
-          <button class="delete-btn" onclick="showStudentQR('${s.id}')">📱 QR</button>
-          <button class="delete-btn" onclick="deleteStudent('${s.id}')">🗑 Remove</button>
+          <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:center;">
+            <button class="action-btn qr" onclick="showStudentQR('${s.id}')">📱 QR</button>
+            <button class="action-btn del" onclick="deleteStudent('${s.id}')">🗑</button>
+          </div>
         </div>`;
       }).join('')}
     </div>`;
@@ -2559,12 +3197,67 @@ function showStudentQR(id) {
 
 function deleteStudent(id) {
   if (!confirm('Remove this student and all data?')) return;
-  deleteStudentFromFirebase(id).then(() => showToast('Student removed', 'info'));
+  deleteStudentFromFirebase(id).then(() => showToast('Student removed', 'info')).catch(e => showToast('Error: ' + e.message, 'error'));
 }
 
 function clearAllData() {
   if (!confirm('Clear ALL data? Cannot be undone!')) return;
-  clearAllFromFirebase().then(() => showToast('All data cleared', 'info'));
+  clearAllFromFirebase().then(() => showToast('All data cleared', 'info')).catch(e => showToast('Error: ' + e.message, 'error'));
+}
+
+// ═══════════════════════════════════════════
+//  CALENDAR VIEW
+// ═══════════════════════════════════════════
+function renderCalendar() {
+  const container = $('calendarView');
+  if (!container) return;
+  const sel = $('calStudent');
+  const monthStr = $('calMonth').value || new Date().toISOString().slice(0, 7);
+  const [year, mon] = monthStr.split('-').map(Number);
+
+  // Populate student dropdown
+  const prevVal = sel.value;
+  sel.innerHTML = '<option value="">All Students</option>' + students.map(s => `<option value="${s.id}" ${s.id === prevVal ? 'selected' : ''}>${s.name}</option>`).join('');
+
+  const daysInMonth = new Date(year, mon, 0).getDate();
+  const firstDay = new Date(year, mon - 1, 1).getDay();
+
+  const filtered = prevVal ? attendanceLog.filter(a => a.studentId === prevVal) : attendanceLog;
+
+  const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  let html = `<table style="width:100%;border-collapse:collapse;font-size:12px;">
+    <thead><tr>${dayNames.map(d => `<th style="padding:6px;border:1px solid var(--border);color:var(--muted);font-size:11px;">${d}</th>`).join('')}</tr></thead><tbody><tr>`;
+
+  // Empty cells before first day
+  for (let i = 0; i < firstDay; i++) html += `<td style="border:1px solid var(--border);padding:4px;text-align:center;background:var(--surface);"></td>`;
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${String(mon).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const records = filtered.filter(a => a.date === dateStr);
+    const present = records.filter(a => a.status === 'present' || a.status === 'late').length;
+    const total = records.length;
+    const color = total === 0 ? 'var(--muted)' : present === total ? 'var(--green)' : present > 0 ? 'var(--yellow)' : 'var(--red)';
+    html += `<td style="border:1px solid var(--border);padding:4px;text-align:center;background:var(--surface);">
+      <div style="font-weight:600;font-size:13px;">${d}</div>
+      ${total > 0 ? `<div style="font-size:10px;color:${color};">${present}/${total}</div>` : ''}
+    </td>`;
+    if ((firstDay + d) % 7 === 0 && d < daysInMonth) html += '</tr><tr>';
+  }
+
+  // Fill remaining cells
+  const lastCell = (firstDay + daysInMonth) % 7;
+  if (lastCell !== 0) for (let i = lastCell; i < 7; i++) html += `<td style="border:1px solid var(--border);padding:4px;text-align:center;background:var(--surface);"></td>`;
+
+  html += '</tr></tbody></table>';
+  container.innerHTML = html;
+
+  // Legend
+  container.innerHTML += `<div style="display:flex;gap:16px;margin-top:10px;font-size:11px;color:var(--muted);justify-content:center;flex-wrap:wrap;">
+    <span><span style="color:var(--green);">●</span> All Present</span>
+    <span><span style="color:var(--yellow);">●</span> Partial</span>
+    <span><span style="color:var(--red);">●</span> All Absent</span>
+    <span><span style="color:var(--muted);">○</span> No Record</span>
+  </div>`;
 }
 
 // ═══════════════════════════════════════════
@@ -2583,9 +3276,10 @@ function renderTodayList() {
   container.innerHTML = todayRecs.map(r => {
     const badgeClass = r.status === 'late' ? 'badge-late' : 'badge-present';
     const badgeText = (r.status || 'present').toUpperCase();
+    const locTag = r.location ? `<span style="font-size:9px;color:var(--blue);margin-left:4px;">📍 ${r.location}</span>` : '';
     return `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 4px;border-bottom:1px solid var(--border)">
       <div>
-        <div style="font-size:13px;font-weight:500">${r.name}</div>
+        <div style="font-size:13px;font-weight:500">${r.name}${locTag}</div>
         <div style="font-size:10px;color:var(--muted);font-family:var(--mono)">${r.studentId}</div>
       </div>
       <div style="text-align:right">
@@ -2624,6 +3318,10 @@ function showTab(tab) {
   const bn = document.querySelector(`.bn-item[data-tab="${tab}"]`);
   if (bn) bn.classList.add('active');
 
+  // Stop other tab's detection before switching
+  if (tab !== 'attendance') { attDetectionRunning = false; }
+  if (tab !== 'register') { regDetectionRunning = false; }
+
   if (tab === 'attendance' && modelsLoaded) {
     attDetectionRunning = false;
     setTimeout(() => { attDetectionRunning = true; startCamera('att'); }, 100);
@@ -2641,6 +3339,11 @@ function showTab(tab) {
   if (tab === 'records') loadRecords();
   if (tab === 'students') renderStudentsList();
   if (tab === 'analytics') setTimeout(loadCharts, 200);
+  if (tab === 'calendar') {
+    if ($('calMonth') && !$('calMonth').value) $('calMonth').value = new Date().toISOString().slice(0, 7);
+    renderCalendar();
+  }
+  if (tab === 'cameras') { startCameraDashboard(); } else { stopCameraDashboard(); }
 }
 
 // ═══════════════════════════════════════════
@@ -2790,10 +3493,208 @@ function loadCharts() {
 }
 
 // ═══════════════════════════════════════════
+//  ALL CAMERAS DASHBOARD
+// ═══════════════════════════════════════════
+let camerasRefreshTimer = null;
+
+function renderCameraDashboard() {
+  const today = getTodayStr();
+  const grid = $('camerasGrid');
+  const feed = $('camLiveFeed');
+  const ts = $('camerasTimestamp');
+  if (!grid) return;
+
+  // Update timestamp
+  if (ts) ts.textContent = new Date().toLocaleTimeString() + ' · live';
+
+  // Live presence: group by location
+  const liveByLoc = {};
+  const now = Date.now();
+  Object.entries(presenceMap).forEach(([sid, data]) => {
+    if (now - data.timestamp > PRESENCE_TTL) return;
+    if (!liveByLoc[data.location]) liveByLoc[data.location] = [];
+    liveByLoc[data.location].push(data);
+  });
+
+  // Build per-location stats from today's attendance records
+  const locMap = {};
+  const todayRecords = attendanceLog.filter(a => a.date === today && a.location);
+  locations.forEach(loc => { locMap[loc] = { count: 0, recent: [], liveCount: 0 }; });
+  todayRecords.forEach(r => {
+    if (!locMap[r.location]) locMap[r.location] = { count: 0, recent: [], liveCount: 0 };
+    locMap[r.location].count++;
+    locMap[r.location].recent.unshift(r);
+  });
+  Object.keys(locMap).forEach(k => {
+    locMap[k].recent = locMap[k].recent.slice(0, 5);
+    locMap[k].liveCount = (liveByLoc[k] || []).length;
+  });
+
+  if (locations.length === 0) {
+    grid.innerHTML = '<div class="empty-state"><div class="e-icon">📡</div><p>No cameras added — go to Settings → Locations</p></div>';
+  } else {
+    grid.innerHTML = locations.map(loc => {
+      const data = locMap[loc] || { count: 0, recent: [], liveCount: 0 };
+      const liveHere = liveByLoc[loc] || [];
+      const isActive = data.count > 0 || liveHere.length > 0;
+      const lastDetected = data.recent.length > 0 ? data.recent[0] : null;
+      return `<div class="cam-location-card${isActive ? ' active' : ''}">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div style="font-weight:600;font-size:14px;">
+            <span class="cam-status ${isActive ? 'online' : 'offline'}"></span>📍 ${loc}
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            ${liveHere.length > 0
+              ? `<span style="background:var(--green);color:#fff;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700;animation:pulse-dot 2s infinite;">🟢 ${liveHere.length} LIVE</span>`
+              : ''}
+            <span style="font-size:12px;color:var(--muted);">
+              ${data.count > 0 ? `<span style="color:var(--green);font-weight:600;">${data.count}</span> today` : ''}
+            </span>
+          </div>
+        </div>
+        ${liveHere.length > 0
+          ? `<div style="margin-top:8px;padding:6px;background:rgba(16,185,129,0.08);border-radius:6px;">
+               <div style="font-size:10px;color:var(--green);font-weight:600;margin-bottom:4px;">🟢 LIVE NOW</div>
+               <div style="display:flex;flex-direction:column;gap:2px;">
+                 ${liveHere.slice(0, 5).map(p =>
+                   `<span style="font-size:12px;display:flex;justify-content:space-between;">
+                      <span style="font-weight:500;">${p.name}</span>
+                      <span style="font-size:10px;color:var(--muted);font-family:var(--mono);">${new Date(p.timestamp).toLocaleTimeString()}</span>
+                    </span>`
+                 ).join('')}
+                 ${liveHere.length > 5 ? `<span style="font-size:10px;color:var(--muted);">+${liveHere.length - 5} more</span>` : ''}
+               </div>
+             </div>`
+          : (lastDetected
+              ? `<div style="margin-top:6px;font-size:12px;">
+                   <span style="color:var(--muted);font-size:10px;">Last: </span>
+                   <span style="color:var(--text);">${lastDetected.name}</span>
+                   <span style="color:var(--muted);font-size:10px;font-family:var(--mono);">${lastDetected.time}</span>
+                 </div>`
+              : `<div style="margin-top:6px;font-size:11px;color:var(--muted);">⏳ Waiting for face detection...</div>`)}
+        ${data.recent.length > 1 && liveHere.length === 0
+          ? `<div class="cam-recent">${data.recent.slice(0, 3).map(r =>
+               `<div class="cam-recent-item"><span>${r.name}</span><span style="color:var(--muted);font-size:10px;">${r.time}</span></div>`
+             ).join('')}</div>`
+          : ''}
+      </div>`;
+    }).join('');
+  }
+
+  // Live presence feed — everyone currently seen
+  const liveEntries = Object.values(presenceMap)
+    .filter(p => now - p.timestamp < PRESENCE_TTL)
+    .sort((a, b) => b.timestamp - a.timestamp);
+
+  if (liveEntries.length === 0) {
+    feed.innerHTML = '<tr><td colspan="5"><div class="empty-state"><div class="e-icon">📡</div><p>Waiting for live detections...</p></div></td></tr>';
+  } else {
+    feed.innerHTML = liveEntries.map(p => {
+      const age = Math.round((now - p.timestamp) / 1000);
+      return `<tr>
+        <td style="white-space:nowrap;font-family:var(--mono);font-size:11px;">
+          <span style="color:var(--green);font-weight:700;">🟢</span> ${new Date(p.timestamp).toLocaleTimeString()}
+        </td>
+        <td><strong>${p.name}</strong></td>
+        <td style="font-family:var(--mono);font-size:11px;color:var(--muted);">${p.studentId || '—'}</td>
+        <td><span style="background:var(--surface);padding:2px 8px;border-radius:10px;font-size:11px;">📍 ${p.location}</span></td>
+        <td><span style="font-size:10px;color:var(--muted);">${age}s ago</span></td>
+      </tr>`;
+    }).join('');
+  }
+}
+
+function findStudentAcrossCameras() {
+  const query = ($('camSearchInput')?.value || '').toLowerCase().trim();
+  const result = $('camSearchResult');
+  if (!query) { result.innerHTML = '<span style="color:var(--muted);font-size:13px;">Enter a student name or ID</span>'; return; }
+
+  const matching = students.filter(s =>
+    s.name.toLowerCase().includes(query) || s.id.toLowerCase().includes(query)
+  );
+
+  if (matching.length === 0) {
+    result.innerHTML = '<span style="color:var(--yellow);font-size:13px;">❌ No student found</span>';
+    return;
+  }
+
+  result.innerHTML = matching.map(student => {
+    const records = attendanceLog
+      .filter(a => a.studentId === student.id && a.location)
+      .sort((a, b) => b.timestamp - a.timestamp);
+
+    const todayRecords = records.filter(r => r.date === getTodayStr());
+    const latestLocation = records.length > 0 ? records[0].location : null;
+    const latestTime = records.length > 0 ? records[0].time + ' ' + records[0].date : null;
+
+    // Group by location with count
+    const locCounts = {};
+    todayRecords.forEach(r => { locCounts[r.location] = (locCounts[r.location] || 0) + 1; });
+
+    const liveData = presenceMap[student.id];
+    const isLive = liveData && (Date.now() - liveData.timestamp < PRESENCE_TTL);
+    return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:8px;">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <div style="font-size:36px;">👤</div>
+        <div style="flex:1;">
+          <div style="font-weight:600;font-size:15px;">${student.name} ${isLive ? '<span style="background:var(--green);color:#fff;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700;vertical-align:middle;">🟢 LIVE</span>' : ''}</div>
+          <div style="font-size:12px;color:var(--muted);">${student.id} · ${student.grade || 'N/A'}</div>
+        </div>
+        <div style="text-align:right;">
+          ${isLive
+            ? `<div style="background:var(--green);color:#fff;padding:4px 12px;border-radius:16px;font-weight:600;font-size:13px;animation:pulse-dot 2s infinite;">🟢 ${liveData.location}</div>
+               <div style="font-size:10px;color:var(--muted);margin-top:2px;">just now</div>`
+            : (latestLocation
+              ? `<div style="background:var(--blue);color:#fff;padding:4px 12px;border-radius:16px;font-weight:600;font-size:13px;">📍 ${latestLocation}</div>
+                 <div style="font-size:10px;color:var(--muted);margin-top:2px;">${latestTime}</div>`
+              : '<div style="font-size:12px;color:var(--muted);">No location data</div>')}
+        </div>
+      </div>
+      ${todayRecords.length > 0
+        ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
+             <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">📍 Today's locations:</div>
+             <div style="display:flex;gap:6px;flex-wrap:wrap;">
+               ${Object.entries(locCounts).map(([loc, cnt]) =>
+                 `<span style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:3px 10px;font-size:11px;">📍 ${loc} <span style="color:var(--blue);font-weight:600;">×${cnt}</span></span>`
+               ).join('')}
+             </div>
+             <div style="margin-top:6px;display:flex;flex-direction:column;gap:3px;max-height:120px;overflow-y:auto;">
+               ${todayRecords.slice(0, 10).map(r =>
+                 `<span style="font-size:11px;color:var(--muted);display:flex;justify-content:space-between;padding:2px 6px;background:var(--card);border-radius:4px;">
+                   <span>📍 ${r.location}</span>
+                   <span>${r.time} <span class="badge ${r.status === 'late' ? 'badge-late' : 'badge-present'}" style="font-size:9px;">${(r.status || 'present').toUpperCase()}</span></span>
+                 </span>`
+               ).join('')}
+             </div>
+           </div>`
+        : ''}
+    </div>`;
+  }).join('');
+}
+
+function resetCameraDashboard() {
+  if ($('camSearchInput')) $('camSearchInput').value = '';
+  if ($('camSearchResult')) $('camSearchResult').innerHTML = '';
+  renderCameraDashboard();
+}
+
+// Auto-refresh dashboard every 3s when tab is visible
+function startCameraDashboard() {
+  stopCameraDashboard();
+  renderCameraDashboard();
+  camerasRefreshTimer = setInterval(renderCameraDashboard, 3000);
+}
+
+function stopCameraDashboard() {
+  if (camerasRefreshTimer) { clearInterval(camerasRefreshTimer); camerasRefreshTimer = null; }
+}
+
+// ═══════════════════════════════════════════
 //  HELPERS
 // ═══════════════════════════════════════════
 function getTodayStr() {
-  return new Date().toISOString().split('T')[0];
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
 }
 
 let toastTimer = null;
@@ -2806,6 +3707,95 @@ function showToast(msg, type = 'info') {
 }
 
 // ═══════════════════════════════════════════
+//  SOUND FEEDBACK
+// ═══════════════════════════════════════════
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function playBeep(freq = 880, len = 120) {
+  if (!soundEnabled) return;
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.frequency.value = freq; osc.type = 'sine';
+    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + len / 1000);
+    osc.start(); osc.stop(audioCtx.currentTime + len / 1000);
+  } catch(e) {}
+}
+function playSuccess() { playBeep(1047, 100); setTimeout(() => playBeep(1319, 150), 120); }
+function playError() { playBeep(300, 200); }
+
+// ═══════════════════════════════════════════
+//  LANGUAGE / TRANSLATIONS
+// ═══════════════════════════════════════════
+const translations = {
+  en: {
+    title: 'FaceAttend Pro — School Attendance System',
+    present: 'Present', late: 'Late', absent: 'Absent',
+    markAtt: '✅ Mark Attendance', register: '➕ Register Student',
+    records: '📋 Attendance Records', students: '👥 Students', settings: '⚙️ Settings',
+    noFace: 'Point camera at a face...', loading: 'Loading...',
+    save: '💾 Save Settings', search: '🔍 Search by name or ID...'
+  },
+  si: {
+    title: 'FaceAttend Pro — පාසල් පැමිණීමේ පද්ධතිය',
+    present: 'පැමිණ සිටී', late: 'ප්‍රමාදයි', absent: 'නොපැමිණී',
+    markAtt: '✅ පැමිණීම සලකුණු කරන්න', register: '➕ සිසුවා ලියාපදිංචි කරන්න',
+    records: '📋 පැමිණීමේ වාර්තා', students: '👥 සිසුන්', settings: '⚙️ සැකසුම්',
+    noFace: 'කැමරාව මුහුණට යොමු කරන්න...', loading: 'පූරණය වේ...',
+    save: '💾 සුරකින්න', search: '🔍 නමින් හෝ අංකයෙන් සොයන්න...'
+  }
+};
+function t(key) { return (translations[currentLanguage] || translations.en)[key] || key; }
+function setLanguage(lang) {
+  currentLanguage = lang;
+  localStorage.setItem('faceattend_lang', lang);
+  // Update static elements
+  document.documentElement.lang = lang === 'si' ? 'si' : 'en';
+}
+
+// ═══════════════════════════════════════════
+//  SESSION TIMEOUT
+// ═══════════════════════════════════════════
+const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+function resetSessionTimer() {
+  if (sessionTimer) clearTimeout(sessionTimer);
+  if (isAdmin) {
+    sessionTimer = setTimeout(() => {
+      showToast('Session expired — please login again', 'info');
+      toggleLogin();
+    }, SESSION_TIMEOUT_MS);
+  }
+}
+// Reset timer on any interaction
+['click','mousemove','keydown','touchstart'].forEach(evt =>
+  document.addEventListener(evt, resetSessionTimer)
+);
+
+// ═══════════════════════════════════════════
+//  FIREBASE RECONNECTION
+// ═══════════════════════════════════════════
+let fbReconnectTimer = null;
+function setupFirebaseReconnect() {
+  if (typeof _ref !== 'function' || typeof _onValue !== 'function') {
+    fbReconnectTimer = setTimeout(setupFirebaseReconnect, 3000);
+    return;
+  }
+  const connectedRef = _ref(_db, '.info/connected');
+  _onValue(connectedRef, snap => {
+    if (snap.val() === true) {
+      fbReady = true;
+      $('fbStatus').style.color = 'var(--green)';
+      $('fbStatus').textContent = '⬤ DB';
+    } else {
+      fbReady = false;
+      $('fbStatus').style.color = 'var(--red)';
+      $('fbStatus').textContent = '⬤ Offline';
+    }
+  });
+}
+
+// ═══════════════════════════════════════════
 //  START
 // ═══════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
@@ -2813,6 +3803,14 @@ document.addEventListener('DOMContentLoaded', () => {
   if (d) d.value = getTodayStr();
   applyTheme();
   checkAuth();
+  currentLanguage = localStorage.getItem('faceattend_lang') || 'en';
+  soundEnabled = localStorage.getItem('faceattend_sound') !== 'false';
+  recognitionThreshold = parseFloat(localStorage.getItem('faceattend_threshold') || '0.45');
+  if (isNaN(recognitionThreshold)) recognitionThreshold = 0.45;
+  setLanguage(currentLanguage);
+  loadLocations();
+  setupFirebaseReconnect();
+  resetSessionTimer();
 });
 
 window.addEventListener('load', init);
