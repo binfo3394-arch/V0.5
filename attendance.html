@@ -610,6 +610,43 @@ tr:hover td { background: rgba(59,130,246,0.04); }
   </div>
 </div>
 
+<!-- EDIT ATTENDANCE MODAL -->
+<div class="modal-overlay" id="editAttModal">
+  <div class="modal-card">
+    <h3>✏️ Edit Attendance</h3>
+    <div id="editAttBody">
+      <div class="form-group">
+        <label>Student Name</label>
+        <input type="text" id="editName" readonly style="opacity:0.7;">
+      </div>
+      <div class="form-group">
+        <label>Student ID</label>
+        <input type="text" id="editId" readonly style="opacity:0.7;">
+      </div>
+      <div class="form-group">
+        <label>Date</label>
+        <input type="date" id="editDate">
+      </div>
+      <div class="form-group">
+        <label>Time</label>
+        <input type="time" id="editTime">
+      </div>
+      <div class="form-group">
+        <label>Status</label>
+        <select id="editStatus">
+          <option value="present">Present</option>
+          <option value="late">Late</option>
+          <option value="absent">Absent</option>
+        </select>
+      </div>
+    </div>
+    <div class="btn-row" style="margin-top:16px;">
+      <button class="btn btn-primary" onclick="saveEditedAttendance()">💾 Save</button>
+      <button class="btn btn-ghost" onclick="closeEditModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <!-- HEADER -->
 <header>
   <div class="logo">
@@ -845,9 +882,9 @@ tr:hover td { background: rgba(59,130,246,0.04); }
   <div class="card">
     <div class="att-table-wrap">
       <table>
-        <thead><tr><th>Student</th><th>ID</th><th>Class</th><th>Date</th><th>Time</th><th>Status</th></tr></thead>
+        <thead><tr><th>Student</th><th>ID</th><th>Class</th><th>Date</th><th>Time</th><th>Status</th><th style="text-align:center;">Actions</th></tr></thead>
         <tbody id="recordsTbody">
-          <tr><td colspan="6"><div class="empty-state"><div class="e-icon">📋</div><p>No records yet</p></div></td></tr>
+          <tr><td colspan="7"><div class="empty-state"><div class="e-icon">📋</div><p>No records yet</p></div></td></tr>
         </tbody>
       </table>
     </div>
@@ -1164,15 +1201,18 @@ function isLateTime() {
 // ═══════════════════════════════════════════
 async function saveStudentToFirebase(student) {
   if (!fbReady) return;
+  try {
   const toSave = {
     ...student,
     descriptors: student.descriptors.map(d => Array.from(d))
   };
   await _set(_ref(_db, `students/${student.id}`), toSave);
+  } catch(e) { console.error('Firebase save student error:', e); }
 }
 
 async function deleteStudentFromFirebase(id) {
   if (!fbReady) return;
+  try {
   await _remove(_ref(_db, `students/${id}`));
   const snap = await _get(_ref(_db, 'attendance'));
   if (snap.exists()) {
@@ -1180,23 +1220,44 @@ async function deleteStudentFromFirebase(id) {
       if (child.val().studentId === id) _remove(_ref(_db, `attendance/${child.key}`));
     });
   }
+  } catch(e) { console.error('Firebase delete error:', e); }
 }
 
 async function saveAttendanceToFirebase(entry) {
   if (!fbReady) return;
+  try {
   const newRef = _push(_ref(_db, 'attendance'));
   await _set(newRef, { ...entry, firebaseKey: newRef.key });
+  } catch(e) { console.error('Firebase save attendance error:', e); }
+}
+
+async function updateAttendanceInFirebase(key, data) {
+  if (!fbReady) return;
+  try {
+  await _update(_ref(_db, `attendance/${key}`), data);
+  } catch(e) { console.error('Firebase update error:', e); }
+}
+
+async function deleteAttendanceFromFirebase(key) {
+  if (!fbReady) return;
+  try {
+  await _remove(_ref(_db, `attendance/${key}`));
+  } catch(e) { console.error('Firebase delete attendance error:', e); }
 }
 
 async function clearAllFromFirebase() {
   if (!fbReady) return;
+  try {
   await _remove(_ref(_db, 'students'));
   await _remove(_ref(_db, 'attendance'));
+  } catch(e) { console.error('Firebase clear error:', e); }
 }
 
 function buildLabeledDescriptors() {
   if (students.length === 0) { labeledDescriptors = null; return; }
-  labeledDescriptors = students.map(s =>
+  const valid = students.filter(s => s.descriptors && s.descriptors.length > 0);
+  if (valid.length === 0) { labeledDescriptors = null; return; }
+  labeledDescriptors = valid.map(s =>
     new faceapi.LabeledFaceDescriptors(s.id, s.descriptors)
   );
 }
@@ -1281,6 +1342,7 @@ async function startAttDetection() {
       const size = gateMode || batchMode ? 224 : 320;
       const det = await faceapi
         .detectAllFaces(vid, new faceapi.TinyFaceDetectorOptions({ inputSize: size, scoreThreshold }))
+        .withFaceLandmarks()
         .withFaceDescriptors();
 
       detCount = det.length;
@@ -1306,7 +1368,7 @@ async function startAttDetection() {
           ctx.fillStyle = '#06b6d4';
           ctx.font = '12px JetBrains Mono, monospace';
           ctx.fillText(`Faces: ${det.length}`, 10, 20);
-        } else if (!autoMode) {
+        } else if (!autoMode && !gateMode && !batchMode) {
           updateResultBox(null);
         }
       }
@@ -1395,6 +1457,7 @@ async function startAttDetection() {
       if (batchMode && det.length > 0 && !autoMode) {
         updateBatchPreview(det);
       }
+    }
     } catch(e) {
       console.error('Detection error:', e);
       // Don't kill the loop on transient errors
@@ -1550,6 +1613,7 @@ async function startRegDetection() {
 
   async function loop() {
     if (!regDetectionRunning) return;
+    try {
     if (vid.readyState === 4) {
       const det = await faceapi
         .detectSingleFace(vid, new faceapi.TinyFaceDetectorOptions({ inputSize: 320 }))
@@ -1563,6 +1627,9 @@ async function startRegDetection() {
         ctx.shadowColor='#10b981';ctx.shadowBlur=10;
         ctx.strokeRect(box.x,box.y,box.width,box.height);ctx.shadowBlur=0;
       }
+    }
+    } catch(e) {
+      console.error('Reg detection error:', e);
     }
     setTimeout(loop, 150);
   }
@@ -1690,6 +1757,11 @@ function closeLiveness() {
 // ═══════════════════════════════════════════
 async function markAttendance() {
   if (!modelsLoaded) { showToast('Models not loaded', 'error'); return; }
+
+  if (gateMode) {
+    showToast('🚪 Gate mode is ON — marking automatically', 'info');
+    return;
+  }
 
   if (batchMode) {
     await batchMarkAttendance();
@@ -2195,13 +2267,14 @@ function loadRecords() {
   const tbody = $('recordsTbody');
 
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="e-icon">📋</div><p>No records found</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="e-icon">📋</div><p>No records found</p></div></td></tr>`;
     return;
   }
 
   tbody.innerHTML = filtered.map(r => {
     const badgeClass = r.status === 'late' ? 'badge-late' : (r.status === 'absent' ? 'badge-absent' : 'badge-present');
     const badgeText = (r.status || 'present').toUpperCase();
+    const key = r.firebaseKey || '';
     return `<tr>
       <td><strong>${r.name}</strong></td>
       <td><span style="font-family:var(--mono);font-size:11px;color:var(--muted)">${r.studentId}</span></td>
@@ -2209,8 +2282,71 @@ function loadRecords() {
       <td style="font-family:var(--mono);font-size:12px">${r.date}</td>
       <td style="font-family:var(--mono);font-size:12px">${r.time}</td>
       <td><span class="badge ${badgeClass}">${badgeText}</span></td>
+      <td style="text-align:center;white-space:nowrap;">
+        <button class="icon-btn" onclick="editAttendance('${key}')" title="Edit" style="font-size:14px;padding:2px 6px;">✏️</button>
+        <button class="icon-btn" onclick="deleteAttendance('${key}')" title="Delete" style="font-size:14px;padding:2px 6px;">🗑</button>
+      </td>
     </tr>`;
   }).join('');
+}
+
+function editAttendance(key) {
+  const record = attendanceLog.find(r => r.firebaseKey === key);
+  if (!record) { showToast('Record not found', 'error'); return; }
+  $('editName').value = record.name || '';
+  $('editId').value = record.studentId || '';
+  $('editDate').value = record.date || '';
+  $('editStatus').value = record.status || 'present';
+  // Convert time string like "10:30:45 AM" to "10:30" for time input
+  const t = record.time || '';
+  let timeVal = '';
+  if (t) {
+    const m = t.match(/(\d+):(\d+)/);
+    if (m) timeVal = m[1].padStart(2,'0') + ':' + m[2].padStart(2,'0');
+  }
+  $('editTime').value = timeVal;
+  $('editAttModal').dataset.key = key;
+  $('editAttModal').classList.add('show');
+}
+
+function closeEditModal() {
+  $('editAttModal').classList.remove('show');
+}
+
+async function saveEditedAttendance() {
+  const key = $('editAttModal').dataset.key;
+  if (!key) { showToast('Error: no record key', 'error'); return; }
+  const date = $('editDate').value;
+  const timeVal = $('editTime').value;
+  const status = $('editStatus').value;
+  if (!date) { showToast('Date is required', 'error'); return; }
+
+  // Format time nicely
+  let timeStr = timeVal;
+  if (timeVal) {
+    const [h, m] = timeVal.split(':');
+    const ampm = +h >= 12 ? 'PM' : 'AM';
+    const h12 = +h % 12 || 12;
+    timeStr = `${h12}:${m} ${ampm}`;
+  }
+
+  await updateAttendanceInFirebase(key, {
+    date,
+    time: timeStr,
+    status,
+    timestamp: new Date(date + 'T' + (timeVal || '00:00')).getTime()
+  });
+  closeEditModal();
+  showToast('✅ Record updated!', 'success');
+}
+
+function deleteAttendance(key) {
+  const record = attendanceLog.find(r => r.firebaseKey === key);
+  if (!record) { showToast('Record not found', 'error'); return; }
+  if (!confirm(`Delete attendance record for ${record.name} on ${record.date}?`)) return;
+  deleteAttendanceFromFirebase(key).then(() => {
+    showToast('🗑 Record deleted', 'info');
+  }).catch(e => showToast('Error: ' + e.message, 'error'));
 }
 
 function exportCSV() {
