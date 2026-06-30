@@ -1,0 +1,5 @@
+{
+  "version": "1.1",
+  "apk": "https://binfo3394-arch.github.io/V0.5/HelaKey.apk",
+  "notes": "- Self-update feature added\n- English direct voice typing\n- Comma & emoji keys in bottom bar\n- Period key fixed (short-press ., long-press clipboard)\n- Enter key multifunctional"
+}
