@@ -1,5 +1,6 @@
 /* ==========================================================================
-   HelaKey PRO - $5,000 Masterpiece Ultra-Luxury Launch Experience v4.0
+   HelaKey PRO - $5,000 Masterpiece Ultra-Luxury Launch Experience v4.1
+   Fast Snappy 3D Scroll Reveal & Pop-up System
    ========================================================================== */
 
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap');
@@ -85,9 +86,18 @@ body {
     100% { background-position: 0% 50%; }
 }
 
-@keyframes pulseGlow {
-    0%, 100% { box-shadow: 0 0 20px rgba(0, 240, 255, 0.25); }
-    50% { box-shadow: 0 0 45px rgba(0, 240, 255, 0.65); }
+/* FAST SNAPPY 3D REVEAL POP-UP SYSTEM */
+.reveal-3d {
+    opacity: 0;
+    transform: translateY(25px) translateZ(-80px) rotateX(6deg);
+    transition: transform 0.35s cubic-bezier(0.1, 1, 0.2, 1), opacity 0.35s ease-out;
+    transform-style: preserve-3d;
+    will-change: transform, opacity;
+}
+
+.reveal-3d.active {
+    opacity: 1;
+    transform: translateY(0) translateZ(0) rotateX(0deg);
 }
 
 /* Header & Glass Pill Navbar */
@@ -175,20 +185,6 @@ header {
     box-shadow: 0 8px 35px rgba(0, 240, 255, 0.75);
 }
 
-/* 3D Reveal System */
-.reveal-3d {
-    opacity: 0;
-    transform: translateY(60px) translateZ(-160px) rotateX(12deg);
-    transition: transform 0.9s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.9s ease;
-    transform-style: preserve-3d;
-    will-change: transform, opacity;
-}
-
-.reveal-3d.active {
-    opacity: 1;
-    transform: translateY(0) translateZ(0) rotateX(0deg);
-}
-
 /* Hero Section */
 .hero {
     padding: 220px 0 120px;
@@ -248,12 +244,12 @@ header {
     font-size: 1.15rem;
     text-decoration: none;
     box-shadow: 0 12px 45px rgba(0, 240, 255, 0.45);
-    transition: all 0.35s ease;
+    transition: all 0.25s ease;
     border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .btn-primary:hover {
-    transform: translateY(-5px) scale(1.03);
+    transform: translateY(-4px) scale(1.02);
     box-shadow: 0 18px 60px rgba(0, 240, 255, 0.7);
 }
 
@@ -267,7 +263,7 @@ header {
     font-size: 1.15rem;
     text-decoration: none;
     backdrop-filter: blur(12px);
-    transition: all 0.3s ease;
+    transition: all 0.25s ease;
 }
 
 .btn-secondary:hover {
@@ -295,7 +291,7 @@ header {
     display: block;
 }
 
-/* Stats Metric Bar ($5,000 Tech Product Feature) */
+/* Stats Metric Bar */
 .stats-bar {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -310,7 +306,7 @@ header {
     padding: 32px 24px;
     border-radius: 20px;
     text-align: center;
-    transition: all 0.3s ease;
+    transition: all 0.25s ease;
 }
 
 .stat-item:hover {
@@ -366,14 +362,14 @@ header {
     gap: 32px;
 }
 
-/* 3D Tilt Card with Spotlight */
+/* 3D Fast Tilt Card */
 .tilt-card {
     background: var(--bg-card);
     border: 1px solid var(--bg-card-border);
     backdrop-filter: var(--glass-blur);
     padding: 44px;
     border-radius: 28px;
-    transition: transform 0.2s cubic-bezier(0.2, 0, 0.2, 1), box-shadow 0.3s ease, border-color 0.3s ease;
+    transition: transform 0.15s ease-out, box-shadow 0.25s ease, border-color 0.25s ease;
     transform-style: preserve-3d;
     position: relative;
     overflow: hidden;
@@ -505,14 +501,14 @@ header {
     border-radius: 30px;
     box-shadow: 0 30px 90px rgba(0, 0, 0, 0.85), 0 0 60px rgba(0, 240, 255, 0.25);
     border: 2px solid rgba(255, 255, 255, 0.15);
-    transition: transform 0.3s ease;
+    transition: transform 0.25s ease;
 }
 
 .showcase-img-wrap img:hover {
     transform: scale(1.03);
 }
 
-/* FAQ Accordion Section ($5,000 Tech Site Addition) */
+/* FAQ Accordion Section */
 .faq {
     padding: 140px 0;
 }
@@ -531,7 +527,7 @@ header {
     border-radius: 20px;
     padding: 24px 32px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.25s ease;
 }
 
 .faq-item:hover {
@@ -568,7 +564,7 @@ header {
 .faq-toggle {
     color: var(--primary-cyan);
     font-size: 1.2rem;
-    transition: transform 0.3s ease;
+    transition: transform 0.25s ease;
 }
 
 /* Web Keyboard Simulator */
@@ -623,7 +619,7 @@ header {
     font-size: 1.2rem;
     cursor: pointer;
     user-select: none;
-    transition: all 0.15s ease;
+    transition: all 0.12s ease;
     flex: 1;
     max-width: 75px;
     text-align: center;
@@ -686,5 +682,4 @@ footer {
     .showcase-flex { flex-direction: column !important; gap: 40px; }
     .nav-links { display: none; }
     .sim-key { padding: 12px 10px; font-size: 0.95rem; }
-    .nav-content { padding: 10px 18px; }
 }

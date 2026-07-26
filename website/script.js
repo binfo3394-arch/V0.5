@@ -1,5 +1,5 @@
 // ==========================================================================
-// HelaKey PRO - $5,000 Masterpiece Interactive Engine v4.0
+// HelaKey PRO - Fast Snappy 3D Engine v4.1
 // ==========================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -72,11 +72,11 @@ document.addEventListener('DOMContentLoaded', () => {
     render3DBackground();
 
     // ----------------------------------------------------------------------
-    // 2. SCROLL-DRIVEN 3D REVEAL OBSERVER
+    // 2. FAST SNAPPY SCROLL REVEAL OBSERVER
     // ----------------------------------------------------------------------
     const observerOptions = {
-        threshold: 0.15,
-        rootMargin: "0px 0px -50px 0px"
+        threshold: 0.05,
+        rootMargin: "0px 0px 50px 0px"
     };
 
     const observer = new IntersectionObserver((entries) => {
@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.reveal-3d').forEach(el => observer.observe(el));
 
     // ----------------------------------------------------------------------
-    // 3. INTERACTIVE 3D MOUSE TILT & SPOTLIGHT OVERLAY
+    // 3. INTERACTIVE 3D MOUSE TILT
     // ----------------------------------------------------------------------
     const tiltCards = document.querySelectorAll('.tilt-card, .stat-item, .hero-banner-wrap, .showcase-img-wrap img');
 
@@ -103,10 +103,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const centerX = rect.width / 2;
             const centerY = rect.height / 2;
 
-            const rotateX = ((y - centerY) / centerY) * -12;
-            const rotateY = ((x - centerX) / centerX) * 12;
+            const rotateX = ((y - centerY) / centerY) * -10;
+            const rotateY = ((x - centerX) / centerX) * 10;
 
-            card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.03, 1.03, 1.03)`;
+            card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
         });
 
         card.addEventListener('mouseleave', () => {
