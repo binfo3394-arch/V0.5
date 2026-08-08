@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WhatsApp AI Agent PRO v3.6 | Enterprise Multimodal AI Platform</title>
+  <meta name="description" content="Sri Lanka's #1 Multimodal AI Assistant for WhatsApp. 24/7 Auto Pilot, Pure Sinhala Script, Bank Slip Fake Protection & Vision AI Image Classification.">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🤖</text></svg>">
+</head>
+<body>
+
+  <!-- Interactive 3D Canvas Background -->
+  <canvas id="canvas3d"></canvas>
+
+  <!-- Pointer Glow Spotlight -->
+  <div class="spotlight" id="spotlight"></div>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar" id="navbar">
+    <div class="container nav-container">
+      <a href="#" class="brand-logo">
+        <span style="font-size: 28px;">🤖</span> WhatsApp AI Agent <span class="logo-badge">ENTERPRISE v3.6</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="#features" class="nav-link">3D Features</a></li>
+        <li><a href="#scanner" class="nav-link">Laser Vision AI</a></li>
+        <li><a href="#calculator" class="nav-link">ROI Calculator</a></li>
+        <li><a href="#pricing" class="nav-link">Pricing</a></li>
+      </ul>
+      <a href="app-debug.apk" download class="btn-nav">📥 Download APK</a>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container hero-grid">
+      <div class="hero-content">
+        <div class="hero-pill">
+          <span class="pulsing-dot"></span> Powered by Google Gemini 3.6 Vision Multimodal AI
+        </div>
+        <h1 class="hero-title">
+          Automate Your WhatsApp Store With <br>
+          <span class="gradient-text-3d">Sri Lanka's #1 Autonomous Multimodal AI</span>
+        </h1>
+        <p class="hero-desc">
+          Replies 24/7 in native Sinhala script (සිංහල අකුරින්), detects fake Bank Receipts in 1 second, identifies product photos via Multimodal Vision AI, and automates sales recovery directly from your Android phone!
+        </p>
+
+        <div class="hero-cta-box">
+          <a href="app-debug.apk" download class="btn-hero-primary">
+            <span>📥</span> Download Android APK (Free Trial)
+          </a>
+          <a href="https://wa.me/94762107801?text=Hi!%20I%20want%20to%20get%20a%20License%20Key%20for%20WhatsApp%20AI%20Agent." target="_blank" class="btn-hero-secondary">
+            <span>💬</span> Chat on WhatsApp (076 210 7801)
+          </a>
+        </div>
+      </div>
+
+      <!-- 3D Phone Display -->
+      <div class="hero-3d-wrapper">
+        <div class="hero-3d-card" id="hero3dCard">
+          <img src="3d_phone.jpg" alt="3D WhatsApp AI Agent Smartphone" class="hero-3d-img">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Metric Statistics Bar -->
+  <section class="stats-bar">
+    <div class="container stats-grid">
+      <div class="stat-card">
+        <div class="stat-num" data-target="99.8">0%</div>
+        <div class="stat-label">Bank Slip Verification Accuracy</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" data-target="1">0s</div>
+        <div class="stat-label">Multimodal AI Response Speed</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" data-target="24">0/7</div>
+        <div class="stat-label">Autonomous Sales Auto-Pilot</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" data-target="42">0%</div>
+        <div class="stat-label">Sales Conversion Boost</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3D Tilt Feature Cards -->
+  <section class="features-section" id="features">
+    <div class="container">
+      <div class="section-header-center">
+        <span class="badge-tag">NEXT-GEN AI ENGINE</span>
+        <h2 class="title-large">Engineered For Explosive E-commerce Growth</h2>
+        <p class="desc-muted">Built specifically for Sri Lankan business owners, online clothing boutiques, photo framing studios, and service providers.</p>
+      </div>
+
+      <div class="grid-3d">
+        <!-- 3D Card 1 -->
+        <div class="tilt-card">
+          <div class="card-icon-wrapper">🇱🇰</div>
+          <h3 class="card-title">Pure Sinhala Script Conversational AI</h3>
+          <p class="card-text">Replies naturally in polite Sinhala script (සිංහල අකුරින්) with custom shop terminology. Customers feel like they are chatting with a real human store manager!</p>
+        </div>
+
+        <!-- 3D Card 2 -->
+        <div class="tilt-card">
+          <div class="card-icon-wrapper">🧾</div>
+          <h3 class="card-title">Fake Bank Slip Detection & Verification</h3>
+          <p class="card-text">Gemini Vision AI inspects payment receipts, extracts transfer amount, date, bank, reference ID, and instantly flags photo-edited or tampered slips to protect your funds.</p>
+        </div>
+
+        <!-- 3D Card 3 -->
+        <div class="tilt-card">
+          <div class="card-icon-wrapper">📸</div>
+          <h3 class="card-title">Universal Multimodal Vision AI</h3>
+          <p class="card-text">Understands any customer photo — matching dress/item photos with store catalog prices, or detecting photo editing, retouching, and frame customization requests.</p>
+        </div>
+
+        <!-- 3D Card 4 -->
+        <div class="tilt-card">
+          <div class="card-icon-wrapper">🧠</div>
+          <h3 class="card-title">Smart Multi-Agent AI Personas</h3>
+          <p class="card-text">1-Tap switch between 5 behavioral modes: Sales Negotiator (discounts & deals), Friendly Care, Strict Order Taker, Product Advisor, and Festival Promo.</p>
+        </div>
+
+        <!-- 3D Card 5 -->
+        <div class="tilt-card">
+          <div class="card-icon-wrapper">🛒</div>
+          <h3 class="card-title">Abandoned Inquiry Deal Recovery</h3>
+          <p class="card-text">Auto-tracks unfulfilled price inquiries and sends enticing followup messages with limited-time perks after 3 hours, recovering 35%+ lost sales automatically.</p>
+        </div>
+
+        <!-- 3D Card 6 -->
+        <div class="tilt-card">
+          <div class="card-icon-wrapper">📱</div>
+          <h3 class="card-title">FB & IG Ads Lead Capture</h3>
+          <p class="card-text">Detects referral leads coming from Facebook & Instagram Click-to-WhatsApp Ads, delivering instant ad greetings and capturing customer details seamlessly.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Live Laser Scanning Bank Slip Vision AI Demo -->
+  <section class="scanner-section" id="scanner">
+    <div class="container scanner-grid">
+      <div class="slip-frame">
+        <img src="3d_shield.jpg" alt="AI Laser Scan Bank Slip Verification" class="slip-img">
+        <div class="laser-line"></div>
+      </div>
+
+      <div class="scan-details">
+        <span class="badge-tag">AUTONOMOUS SECURITY VISION</span>
+        <h2 class="title-large">Instant Fake Bank Slip Detection</h2>
+        <p class="desc-muted" style="margin-bottom: 24px;">Our Gemini Vision AI analyzes incoming bank receipts at pixel level to ensure genuineness before order fulfillment.</p>
+
+        <div class="scan-log-box">
+          <div>[VISION_AI_LOG] Analyzing image...</div>
+          <div>STATUS: Bank Slip Detected ✅</div>
+          <div>BANK: Commercial Bank of Ceylon</div>
+          <div>AMOUNT: LKR 4,500.00</div>
+          <div>REFERENCE: 901847321</div>
+          <div>TAMPER_ANALYSIS: Genuine (0% alteration detected)</div>
+          <div style="color: #38BDF8;">ACTION: Auto-Confirming Order via WhatsApp!</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interactive ROI Revenue Calculator -->
+  <section class="calculator-section" id="calculator">
+    <div class="container">
+      <div class="section-header-center">
+        <span class="badge-tag">ROI CALCULATOR</span>
+        <h2 class="title-large">Calculate Your Extra Monthly Profit</h2>
+        <p class="desc-muted">See how much revenue WhatsApp AI Automation will recover for your business every single month.</p>
+      </div>
+
+      <div class="calc-card">
+        <div class="slider-group">
+          <div class="slider-label">
+            <span>Monthly WhatsApp Inquiries:</span>
+            <span id="msgCountVal" style="color: var(--emerald); font-weight: 800;">1,500 Messages</span>
+          </div>
+          <input type="range" min="300" max="10000" value="1500" class="calc-slider" id="msgSlider" oninput="calculateROI()">
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-label">
+            <span>Average Order Value (LKR):</span>
+            <span id="orderVal" style="color: var(--cyan); font-weight: 800;">LKR 3,500</span>
+          </div>
+          <input type="range" min="1000" max="15000" value="3500" step="500" class="calc-slider" id="orderSlider" oninput="calculateROI()">
+        </div>
+
+        <div class="roi-result-box">
+          <div style="font-size: 14px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Estimated Recovered Monthly Revenue:</div>
+          <div class="roi-amount" id="roiResult">LKR 183,750 / mo</div>
+          <p style="font-size: 14px; color: var(--text-muted);">+ 120 Hours of Time Saved Every Single Month!</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing Plans Section -->
+  <section class="pricing-section" id="pricing">
+    <div class="container">
+      <div class="section-header-center">
+        <span class="badge-tag">TRANSPARENT PRICING</span>
+        <h2 class="title-large">Simple Subscription Plans</h2>
+        <p class="desc-muted">Get full 24/7 AI automation on your Android phone today.</p>
+      </div>
+
+      <div class="pricing-cards-wrapper" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+        <!-- 1 Day Free Demo -->
+        <div class="price-card">
+          <h3 style="font-size: 20px;">1 Day Free Demo</h3>
+          <div class="price-val" style="font-size: 36px;">LKR 0 <span>/ 1 Day</span></div>
+          <ul class="feature-list">
+            <li>1 Android Smartphone</li>
+            <li>24/7 Auto-Reply Engine</li>
+            <li>Basic Sinhala Script</li>
+            <li>Notification Listener Access</li>
+          </ul>
+          <a href="https://wa.me/94762107801?text=Hi!%20I%20want%20to%20try%20the%201%20Day%20Free%20Demo%20of%20WhatsApp%20AI%20Agent." target="_blank" class="btn-hero-secondary" style="width: 100%; justify-content: center; padding: 12px;">Try Demo Free</a>
+        </div>
+
+        <!-- 1 Month Plan -->
+        <div class="price-card">
+          <h3 style="font-size: 20px;">1 Month Plan</h3>
+          <div class="price-val" style="font-size: 36px;">LKR 800 <span>/ Month</span></div>
+          <ul class="feature-list">
+            <li>Full 1 Month Access</li>
+            <li>Pure Sinhala Auto-Replies</li>
+            <li>Bank Slip Verification</li>
+            <li>Vision AI Product Match</li>
+          </ul>
+          <a href="https://wa.me/94762107801?text=Hi!%20I%20want%20to%20buy%20the%201%20Month%20License%20Key%20(LKR%20800)%20for%20WhatsApp%20AI%20Agent." target="_blank" class="btn-hero-secondary" style="width: 100%; justify-content: center; padding: 12px;">Buy 1 Month Key</a>
+        </div>
+
+        <!-- 3 Months Plan (Featured) -->
+        <div class="price-card featured-pro">
+          <div class="badge-featured">MOST POPULAR</div>
+          <h3 style="font-size: 20px;">3 Months Plan</h3>
+          <div class="price-val" style="color: var(--emerald); font-size: 36px;">LKR 2,000 <span>/ 3 Mo</span></div>
+          <ul class="feature-list">
+            <li>Save LKR 400 Discount</li>
+            <li>Gemini 3.6 Multimodal Vision AI</li>
+            <li>Bank Slip Fake Protection</li>
+            <li>Smart Customer Segmentation</li>
+            <li>Multi-Select AI Personas</li>
+          </ul>
+          <a href="https://wa.me/94762107801?text=Hi!%20I%20want%20to%20buy%20the%203%20Months%20License%20Key%20(LKR%202000)%20for%20WhatsApp%20AI%20Agent." target="_blank" class="btn-hero-primary" style="width: 100%; justify-content: center; padding: 12px;">Get 3M Key</a>
+        </div>
+
+        <!-- 6 Months Plan -->
+        <div class="price-card">
+          <h3 style="font-size: 20px;">6 Months Plan</h3>
+          <div class="price-val" style="font-size: 36px;">LKR 3,500 <span>/ 6 Mo</span></div>
+          <ul class="feature-list">
+            <li>Save LKR 1,300 Discount</li>
+            <li>Abandoned Cart Recovery</li>
+            <li>AI Personalized Broadcasts</li>
+            <li>FB & IG Ads Lead Capture</li>
+          </ul>
+          <a href="https://wa.me/94762107801?text=Hi!%20I%20want%20to%20buy%20the%206%20Months%20License%20Key%20(LKR%203500)%20for%20WhatsApp%20AI%20Agent." target="_blank" class="btn-hero-secondary" style="width: 100%; justify-content: center; padding: 12px;">Get 6M Key</a>
+        </div>
+
+        <!-- 1 Year Plan -->
+        <div class="price-card">
+          <h3 style="font-size: 20px;">1 Year Plan</h3>
+          <div class="price-val" style="color: var(--cyan); font-size: 36px;">LKR 5,500 <span>/ Year</span></div>
+          <ul class="feature-list">
+            <li>Best Value (Save 42%)</li>
+            <li>Priority Gemini Vision API</li>
+            <li>Unlimited Auto-Replies 24/7</li>
+            <li>24/7 VIP Admin Support</li>
+          </ul>
+          <a href="https://wa.me/94762107801?text=Hi!%20I%20want%20to%20buy%20the%201%20Year%20License%20Key%20(LKR%205500)%20for%20WhatsApp%20AI%20Agent." target="_blank" class="btn-hero-secondary" style="width: 100%; justify-content: center; padding: 12px;">Get 1Y Key</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <p style="margin-bottom: 8px;">🤖 WhatsApp AI Agent ENTERPRISE — Powered by Google Gemini Multimodal Vision AI</p>
+      <p>© 2026 Urban Style AI Solutions. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <!-- 3D Interactive Canvas & Animations Script -->
+  <script>
+    // 1. Interactive 3D Canvas Background
+    const canvas = document.getElementById('canvas3d');
+    const ctx = canvas.getContext('2d');
+    let width, height;
+    let particles = [];
+    let mouse = { x: null, y: null };
+
+    function resize() {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    window.addEventListener('mousemove', (e) => {
+      mouse.x = e.clientX;
+      mouse.y = e.clientY;
+      const spotlight = document.getElementById('spotlight');
+      spotlight.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
+    });
+
+    class Particle {
+      constructor() {
+        this.x = Math.random() * width;
+        this.y = Math.random() * height;
+        this.vx = (Math.random() - 0.5) * 0.8;
+        this.vy = (Math.random() - 0.5) * 0.8;
+        this.radius = Math.random() * 2 + 1;
+        this.color = Math.random() > 0.5 ? '#10B981' : '#38BDF8';
+      }
+
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+
+        if (this.x < 0 || this.x > width) this.vx *= -1;
+        if (this.y < 0 || this.y > height) this.vy *= -1;
+      }
+
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.globalAlpha = 0.4;
+        ctx.fill();
+      }
+    }
+
+    for (let i = 0; i < 70; i++) particles.push(new Particle());
+
+    function animateCanvas() {
+      ctx.clearRect(0, 0, width, height);
+
+      for (let i = 0; i < particles.length; i++) {
+        particles[i].update();
+        particles[i].draw();
+
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (dist < 130) {
+            ctx.beginPath();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.strokeStyle = '#10B981';
+            ctx.globalAlpha = 0.15 * (1 - dist / 130);
+            ctx.stroke();
+          }
+        }
+      }
+      requestAnimationFrame(animateCanvas);
+    }
+    animateCanvas();
+
+    // 2. 3D Tilt Card Effect
+    const cards = document.querySelectorAll('.tilt-card, .hero-3d-card');
+    cards.forEach(card => {
+      card.addEventListener('mousemove', (e) => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left - rect.width / 2;
+        const y = e.clientY - rect.top - rect.height / 2;
+        card.style.transform = `perspective(1000px) rotateX(${-y / 15}deg) rotateY(${x / 15}deg) scale3d(1.02, 1.02, 1.02)`;
+      });
+
+      card.addEventListener('mouseleave', () => {
+        card.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)';
+      });
+    });
+
+    // 3. Interactive ROI Revenue Calculator
+    function calculateROI() {
+      const msg = parseInt(document.getElementById('msgSlider').value);
+      const order = parseInt(document.getElementById('orderSlider').value);
+
+      document.getElementById('msgCountVal').innerText = msg.toLocaleString() + ' Messages';
+      document.getElementById('orderVal').innerText = 'LKR ' + order.toLocaleString();
+
+      // Estimated recovered sales (3.5% conversion boost on lost inquiries)
+      const recoveredSalesCount = Math.round(msg * 0.035);
+      const extraProfit = recoveredSalesCount * order;
+
+      document.getElementById('roiResult').innerText = 'LKR ' + extraProfit.toLocaleString() + ' / mo';
+    }
+
+    // 4. Animated Counter Numbers
+    function animateCounters() {
+      const counters = document.querySelectorAll('.stat-num');
+      counters.forEach(c => {
+        const target = parseFloat(c.getAttribute('data-target'));
+        let current = 0;
+        const step = target / 40;
+        const timer = setInterval(() => {
+          current += step;
+          if (current >= target) {
+            current = target;
+            clearInterval(timer);
+          }
+          if (target === 99.8) c.innerText = current.toFixed(1) + '%';
+          else if (target === 1) c.innerText = '< 1s';
+          else if (target === 24) c.innerText = '24/7';
+          else c.innerText = '+' + Math.round(current) + '%';
+        }, 40);
+      });
+    }
+    window.addEventListener('load', animateCounters);
+  </script>
+</body>
+</html>
