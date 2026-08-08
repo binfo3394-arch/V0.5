@@ -22,13 +22,16 @@
       <a href="#" class="brand-logo">
         <span style="font-size: 28px;">🤖</span> WhatsApp AI Agent <span class="logo-badge">ENTERPRISE v3.6</span>
       </a>
-      <ul class="nav-links">
-        <li><a href="#features" class="nav-link">3D Features</a></li>
-        <li><a href="#scanner" class="nav-link">Laser Vision AI</a></li>
-        <li><a href="#calculator" class="nav-link">ROI Calculator</a></li>
-        <li><a href="#pricing" class="nav-link">Pricing</a></li>
+      <ul class="nav-links" id="navLinks">
+        <li><a href="#features" class="nav-link" onclick="toggleMobileMenu()">3D Features</a></li>
+        <li><a href="#scanner" class="nav-link" onclick="toggleMobileMenu()">Laser Vision AI</a></li>
+        <li><a href="#calculator" class="nav-link" onclick="toggleMobileMenu()">ROI Calculator</a></li>
+        <li><a href="#pricing" class="nav-link" onclick="toggleMobileMenu()">Pricing</a></li>
       </ul>
-      <a href="app-debug.apk" download class="btn-nav">📥 Download APK</a>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <a href="app-debug.apk" download class="btn-nav">📥 Download APK</a>
+        <button class="nav-toggle" onclick="toggleMobileMenu()" aria-label="Toggle Menu">☰</button>
+      </div>
     </div>
   </nav>
 
@@ -292,6 +295,16 @@
     </div>
   </footer>
 
+  <!-- Floating Mobile Bottom Sticky CTA Bar -->
+  <div class="mobile-bottom-bar">
+    <a href="app-debug.apk" download class="btn-mobile-sticky-primary">
+      <span>📥</span> Free Demo
+    </a>
+    <a href="https://wa.me/94762107801?text=Hi!%20I%20want%20to%20get%20started%20with%20WhatsApp%20AI%20Agent." target="_blank" class="btn-mobile-sticky-secondary">
+      <span>💬</span> WhatsApp (076 210 7801)
+    </a>
+  </div>
+
   <!-- 3D Interactive Canvas & Animations Script -->
   <script>
     // 1. Interactive 3D Canvas Background
@@ -419,6 +432,11 @@
           else c.innerText = '+' + Math.round(current) + '%';
         }, 40);
       });
+    }
+    // 5. Mobile Navigation Menu Toggle
+    function toggleMobileMenu() {
+      const nav = document.getElementById('navLinks');
+      if (nav) nav.classList.toggle('active');
     }
     window.addEventListener('load', animateCounters);
   </script>

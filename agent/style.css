@@ -88,9 +88,9 @@ a {
   z-index: 100;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  background: rgba(3, 7, 18, 0.8);
+  background: rgba(3, 7, 18, 0.85);
   border-bottom: 1px solid var(--border-glass);
-  padding: 18px 0;
+  padding: 16px 0;
 }
 
 .nav-container {
@@ -102,7 +102,7 @@ a {
 .brand-logo {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   font-size: 22px;
   font-weight: 800;
   font-family: 'Space Grotesk', sans-serif;
@@ -134,6 +134,16 @@ a {
 
 .nav-link:hover {
   color: var(--emerald);
+}
+
+.nav-toggle {
+  display: none;
+  background: transparent;
+  border: none;
+  color: #FFFFFF;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 4px;
 }
 
 .btn-nav {
@@ -172,7 +182,7 @@ a {
 
 /* ── Hero Section ─────────────────────────────────────── */
 .hero {
-  padding: 100px 0 80px;
+  padding: 80px 0 60px;
   position: relative;
 }
 
@@ -337,7 +347,7 @@ a {
 
 /* ── 3D Tilt Feature Cards ────────────────────────────── */
 .features-section {
-  padding: 120px 0;
+  padding: 100px 0;
 }
 
 .section-header-center {
@@ -370,7 +380,7 @@ a {
 
 .grid-3d {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
   gap: 30px;
 }
 
@@ -432,7 +442,7 @@ a {
 
 /* ── Live Bank Slip Laser Scanner Demo Widget ─────────── */
 .scanner-section {
-  padding: 100px 0;
+  padding: 90px 0;
   background: rgba(15, 23, 42, 0.5);
   border-top: 1px solid var(--border-glass);
   border-bottom: 1px solid var(--border-glass);
@@ -481,15 +491,17 @@ a {
   background: #070A11;
   border: 1px solid var(--border-glass);
   border-radius: var(--radius-lg);
-  padding: 28px;
+  padding: 24px;
   font-family: monospace;
-  font-size: 14px;
+  font-size: 13px;
   color: #10B981;
+  line-height: 1.8;
+  overflow-x: auto;
 }
 
 /* ── Interactive ROI Calculator ─────────────────────── */
 .calculator-section {
-  padding: 110px 0;
+  padding: 100px 0;
 }
 
 .calc-card {
@@ -543,13 +555,13 @@ a {
 
 /* ── Pricing Section ─────────────────────────────────── */
 .pricing-section {
-  padding: 110px 0;
+  padding: 100px 0;
 }
 
 .pricing-cards-wrapper {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 32px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 24px;
   align-items: center;
 }
 
@@ -557,7 +569,7 @@ a {
   background: var(--bg-card);
   border: 1px solid var(--border-glass);
   border-radius: var(--radius-xl);
-  padding: 44px 36px;
+  padding: 36px 28px;
   backdrop-filter: blur(16px);
   position: relative;
   transition: all 0.35s ease;
@@ -567,71 +579,194 @@ a {
   background: linear-gradient(180deg, rgba(15, 23, 42, 0.95), rgba(6, 78, 59, 0.5));
   border: 2px solid var(--emerald);
   box-shadow: 0 25px 60px rgba(16, 185, 129, 0.3);
-  transform: scale(1.05);
+  transform: scale(1.04);
 }
 
 .badge-featured {
   position: absolute;
-  top: -16px;
+  top: -14px;
   left: 50%;
   transform: translateX(-50%);
   background: linear-gradient(135deg, var(--emerald), var(--cyan));
   color: #000;
-  padding: 6px 20px;
+  padding: 4px 16px;
   border-radius: 30px;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 1.5px;
 }
 
 .price-val {
-  font-size: 48px;
+  font-size: 36px;
   font-weight: 800;
   font-family: 'Space Grotesk', sans-serif;
-  margin: 20px 0 24px;
+  margin: 16px 0 20px;
 }
 
 .price-val span {
-  font-size: 16px;
+  font-size: 14px;
   color: var(--text-muted);
   font-weight: 400;
 }
 
 .feature-list {
   list-style: none;
-  margin-bottom: 36px;
+  margin-bottom: 30px;
 }
 
 .feature-list li {
-  font-size: 15px;
+  font-size: 14px;
   color: var(--text-muted);
-  margin-bottom: 14px;
+  margin-bottom: 12px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .feature-list li::before {
   content: '✓';
   color: var(--emerald);
   font-weight: bold;
-  font-size: 16px;
+  font-size: 15px;
+}
+
+/* ── Floating Mobile Bottom Sticky CTA Bar ────────────── */
+.mobile-bottom-bar {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1000;
+  background: rgba(3, 7, 18, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border-glass-glow);
+  padding: 12px 16px;
+  gap: 12px;
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.85);
+}
+
+.btn-mobile-sticky-primary {
+  flex: 1;
+  background: linear-gradient(135deg, var(--emerald), #047857);
+  color: #FFFFFF;
+  padding: 14px;
+  border-radius: 14px;
+  font-weight: 800;
+  font-size: 14px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 20px var(--emerald-glow);
+}
+
+.btn-mobile-sticky-secondary {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-glass);
+  color: #FFFFFF;
+  padding: 14px;
+  border-radius: 14px;
+  font-weight: 700;
+  font-size: 14px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 /* ── Footer ──────────────────────────────────────────── */
 .footer {
   border-top: 1px solid var(--border-glass);
-  padding: 50px 0;
+  padding: 45px 0;
   text-align: center;
   color: var(--text-dim);
   font-size: 14px;
 }
 
-@media (max-width: 900px) {
-  .hero-grid, .scanner-grid { grid-template-columns: 1fr; }
-  .hero-title { font-size: 40px; }
-  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+/* ── Mobile & Tablet Responsive Breakpoints ──────────── */
+@media (max-width: 1024px) {
+  .hero-title { font-size: 44px; }
+  .grid-3d { grid-template-columns: repeat(2, 1fr); }
+  .pricing-cards-wrapper { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 768px) {
+  body { padding-bottom: 80px; } /* Prevents bottom content clipping on mobile */
+  .mobile-bottom-bar { display: flex; }
+  
+  .nav-links {
+    position: fixed;
+    top: 65px;
+    left: 0;
+    width: 100%;
+    background: rgba(3, 7, 18, 0.98);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border-glass);
+    flex-direction: column;
+    padding: 28px 24px;
+    gap: 20px;
+    display: none;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.9);
+  }
+  .nav-links.active { display: flex; }
+  .nav-toggle { display: block; }
+  
+  .hero-grid {
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+    gap: 30px;
+  }
+  .hero-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .hero-3d-wrapper {
+    width: 100%;
+    margin: 10px 0 20px;
+  }
+  .hero-title { font-size: 34px; line-height: 1.2; }
+  .hero-desc { font-size: 15px; margin-bottom: 24px; }
+  
+  .hero-cta-box { width: 100%; justify-content: center; flex-direction: column; gap: 12px; }
+  .btn-hero-primary, .btn-hero-secondary { width: 100%; justify-content: center; font-size: 15px; padding: 16px 20px; }
+  
+  .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .stat-num { font-size: 30px; }
+  .stat-label { font-size: 12px; }
+  
+  .grid-3d { grid-template-columns: 1fr; gap: 20px; }
+  .tilt-card { padding: 26px 20px; }
+  .card-icon-wrapper { width: 52px; height: 52px; font-size: 24px; margin-bottom: 16px; }
+  .card-title { font-size: 19px; }
+  .card-text { font-size: 14px; }
+  
+  .scanner-grid { grid-template-columns: 1fr; gap: 28px; }
+  .title-large { font-size: 28px; }
+  .desc-muted { font-size: 15px; }
+  
+  .calc-card { padding: 28px 20px; }
+  .slider-label { font-size: 14px; }
+  .roi-amount { font-size: 34px; }
+  
+  .pricing-cards-wrapper { grid-template-columns: 1fr !important; gap: 20px; }
+  .price-card { padding: 32px 24px; }
   .price-card.featured-pro { transform: none; }
-  .nav-links { display: none; }
+}
+
+@media (max-width: 480px) {
+  .container { padding: 0 16px; }
+  .brand-logo { font-size: 17px; }
+  .hero-title { font-size: 27px; }
+  .hero-pill { font-size: 11px; padding: 6px 12px; margin-bottom: 20px; }
+  .btn-nav { padding: 8px 14px; font-size: 12px; }
+  .stats-grid { grid-template-columns: 1fr; gap: 12px; }
+  .stat-card { background: rgba(255,255,255,0.03); padding: 16px; border-radius: 14px; border: 1px solid var(--border-glass); }
 }
