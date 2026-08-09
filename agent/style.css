@@ -770,3 +770,199 @@ a {
   .stats-grid { grid-template-columns: 1fr; gap: 12px; }
   .stat-card { background: rgba(255,255,255,0.03); padding: 16px; border-radius: 14px; border: 1px solid var(--border-glass); }
 }
+
+/* ── Interactive Onboarding & Setup Guide ─────────────── */
+.setup-section {
+  padding: 100px 0;
+  position: relative;
+}
+
+.alert-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  border-radius: var(--radius-lg);
+  padding: 18px 24px;
+  margin-bottom: 40px;
+  color: #FBBF24;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.alert-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.setup-steps-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.step-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-xl);
+  padding: 32px 36px;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.step-card:hover {
+  border-color: rgba(16, 185, 129, 0.3);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.step-card-featured {
+  border-color: rgba(16, 185, 129, 0.4);
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(15, 23, 42, 0.8));
+}
+
+.step-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.step-badge {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-glass);
+  color: var(--cyan);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 6px 14px;
+  border-radius: 20px;
+  letter-spacing: 0.5px;
+}
+
+.step-badge.featured {
+  background: linear-gradient(135deg, var(--emerald), #059669);
+  color: #000;
+  border: none;
+}
+
+.step-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+
+.step-desc {
+  font-size: 15px;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.step-desc code {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--emerald);
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-family: monospace;
+}
+
+.step-sub-box {
+  background: rgba(3, 7, 18, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  padding: 18px 20px;
+  margin-top: 16px;
+}
+
+.sub-box-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #F8FAFC;
+}
+
+.setup-list {
+  padding-left: 20px;
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.setup-check-list {
+  list-style: none;
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.setup-check-list li {
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+/* ── Brand Switcher Tabs ─────────────────────────────── */
+.brand-tabs-bar {
+  display: flex;
+  gap: 10px;
+  margin: 20px 0 16px;
+  flex-wrap: wrap;
+}
+
+.brand-tab {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-glass);
+  color: var(--text-muted);
+  padding: 10px 18px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.brand-tab:hover {
+  border-color: var(--emerald);
+  color: #FFF;
+}
+
+.brand-tab.active {
+  background: linear-gradient(135deg, var(--emerald), #059669);
+  color: #000000;
+  border-color: var(--emerald);
+  box-shadow: 0 0 20px var(--emerald-glow);
+}
+
+.brand-panel {
+  display: none;
+  background: rgba(3, 7, 18, 0.7);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  animation: fadeIn 0.4s ease forwards;
+}
+
+.brand-panel.active {
+  display: block;
+}
+
+.brand-panel-title {
+  font-size: 16px;
+  color: var(--emerald);
+  margin-bottom: 12px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 768px) {
+  .setup-section { padding: 60px 0; }
+  .step-card { padding: 24px 20px; }
+  .step-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .step-title { font-size: 19px; }
+  .brand-tab { flex: 1 1 calc(50% - 10px); text-align: center; padding: 10px 12px; font-size: 12px; }
+}

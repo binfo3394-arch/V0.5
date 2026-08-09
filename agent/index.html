@@ -25,6 +25,7 @@
       <ul class="nav-links" id="navLinks">
         <li><a href="#features" class="nav-link" onclick="toggleMobileMenu()">3D Features</a></li>
         <li><a href="#scanner" class="nav-link" onclick="toggleMobileMenu()">Laser Vision AI</a></li>
+        <li><a href="#setup-guide" class="nav-link" onclick="toggleMobileMenu()">Setup Guide</a></li>
         <li><a href="#calculator" class="nav-link" onclick="toggleMobileMenu()">ROI Calculator</a></li>
         <li><a href="#pricing" class="nav-link" onclick="toggleMobileMenu()">Pricing</a></li>
       </ul>
@@ -202,6 +203,142 @@
           <div style="font-size: 14px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Estimated Recovered Monthly Revenue:</div>
           <div class="roi-amount" id="roiResult">LKR 183,750 / mo</div>
           <p style="font-size: 14px; color: var(--text-muted);">+ 120 Hours of Time Saved Every Single Month!</p>
+  <!-- Interactive Step-by-Step Onboarding & Device Setup Guide -->
+  <section class="setup-section" id="setup-guide">
+    <div class="container">
+      <div class="section-header-center">
+        <span class="badge-tag">STEP-BY-STEP ONBOARDING</span>
+        <h2 class="title-large">Device Setup & Activation Guide</h2>
+        <p class="desc-muted">Follow these 5 simple steps to configure your Android smartphone for 100% reliable 24/7 WhatsApp AI automation.</p>
+      </div>
+
+      <!-- iOS Notice Alert -->
+      <div class="alert-banner warning">
+        <span class="alert-icon">⚠️</span>
+        <div>
+          <strong>Important Compatibility Note:</strong> WhatsApp AI Agent PRO runs exclusively on <strong>Android Smartphones (Android 8.0 to Android 15)</strong>. It is <u>not compatible with Apple iPhones (iOS)</u> due to Apple system background restrictions.
+        </div>
+      </div>
+
+      <div class="setup-steps-wrapper">
+        <!-- Step 1 -->
+        <div class="step-card">
+          <div class="step-header">
+            <span class="step-badge">STEP 01</span>
+            <h3 class="step-title">Download & Install Android APK</h3>
+          </div>
+          <p class="step-desc">Download <code>app-debug.apk</code> to your Android phone and install it. If prompted with "Install from Unknown Sources", tap <strong>Allow</strong>.</p>
+          
+          <div class="step-sub-box">
+            <div class="sub-box-title">🔒 Android 13, 14 & 15 "Restricted Settings" Unlock:</div>
+            <p style="font-size: 13px; color: var(--text-muted); margin-top: 6px;">
+              If your phone shows <em>"Restricted Setting — For your security, this setting is currently unavailable"</em> when enabling Accessibility:
+            </p>
+            <ol class="setup-list" style="margin-top: 8px;">
+              <li>Go to Phone <strong>Settings ➔ Apps ➔ WhatsApp AI Agent</strong>.</li>
+              <li>Tap the <strong>3 Dots (⋮)</strong> in the top right corner.</li>
+              <li>Select <strong>"Allow Restricted Settings"</strong>.</li>
+              <li>Enter your Phone PIN/Fingerprint to confirm unlock.</li>
+            </ol>
+          </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="step-card">
+          <div class="step-header">
+            <span class="step-badge">STEP 02</span>
+            <h3 class="step-title">Grant System Permissions</h3>
+          </div>
+          <p class="step-desc">Open the App and grant the required system permissions when prompted:</p>
+          <ul class="setup-check-list">
+            <li>✅ <strong>Notification Listener Permission:</strong> Allows the AI Agent to read incoming customer WhatsApp messages.</li>
+            <li>✅ <strong>Accessibility Service Permission:</strong> Enables the AI Agent to auto-attach product catalog photos inside WhatsApp.</li>
+            <li>✅ <strong>Storage & Media Access:</strong> Allows the AI Agent to scan bank payment slips for fake verification.</li>
+          </ul>
+        </div>
+
+        <!-- Step 3 (Interactive OEM Brand Switcher) -->
+        <div class="step-card step-card-featured">
+          <div class="step-header">
+            <span class="step-badge featured">STEP 03</span>
+            <h3 class="step-title">Phone Brand Battery Optimization (24/7 Keep-Alive)</h3>
+          </div>
+          <p class="step-desc">To prevent your phone manufacturer from killing the AI background service, select your phone brand below and apply the 1-minute setting:</p>
+
+          <!-- Brand Switcher Tabs -->
+          <div class="brand-tabs-bar">
+            <button class="brand-tab active" onclick="switchBrandTab('xiaomi', this)">📱 Xiaomi / Redmi / POCO</button>
+            <button class="brand-tab" onclick="switchBrandTab('samsung', this)">📱 Samsung</button>
+            <button class="brand-tab" onclick="switchBrandTab('vivo', this)">📱 Vivo / iQOO</button>
+            <button class="brand-tab" onclick="switchBrandTab('oppo', this)">📱 Oppo / Realme</button>
+          </div>
+
+          <!-- Brand Content Panels -->
+          <div class="brand-panel active" id="brand-xiaomi">
+            <h4 class="brand-panel-title">Xiaomi MIUI / HyperOS Optimization Guide:</h4>
+            <ol class="setup-list">
+              <li>Open <strong>Settings ➔ Apps ➔ Manage Apps ➔ WhatsApp AI Agent</strong>.</li>
+              <li>Turn ON <strong>"Autostart"</strong>.</li>
+              <li>Tap <strong>Battery Saver</strong> ➔ Choose <strong>"No Restrictions"</strong>.</li>
+              <li>Open Recent Apps window, long-press WhatsApp AI Agent, and tap the <strong>Lock (🔒) icon</strong> so it stays pinned.</li>
+            </ol>
+          </div>
+
+          <div class="brand-panel" id="brand-samsung">
+            <h4 class="brand-panel-title">Samsung OneUI Optimization Guide:</h4>
+            <ol class="setup-list">
+              <li>Open <strong>Settings ➔ Apps ➔ WhatsApp AI Agent</strong>.</li>
+              <li>Tap <strong>Battery</strong> ➔ Choose <strong>"Unrestricted"</strong>.</li>
+              <li>Go to <strong>Settings ➔ Device Care ➔ Battery ➔ Background Usage Limits</strong>.</li>
+              <li>Ensure WhatsApp AI Agent is NOT in <em>"Sleeping Apps"</em> or <em>"Deep Sleeping Apps"</em>.</li>
+            </ol>
+          </div>
+
+          <div class="brand-panel" id="brand-vivo">
+            <h4 class="brand-panel-title">Vivo / iQOO FuntouchOS Optimization Guide:</h4>
+            <ol class="setup-list">
+              <li>Open <strong>Settings ➔ Battery ➔ High Background Power Consumption</strong>.</li>
+              <li>Find <strong>WhatsApp AI Agent</strong> and turn the toggle <strong>ON</strong>.</li>
+              <li>Go to <strong>Settings ➔ Apps ➔ WhatsApp AI Agent ➔ Autostart</strong> and turn <strong>ON</strong>.</li>
+            </ol>
+          </div>
+
+          <div class="brand-panel" id="brand-oppo">
+            <h4 class="brand-panel-title">Oppo / Realme ColorOS Optimization Guide:</h4>
+            <ol class="setup-list">
+              <li>Open <strong>Settings ➔ Battery ➔ App Battery Management</strong>.</li>
+              <li>Select <strong>WhatsApp AI Agent</strong> ➔ Turn ON <strong>"Allow Background Activity"</strong> & <strong>"Allow Auto Launch"</strong>.</li>
+            </ol>
+          </div>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="step-card">
+          <div class="step-header">
+            <span class="step-badge">STEP 04</span>
+            <h3 class="step-title">Configure WhatsApp Settings</h3>
+          </div>
+          <p class="step-desc">Make sure your WhatsApp or WhatsApp Business App settings are configured properly:</p>
+          <ul class="setup-check-list">
+            <li>💬 <strong>Turn Notifications ON:</strong> Ensure WhatsApp Notifications are active in Phone Settings & WhatsApp App Settings.</li>
+            <li>📥 <strong>Media Auto-Download:</strong> Go to <em>WhatsApp Settings ➔ Storage & Data ➔ Media Auto-Download</em> and check <strong>Photos (When connected to Mobile Data & Wi-Fi)</strong> so Vision AI can process incoming receipt photos.</li>
+            <li>🔔 <strong>Unmute Business Chats:</strong> Ensure customer chats are not muted so notifications are generated.</li>
+          </ul>
+        </div>
+
+        <!-- Step 5 -->
+        <div class="step-card">
+          <div class="step-header">
+            <span class="step-badge">STEP 05</span>
+            <h3 class="step-title">Enter License Key & Start AI Agent</h3>
+          </div>
+          <p class="step-desc">Open the WhatsApp AI Agent App, go to the <strong>License</strong> tab, paste your 16-character License Key (e.g. <code>WSAI-PRO-XXXX-XXXX</code>), and tap <strong>Activate & Start Agent</strong>.</p>
+          
+          <div style="margin-top: 16px; display: flex; gap: 12px; flex-wrap: wrap;">
+            <a href="https://wa.me/94762107801?text=Hi!%20I%20need%20help%20setting%20up%20my%20WhatsApp%20AI%20Agent." target="_blank" class="btn-hero-secondary" style="padding: 10px 20px; font-size: 13px;">
+              <span>💬</span> Need Setup Assistance? Chat on WhatsApp
+            </a>
+          </div>
         </div>
       </div>
     </div>
@@ -438,6 +575,16 @@
       const nav = document.getElementById('navLinks');
       if (nav) nav.classList.toggle('active');
     }
+
+    // 6. Brand Tab Switcher for Setup Guide
+    function switchBrandTab(brandId, btn) {
+      document.querySelectorAll('.brand-tab').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.brand-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      const panel = document.getElementById('brand-' + brandId);
+      if (panel) panel.classList.add('active');
+    }
+
     window.addEventListener('load', animateCounters);
   </script>
 </body>
