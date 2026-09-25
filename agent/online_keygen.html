@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>1-Day Free Trial Key Generator | WhatsApp AI Agent PRO</title>
-    <meta name="description" content="Generate your official 1-Day Free Trial License Key for WhatsApp AI Agent PRO. 24 hours full access with Pure Sinhala Script and Bank Slip Tamper Guard.">
+    <title>3-Day Free Trial Key Generator | OmniChannel Social & WhatsApp AI Agent PRO</title>
+    <meta name="description" content="Generate your official 3-Day Free Trial License Key for OmniChannel Social & WhatsApp AI Agent PRO. 72 hours full access across WhatsApp, Messenger, Instagram, Telegram, TikTok & SMS with Pure Sinhala Script.">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔑</text></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -399,25 +399,33 @@
 
         <div class="card">
             <div class="header-badge">
-                <span>🎁</span> 1-Day Free Trial KeyGen
+                <span>🎁</span> 3-Day Free Trial KeyGen
             </div>
 
             <h1>Generate Free Trial Key</h1>
             <p class="subtitle">
-                Experience full 24/7 AI automation on your Android phone. Test Pure Sinhala Script, Bank Slip Fake Protection, and Gemini Vision AI for 24 hours.
+                Experience full 24/7 AI automation across WhatsApp, Facebook Messenger, Instagram Direct, Telegram, TikTok & SMS on your Android phone. Test Pure Sinhala Script, Bank Slip Fake Protection, and Gemini Vision AI for 72 hours (3 Days).
             </p>
 
-            <!-- Locked 1-Day Trial Plan Card -->
+            <!-- Locked 3-Day Trial Plan Card -->
             <div class="plan-locked-card">
                 <div>
                     <div class="plan-info-title">
-                        <span>⚡</span> 1-Day Full Access Trial
+                        <span>⚡</span> 3-Day Full Access Trial
                     </div>
                     <div class="plan-info-desc">
-                        Valid for 24 Hours • 1 Android Smartphone
+                        Valid for 72 Hours (3 Days) • 1 Android Smartphone • All 7 Channels Unlocked
                     </div>
                 </div>
                 <span class="plan-tag-free">100% FREE</span>
+            </div>
+
+            <!-- Single Evaluation Limit Notice -->
+            <div style="background: rgba(234, 179, 8, 0.08); border: 1px solid rgba(234, 179, 8, 0.3); border-radius: 12px; padding: 12px 14px; margin-bottom: 20px; font-size: 12px; color: #FEF08A; line-height: 1.5; display: flex; gap: 8px;">
+                <span style="font-size: 16px;">⚠️</span>
+                <div>
+                    <strong>One-Time Trial Policy:</strong> Each phone is strictly eligible for <u>ONE (1) Free Trial only</u>. Once your 3-day (72 hours) trial ends, the app hardware lock permanently rejects any repeated trial keys.
+                </div>
             </div>
 
             <!-- Form -->
@@ -433,7 +441,7 @@
             </div>
 
             <button class="btn-generate" onclick="generateTrialKey()">
-                <span>⚡</span> Generate 1-Day Free Trial Key
+                <span>⚡</span> Generate 3-Day Free Trial Key
             </button>
 
             <!-- Generated Result Box -->
@@ -451,7 +459,7 @@
                     <strong>How to activate:</strong>
                     <ol>
                         <li>Copy the license key above.</li>
-                        <li>Open <strong>WhatsApp AI Agent</strong> on your phone.</li>
+                        <li>Open <strong>OmniChannel AI Agent</strong> on your phone.</li>
                         <li>Go to <strong>License</strong> tab, paste the key, and tap <strong>Activate</strong>.</li>
                     </ol>
                 </div>
@@ -465,7 +473,7 @@
                 <p class="upgrade-desc">
                     Paid plans (1 Month, 3 Months, 6 Months, or 1 Year) include priority Gemini Vision API, unlimited auto-replies, and 24/7 VIP support.
                 </p>
-                <a href="https://wa.me/94762107801?text=Hi!%20I%20tried%20the%201-Day%20Free%20Trial%20and%20I%20want%20to%20purchase%20a%20Full%20License%20Key%20for%20WhatsApp%20AI%20Agent." target="_blank" class="btn-upgrade-whatsapp">
+                <a href="https://wa.me/94762107801?text=Hi!%20I%20tried%20the%203-Day%20Free%20Trial%20and%20I%20want%20to%20purchase%20a%20Full%20License%20Key%20for%20OmniChannel%20AI%20Agent." target="_blank" class="btn-upgrade-whatsapp">
                     <span>💬</span> Upgrade via WhatsApp Concierge (076 210 7801)
                 </a>
             </div>
@@ -510,9 +518,19 @@
                 return;
             }
 
-            // Strictly locked to 1-Day Trial ("DEMO1D")
-            const plan = "DEMO1D";
-            const days = 1;
+            // Check if this browser already generated a trial for this device
+            const storageKey = "trial_generated_" + devId;
+            const previousTrial = localStorage.getItem(storageKey);
+            if (previousTrial) {
+                const prevDate = new Date(parseInt(previousTrial)).toLocaleDateString();
+                const proceed = confirm(`⚠️ Notice: A 3-Day Free Trial key was already generated for Device ID ${devId} on ${prevDate}.\n\nNote: Each Android phone only allows ONE (1) Free Trial. The app hardware lock will reject repeated trial keys once the first 72 hours (3 days) expire.\n\nDo you want to view this key again?`);
+                if (!proceed) return;
+            }
+            localStorage.setItem(storageKey, Date.now().toString());
+
+            // Strictly locked to 3-Day Trial ("DEMO3D")
+            const plan = "DEMO3D";
+            const days = 3;
 
             const expDate = new Date();
             expDate.setDate(expDate.getDate() + days);
